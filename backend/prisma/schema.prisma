@@ -1,0 +1,77 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Hotel {
+  id    BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  code  String @unique @db.VarChar(50)
+  name  String @db.VarChar(191)
+  staff StaffUser[]
+
+  @@map("hotels")
+}
+
+model Role {
+  id    BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  code  String @unique @db.VarChar(32)
+  name  String @db.VarChar(100)
+  staff StaffUser[]
+
+  @@map("roles")
+}
+
+model StaffUser {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId      BigInt   @map("hotel_id") @db.UnsignedBigInt
+  roleId       BigInt   @map("role_id") @db.UnsignedBigInt
+  fullName     String   @map("full_name") @db.VarChar(191)
+  username     String   @unique @db.VarChar(64)
+  email        String?  @unique @db.VarChar(191)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  hotel        Hotel    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  sessions     AuthSession[]
+
+  @@index([hotelId])
+  @@index([roleId])
+  @@map("staff_users")
+}
+
+model AuthSession {
+  id            String   @id @db.Char(36)
+  staffUserId   BigInt   @map("staff_user_id") @db.UnsignedBigInt
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt     DateTime @map("expires_at") @db.DateTime(3)
+  revokedAt     DateTime? @map("revoked_at") @db.DateTime(3)
+  revokedReason String?  @map("revoked_reason") @db.VarChar(32)
+  staffUser     StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+  refreshTokens RefreshToken[]
+
+  @@index([staffUserId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model RefreshToken {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  sessionId String   @map("session_id") @db.Char(36)
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt DateTime @map("expires_at") @db.DateTime(3)
+  usedAt    DateTime? @map("used_at") @db.DateTime(3)
+  session   AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}

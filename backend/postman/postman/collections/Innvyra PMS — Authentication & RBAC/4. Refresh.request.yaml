@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/refresh"
+method: POST
+headers:
+  X-CSRF-Protection: "1"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Refresh succeeds', () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) pm.collectionVariables.set('accessToken', pm.response.json().data.accessToken);
+    language: text/javascript
+order: 4000

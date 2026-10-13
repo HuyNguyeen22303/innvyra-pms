@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/admin-check"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000
