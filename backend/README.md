@@ -102,11 +102,11 @@ CREATE DATABASE IF NOT EXISTS innvyra_pms
 Sau khi cấu hình `.env`:
 
 ```powershell
+npm run prisma:generate
 npm run db:inspect
-npm run prisma:validate
 npm run db:migrate
 npm run db:seed
-npm run prisma:generate
+npm run db:inspect
 ```
 
 `db:inspect` chỉ đọc danh sách bảng và cấu trúc cột. `db:migrate` kiểm tra metadata trước khi gọi `prisma migrate deploy`; từ chối database có bảng nhưng chưa có `_prisma_migrations`. Không có lệnh reset; tài khoản demo chỉ được tạo khi chạy seed ngoài production.
@@ -397,20 +397,20 @@ Migration trên database ứng dụng và kiểm thử tải production chưa th
 
 ### API và quyền truy cập
 
-| Method | Endpoint | Semantics |
-| --- | --- | --- |
-| GET | `/api/v1/guests` | Danh sách có phân trang; không trả ngày sinh, giấy tờ, địa chỉ hoặc notes |
-| GET | `/api/v1/guests/:id` | Chi tiết trong hotel hiện hành; projection theo role |
-| POST | `/api/v1/guests` | Tạo hồ sơ, HTTP 201; cảnh báo khả năng trùng, không tự gộp |
-| PATCH | `/api/v1/guests/:id` | Chỉ cập nhật field gửi lên; `null` xóa giá trị nullable |
+| Method | Endpoint             | Semantics                                                                        |
+| ------ | -------------------- | -------------------------------------------------------------------------------- |
+| GET    | `/api/v1/guests`     | Danh sách có phân trang; không trả ngày sinh, giấy tờ, địa chỉ hoặc notes        |
+| GET    | `/api/v1/guests/:id` | Chi tiết trong hotel hiện hành; projection theo role                             |
+| POST   | `/api/v1/guests`     | Tạo hồ sơ, HTTP 201; cảnh báo khả năng trùng, không tự gộp                       |
+| PATCH  | `/api/v1/guests/:id` | Chỉ cập nhật field gửi lên; `null` xóa giá trị nullable                          |
 | DELETE | `/api/v1/guests/:id` | Đặt `deletedAt`, HTTP 200 với `{ id, deletedAt }`; giữ bản ghi và mọi tham chiếu |
 
-| Role | Đọc | Tạo / sửa | Xóa mềm |
-| --- | --- | --- | --- |
-| ADMIN, MANAGER | Danh sách cơ bản; chi tiết đầy đủ phục vụ vận hành | Có | Có |
-| RECEPTIONIST | Như ADMIN/MANAGER | Có | Không |
-| ACCOUNTANT | Chỉ `id`, `fullName` | Không | Không |
-| HOUSEKEEPING, TECHNICIAN | Không | Không | Không |
+| Role                     | Đọc                                                | Tạo / sửa | Xóa mềm |
+| ------------------------ | -------------------------------------------------- | --------- | ------- |
+| ADMIN, MANAGER           | Danh sách cơ bản; chi tiết đầy đủ phục vụ vận hành | Có        | Có      |
+| RECEPTIONIST             | Như ADMIN/MANAGER                                  | Có        | Không   |
+| ACCOUNTANT               | Chỉ `id`, `fullName`                               | Không     | Không   |
+| HOUSEKEEPING, TECHNICIAN | Không                                              | Không     | Không   |
 
 Tái sử dụng JWT/session, `authenticate`, `authorizeRoles`, CSRF, Zod và error middleware hiện có. Service kiểm tra quyền thêm một lần để bảo vệ lời gọi nội bộ. Quyền tập trung trong `guestPermissions`, dễ chuyển sang permission-level sau này. Tất cả role, kể cả ADMIN, chỉ truy cập `hotelId` hiện tại do Auth đọc từ MySQL; không nhận hotel, actor hoặc role từ body/query. ID không tồn tại, đã xóa và khác hotel đều trả cùng 404 `GUEST_NOT_FOUND`. Các response của route Guest đặt `Cache-Control: no-store`.
 
@@ -506,15 +506,15 @@ Working tree ban đầu đã có thay đổi tại `.env.example`, `README.md`, 
 
 Kết quả chạy ngày **14/10/2026** trên MySQL **8.0.41**:
 
-| Kiểm tra | Kết quả |
-| --- | --- |
-| Prisma validate / generate | Đạt |
-| Migration Auth + Rooms + Guest trên `innvyra_pms_guests_phase3_test` | Đạt; Prisma diff không có khác biệt với schema |
-| `npm run typecheck` | Đạt |
-| `npm run lint` | Đạt, không warning |
-| `npm run build` | Đạt |
-| Vitest không cấu hình MySQL | 163 passed, 25 skipped |
-| Vitest với MySQL riêng, gồm Auth/Rooms regression | **188 passed, 0 skipped, 9 suites** |
-| Smoke bản build ESM | Swagger UI/JSON HTTP 200; đủ 20 operations; mọi schema reference nội bộ hợp lệ; Guest/Auth/Rooms yêu cầu token |
+| Kiểm tra                                                             | Kết quả                                                                                                        |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Prisma validate / generate                                           | Đạt                                                                                                            |
+| Migration Auth + Rooms + Guest trên `innvyra_pms_guests_phase3_test` | Đạt; Prisma diff không có khác biệt với schema                                                                 |
+| `npm run typecheck`                                                  | Đạt                                                                                                            |
+| `npm run lint`                                                       | Đạt, không warning                                                                                             |
+| `npm run build`                                                      | Đạt                                                                                                            |
+| Vitest không cấu hình MySQL                                          | 163 passed, 25 skipped                                                                                         |
+| Vitest với MySQL riêng, gồm Auth/Rooms regression                    | **188 passed, 0 skipped, 9 suites**                                                                            |
+| Smoke bản build ESM                                                  | Swagger UI/JSON HTTP 200; đủ 20 operations; mọi schema reference nội bộ hợp lệ; Guest/Auth/Rooms yêu cầu token |
 
 Windows sandbox gây EPERM khi Vitest resolve đường dẫn và chặn kết nối MySQL; các bước đó đã chạy lại ngoài sandbox sau khi được cấp quyền. Lệnh kiểm chứng dùng helper gitignored trong `.tmp/`, không ghi credentials vào tệp. Chưa triển khai production, chạy tải hoặc rotation khóa; migration database ứng dụng và cấu hình khóa là các bước vận hành còn lại.
