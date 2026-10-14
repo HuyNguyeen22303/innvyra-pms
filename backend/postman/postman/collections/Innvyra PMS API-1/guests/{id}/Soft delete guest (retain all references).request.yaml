@@ -1,0 +1,57 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER only. Same hotel and CSRF/Origin checks apply. Sets deletedAt; retains the guest row and every reservation/stay/payment reference. No cascade or hard delete. Existing references may continue reading the retained row internally; future booking flows must reject deleted guests. Repeating DELETE, GET detail or PATCH then returns 404. Deleted guests are excluded from lists and duplicate warnings. Reservation/Stay/Payment modules and restoration are outside Phase 3."
+url: "{{baseUrl}}/guests/:id"
+method: DELETE
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "42"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "42"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Soft delete guest (retain all references).resources/examples
+order: 3000

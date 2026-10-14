@@ -1,0 +1,11 @@
+workspace:
+  id: 3b21d290-9de7-4989-9573-31ec99261882
+
+localResources:
+  specs:
+    - ../postman/specs/Innvyra PMS API/index.json
+    - ../postman/specs/Innvyra PMS API-1/index.json
+resourceNameMappings:
+  specs:
+    - ../postman/specs/Innvyra PMS API/index.json: Innvyra PMS API
+    - ../postman/specs/Innvyra PMS API-1/index.json: Innvyra PMS API
