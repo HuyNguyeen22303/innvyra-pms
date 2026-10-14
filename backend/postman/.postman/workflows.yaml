@@ -10,9 +10,19 @@ workflows:
       options:
         syncExamples: false
         deleteOrphanedRequests: false
+    - spec: ../postman/specs/Innvyra PMS API-1/index.json
+      collection: ../postman/collections/Innvyra PMS API-1
+      options:
+        syncExamples: false
+        deleteOrphanedRequests: false
   syncCollectionToSpec:
     - spec: ../postman/specs/Innvyra PMS API/index.json
       collection: ../postman/collections/Innvyra PMS API
+      options:
+        syncExamples: false
+        deleteOrphanedRequests: false
+    - spec: ../postman/specs/Innvyra PMS API-1/index.json
+      collection: ../postman/collections/Innvyra PMS API-1
       options:
         syncExamples: false
         deleteOrphanedRequests: false

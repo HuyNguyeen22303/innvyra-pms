@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { PrismaGuestRepository } from '../src/modules/guests/guest.repository.js';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -64,10 +65,15 @@ describe.skipIf(!testUrl)('MySQL integration (dedicated local database)', () => 
       },
     });
     userId = staff.id;
-    app = createApp({ ...testEnv, DATABASE_URL: testUrl! }, new PrismaAuthRepository(prisma), {
-      roomTypes: new PrismaRoomTypeRepository(prisma),
-      rooms: new PrismaRoomRepository(prisma),
-    });
+    app = createApp(
+      { ...testEnv, DATABASE_URL: testUrl! },
+      new PrismaAuthRepository(prisma),
+      {
+        roomTypes: new PrismaRoomTypeRepository(prisma),
+        rooms: new PrismaRoomRepository(prisma),
+      },
+      new PrismaGuestRepository(prisma),
+    );
   });
   afterAll(async () => {
     if (!prisma) return;

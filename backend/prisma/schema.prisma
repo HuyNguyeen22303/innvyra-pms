@@ -18,6 +18,7 @@ model Hotel {
 
   roomTypes RoomType[]
   rooms     Room[]
+  guests    Guest[]
 
   @@map("hotels")
 }
@@ -140,4 +141,65 @@ model Room {
   @@index([hotelId, isActive])
   @@index([hotelId, createdAt])
   @@map("rooms")
+}
+
+enum GuestGender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
+enum GuestDocumentType {
+  NATIONAL_ID
+  PASSPORT
+  DRIVER_LICENSE
+  OTHER
+}
+
+model Guest {
+  id                       BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId                  BigInt             @map("hotel_id") @db.UnsignedBigInt
+  fullName                 String             @map("full_name") @db.VarChar(150)
+  phone                    String?            @db.VarChar(30)
+  email                    String?            @db.VarChar(150)
+  dateOfBirth              DateTime?          @map("date_of_birth") @db.Date
+  gender                   GuestGender?
+  nationality              String?            @db.VarChar(100)
+  documentType             GuestDocumentType? @map("document_type")
+  documentNumberCiphertext String?            @map("document_number_ciphertext") @db.Text
+  documentNumberHash       String?            @map("document_number_hash") @db.Char(64)
+  address                  String?            @db.Text
+  notes                    String?            @db.Text
+  createdAt                DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt                DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+  deletedAt                DateTime?          @map("deleted_at") @db.DateTime(3)
+  hotel                    Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  auditLogs                GuestAuditLog[]
+
+  // Future reservations/stay guests should use this composite reference with RESTRICT.
+  // Contact details and document hashes deliberately are NOT unique.
+  @@unique([hotelId, id])
+  @@index([hotelId, deletedAt, fullName])
+  @@index([hotelId, deletedAt, createdAt])
+  @@index([hotelId, phone])
+  @@index([hotelId, email])
+  @@index([hotelId, documentNumberHash])
+  @@index([hotelId, nationality])
+  @@map("guests")
+}
+
+model GuestAuditLog {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt   @map("hotel_id") @db.UnsignedBigInt
+  guestId       BigInt   @map("guest_id") @db.UnsignedBigInt
+  actorId       BigInt   @map("actor_id") @db.UnsignedBigInt
+  action        String   @db.VarChar(20)
+  // Field names only; never before/after values, ciphertext, hashes or request bodies.
+  changedFields Json     @map("changed_fields")
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  guest         Guest    @relation(fields: [hotelId, guestId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, guestId, createdAt])
+  @@map("guest_audit_logs")
 }

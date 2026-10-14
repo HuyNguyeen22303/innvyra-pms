@@ -1,0 +1,280 @@
+$kind: http-example
+name: Bounded page with a consistent total; sort ties use ascending ID.
+request:
+  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=3239970076059538833&floorNumber=15067&physicalStatus=OUT_OF_SERVICE&housekeepingStatus=INSPECTION&sortBy=roomNumber"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: false
+      description: Decimal integer 1–1000000; default 1.
+    - key: limit
+      value: "20"
+      disabled: false
+      description: Decimal integer 1–100; default 20.
+    - key: search
+      value: string
+      disabled: false
+      description: ""
+    - key: isActive
+      value: "true"
+      disabled: false
+      description: Literal true or false. Omitted includes active and inactive records.
+    - key: sortOrder
+      value: asc
+      disabled: false
+      description: ""
+    - key: roomTypeId
+      value: "3239970076059538833"
+      disabled: false
+      description: ""
+    - key: floorNumber
+      value: "15067"
+      disabled: false
+      description: Signed SMALLINT, -32768–32767; includes basement floors.
+    - key: physicalStatus
+      value: OUT_OF_SERVICE
+      disabled: false
+      description: ""
+    - key: housekeepingStatus
+      value: INSPECTION
+      disabled: false
+      description: ""
+    - key: sortBy
+      value: roomNumber
+      disabled: false
+      description: ""
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Rooms retrieved",
+        "data": {
+          "items": [
+            {
+              "id": "301",
+              "hotelId": "1",
+              "roomTypeId": "3",
+              "roomNumber": "301",
+              "floorNumber": 3,
+              "physicalStatus": "ACTIVE",
+              "housekeepingStatus": "READY",
+              "notes": "Near elevator",
+              "isActive": true,
+              "roomType": {
+                "id": "3",
+                "code": "DLX",
+                "name": "Deluxe",
+                "isActive": true
+              },
+              "createdAt": "2026-10-14T00:00:00.000Z",
+              "updatedAt": "2026-10-14T00:00:00.000Z"
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 20,
+            "total": 1,
+            "totalPages": 1
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "example": {
+                    "id": "301",
+                    "hotelId": "1",
+                    "roomTypeId": "3",
+                    "roomNumber": "301",
+                    "floorNumber": 3,
+                    "physicalStatus": "ACTIVE",
+                    "housekeepingStatus": "READY",
+                    "notes": "Near elevator",
+                    "isActive": true,
+                    "roomType": {
+                      "id": "3",
+                      "code": "DLX",
+                      "name": "Deluxe",
+                      "isActive": true
+                    },
+                    "createdAt": "2026-10-14T00:00:00.000Z",
+                    "updatedAt": "2026-10-14T00:00:00.000Z"
+                  },
+                  "properties": {
+                    "roomNumber": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+                    },
+                    "floorNumber": {
+                      "type": "integer",
+                      "minimum": -32768,
+                      "maximum": 32767
+                    },
+                    "roomTypeId": {
+                      "type": "string",
+                      "pattern": "^[1-9]\\d{0,19}$"
+                    },
+                    "physicalStatus": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "OUT_OF_SERVICE",
+                        "MAINTENANCE"
+                      ]
+                    },
+                    "housekeepingStatus": {
+                      "type": "string",
+                      "enum": [
+                        "DIRTY",
+                        "CLEANING",
+                        "INSPECTION",
+                        "READY"
+                      ]
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 10000
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "roomType": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "1",
+                          "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "code",
+                        "name",
+                        "isActive"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "roomTypeId",
+                    "roomNumber",
+                    "floorNumber",
+                    "physicalStatus",
+                    "housekeepingStatus",
+                    "notes",
+                    "isActive",
+                    "roomType",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "totalPages": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

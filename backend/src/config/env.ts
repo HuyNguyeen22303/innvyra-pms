@@ -61,6 +61,20 @@ const schema = z
     LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
     LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(900000),
     REFRESH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(60),
+    GUEST_ENCRYPTION_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z
+        .string()
+        .regex(/^[a-fA-F0-9]{64}$/)
+        .optional(),
+    ),
+    GUEST_HASH_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z
+        .string()
+        .regex(/^[a-fA-F0-9]{64}$/)
+        .optional(),
+    ),
   })
   .transform((value) => ({
     ...value,
@@ -80,6 +94,13 @@ const schema = z
   .superRefine((value, ctx) => {
     const issue = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
+    if (!!value.GUEST_ENCRYPTION_KEY !== !!value.GUEST_HASH_KEY)
+      issue('GUEST_ENCRYPTION_KEY', 'Configure both guest protection keys or neither');
+    if (
+      value.GUEST_ENCRYPTION_KEY &&
+      value.GUEST_ENCRYPTION_KEY.toLowerCase() === value.GUEST_HASH_KEY?.toLowerCase()
+    )
+      issue('GUEST_HASH_KEY', 'Use independent guest encryption and hashing keys');
     for (const allowed of value.allowedOrigins) {
       if (!origin.safeParse(allowed).success)
         issue('CORS_ORIGINS', 'Every entry must be an exact http(s) origin');

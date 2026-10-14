@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { PrismaGuestRepository } from '../src/modules/guests/guest.repository.js';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -79,7 +80,12 @@ describe.skipIf(!testUrl)(
       };
       typeService = new RoomTypeService(repositories.roomTypes);
       roomService = new RoomService(repositories.rooms);
-      app = createApp({ ...testEnv, DATABASE_URL: testUrl! }, auth, repositories);
+      app = createApp(
+        { ...testEnv, DATABASE_URL: testUrl! },
+        auth,
+        repositories,
+        new PrismaGuestRepository(prisma),
+      );
       token = (
         await new AuthService(auth, testEnv).login({ username: prefix, password: testPassword })
       ).data.accessToken;

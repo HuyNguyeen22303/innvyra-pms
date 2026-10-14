@@ -1,0 +1,119 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST. Hotel/actor/role come only from server authentication; ownership fields are rejected. Requires X-CSRF-Protection: 1 and allowlisted browser Origin. Duplicates by exact normalized name, phone, email or document hash/type within this hotel generate a warning, not a rejection or merge. Audit records contain actor, field names and action only. Guest and audit writes commit atomically."
+url: "{{baseUrl}}/guests"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "fullName": "Synthetic Guest",
+      "phone": "+1 (202) 555-0100",
+      "email": "guest@example.test"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Required on create; whitespace is collapsed."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "description": "3–20 digits; optional leading +, spaces, parentheses, periods and hyphens; separators are removed."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "Trimmed and stored lowercase.",
+          "format": "email"
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Valid YYYY-MM-DD from 1000-01-01 through today in UTC; future dates rejected.",
+          "format": "date"
+        },
+        "gender": {
+          "type": "string",
+          "enum": [
+            "MALE",
+            "FEMALE",
+            "OTHER",
+            "UNSPECIFIED",
+            null
+          ]
+        },
+        "nationality": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "documentType": {
+          "type": "string",
+          "enum": [
+            "NATIONAL_ID",
+            "PASSPORT",
+            "DRIVER_LICENSE",
+            "OTHER",
+            null
+          ],
+          "description": "Required when a document number is present."
+        },
+        "documentNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Optional; trimmed and uppercased. Letters/numbers with spaces, periods, slash or hyphen. Encrypted at rest; never returned in lists."
+        },
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "fullName"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create guest.resources/examples
+order: 2000

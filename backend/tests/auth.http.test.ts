@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { memoryGuests } from './guest-helpers.js';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { decodeJwt, SignJWT } from 'jose';
 import { createApp } from '../src/app.js';
@@ -17,7 +18,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
   });
   beforeEach(() => {
     repository = new MemoryAuthRepository(passwordHash);
-    app = createApp(testEnv, repository, memoryRooms().repositories);
+    app = createApp(testEnv, repository, memoryRooms().repositories, memoryGuests().repository);
   });
   const login = (username = 'admin', password = testPassword) =>
     request(app)
@@ -243,6 +244,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
       { ...testEnv, LOGIN_RATE_LIMIT_MAX: 1 },
       repository,
       memoryRooms().repositories,
+      memoryGuests().repository,
     );
     expect((await login('missing')).status).toBe(401);
     const limited = await login();
@@ -254,6 +256,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
       { ...testEnv, COOKIE_SECURE: true, COOKIE_SAME_SITE: 'none' },
       repository,
       memoryRooms().repositories,
+      memoryGuests().repository,
     );
     const res = await login();
     expect(res.headers['set-cookie']?.[0]).toMatch(/Secure/);

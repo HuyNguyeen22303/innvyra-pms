@@ -6,6 +6,7 @@ import { PrismaAuthRepository } from './modules/auth/auth.repository.js';
 import { getDummyPasswordHash } from './shared/utils/password.js';
 import { PrismaRoomTypeRepository } from './modules/room-types/room-type.repository.js';
 import { PrismaRoomRepository } from './modules/rooms/room.repository.js';
+import { PrismaGuestRepository } from './modules/guests/guest.repository.js';
 
 async function main() {
   const env = parseEnv(process.env);
@@ -14,10 +15,15 @@ async function main() {
     await prisma.$connect();
     await prisma.$queryRaw`SELECT 1`;
     await getDummyPasswordHash();
-    const server = createApp(env, new PrismaAuthRepository(prisma), {
-      roomTypes: new PrismaRoomTypeRepository(prisma),
-      rooms: new PrismaRoomRepository(prisma),
-    }).listen(env.PORT, () => {
+    const server = createApp(
+      env,
+      new PrismaAuthRepository(prisma),
+      {
+        roomTypes: new PrismaRoomTypeRepository(prisma),
+        rooms: new PrismaRoomRepository(prisma),
+      },
+      new PrismaGuestRepository(prisma),
+    ).listen(env.PORT, () => {
       console.info(`Innvyra PMS API listening on port ${env.PORT}`);
     });
     server.on('error', () => {
