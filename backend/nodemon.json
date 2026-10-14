@@ -1,8 +1,0 @@
-{
-  "watch": ["src", ".env"],
-  "ext": "ts,json,env",
-  "ignore": ["src/generated/**"],
-  "exec": "tsx src/server.ts",
-  "signal": "SIGTERM",
-  "delay": 300
-}
