@@ -1,0 +1,37 @@
+$kind: http-request
+description: Requires an unexpired access token. Clears the refresh cookie and invalidates this session immediately. Refresh first if the access token expired.
+url: "{{baseUrl}}/auth/logout"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection. Browser Origin must be allowlisted.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Accept
+    value: application/json
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Revoke the current session.resources/examples
+order: 1000

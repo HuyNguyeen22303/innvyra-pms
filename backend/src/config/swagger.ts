@@ -1,3 +1,5 @@
+import { roomPaths, roomSchemas } from './rooms.openapi.js';
+
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
 const error = (description: string) => ({ description, content: json(ref('Error')) });
@@ -51,13 +53,13 @@ const emptySuccess = {
 export const openApiDocument = {
   openapi: '3.0.3',
   info: {
-    title: 'Innvyra PMS Authentication API',
-    version: '1.0.0',
+    title: 'Innvyra PMS API',
+    version: '2.0.0',
     description:
       'Staff authentication and RBAC. No public registration. IDs are decimal strings. Login/refresh/logout require X-CSRF-Protection: 1. Browser clients must use credentials: include. Refresh sessions have an absolute lifetime (default 7 days); rotation does not extend it. Serialize refresh requests: reuse revokes the entire session. For Swagger Try it out, add this API origin to CORS_ORIGINS.',
   },
   servers: [{ url: '/api/v1' }],
-  tags: [{ name: 'Authentication' }],
+  tags: [{ name: 'Authentication' }, { name: 'Room Types' }, { name: 'Rooms' }],
   components: {
     securitySchemes: {
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -70,6 +72,7 @@ export const openApiDocument = {
       },
     },
     schemas: {
+      ...roomSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -111,6 +114,7 @@ export const openApiDocument = {
     },
   },
   paths: {
+    ...roomPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

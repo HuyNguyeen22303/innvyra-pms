@@ -9,7 +9,7 @@ export function corsOptions(env: Env): CorsOptions {
       else callback(new AppError(403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed'));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Protection'],
     maxAge: 600,
   };

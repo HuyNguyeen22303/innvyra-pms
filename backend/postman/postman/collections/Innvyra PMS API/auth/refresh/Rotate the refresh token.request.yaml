@@ -1,0 +1,39 @@
+$kind: http-request
+description: No request body. Old tokens are single-use. Replaying a consumed token revokes the session, including all access tokens. A concurrent refresh can revoke the session; clients must coordinate refresh calls.
+url: "{{baseUrl}}/auth/refresh"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection. Browser Origin must be allowlisted.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Accept
+    value: application/json
+body:
+  type: text
+  content: ""
+auth:
+  type: apikey
+  credentials:
+    key: innvyra_refresh
+    value: "{{apiKey}}"
+    in: header
+settings: {}
+examples: ./.resources/Rotate the refresh token.resources/examples
+order: 1000

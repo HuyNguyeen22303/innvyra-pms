@@ -1,0 +1,4 @@
+$kind: collection
+description: "Staff authentication and RBAC. No public registration. IDs are decimal strings. Login/refresh/logout require X-CSRF-Protection: 1. Browser clients must use credentials: include. Refresh sessions have an absolute lifetime (default 7 days); rotation does not extend it. Serialize refresh requests: reuse revokes the entire session. For Swagger Try it out, add this API origin to CORS_ORIGINS."
+variables:
+  baseUrl: /api/v1

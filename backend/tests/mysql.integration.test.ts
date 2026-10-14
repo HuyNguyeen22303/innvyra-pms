@@ -7,6 +7,8 @@ import { createPrisma } from '../src/database/prisma.js';
 import { PrismaAuthRepository } from '../src/modules/auth/auth.repository.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import { body, cookie, testEnv, testPassword } from './helpers.js';
+import { PrismaRoomTypeRepository } from '../src/modules/room-types/room-type.repository.js';
+import { PrismaRoomRepository } from '../src/modules/rooms/room.repository.js';
 
 // Never falls back to DATABASE_URL. This suite only writes its own tagged fixtures.
 const testUrl = process.env.TEST_DATABASE_URL;
@@ -62,7 +64,10 @@ describe.skipIf(!testUrl)('MySQL integration (dedicated local database)', () => 
       },
     });
     userId = staff.id;
-    app = createApp({ ...testEnv, DATABASE_URL: testUrl! }, new PrismaAuthRepository(prisma));
+    app = createApp({ ...testEnv, DATABASE_URL: testUrl! }, new PrismaAuthRepository(prisma), {
+      roomTypes: new PrismaRoomTypeRepository(prisma),
+      rooms: new PrismaRoomRepository(prisma),
+    });
   });
   afterAll(async () => {
     if (!prisma) return;

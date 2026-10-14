@@ -1,6 +1,6 @@
-# Innvyra PMS — Authentication & RBAC (Phase 1)
+# Innvyra PMS — Authentication, RBAC & Room Management (Phases 1–2)
 
-Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend, đăng ký công khai hoặc module nghiệp vụ khác.
+Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 2 bổ sung quản lý loại phòng và phòng, chưa triển khai reservation/stay.
 
 ## Cấu trúc và trách nhiệm
 
@@ -11,10 +11,11 @@ backend/
 │   ├── schema.prisma
 │   ├── migrations/migration_lock.toml
 │   ├── migrations/20261013000000_auth_init/migration.sql
+│   ├── migrations/20261014000000_room_management/migration.sql
 │   └── seed.ts
 ├── src/
-│   ├── config/{env,cors,swagger}.ts
-│   ├── database/prisma.ts
+│   ├── config/{env,cors,swagger,rooms.openapi}.ts
+│   ├── database/{prisma,room-transaction}.ts
 │   ├── modules/auth/
 │   │   ├── auth.routes.ts
 │   │   ├── auth.controller.ts
@@ -22,6 +23,8 @@ backend/
 │   │   ├── auth.repository.ts
 │   │   ├── auth.schema.ts
 │   │   └── auth.types.ts
+│   ├── modules/room-types/      # routes/controller/service/repository/schema/types
+│   ├── modules/rooms/           # routes/controller/service/repository/schema/types
 │   ├── middlewares/
 │   │   ├── authenticate.middleware.ts
 │   │   ├── authorize.middleware.ts
@@ -32,13 +35,15 @@ backend/
 │   ├── shared/
 │   │   ├── errors/app-error.ts
 │   │   ├── types/{express.d.ts,roles.ts}
-│   │   └── utils/{cookies,password,tokens}.ts
+│   │   ├── utils/{cookies,password,tokens}.ts
+│   │   └── validation/room-input.ts
 │   ├── generated/prisma/          # sinh bởi Prisma, gitignored
 │   ├── routes/index.ts
 │   ├── app.ts
 │   └── server.ts
 ├── scripts/{database-tools,inspect-database,migrate,create-admin}.ts
 ├── tests/{helpers,auth.http.test,security.unit.test,mysql.integration.test}.ts
+├── tests/{room-helpers,rooms.http.test,rooms.unit.test,rooms.mysql.integration.test}.ts
 ├── postman/
 │   ├── .postman/resources.yaml
 │   └── postman/collections/Innvyra PMS — Authentication & RBAC/
@@ -58,7 +63,7 @@ backend/
 └── README.md
 ```
 
-Luồng: Route → middleware → controller → service → repository → Prisma → MySQL. `createApp(env, repository)` hỗ trợ kiểm thử HTTP bằng repository trong bộ nhớ; production luôn dùng `PrismaAuthRepository`. Không có database singleton hoặc biến môi trường ngầm trong service.
+Luồng: Route → middleware → controller → service → repository → Prisma → MySQL. `createApp(env, authRepository, { roomTypes, rooms })` inject các repository để kiểm thử HTTP trong bộ nhớ; production luôn dùng các Prisma repository. Không có database singleton hoặc biến môi trường ngầm trong service.
 
 ## Cài đặt và cấu hình
 
@@ -104,7 +109,7 @@ npm run prisma:generate
 
 `db:inspect` chỉ đọc danh sách bảng và cấu trúc cột. `db:migrate` kiểm tra metadata trước khi gọi `prisma migrate deploy`; từ chối database có bảng nhưng chưa có `_prisma_migrations`. Không có lệnh reset hoặc tự tạo tài khoản mặc định.
 
-Các bảng duy nhất trong module:
+Các bảng của module Authentication:
 
 | Bảng             | Mục đích                                                                   |
 | ---------------- | -------------------------------------------------------------------------- |
@@ -244,7 +249,7 @@ npm run test
 
 Không dùng production database hoặc production credentials cho test. Khi thiếu `TEST_DATABASE_URL`, bốn MySQL test báo skipped, không được coi là passed.
 
-## Giới hạn của lần triển khai tại workspace
+## Kết quả lịch sử của Phase 1
 
 Kết quả đã chạy ngày 13/10/2026 với Node 22.13.0:
 
@@ -258,6 +263,114 @@ Kết quả đã chạy ngày 13/10/2026 với Node 22.13.0:
 | Smoke test bản build                     | ESM import, Prisma adapter, Swagger HTTP và HTTP 401 đạt; server thoát an toàn khi MySQL không kết nối được |
 | Migration/seed/admin trên MySQL thật     | Chưa chạy vì thiếu kết nối/configuration                                                                    |
 
-Chưa có `DATABASE_URL`/MySQL truy cập được và Docker engine chưa chạy. Vì vậy migration, seed, bootstrap admin và các transaction MySQL chưa được xác nhận trên database thật. Không có dữ liệu hiện hữu nào bị thay đổi. Kết quả các lệnh đã chạy được báo trong phản hồi bàn giao; cần chạy bốn MySQL integration test trước khi triển khai production.
+Tại thời điểm bàn giao Phase 1 chưa có kết nối MySQL để kiểm chứng. Kết quả kiểm thử MySQL mới nhất của Phase 2 được ghi bên dưới, bao gồm cả bốn regression tests MySQL của Authentication.
 
 Tham chiếu cấu hình chính thức: [Prisma 7 upgrade/config/adapter](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7), [ESM client generator](https://www.prisma.io/docs/orm/v7/prisma-schema/overview/generators).
+
+## Room Management — Phase 2
+
+Migration bổ sung `20261014000000_room_management` chỉ tạo `room_types`, `rooms`, indexes và foreign keys. Không thay cột/bảng Auth, không drop/reset. Kiểm tra database local ngày 14/10/2026 xác nhận trước Phase 2 chỉ có năm bảng Auth và `_prisma_migrations`; chưa có reservation/stay/history.
+
+| Bảng         | Cột và ràng buộc mới                                                                                                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `room_types` | `id`, `hotel_id`, `code`, `name`, `description`, `max_adults`, `max_children`, `base_price DECIMAL(14,2)`, `is_active`, `created_at`, `updated_at`; unique `(hotel_id,code)` và `(hotel_id,id)` |
+| `rooms`      | `id`, `hotel_id`, `room_type_id`, `room_number`, `floor_number`, `physical_status`, `housekeeping_status`, `notes`, `is_active`, `created_at`, `updated_at`; unique `(hotel_id,room_number)`    |
+
+Cả hai bảng có FK tới `hotels` với `ON DELETE RESTRICT`. FK ghép `rooms(hotel_id,room_type_id) → room_types(hotel_id,id)` ngăn tham chiếu loại phòng khác hotel cả khi ghi trực tiếp vào DB. Index bắt đầu bằng `hotel_id` phục vụ lọc loại phòng, tầng, trạng thái, active, tên, giá và ngày tạo. MySQL collation `utf8mb4_unicode_ci` khiến uniqueness không phân biệt hoa/thường và dấu. `code` được trim/uppercase ở API. Mã/số của bản ghi inactive vẫn được giữ và không thể dùng lại.
+
+ID được trả bằng chuỗi; giá đầu vào phải là chuỗi thập phân không âm, tối đa `999999999999.99`, không dùng số JSON/exponent hay quá hai chữ số thập phân. Giá được lưu bằng Prisma Decimal và trả đúng hai chữ số thập phân. `maxAdults` trong `1..65535`, `maxChildren` trong `0..65535`; `floorNumber` là integer `-32768..32767` (cho phép tầng hầm). `description`/`notes` có thể null và tối đa 10000 ký tự; body JSON tối đa 16 KB theo cấu hình sẵn có. `hotelId`, `isAvailable` và các trường không được hỗ trợ bị từ chối với 422.
+
+`physicalStatus`: `ACTIVE`, `OUT_OF_SERVICE`, `MAINTENANCE` (mặc định ACTIVE). `housekeepingStatus`: `DIRTY`, `CLEANING`, `INSPECTION`, `READY` (mặc định DIRTY). `isActive` biểu thị còn sử dụng trong cấu hình; cả ba trường độc lập. ACTIVE/READY không có nghĩa phòng trống. Không có cột `is_available` hoặc thuật toán availability.
+
+| Method | Room Types               | Rooms               | Hành vi                                                                |
+| ------ | ------------------------ | ------------------- | ---------------------------------------------------------------------- |
+| GET    | `/api/v1/room-types`     | `/api/v1/rooms`     | Danh sách có phân trang                                                |
+| GET    | `/api/v1/room-types/:id` | `/api/v1/rooms/:id` | Chi tiết trong hotel hiện hành                                         |
+| POST   | `/api/v1/room-types`     | `/api/v1/rooms`     | Tạo, HTTP 201                                                          |
+| PATCH  | `/api/v1/room-types/:id` | `/api/v1/rooms/:id` | Partial update, tối thiểu một field                                    |
+| DELETE | `/api/v1/room-types/:id` | `/api/v1/rooms/:id` | Vô hiệu hóa, HTTP 200, trả bản ghi `isActive:false`; không hard delete |
+
+Mọi endpoint yêu cầu Bearer Access Token qua Auth/session hiện có. ADMIN và MANAGER được đọc/ghi; RECEPTIONIST, HOUSEKEEPING, ACCOUNTANT, TECHNICIAN chỉ đọc. HOUSEKEEPING chưa được sửa housekeeping status. ADMIN cũng chỉ truy cập hotel hiện hành. Thiếu/sai token hoặc session bị thu hồi: 401; thiếu quyền: 403; ID không có/thuộc hotel khác: cùng 404. POST/PATCH/DELETE yêu cầu `X-CSRF-Protection: 1`, browser Origin phải nằm trong allowlist. CORS đã hỗ trợ PATCH và DELETE.
+
+Query chung: `page` mặc định 1 (tối đa 1000000), `limit` mặc định 20 (tối đa 100), `search`, `isActive=true|false`, `sortOrder=asc|desc`. Query không hỗ trợ, boolean sai, query lặp và sort ngoài whitelist trả 422. Omit `isActive` sẽ lấy cả active/inactive. Không nhận hotel từ query.
+
+- Room Types: search code/name; `sortBy=name|basePrice|createdAt`, mặc định name.
+- Rooms: search roomNumber; filter `roomTypeId`, `floorNumber`, `physicalStatus`, `housekeepingStatus`; `sortBy=roomNumber|floorNumber|createdAt`, mặc định roomNumber (sắp xếp chuỗi, không phải số). Include loại phòng với id/code/name/isActive.
+- Cùng giá trị sort được phân thứ tự bằng ID tăng dần. List/count chạy trong cùng transaction RepeatableRead, trả snapshot nhất quán.
+
+Response giữ convention `success/message/data`; list trả `data.items` và `data.pagination`:
+
+```json
+{
+  "success": true,
+  "message": "Rooms retrieved",
+  "data": {
+    "items": [],
+    "pagination": { "page": 1, "limit": 20, "total": 0, "totalPages": 0 }
+  }
+}
+```
+
+Các lỗi nghiệp vụ chính: 409 `ROOM_TYPE_CODE_EXISTS`, `ROOM_NUMBER_EXISTS`, `ROOM_TYPE_INACTIVE`, `ROOM_TYPE_IN_USE`, `ROOM_REFERENCE_CONFLICT`, `CONCURRENT_MODIFICATION`; 404 `ROOM_TYPE_NOT_FOUND`, `ROOM_NOT_FOUND`; 422 `VALIDATION_ERROR` kèm `error.details` (path/message). Không trả Prisma message, SQL hoặc database metadata.
+
+### Vô hiệu hóa và tính nguyên tử
+
+DELETE và PATCH `isActive:false` sử dụng cùng service. Loại phòng còn phòng active bị từ chối 409; trước tiên phải vô hiệu hóa hoặc chuyển các phòng sang loại active khác cùng hotel. Phòng/loại phòng inactive vẫn xem được và được giữ nguyên references; gọi DELETE lại thành công. Tạo phòng hoặc đổi loại phòng chỉ được chọn loại active trong cùng hotel. Kích hoạt lại phòng cũng kiểm tra loại phòng còn active. Giá cấu hình thay đổi không ghi vào dữ liệu lưu trú/đặt phòng.
+
+Mọi thao tác ghi room/type khóa dòng hotel bằng parameterized `SELECT ... FOR UPDATE` trong transaction ReadCommitted, rồi kiểm tra và ghi trong transaction đó. Thứ tự khóa chung ngăn race tạo/kích hoạt lại phòng với việc vô hiệu hóa loại phòng; unique constraints vẫn là lớp bảo vệ cuối cùng. Đây là khóa ở mức hotel, phù hợp số lượng thao tác quản trị hiện tại; cần đo tải nếu triển khai nhiều thao tác ghi đồng thời.
+
+**Giới hạn tích hợp Reservation:** hiện chưa có bảng reservation/stay/room-block, nên module không xác định có khách hoặc booking tương lai. Chưa có thuật toán giả hoặc dữ liệu occupancy. Trước khi triển khai Reservation, phải bổ sung kiểm tra booking/stay trong transaction cho đổi loại phòng, vô hiệu hóa và thay trạng thái vận hành có ảnh hưởng; luồng reservation cũng phải tuân theo cùng cơ chế khóa. API hiện luôn giữ bản ghi và không xóa lịch sử. Capacity/price/status validation thuộc API; các quy tắc service như loại phòng active không thay thế được bằng FK, nên không ghi trực tiếp bỏ qua service.
+
+### Migration và thử trên Swagger/Postman
+
+Migration đã được chạy thử trên MySQL **8.0.41**, database riêng `innvyra_pms_rooms_phase2_test`; Prisma diff xác nhận không có khác biệt giữa DB đã migrate và schema. Database ứng dụng `innvyra_pms` chưa được áp dụng migration Phase 2 trong lần bàn giao này.
+
+Sau khi review SQL, từ `backend/` với `.env` trỏ đến database phát triển cần cập nhật:
+
+```powershell
+npm run db:inspect
+npm run prisma:validate
+npm run db:migrate
+npm run prisma:generate
+npm run dev
+```
+
+Không dùng `migrate reset` hoặc `db push --accept-data-loss`. Giữ migration Auth cũ nguyên vẹn.
+
+1. Mở `/api-docs` trên host/port backend, ví dụ `http://localhost:3000/api-docs`; OpenAPI JSON tại `/api-docs/openapi.json`. Đăng nhập qua `POST /api/v1/auth/login` với username/password đã provision và header CSRF.
+2. Copy `data.accessToken`, chọn **Authorize → bearerAuth**, nhập token (không thêm chữ Bearer trong ô Swagger). Trong Postman chọn Bearer Token. Có thể import trực tiếp OpenAPI JSON để tạo đủ 15 operations của Auth + Rooms.
+3. `POST /api/v1/room-types`, body `{"code":"DLX","name":"Deluxe","maxAdults":2,"maxChildren":1,"basePrice":"900000.00"}`; thêm `X-CSRF-Protection: 1`. Lưu `data.id` thực tế.
+4. `POST /api/v1/rooms`, body `{"roomNumber":"301","floorNumber":3,"roomTypeId":"<ID-vua-tao>","physicalStatus":"ACTIVE","housekeepingStatus":"READY"}`; dùng cùng Bearer và CSRF.
+5. Thử GET `/api/v1/rooms?floorNumber=3&housekeepingStatus=READY&page=1&limit=20`, PATCH notes/status, DELETE room trước rồi DELETE type. Các bản ghi vẫn đọc được với `isActive:false`.
+6. Thử trùng code/roomNumber (409), hotelId trong body (422), token sai (401), tài khoản receptionist ghi (403), ID hotel khác (404). Không dùng ID mẫu nếu chưa tạo dữ liệu tương ứng.
+
+### Kiểm chứng và tệp Phase 2
+
+Test gồm HTTP với JWT/middleware/service thật và repository trong bộ nhớ; unit tests cho biên BIGINT/Decimal và ánh xạ lỗi transaction; MySQL tests cho dữ liệu thật, unique/FK ghép, rollback, phân trang/lọc, cách ly hotel và race tạo/kích hoạt phòng với vô hiệu hóa loại phòng. Auth regression được chạy cùng bộ test.
+
+Để chạy lại MySQL tests, dùng `TEST_DATABASE_URL` trỏ tới database local riêng có hậu tố `_test` như hướng dẫn kiểm thử phía trên. Không fallback sang `DATABASE_URL`; khi thiếu biến test, 14 MySQL tests bị skipped. Fixture dùng hotel/username ngẫu nhiên và cleanup chỉ dữ liệu do suite tạo, không reset/truncate/drop bảng. Role ADMIN/RECEPTIONIST được upsert và giữ lại trong database test. Database test trong lần kiểm chứng được giữ để có thể chạy lại.
+
+Tệp mới:
+
+- `prisma/migrations/20261014000000_room_management/migration.sql`.
+- `src/modules/room-types/room-type.{routes,controller,service,repository,schema,types}.ts` (6 tệp).
+- `src/modules/rooms/room.{routes,controller,service,repository,schema,types}.ts` (6 tệp).
+- `src/config/rooms.openapi.ts`, `src/database/room-transaction.ts`, `src/shared/validation/room-input.ts`.
+- `tests/room-helpers.ts`, `tests/rooms.http.test.ts`, `tests/rooms.unit.test.ts`, `tests/rooms.mysql.integration.test.ts`.
+
+Tệp sửa: `prisma/schema.prisma`, `src/app.ts`, `src/server.ts`, `src/routes/index.ts`, `src/config/cors.ts`, `src/config/swagger.ts`, `tests/auth.http.test.ts`, `tests/mysql.integration.test.ts`, `README.md`. Auth source, dependencies và lockfile không thay đổi. Các test Auth chỉ cập nhật dependency injection và assertion danh sách tài liệu/module theo Phase 2; vẫn giữ kiểm tra bảo mật cũ.
+
+Kết quả thực chạy ngày **14/10/2026**, Node **22.13.0**, MySQL **8.0.41**:
+
+| Kiểm tra                                               | Kết quả                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Prisma validate / generate                             | Đạt                                                                                                                     |
+| Migration trên database test riêng                     | Cả migration Auth và Rooms áp dụng thành công; chạy lại không có pending migration                                      |
+| Prisma diff: database test → schema                    | Không có khác biệt                                                                                                      |
+| `npm run typecheck` / `npm run lint` / `npm run build` | Đạt                                                                                                                     |
+| Vitest toàn bộ với `TEST_DATABASE_URL`                 | **110 passed, 0 skipped**, 6 suites; gồm 37 Auth/security cũ, 52 Room HTTP, 7 Room unit và 14 MySQL (4 Auth + 10 Rooms) |
+| Smoke bản build ESM                                    | Swagger UI và JSON HTTP 200, đủ 15 operations; Rooms/Room Types/Auth me không token trả 401                             |
+| Prettier cho toàn bộ tệp Phase 2 đã tạo/sửa            | Đạt                                                                                                                     |
+| `npm run format:check` toàn dự án                      | Chưa đạt do 7 tệp không sửa trong Phase 2: `package.json` và 6 YAML collection/request Postman Auth                     |
+
+Migration trên database ứng dụng và kiểm thử tải production chưa thực hiện. Không commit, push hoặc merge; nhánh làm việc là `feature/be-rooms`. Helper kiểm chứng tạm nằm trong `.tmp/` (gitignored), không chứa credentials; không thay `.env`.

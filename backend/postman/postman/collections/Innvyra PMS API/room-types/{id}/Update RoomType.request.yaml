@@ -1,0 +1,101 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Hotel comes only from the authenticated user. Other roles receive 403. POST/PATCH/DELETE require X-CSRF-Protection: 1. No hard delete and no reservation/stay records are modified. Sets isActive=false. Returns 409 while active rooms reference the type. Inactive room references and all history remain. Repeating succeeds."
+url: "{{baseUrl}}/room-types/:id"
+method: PATCH
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required for writes; browser Origin must be allowlisted.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Positive unsigned BIGINT, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "1"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "basePrice": "950000.00"
+    }
+  $type: |-
+    {
+      "description": "Partial update. isActive=false follows the same safeguards as DELETE. Prices affect future configuration only.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "pattern": "^[A-Z0-9][A-Z0-9_-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "maxAdults": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "maxChildren": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "basePrice": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,11})(\\.\\d{1,2})?$"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update RoomType.resources/examples
+order: 2000

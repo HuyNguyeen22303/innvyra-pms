@@ -1,0 +1,59 @@
+$kind: http-request
+description: ""
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection. Browser Origin must be allowlisted.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "username": "admin",
+      "password": "string"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "example": "admin"
+        },
+        "password": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "username",
+        "password"
+      ]
+    }
+settings: {}
+examples: ./.resources/Create a staff session.resources/examples
+order: 1000

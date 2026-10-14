@@ -16,6 +16,9 @@ model Hotel {
   name  String @db.VarChar(191)
   staff StaffUser[]
 
+  roomTypes RoomType[]
+  rooms     Room[]
+
   @@map("hotels")
 }
 
@@ -74,4 +77,67 @@ model RefreshToken {
   @@index([sessionId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+enum PhysicalStatus {
+  ACTIVE
+  OUT_OF_SERVICE
+  MAINTENANCE
+}
+
+enum HousekeepingStatus {
+  DIRTY
+  CLEANING
+  INSPECTION
+  READY
+}
+
+model RoomType {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId     BigInt   @map("hotel_id") @db.UnsignedBigInt
+  code        String   @db.VarChar(30)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  maxAdults   Int      @map("max_adults") @db.UnsignedSmallInt
+  maxChildren Int      @default(0) @map("max_children") @db.UnsignedSmallInt
+  basePrice   Decimal  @map("base_price") @db.Decimal(14, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  rooms       Room[]
+
+  // Composite reference enforces hotel isolation even for writes outside the API.
+  @@unique([hotelId, id])
+  @@unique([hotelId, code])
+  @@index([hotelId, isActive])
+  @@index([hotelId, name])
+  @@index([hotelId, basePrice])
+  @@index([hotelId, createdAt])
+  @@map("room_types")
+}
+
+model Room {
+  id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt             @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId         BigInt             @map("room_type_id") @db.UnsignedBigInt
+  roomNumber         String             @map("room_number") @db.VarChar(20)
+  floorNumber        Int                @map("floor_number") @db.SmallInt
+  physicalStatus     PhysicalStatus     @default(ACTIVE) @map("physical_status")
+  housekeepingStatus HousekeepingStatus @default(DIRTY) @map("housekeeping_status")
+  notes              String?            @db.Text
+  isActive           Boolean            @default(true) @map("is_active")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  roomType           RoomType           @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, roomNumber])
+  @@index([hotelId, roomTypeId])
+  @@index([hotelId, floorNumber])
+  @@index([hotelId, physicalStatus])
+  @@index([hotelId, housekeepingStatus])
+  @@index([hotelId, isActive])
+  @@index([hotelId, createdAt])
+  @@map("rooms")
 }

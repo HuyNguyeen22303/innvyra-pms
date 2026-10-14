@@ -5,6 +5,7 @@ import { createApp } from '../src/app.js';
 import { getDummyPasswordHash, hashPassword } from '../src/shared/utils/password.js';
 import { hashRefreshToken } from '../src/shared/utils/tokens.js';
 import { body, cookie, MemoryAuthRepository, testEnv, testPassword } from './helpers.js';
+import { memoryRooms } from './room-helpers.js';
 
 describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middleware)', () => {
   let passwordHash: string;
@@ -16,7 +17,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
   });
   beforeEach(() => {
     repository = new MemoryAuthRepository(passwordHash);
-    app = createApp(testEnv, repository);
+    app = createApp(testEnv, repository, memoryRooms().repositories);
   });
   const login = (username = 'admin', password = testPassword) =>
     request(app)
@@ -238,14 +239,22 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
     }
   });
   it('rate limits login with a consistent 429 response', async () => {
-    app = createApp({ ...testEnv, LOGIN_RATE_LIMIT_MAX: 1 }, repository);
+    app = createApp(
+      { ...testEnv, LOGIN_RATE_LIMIT_MAX: 1 },
+      repository,
+      memoryRooms().repositories,
+    );
     expect((await login('missing')).status).toBe(401);
     const limited = await login();
     expect(limited.status).toBe(429);
     expect(limited.body).toMatchObject({ error: { code: 'RATE_LIMITED' } });
   });
   it('sets secure cross-site cookies when configured', async () => {
-    app = createApp({ ...testEnv, COOKIE_SECURE: true, COOKIE_SAME_SITE: 'none' }, repository);
+    app = createApp(
+      { ...testEnv, COOKIE_SECURE: true, COOKIE_SAME_SITE: 'none' },
+      repository,
+      memoryRooms().repositories,
+    );
     const res = await login();
     expect(res.headers['set-cookie']?.[0]).toMatch(/Secure/);
     expect(res.headers['set-cookie']?.[0]).toMatch(/SameSite=None/);
@@ -263,10 +272,10 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
     const spec = await request(app).get('/api-docs/openapi.json');
     expect(spec.status).toBe(200);
     const document = spec.body as { paths: Record<string, unknown> };
-    expect(Object.keys(document.paths)).toHaveLength(5);
+    expect(Object.keys(document.paths).filter((path) => path.startsWith('/auth/'))).toHaveLength(5);
   });
   it('does not expose registration or unrelated modules', async () => {
     expect((await request(app).post('/api/v1/auth/register')).status).toBe(401);
-    expect((await request(app).get('/api/v1/rooms')).status).toBe(404);
+    expect((await request(app).get('/api/v1/reservations')).status).toBe(404);
   });
 });

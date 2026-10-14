@@ -1,7 +1,0 @@
-$kind: collection
-description: Staff authentication API. Set your own credentials locally. Login and refresh save accessToken. Use Postman's cookie jar for refresh tokens.
-variables:
-  baseUrl: http://localhost:3000/api/v1
-  username: admin
-  password: ""
-  accessToken: ""

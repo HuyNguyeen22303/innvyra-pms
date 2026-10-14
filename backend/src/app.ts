@@ -10,8 +10,12 @@ import { errorHandler, notFound } from './middlewares/error.middleware.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import type { AuthRepository } from './modules/auth/auth.types.js';
 import { apiRoutes } from './routes/index.js';
+import type { RoomTypeRepository } from './modules/room-types/room-type.types.js';
+import type { RoomRepository } from './modules/rooms/room.types.js';
 
-export function createApp(env: Env, repository: AuthRepository) {
+export type RoomRepositories = { roomTypes: RoomTypeRepository; rooms: RoomRepository };
+
+export function createApp(env: Env, repository: AuthRepository, rooms: RoomRepositories) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', env.TRUST_PROXY_HOPS);
@@ -39,7 +43,7 @@ export function createApp(env: Env, repository: AuthRepository) {
       swaggerOptions: { persistAuthorization: false, withCredentials: true },
     }),
   );
-  app.use('/api/v1', apiRoutes(new AuthService(repository, env), env));
+  app.use('/api/v1', apiRoutes(new AuthService(repository, env), env, rooms));
   app.use(notFound);
   app.use(errorHandler);
   return app;
