@@ -85,6 +85,16 @@ export function memoryRooms() {
       },
     },
     rooms: {
+      reservedPeak: async () => 0,
+      capacityAfterRemoval: async (hotelId, roomTypeId, excludeId) =>
+        [...records.values()].filter(
+          (room) =>
+            room.hotelId === hotelId &&
+            room.roomTypeId === roomTypeId &&
+            room.id !== excludeId &&
+            room.isActive &&
+            room.physicalStatus === 'ACTIVE',
+        ).length,
       withHotelLock: async (_hotelId, action) => action(repositories.rooms),
       findById: async (hotelId, id) =>
         records.get(id)?.hotelId === hotelId ? withType(records.get(id)!) : null,

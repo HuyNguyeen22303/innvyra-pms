@@ -1,3 +1,4 @@
+import { PrismaReservationRepository } from '../src/modules/reservations/reservation.repository.js';
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -82,6 +83,7 @@ describe.skipIf(!testUrl)(
           roomTypes: new PrismaRoomTypeRepository(prisma),
         },
         repository,
+        new PrismaReservationRepository(prisma),
       );
       token = (
         await new AuthService(auth, guestEnv).login({ username: code, password: testPassword })

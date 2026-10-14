@@ -2,7 +2,7 @@ import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { AppError } from '../shared/errors/app-error.js';
 
 // A single lock order for all room/type writes keeps validation and mutation atomic.
-// Reservation/stay integration must participate in this protocol before enabling bookings.
+// Reservations and Guests also acquire this hotel lock before reading or writing capacity.
 export async function roomTransaction<T>(
   prisma: PrismaClient,
   hotelId: bigint,

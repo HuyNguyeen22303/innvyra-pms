@@ -4,41 +4,41 @@
 
 ✅ Được phép. ❌ Không được phép. ✅* Được đọc dữ liệu tối thiểu. Quyền trong bảng vẫn chịu điều kiện tài khoản/phiên hợp lệ, phạm vi khách sạn, validation và quy tắc nghiệp vụ.
 
-| Role dùng trong API | Tên hiển thị |
-| --- | --- |
-| `ADMIN` | Quản trị viên |
-| `MANAGER` | Quản lý khách sạn |
-| `RECEPTIONIST` | Lễ tân |
-| `ACCOUNTANT` | Kế toán |
-| `HOUSEKEEPING` | Nhân viên buồng phòng |
-| `TECHNICIAN` | Nhân viên kỹ thuật |
+| Role dùng trong API | Tên hiển thị          |
+| ------------------- | --------------------- |
+| `ADMIN`             | Quản trị viên         |
+| `MANAGER`           | Quản lý khách sạn     |
+| `RECEPTIONIST`      | Lễ tân                |
+| `ACCOUNTANT`        | Kế toán               |
+| `HOUSEKEEPING`      | Nhân viên buồng phòng |
+| `TECHNICIAN`        | Nhân viên kỹ thuật    |
 
 ## Ma trận quyền
 
-| Chức năng / thao tác | ADMIN | MANAGER | RECEPTIONIST | ACCOUNTANT | HOUSEKEEPING | TECHNICIAN |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Đăng nhập / refresh token / đăng xuất | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Xem thông tin tài khoản đang đăng nhập | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Xem danh sách / chi tiết loại phòng | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Tạo loại phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Sửa loại phòng, giá cơ bản và sức chứa | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Vô hiệu hóa / kích hoạt lại loại phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Xem danh sách / chi tiết phòng | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Tạo phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Sửa thông tin phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Đổi trạng thái vận hành / dọn phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Vô hiệu hóa / kích hoạt lại phòng | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Xem danh sách / chi tiết Guest | ✅ | ✅ | ✅ | ✅* | ❌ | ❌ |
-| Tìm kiếm theo tên / phân trang / sắp xếp Guest | ✅ | ✅ | ✅ | ✅* | ❌ | ❌ |
-| Lọc Guest theo quốc tịch | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Xem điện thoại / email / quốc tịch Guest | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Xem ngày sinh / giấy tờ / địa chỉ / ghi chú Guest ở màn hình chi tiết | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Tạo Guest | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Sửa Guest | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Xóa mềm Guest | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Gọi endpoint kiểm tra quyền `/auth/admin-check` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Chức năng / thao tác                                                  | ADMIN | MANAGER | RECEPTIONIST | ACCOUNTANT | HOUSEKEEPING | TECHNICIAN |
+| --------------------------------------------------------------------- | :---: | :-----: | :----------: | :--------: | :----------: | :--------: |
+| Đăng nhập / refresh token / đăng xuất                                 |  ✅   |   ✅    |      ✅      |     ✅     |      ✅      |     ✅     |
+| Xem thông tin tài khoản đang đăng nhập                                |  ✅   |   ✅    |      ✅      |     ✅     |      ✅      |     ✅     |
+| Xem danh sách / chi tiết loại phòng                                   |  ✅   |   ✅    |      ✅      |     ✅     |      ✅      |     ✅     |
+| Tạo loại phòng                                                        |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Sửa loại phòng, giá cơ bản và sức chứa                                |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Vô hiệu hóa / kích hoạt lại loại phòng                                |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Xem danh sách / chi tiết phòng                                        |  ✅   |   ✅    |      ✅      |     ✅     |      ✅      |     ✅     |
+| Tạo phòng                                                             |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Sửa thông tin phòng                                                   |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Đổi trạng thái vận hành / dọn phòng                                   |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Vô hiệu hóa / kích hoạt lại phòng                                     |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Xem danh sách / chi tiết Guest                                        |  ✅   |   ✅    |      ✅      |    ✅*     |      ❌      |     ❌     |
+| Tìm kiếm theo tên / phân trang / sắp xếp Guest                        |  ✅   |   ✅    |      ✅      |    ✅*     |      ❌      |     ❌     |
+| Lọc Guest theo quốc tịch                                              |  ✅   |   ✅    |      ✅      |     ❌     |      ❌      |     ❌     |
+| Xem điện thoại / email / quốc tịch Guest                              |  ✅   |   ✅    |      ✅      |     ❌     |      ❌      |     ❌     |
+| Xem ngày sinh / giấy tờ / địa chỉ / ghi chú Guest ở màn hình chi tiết |  ✅   |   ✅    |      ✅      |     ❌     |      ❌      |     ❌     |
+| Tạo Guest                                                             |  ✅   |   ✅    |      ✅      |     ❌     |      ❌      |     ❌     |
+| Sửa Guest                                                             |  ✅   |   ✅    |      ✅      |     ❌     |      ❌      |     ❌     |
+| Xóa mềm Guest                                                         |  ✅   |   ✅    |      ❌      |     ❌     |      ❌      |     ❌     |
+| Gọi endpoint kiểm tra quyền `/auth/admin-check`                       |  ✅   |   ❌    |      ❌      |     ❌     |      ❌      |     ❌     |
 
-**✅* ACCOUNTANT chỉ nhận `id` và `fullName` của Guest**, cả ở danh sách lẫn chi tiết. Các field còn lại không được trả về, không phải chuỗi bị che. Kế toán vẫn tìm kiếm theo tên, phân trang và sắp xếp được, nhưng không được gửi filter `nationality`.
+_*✅* ACCOUNTANT chỉ nhận `id` và `fullName` của Guest_*, cả ở danh sách lẫn chi tiết. Các field còn lại không được trả về, không phải chuỗi bị che. Kế toán vẫn tìm kiếm theo tên, phân trang và sắp xếp được, nhưng không được gửi filter `nationality`.
 
 **HOUSEKEEPING và TECHNICIAN hiện chỉ đọc Rooms/Room Types.** Chưa cấp quyền PATCH trạng thái dọn phòng hay bảo trì cho hai role này. RECEPTIONIST cũng chưa được sửa Rooms/Room Types.
 
@@ -46,25 +46,29 @@
 
 Prefix chung: `/api/v1`.
 
-| Method | Path | Quyền |
-| --- | --- | --- |
-| POST | `/auth/login` | Tài khoản được cấp sẵn, còn active, đúng thông tin đăng nhập; cả 6 role |
-| POST | `/auth/refresh` | Refresh cookie/session hợp lệ; cả 6 role |
-| POST | `/auth/logout` | Đã xác thực; cả 6 role |
-| GET | `/auth/me` | Đã xác thực; cả 6 role |
-| GET | `/auth/admin-check` | ADMIN; endpoint kiểm tra quyền, không phải API quản lý nhân viên |
-| GET | `/room-types`, `/room-types/:id` | Cả 6 role |
-| POST | `/room-types` | ADMIN, MANAGER |
-| PATCH | `/room-types/:id` | ADMIN, MANAGER |
-| DELETE | `/room-types/:id` | ADMIN, MANAGER; vô hiệu hóa |
-| GET | `/rooms`, `/rooms/:id` | Cả 6 role |
-| POST | `/rooms` | ADMIN, MANAGER |
-| PATCH | `/rooms/:id` | ADMIN, MANAGER |
-| DELETE | `/rooms/:id` | ADMIN, MANAGER; vô hiệu hóa |
-| GET | `/guests`, `/guests/:id` | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT; dữ liệu theo role |
-| POST | `/guests` | ADMIN, MANAGER, RECEPTIONIST |
-| PATCH | `/guests/:id` | ADMIN, MANAGER, RECEPTIONIST |
-| DELETE | `/guests/:id` | ADMIN, MANAGER; xóa mềm |
+| Method | Path                                 | Quyền                                                                   |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------- |
+| POST   | `/auth/login`                        | Tài khoản được cấp sẵn, còn active, đúng thông tin đăng nhập; cả 6 role |
+| POST   | `/auth/refresh`                      | Refresh cookie/session hợp lệ; cả 6 role                                |
+| POST   | `/auth/logout`                       | Đã xác thực; cả 6 role                                                  |
+| GET    | `/auth/me`                           | Đã xác thực; cả 6 role                                                  |
+| GET    | `/auth/admin-check`                  | ADMIN; endpoint kiểm tra quyền, không phải API quản lý nhân viên        |
+| GET    | `/room-types`, `/room-types/:id`     | Cả 6 role                                                               |
+| POST   | `/room-types`                        | ADMIN, MANAGER                                                          |
+| PATCH  | `/room-types/:id`                    | ADMIN, MANAGER                                                          |
+| DELETE | `/room-types/:id`                    | ADMIN, MANAGER; vô hiệu hóa                                             |
+| GET    | `/rooms`, `/rooms/:id`               | Cả 6 role                                                               |
+| POST   | `/rooms`                             | ADMIN, MANAGER                                                          |
+| PATCH  | `/rooms/:id`                         | ADMIN, MANAGER                                                          |
+| DELETE | `/rooms/:id`                         | ADMIN, MANAGER; vô hiệu hóa                                             |
+| GET    | `/guests`, `/guests/:id`             | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT; dữ liệu theo role             |
+| POST   | `/guests`                            | ADMIN, MANAGER, RECEPTIONIST                                            |
+| PATCH  | `/guests/:id`                        | ADMIN, MANAGER, RECEPTIONIST                                            |
+| DELETE | `/guests/:id`                        | ADMIN, MANAGER; xóa mềm                                                 |
+| GET    | `/rooms/availability`                | ADMIN, MANAGER, RECEPTIONIST                                            |
+| GET    | `/reservations`, `/reservations/:id` | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT                                |
+| POST   | `/reservations`                      | ADMIN, MANAGER, RECEPTIONIST                                            |
+| POST   | `/reservations/:id/cancel`           | ADMIN, MANAGER, RECEPTIONIST                                            |
 
 ## Quy tắc hiển thị và thao tác dành cho FE
 
@@ -86,8 +90,10 @@ Các chức năng dưới đây chưa triển khai cho bất kỳ role nào, k�
 - Khôi phục Guest đã xóa mềm, xem danh sách Guest đã xóa hoặc xóa vĩnh viễn Guest.
 - Xem/quản lý audit log. Backend tự ghi audit khi tạo, sửa và xóa mềm Guest; chưa có endpoint đọc log.
 - Quản lý nhân viên/role qua CRUD API, đổi mật khẩu, đăng ký tài khoản công khai.
-- Reservation, check-in/check-out, Stay, Payment, loyalty và báo cáo nghiệp vụ tương ứng.
+- Sửa ngày/số lượng/loại phòng của Reservation, khôi phục đơn đã hủy, gán phòng vật lý, check-in/check-out, Stay, Payment, loyalty và báo cáo nghiệp vụ tương ứng.
 
-Tên role ACCOUNTANT/HOUSEKEEPING/TECHNICIAN không đồng nghĩa các module thanh toán, công việc buồng phòng hoặc lệnh bảo trì đã có API. Bảng này mô tả quyền thực tế của Phase 1–3.
+Tên role ACCOUNTANT/HOUSEKEEPING/TECHNICIAN không đồng nghĩa các module thanh toán, công việc buồng phòng hoặc lệnh bảo trì đã có API. Tài liệu này mô tả quyền thực tế của Phase 1–4.
+
+Reservation luôn dùng hotel/actor từ Auth; `adults` và `children` áp dụng cho từng phòng, `quantity` là số phòng. Frontend không gửi giá, hotelId, status hay roomId. Availability chỉ tham khảo; POST có thể trả 409 nếu phòng đã được người khác đặt. POST tạo/hủy cần header CSRF. Hủy lặp lại trả 200, giữ lý do/người hủy/thời gian đầu tiên. ACCOUNTANT chỉ đọc: booker có id/fullName, không nhận private notes/cancellation reason, không được dùng `guestSearch` của Reservation. HOUSEKEEPING/TECHNICIAN không truy cập Reservation. Xem [RESERVATIONS.md](RESERVATIONS.md).
 
 Nguồn đối chiếu: `src/modules/auth/auth.routes.ts`, `src/modules/room-types/room-type.routes.ts`, `src/modules/rooms/room.routes.ts`, `src/modules/guests/guest.routes.ts`, `guest.types.ts`, `guest.mapper.ts`, `guest.service.ts` và `src/routes/index.ts`. Tài liệu đầy đủ endpoint/schema tại `/api-docs/` và `/api-docs/openapi.json`.

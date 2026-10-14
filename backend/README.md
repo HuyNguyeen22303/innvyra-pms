@@ -1,6 +1,8 @@
-# Innvyra PMS — Authentication, RBAC, Rooms & Guests (Phases 1–3)
+# Innvyra PMS — Authentication, RBAC, Rooms, Guests & Reservations (Phases 1–4)
 
-Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 2 bổ sung quản lý loại phòng và phòng; Phase 3 bổ sung hồ sơ khách, chưa triển khai reservation/stay.
+Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8.0.16+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 4 bổ sung đặt nhiều phòng, availability theo đêm, snapshot giá và hủy đơn an toàn dưới concurrent requests; chưa triển khai Stay.
+
+**Bàn giao Phase 4:** xem [RESERVATIONS.md](RESERVATIONS.md) để biết thiết kế khóa/tồn phòng, API, migration, hướng dẫn Swagger/Postman, kiểm thử và giới hạn. Các mục kết quả Phase 1–3 bên dưới là ghi nhận lịch sử; OpenAPI hiện có 25 operations.
 
 ## Cấu trúc và trách nhiệm
 
@@ -99,15 +101,20 @@ CREATE DATABASE IF NOT EXISTS innvyra_pms
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Sau khi cấu hình `.env`:
+Sau khi cấu hình `backend/.env`, chạy từ thư mục `backend/` theo thứ tự sau. Chỉ chuyển sang lệnh tiếp theo khi lệnh hiện tại thành công:
 
 ```powershell
-npm run db:inspect
 npm run prisma:validate
+npm run prisma:generate
+npm run db:inspect
 npm run db:migrate
 npm run db:seed
-npm run prisma:generate
+npm run db:inspect
 ```
+
+**Bản clone mới phải generate trước khi inspect/migrate/seed.** Các script database import Prisma Client tại `src/generated/prisma`, nhưng thư mục này bị Git ignore. Chạy generate cuối cùng sẽ khiến các lệnh trước đó lỗi `ERR_MODULE_NOT_FOUND` / `Cannot find module .../generated/prisma/client.js` và chưa tạo bảng. Nếu đã gặp lỗi này, generate rồi chạy lại inspect → migrate → seed. `prisma:validate` chỉ kiểm tra schema, `prisma:generate` chỉ sinh client; `db:migrate` mới áp dụng SQL tạo bảng và `db:seed` chỉ thêm dữ liệu vào bảng đã có.
+
+Nếu migrate báo thành công nhưng công cụ quản lý database vẫn không thấy bảng, đối chiếu host, port và tên database đang mở với `DATABASE_URL` trong `backend/.env`, rồi refresh danh sách bảng. `db:inspect` chạy sau migration phải liệt kê các bảng đã tạo. Nếu migrate báo lỗi, xử lý lỗi đó trước khi seed.
 
 `db:inspect` chỉ đọc danh sách bảng và cấu trúc cột. `db:migrate` kiểm tra metadata trước khi gọi `prisma migrate deploy`; từ chối database có bảng nhưng chưa có `_prisma_migrations`. Không có lệnh reset; tài khoản demo chỉ được tạo khi chạy seed ngoài production.
 
@@ -253,6 +260,7 @@ npm run test
 Chuẩn bị database test riêng `innvyra_pms_test` và cấu hình URL bằng tài khoản giới hạn quyền:
 
 ```powershell
+npm run prisma:generate
 $env:TEST_DATABASE_URL = 'mysql://TEST_USER:TEST_PASSWORD@127.0.0.1:3306/innvyra_pms_test'
 $previousDb = $env:DATABASE_URL
 try {
@@ -337,7 +345,7 @@ DELETE và PATCH `isActive:false` sử dụng cùng service. Loại phòng còn 
 
 Mọi thao tác ghi room/type khóa dòng hotel bằng parameterized `SELECT ... FOR UPDATE` trong transaction ReadCommitted, rồi kiểm tra và ghi trong transaction đó. Thứ tự khóa chung ngăn race tạo/kích hoạt lại phòng với việc vô hiệu hóa loại phòng; unique constraints vẫn là lớp bảo vệ cuối cùng. Đây là khóa ở mức hotel, phù hợp số lượng thao tác quản trị hiện tại; cần đo tải nếu triển khai nhiều thao tác ghi đồng thời.
 
-**Giới hạn tích hợp Reservation:** hiện chưa có bảng reservation/stay/room-block, nên module không xác định có khách hoặc booking tương lai. Chưa có thuật toán giả hoặc dữ liệu occupancy. Trước khi triển khai Reservation, phải bổ sung kiểm tra booking/stay trong transaction cho đổi loại phòng, vô hiệu hóa và thay trạng thái vận hành có ảnh hưởng; luồng reservation cũng phải tuân theo cùng cơ chế khóa. API hiện luôn giữ bản ghi và không xóa lịch sử. Capacity/price/status validation thuộc API; các quy tắc service như loại phòng active không thay thế được bằng FK, nên không ghi trực tiếp bỏ qua service.
+**Tích hợp Reservation từ Phase 4:** đổi loại phòng, vô hiệu hóa hoặc đổi physical status làm giảm tồn sẽ kiểm tra số phòng đã đặt của từng đêm từ hôm nay theo timezone hotel, trong cùng transaction khóa hotel. Nếu tồn sau thay đổi thấp hơn nhu cầu thì trả `ROOM_INVENTORY_CONFLICT` (409). Luồng đặt/hủy phòng dùng cùng khóa. Chưa có Stay, gán phòng vật lý hoặc lịch bảo trì; không ghi trực tiếp bỏ qua service. Xem [RESERVATIONS.md](RESERVATIONS.md).
 
 ### Migration và thử trên Swagger/Postman
 
@@ -346,10 +354,10 @@ Migration đã được chạy thử trên MySQL **8.0.41**, database riêng `in
 Sau khi review SQL, từ `backend/` với `.env` trỏ đến database phát triển cần cập nhật:
 
 ```powershell
-npm run db:inspect
 npm run prisma:validate
-npm run db:migrate
 npm run prisma:generate
+npm run db:inspect
+npm run db:migrate
 npm run dev
 ```
 
@@ -462,10 +470,10 @@ Không commit khóa và không tạo lại mỗi lần khởi động. Nếu ch�
 Sau khi review SQL và cấu hình đúng database, từ `backend/`:
 
 ```powershell
-npm run db:inspect
 npm run prisma:validate
-npm run db:migrate
 npm run prisma:generate
+npm run db:inspect
+npm run db:migrate
 npm run dev
 ```
 

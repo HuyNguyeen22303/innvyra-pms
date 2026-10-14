@@ -11,15 +11,21 @@ import type { GuestRepository } from '../modules/guests/guest.types.js';
 import { GuestService } from '../modules/guests/guest.service.js';
 import { GuestCrypto } from '../modules/guests/guest.crypto.js';
 import { guestRoutes } from '../modules/guests/guest.routes.js';
+import type { ReservationRepository } from '../modules/reservations/reservation.types.js';
+import { ReservationService } from '../modules/reservations/reservation.service.js';
+import { reservationRoutes } from '../modules/reservations/reservation.routes.js';
 
 export function apiRoutes(
   service: AuthService,
   env: Env,
   rooms: RoomRepositories,
   guests: GuestRepository,
+  reservations: ReservationRepository,
 ) {
   const router = Router();
   router.use('/auth', authRoutes(service, env));
+  // Register the literal availability route before rooms/:id.
+  router.use(reservationRoutes(new ReservationService(reservations, env), service, env));
   router.use('/room-types', roomTypeRoutes(new RoomTypeService(rooms.roomTypes), service, env));
   router.use('/rooms', roomRoutes(new RoomService(rooms.rooms), service, env));
   router.use('/guests', guestRoutes(new GuestService(guests, new GuestCrypto(env)), service, env));
