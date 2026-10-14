@@ -21,6 +21,7 @@ export const detailInclude = {
   rooms: {
     orderBy: { id: 'asc' },
     include: {
+      stay: { select: { id: true, status: true, actualCheckinAt: true, actualCheckoutAt: true } },
       roomType: { select: { id: true, name: true, code: true } },
       nights: { orderBy: { stayDate: 'asc' } },
     },

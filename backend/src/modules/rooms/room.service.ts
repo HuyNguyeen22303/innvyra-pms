@@ -38,6 +38,17 @@ export class RoomService {
     return this.repository.withHotelLock(hotelId, async (repository) => {
       const record = await repository.findById(hotelId, id);
       if (!record) throw missing();
+      if (
+        record.occupancy &&
+        (input.isActive === false ||
+          (input.physicalStatus !== undefined && input.physicalStatus !== 'ACTIVE') ||
+          (input.roomTypeId !== undefined && BigInt(input.roomTypeId) !== record.roomTypeId))
+      )
+        throw new AppError(
+          409,
+          'ROOM_OCCUPIED',
+          'Transfer or check out the active stay before changing room operation or type',
+        );
       if (input.roomTypeId !== undefined || input.isActive === true)
         await this.requireActiveType(
           repository,

@@ -1,8 +1,8 @@
-# Innvyra PMS — Authentication, RBAC, Rooms, Guests & Reservations (Phases 1–4)
+# Innvyra PMS — Authentication, RBAC, Rooms, Guests, Reservations & Stays (Phases 1–5)
 
-Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8.0.16+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 4 bổ sung đặt nhiều phòng, availability theo đêm, snapshot giá và hủy đơn an toàn dưới concurrent requests; chưa triển khai Stay.
+Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8.0.16+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 4 bổ sung đặt nhiều phòng, availability theo đêm, snapshot giá và hủy đơn. Phase 5 bổ sung check-in, physical checkout, chuyển phòng cùng loại, occupancy và lịch sử với transaction/concurrency control.
 
-**Bàn giao Phase 4:** xem [RESERVATIONS.md](RESERVATIONS.md) để biết thiết kế khóa/tồn phòng, API, migration, hướng dẫn Swagger/Postman, kiểm thử và giới hạn. Các mục kết quả Phase 1–3 bên dưới là ghi nhận lịch sử; OpenAPI hiện có 25 operations.
+**Bàn giao Phase 5:** xem [STAYS.md](STAYS.md) cho thiết kế, file manifest, API, migration, Swagger/Postman, kiểm thử và giới hạn. Reservation được mô tả trong [RESERVATIONS.md](RESERVATIONS.md). Các mục kết quả Phase 1–3 bên dưới là ghi nhận lịch sử; OpenAPI hiện có 30 operations.
 
 ## Cấu trúc và trách nhiệm
 
@@ -345,7 +345,7 @@ DELETE và PATCH `isActive:false` sử dụng cùng service. Loại phòng còn 
 
 Mọi thao tác ghi room/type khóa dòng hotel bằng parameterized `SELECT ... FOR UPDATE` trong transaction ReadCommitted, rồi kiểm tra và ghi trong transaction đó. Thứ tự khóa chung ngăn race tạo/kích hoạt lại phòng với việc vô hiệu hóa loại phòng; unique constraints vẫn là lớp bảo vệ cuối cùng. Đây là khóa ở mức hotel, phù hợp số lượng thao tác quản trị hiện tại; cần đo tải nếu triển khai nhiều thao tác ghi đồng thời.
 
-**Tích hợp Reservation từ Phase 4:** đổi loại phòng, vô hiệu hóa hoặc đổi physical status làm giảm tồn sẽ kiểm tra số phòng đã đặt của từng đêm từ hôm nay theo timezone hotel, trong cùng transaction khóa hotel. Nếu tồn sau thay đổi thấp hơn nhu cầu thì trả `ROOM_INVENTORY_CONFLICT` (409). Luồng đặt/hủy phòng dùng cùng khóa. Chưa có Stay, gán phòng vật lý hoặc lịch bảo trì; không ghi trực tiếp bỏ qua service. Xem [RESERVATIONS.md](RESERVATIONS.md).
+**Tích hợp Reservation và Stay:** đổi loại phòng, vô hiệu hóa hoặc đổi physical status làm giảm tồn sẽ kiểm tra số phòng đã đặt của từng đêm từ hôm nay theo timezone hotel, trong cùng transaction khóa hotel. Nếu tồn sau thay đổi thấp hơn nhu cầu thì trả `ROOM_INVENTORY_CONFLICT` (409). Phòng có occupancy phải được chuyển khách/checkout trước khi thay đổi operation/type (`ROOM_OCCUPIED`). Luồng đặt/hủy và Stay dùng cùng khóa; chưa có lịch bảo trì. Không ghi trực tiếp bỏ qua service. Xem [RESERVATIONS.md](RESERVATIONS.md) và [STAYS.md](STAYS.md).
 
 ### Migration và thử trên Swagger/Postman
 
@@ -405,20 +405,20 @@ Migration trên database ứng dụng và kiểm thử tải production chưa th
 
 ### API và quyền truy cập
 
-| Method | Endpoint | Semantics |
-| --- | --- | --- |
-| GET | `/api/v1/guests` | Danh sách có phân trang; không trả ngày sinh, giấy tờ, địa chỉ hoặc notes |
-| GET | `/api/v1/guests/:id` | Chi tiết trong hotel hiện hành; projection theo role |
-| POST | `/api/v1/guests` | Tạo hồ sơ, HTTP 201; cảnh báo khả năng trùng, không tự gộp |
-| PATCH | `/api/v1/guests/:id` | Chỉ cập nhật field gửi lên; `null` xóa giá trị nullable |
+| Method | Endpoint             | Semantics                                                                        |
+| ------ | -------------------- | -------------------------------------------------------------------------------- |
+| GET    | `/api/v1/guests`     | Danh sách có phân trang; không trả ngày sinh, giấy tờ, địa chỉ hoặc notes        |
+| GET    | `/api/v1/guests/:id` | Chi tiết trong hotel hiện hành; projection theo role                             |
+| POST   | `/api/v1/guests`     | Tạo hồ sơ, HTTP 201; cảnh báo khả năng trùng, không tự gộp                       |
+| PATCH  | `/api/v1/guests/:id` | Chỉ cập nhật field gửi lên; `null` xóa giá trị nullable                          |
 | DELETE | `/api/v1/guests/:id` | Đặt `deletedAt`, HTTP 200 với `{ id, deletedAt }`; giữ bản ghi và mọi tham chiếu |
 
-| Role | Đọc | Tạo / sửa | Xóa mềm |
-| --- | --- | --- | --- |
-| ADMIN, MANAGER | Danh sách cơ bản; chi tiết đầy đủ phục vụ vận hành | Có | Có |
-| RECEPTIONIST | Như ADMIN/MANAGER | Có | Không |
-| ACCOUNTANT | Chỉ `id`, `fullName` | Không | Không |
-| HOUSEKEEPING, TECHNICIAN | Không | Không | Không |
+| Role                     | Đọc                                                | Tạo / sửa | Xóa mềm |
+| ------------------------ | -------------------------------------------------- | --------- | ------- |
+| ADMIN, MANAGER           | Danh sách cơ bản; chi tiết đầy đủ phục vụ vận hành | Có        | Có      |
+| RECEPTIONIST             | Như ADMIN/MANAGER                                  | Có        | Không   |
+| ACCOUNTANT               | Chỉ `id`, `fullName`                               | Không     | Không   |
+| HOUSEKEEPING, TECHNICIAN | Không                                              | Không     | Không   |
 
 Tái sử dụng JWT/session, `authenticate`, `authorizeRoles`, CSRF, Zod và error middleware hiện có. Service kiểm tra quyền thêm một lần để bảo vệ lời gọi nội bộ. Quyền tập trung trong `guestPermissions`, dễ chuyển sang permission-level sau này. Tất cả role, kể cả ADMIN, chỉ truy cập `hotelId` hiện tại do Auth đọc từ MySQL; không nhận hotel, actor hoặc role từ body/query. ID không tồn tại, đã xóa và khác hotel đều trả cùng 404 `GUEST_NOT_FOUND`. Các response của route Guest đặt `Cache-Control: no-store`.
 
@@ -514,15 +514,19 @@ Working tree ban đầu đã có thay đổi tại `.env.example`, `README.md`, 
 
 Kết quả chạy ngày **14/10/2026** trên MySQL **8.0.41**:
 
-| Kiểm tra | Kết quả |
-| --- | --- |
-| Prisma validate / generate | Đạt |
-| Migration Auth + Rooms + Guest trên `innvyra_pms_guests_phase3_test` | Đạt; Prisma diff không có khác biệt với schema |
-| `npm run typecheck` | Đạt |
-| `npm run lint` | Đạt, không warning |
-| `npm run build` | Đạt |
-| Vitest không cấu hình MySQL | 163 passed, 25 skipped |
-| Vitest với MySQL riêng, gồm Auth/Rooms regression | **188 passed, 0 skipped, 9 suites** |
-| Smoke bản build ESM | Swagger UI/JSON HTTP 200; đủ 20 operations; mọi schema reference nội bộ hợp lệ; Guest/Auth/Rooms yêu cầu token |
+| Kiểm tra                                                             | Kết quả                                                                                                        |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Prisma validate / generate                                           | Đạt                                                                                                            |
+| Migration Auth + Rooms + Guest trên `innvyra_pms_guests_phase3_test` | Đạt; Prisma diff không có khác biệt với schema                                                                 |
+| `npm run typecheck`                                                  | Đạt                                                                                                            |
+| `npm run lint`                                                       | Đạt, không warning                                                                                             |
+| `npm run build`                                                      | Đạt                                                                                                            |
+| Vitest không cấu hình MySQL                                          | 163 passed, 25 skipped                                                                                         |
+| Vitest với MySQL riêng, gồm Auth/Rooms regression                    | **188 passed, 0 skipped, 9 suites**                                                                            |
+| Smoke bản build ESM                                                  | Swagger UI/JSON HTTP 200; đủ 20 operations; mọi schema reference nội bộ hợp lệ; Guest/Auth/Rooms yêu cầu token |
 
 Windows sandbox gây EPERM khi Vitest resolve đường dẫn và chặn kết nối MySQL; các bước đó đã chạy lại ngoài sandbox sau khi được cấp quyền. Lệnh kiểm chứng dùng helper gitignored trong `.tmp/`, không ghi credentials vào tệp. Chưa triển khai production, chạy tải hoặc rotation khóa; migration database ứng dụng và cấu hình khóa là các bước vận hành còn lại.
+
+## Stay Management (Phase 5)
+
+Check-in, check-out, same-type room transfer, occupancy, RBAC, migrations and verification: [STAYS.md](STAYS.md). Swagger includes the Stays tag and all five endpoints. Run npm run test:mysql for the complete suite against a separate local test database.

@@ -14,6 +14,9 @@ import { guestRoutes } from '../modules/guests/guest.routes.js';
 import type { ReservationRepository } from '../modules/reservations/reservation.types.js';
 import { ReservationService } from '../modules/reservations/reservation.service.js';
 import { reservationRoutes } from '../modules/reservations/reservation.routes.js';
+import { stayRoutes } from '../modules/stays/stay.routes.js';
+import { StayService } from '../modules/stays/stay.service.js';
+import type { StayRepository } from '../modules/stays/stay.types.js';
 
 export function apiRoutes(
   service: AuthService,
@@ -21,9 +24,11 @@ export function apiRoutes(
   rooms: RoomRepositories,
   guests: GuestRepository,
   reservations: ReservationRepository,
+  stays?: StayRepository,
 ) {
   const router = Router();
   router.use('/auth', authRoutes(service, env));
+  if (stays) router.use(stayRoutes(new StayService(stays), service, env));
   // Register the literal availability route before rooms/:id.
   router.use(reservationRoutes(new ReservationService(reservations, env), service, env));
   router.use('/room-types', roomTypeRoutes(new RoomTypeService(rooms.roomTypes), service, env));

@@ -14,6 +14,7 @@ import type { RoomTypeRepository } from './modules/room-types/room-type.types.js
 import type { RoomRepository } from './modules/rooms/room.types.js';
 import type { GuestRepository } from './modules/guests/guest.types.js';
 import type { ReservationRepository } from './modules/reservations/reservation.types.js';
+import type { StayRepository } from './modules/stays/stay.types.js';
 
 export type RoomRepositories = { roomTypes: RoomTypeRepository; rooms: RoomRepository };
 
@@ -23,6 +24,7 @@ export function createApp(
   rooms: RoomRepositories,
   guests: GuestRepository,
   reservations: ReservationRepository,
+  stays?: StayRepository,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -51,7 +53,10 @@ export function createApp(
       swaggerOptions: { persistAuthorization: false, withCredentials: true },
     }),
   );
-  app.use('/api/v1', apiRoutes(new AuthService(repository, env), env, rooms, guests, reservations));
+  app.use(
+    '/api/v1',
+    apiRoutes(new AuthService(repository, env), env, rooms, guests, reservations, stays),
+  );
   app.use(notFound);
   app.use(errorHandler);
   return app;

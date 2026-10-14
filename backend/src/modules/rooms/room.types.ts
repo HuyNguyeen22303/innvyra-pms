@@ -8,11 +8,15 @@ export type UpdateRoomInput = z.infer<typeof roomUpdateBody>;
 export type RoomQuery = z.infer<typeof roomListQuery>;
 export type RoomRepository = Pick<PrismaRoomRepository, keyof PrismaRoomRepository>;
 export type RoomOperations = Omit<RoomRepository, 'withHotelLock'>;
-export type RoomRecord = Room & { roomType: Pick<RoomType, 'id' | 'code' | 'name' | 'isActive'> };
-export const roomView = (record: RoomRecord) => ({
+export type RoomRecord = Room & {
+  roomType: Pick<RoomType, 'id' | 'code' | 'name' | 'isActive'>;
+  occupancy: { roomId: bigint } | null;
+};
+export const roomView = ({ occupancy, ...record }: RoomRecord) => ({
   ...record,
   id: record.id.toString(),
   hotelId: record.hotelId.toString(),
   roomTypeId: record.roomTypeId.toString(),
   roomType: { ...record.roomType, id: record.roomType.id.toString() },
+  occupancyStatus: occupancy ? 'OCCUPIED' : 'VACANT',
 });

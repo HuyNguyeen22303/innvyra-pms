@@ -71,6 +71,7 @@ const detailExample = {
     id: roomId,
     roomType: { id: '2', code: 'DELUXE', name: 'Deluxe' },
     roomId: null,
+    stay: null,
     adults: 2,
     children: 0,
     nights: ['2026-10-20', '2026-10-21'].map((stayDate) => ({
@@ -147,7 +148,17 @@ export const reservationSchemas = {
             roomId: {
               ...id,
               nullable: true,
-              description: 'Always null in Phase 4; physical assignment unsupported.',
+              description: 'Current or last physical assignment, managed only by Stay workflows.',
+            },
+            stay: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                id,
+                status: { type: 'string', enum: ['CHECKED_IN', 'CHECKED_OUT'] },
+                actualCheckinAt: timestamp,
+                actualCheckoutAt: { ...timestamp, nullable: true },
+              },
             },
             adults: { type: 'integer' },
             children: { type: 'integer' },
@@ -366,7 +377,7 @@ export const reservationPaths = {
       ...operation(
         'Cancel a confirmed reservation',
         write,
-        'CONFIRMED -> CANCELLED only. Repeating cancellation returns 200 with original audit information retained. CHECKED_IN/CHECKED_OUT/NO_SHOW return 409. Inventory is released exactly once in the same transaction. Nightly snapshots and financial transactions are retained; refund policy belongs to Payments/Billing. No arbitrary status/date/room PATCH endpoint.',
+        'CONFIRMED -> CANCELLED only. Repeating cancellation returns 200 with original audit information retained. PARTIALLY_CHECKED_IN/CHECKED_IN/CHECKED_OUT/NO_SHOW return 409. Inventory is released exactly once in the same transaction. Physical checkout never releases booked nights. Nightly snapshots are retained; refund policy belongs to Payments/Billing. No arbitrary status/date/room PATCH endpoint.',
       ),
       parameters: [idParam, csrf],
       requestBody: {

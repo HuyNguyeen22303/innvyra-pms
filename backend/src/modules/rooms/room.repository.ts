@@ -4,6 +4,7 @@ import { futureReservedPeak } from '../reservations/inventory.repository.js';
 import type { CreateRoomInput, UpdateRoomInput, RoomQuery, RoomOperations } from './room.types.js';
 
 const include = {
+  occupancy: { select: { roomId: true } },
   roomType: { select: { id: true, code: true, name: true, isActive: true } },
 } as const;
 export class PrismaRoomRepository {

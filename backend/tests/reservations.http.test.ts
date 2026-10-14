@@ -232,11 +232,11 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
     expect((await cancel(created.body.data.id)).status).toBe(404);
     expect((await get()).body.data.items).toEqual([]);
   });
-  it('serves Swagger UI/JSON with 25 operations, complete reservation contracts and valid refs', async () => {
+  it('serves Swagger UI/JSON with 30 operations, complete reservation contracts and valid refs', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = (await request(app).get('/api-docs/openapi.json')).body;
     expect(Object.values(spec.paths).flatMap((path) => Object.keys(path as object))).toHaveLength(
-      25,
+      30,
     );
     const visit = (value: unknown) => {
       if (!value || typeof value !== 'object') return;

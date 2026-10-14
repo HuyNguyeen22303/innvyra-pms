@@ -7,7 +7,7 @@ Triển khai trên `feature/be-reservations`, tạo từ `develop` khi working t
 Migration: `prisma/migrations/20261014020000_reservation_management/migration.sql`.
 
 - `Reservation`: hotel, mã xác nhận unique, booker Guest, DATE nhận/trả, status, booking source, Decimal tổng tiền, currency, notes, người tạo và thông tin hủy.
-- `ReservationRoom`: một bản ghi cho mỗi đơn vị phòng; hotel, reservation, room type, số người mỗi phòng; `roomId` nullable và luôn null trong Phase 4.
+- `ReservationRoom`: một bản ghi cho mỗi đơn vị phòng; hotel, reservation, room type, số người mỗi phòng; `roomId` nullable khi tạo, được Stay workflows cập nhật từ Phase 5.
 - `ReservationRoomNight`: một bản ghi mỗi đêm, DATE và Decimal giá snapshot; unique `(reservationRoomId, stayDate)`.
 - Thêm `Hotel.timezone`, mặc định `Asia/Ho_Chi_Minh`. Khách sạn ngoài múi giờ này cần được cấu hình IANA timezone đúng trước khi dùng. Chưa có API quản trị timezone; timezone không đến từ request đặt phòng. Giá trị không hợp lệ trả 503.
 - Thêm unique `(hotelId,id)` cho StaffUser và `(hotelId,roomTypeId,id)` cho Room để hỗ trợ FK ghép. FK ghép chặn booker/staff/type/room khác hotel; phòng gán trong tương lai phải cùng type. Các references giao dịch dùng RESTRICT.
@@ -17,7 +17,7 @@ Migration chỉ thêm bảng/cột/index/constraints; không drop/reset/xóa d�
 
 ## Tồn phòng và chống overbooking
 
-Không có bảng counter `room_type_inventory`. Các `ReservationRoomNight` của đơn `CONFIRMED` hoặc `CHECKED_IN` là nguồn tính số phòng đã giữ theo từng đêm. Không cần khởi tạo trước các ngày chưa có booking: ngày không có bản ghi giữ phòng có reserved = 0.
+Không có bảng counter `room_type_inventory`. Từ Phase 5, các `ReservationRoomNight` của đơn `CONFIRMED`, `PARTIALLY_CHECKED_IN`, `CHECKED_IN`, `CHECKED_OUT` là nguồn tính số phòng đã giữ theo từng đêm. Checkout vật lý không giải phóng inventory, kể cả trả sớm. Không cần khởi tạo trước các ngày chưa có booking: ngày không có bản ghi giữ phòng có reserved = 0. Xem [STAYS.md](STAYS.md).
 
 Capacity = số Room cùng hotel/type có `isActive=true` và `physicalStatus=ACTIVE`. Không dùng housekeeping readiness để giới hạn booking tương lai. Với mỗi đêm trong `[checkInDate,checkOutDate)`, available = capacity − reserved. API trả availableRooms = minimum của các đêm (clamp về 0 để không trả số âm nếu có dữ liệu vận hành bất thường).
 
@@ -37,7 +37,7 @@ Availability GET dùng transaction snapshot `RepeatableRead`, không giữ chỗ
 
 - Create xác nhận ngay: `CONFIRMED`. Không có PENDING giữ phòng vô hạn.
 - Chuyển trạng thái duy nhất: `CONFIRMED → CANCELLED`. Hủy lại trả 200, giữ nguyên reason/cancelledAt/cancelledBy đầu tiên. Chuyển status trong cùng transaction khiến mọi đêm ngừng giữ tồn đúng một lần, vẫn giữ đầy đủ price snapshots.
-- `CHECKED_IN`, `CHECKED_OUT`, `NO_SHOW` dành cho workflow sau; API hủy thường từ chối cả ba. Không có PATCH status, khôi phục, sửa ngày hoặc thay phòng.
+- Phase 5 suy ra `PARTIALLY_CHECKED_IN`, `CHECKED_IN`, `CHECKED_OUT` từ từng Stay. API hủy từ chối cả ba và `NO_SHOW`; chưa có workflow đánh dấu no-show. Không có PATCH status, khôi phục hoặc sửa ngày; physical assignment/transfer thuộc Stay.
 - Không sửa/xóa payment, deposit hay thực hiện refund. Payments/Billing sau này xử lý chính sách hoàn tiền riêng.
 - Giá MVP dùng `RoomType.basePrice` tại thời điểm xác nhận. Mỗi unit/đêm lưu Decimal(14,2); tổng chỉ tính bằng Prisma.Decimal. Giá hiện tại thay đổi không ảnh hưởng đơn cũ. Không tính VAT/phụ thu/giảm giá. Giới hạn tổng tiền `999999999999.99`.
 - DATE nhập/xuất dạng `YYYY-MM-DD`, lưu `@db.Date` qua UTC midnight để không dịch ngày. Ngày check-out không phải một đêm. Kiểm tra quá khứ dựa trên hotel.timezone.
@@ -64,7 +64,7 @@ List query: page/limit; search theo confirmation code; guestId; guestSearch theo
 
 Booking sources: DIRECT, PHONE, EMAIL, WALK_IN, AGENT, OTHER. Đây là nhãn ghi nhận nội bộ, không tích hợp OTA.
 
-Lỗi: 401 JWT/session; 403 role/CSRF; 404 scoped resource; 409 insufficient availability, inactive type, cancellation state hoặc transaction conflict; 422 validation/date/capacity/limits; 500 lỗi đã làm sạch; 503 timezone cấu hình sai. Thêm tag Reservations và 5 operations; tổng OpenAPI 25 operations, giữ Auth/Rooms/Guests.
+Lỗi: 401 JWT/session; 403 role/CSRF; 404 scoped resource; 409 insufficient availability, inactive type, cancellation state hoặc transaction conflict; 422 validation/date/capacity/limits; 500 lỗi đã làm sạch; 503 timezone cấu hình sai. Reservations có 5 operations; từ Phase 5 tổng OpenAPI là 30 operations, gồm Stays và giữ Auth/Rooms/Guests.
 
 ## Áp dụng migration và chạy
 
@@ -164,8 +164,8 @@ Prisma Client được generate trong `src/generated/prisma` (gitignored). Depen
 ## Giới hạn vận hành
 
 - Khóa hotel nối tiếp mọi mutation của một hotel, phù hợp MVP; chưa benchmark throughput/load. Availability hiện query theo type; cần đo tải trước khi mở rộng số lượng type/horizon.
-- Capacity phản ánh trạng thái vật lý hiện tại cho toàn bộ kỳ tương lai. Chưa có khoảng bảo trì theo lịch, room blocks, Stay, OTA, rate plan/daily rate hay room assignment. `roomId` không nhận từ client; FK chuẩn bị quan hệ, **không thay thế thuật toán chống chồng lịch** cho module gán phòng sau này.
+- Capacity phản ánh trạng thái vật lý hiện tại cho toàn bộ kỳ tương lai. Chưa có khoảng bảo trì theo lịch, room blocks, OTA hoặc rate plan/daily rate. Reservation creation không nhận `roomId`; Stay workflows từ Phase 5 quản lý physical assignment và kiểm tra chồng lịch trong transaction.
 - Chưa có idempotency key cho POST create: retry sau mất response có thể tạo một đơn mới nếu còn capacity. Client nên tra mã/đơn đã tạo trước khi gửi lại; cancellation đã idempotent.
-- Không có API sửa ngày/phòng/khôi phục đơn. Các workflow này phải điều chỉnh tồn nguyên tử trong phase riêng. CHECKED_IN/CHECKED_OUT/NO_SHOW chưa có endpoint chuyển trạng thái.
+- Không có API sửa ngày/loại phòng/khôi phục đơn. Các workflow này phải điều chỉnh tồn nguyên tử trong phase riêng. Stay workflows từ Phase 5 suy ra trạng thái nhận/trả theo từng phòng; chưa có workflow NO_SHOW.
 - Việc đổi timezone, sửa DB trực tiếp hoặc thêm writer bỏ qua khóa có thể phá giả định tồn. Quản trị production cần giới hạn quyền ghi DB và dùng workflow có kiểm tra.
 - Migration ứng dụng và kiểm thử tải là bước vận hành còn lại; không tự áp dụng migration lên database đang dùng.

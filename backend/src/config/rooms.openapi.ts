@@ -59,6 +59,7 @@ const roomExample = {
   floorNumber: 3,
   physicalStatus: 'ACTIVE',
   housekeepingStatus: 'READY',
+  occupancyStatus: 'VACANT',
   notes: 'Near elevator',
   isActive: true,
   roomType: { id: '3', code: 'DLX', name: 'Deluxe', isActive: true },
@@ -111,6 +112,12 @@ export const roomSchemas = {
     type: 'object',
     required: Object.keys(roomExample),
     properties: {
+      occupancyStatus: {
+        type: 'string',
+        enum: ['OCCUPIED', 'VACANT'],
+        description:
+          'Derived from current room occupancy; independent of housekeeping and future availability.',
+      },
       ...schema(roomCreateBody).properties,
       id,
       hotelId: id,

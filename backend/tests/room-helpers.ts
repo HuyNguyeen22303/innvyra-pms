@@ -11,6 +11,7 @@ export function memoryRooms() {
     const type = types.get(room.roomTypeId)!;
     return {
       ...room,
+      occupancy: null,
       roomType: { id: type.id, code: type.code, name: type.name, isActive: type.isActive },
     };
   };

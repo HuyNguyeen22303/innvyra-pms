@@ -46,29 +46,32 @@ _*✅* ACCOUNTANT chỉ nhận `id` và `fullName` của Guest_*, cả ở danh 
 
 Prefix chung: `/api/v1`.
 
-| Method | Path                                 | Quyền                                                                   |
-| ------ | ------------------------------------ | ----------------------------------------------------------------------- |
-| POST   | `/auth/login`                        | Tài khoản được cấp sẵn, còn active, đúng thông tin đăng nhập; cả 6 role |
-| POST   | `/auth/refresh`                      | Refresh cookie/session hợp lệ; cả 6 role                                |
-| POST   | `/auth/logout`                       | Đã xác thực; cả 6 role                                                  |
-| GET    | `/auth/me`                           | Đã xác thực; cả 6 role                                                  |
-| GET    | `/auth/admin-check`                  | ADMIN; endpoint kiểm tra quyền, không phải API quản lý nhân viên        |
-| GET    | `/room-types`, `/room-types/:id`     | Cả 6 role                                                               |
-| POST   | `/room-types`                        | ADMIN, MANAGER                                                          |
-| PATCH  | `/room-types/:id`                    | ADMIN, MANAGER                                                          |
-| DELETE | `/room-types/:id`                    | ADMIN, MANAGER; vô hiệu hóa                                             |
-| GET    | `/rooms`, `/rooms/:id`               | Cả 6 role                                                               |
-| POST   | `/rooms`                             | ADMIN, MANAGER                                                          |
-| PATCH  | `/rooms/:id`                         | ADMIN, MANAGER                                                          |
-| DELETE | `/rooms/:id`                         | ADMIN, MANAGER; vô hiệu hóa                                             |
-| GET    | `/guests`, `/guests/:id`             | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT; dữ liệu theo role             |
-| POST   | `/guests`                            | ADMIN, MANAGER, RECEPTIONIST                                            |
-| PATCH  | `/guests/:id`                        | ADMIN, MANAGER, RECEPTIONIST                                            |
-| DELETE | `/guests/:id`                        | ADMIN, MANAGER; xóa mềm                                                 |
-| GET    | `/rooms/availability`                | ADMIN, MANAGER, RECEPTIONIST                                            |
-| GET    | `/reservations`, `/reservations/:id` | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT                                |
-| POST   | `/reservations`                      | ADMIN, MANAGER, RECEPTIONIST                                            |
-| POST   | `/reservations/:id/cancel`           | ADMIN, MANAGER, RECEPTIONIST                                            |
+| Method | Path                                                             | Quyền                                                                      |
+| ------ | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| POST   | `/auth/login`                                                    | Tài khoản được cấp sẵn, còn active, đúng thông tin đăng nhập; cả 6 role    |
+| POST   | `/auth/refresh`                                                  | Refresh cookie/session hợp lệ; cả 6 role                                   |
+| POST   | `/auth/logout`                                                   | Đã xác thực; cả 6 role                                                     |
+| GET    | `/auth/me`                                                       | Đã xác thực; cả 6 role                                                     |
+| GET    | `/auth/admin-check`                                              | ADMIN; endpoint kiểm tra quyền, không phải API quản lý nhân viên           |
+| GET    | `/room-types`, `/room-types/:id`                                 | Cả 6 role                                                                  |
+| POST   | `/room-types`                                                    | ADMIN, MANAGER                                                             |
+| PATCH  | `/room-types/:id`                                                | ADMIN, MANAGER                                                             |
+| DELETE | `/room-types/:id`                                                | ADMIN, MANAGER; vô hiệu hóa                                                |
+| GET    | `/rooms`, `/rooms/:id`                                           | Cả 6 role                                                                  |
+| POST   | `/rooms`                                                         | ADMIN, MANAGER                                                             |
+| PATCH  | `/rooms/:id`                                                     | ADMIN, MANAGER                                                             |
+| DELETE | `/rooms/:id`                                                     | ADMIN, MANAGER; vô hiệu hóa                                                |
+| GET    | `/guests`, `/guests/:id`                                         | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT; dữ liệu theo role                |
+| POST   | `/guests`                                                        | ADMIN, MANAGER, RECEPTIONIST                                               |
+| PATCH  | `/guests/:id`                                                    | ADMIN, MANAGER, RECEPTIONIST                                               |
+| DELETE | `/guests/:id`                                                    | ADMIN, MANAGER; xóa mềm                                                    |
+| GET    | `/rooms/availability`                                            | ADMIN, MANAGER, RECEPTIONIST                                               |
+| GET    | `/reservations`, `/reservations/:id`                             | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT                                   |
+| POST   | `/reservations`                                                  | ADMIN, MANAGER, RECEPTIONIST                                               |
+| POST   | `/reservations/:id/cancel`                                       | ADMIN, MANAGER, RECEPTIONIST                                               |
+| GET    | `/stays`, `/stays/:id`                                           | ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT; projection tối thiểu cho kế toán |
+| POST   | `/reservations/:reservationId/rooms/:reservationRoomId/check-in` | ADMIN, MANAGER, RECEPTIONIST                                               |
+| POST   | `/stays/:id/check-out`, `/stays/:id/transfers`                   | ADMIN, MANAGER, RECEPTIONIST                                               |
 
 ## Quy tắc hiển thị và thao tác dành cho FE
 
@@ -90,9 +93,11 @@ Các chức năng dưới đây chưa triển khai cho bất kỳ role nào, k�
 - Khôi phục Guest đã xóa mềm, xem danh sách Guest đã xóa hoặc xóa vĩnh viễn Guest.
 - Xem/quản lý audit log. Backend tự ghi audit khi tạo, sửa và xóa mềm Guest; chưa có endpoint đọc log.
 - Quản lý nhân viên/role qua CRUD API, đổi mật khẩu, đăng ký tài khoản công khai.
-- Sửa ngày/số lượng/loại phòng của Reservation, khôi phục đơn đã hủy, gán phòng vật lý, check-in/check-out, Stay, Payment, loyalty và báo cáo nghiệp vụ tương ứng.
+- Sửa ngày/số lượng/loại phòng của Reservation, khôi phục đơn đã hủy, Payment, loyalty và báo cáo nghiệp vụ tương ứng.
 
-Tên role ACCOUNTANT/HOUSEKEEPING/TECHNICIAN không đồng nghĩa các module thanh toán, công việc buồng phòng hoặc lệnh bảo trì đã có API. Tài liệu này mô tả quyền thực tế của Phase 1–4.
+Tên role ACCOUNTANT/HOUSEKEEPING/TECHNICIAN không đồng nghĩa các module thanh toán, công việc buồng phòng hoặc lệnh bảo trì đã có API. Tài liệu này mô tả quyền thực tế của Phase 1–5.
+
+Stay: HOUSEKEEPING/TECHNICIAN không xem hoặc ghi Stay; chỉ xem occupancyStatus ở Rooms theo quyền hiện có. ACCOUNTANT không nhận guest/staff/notes/transfer history của Stay. POST Stay cần CSRF; timestamps và nhân viên do server ghi. Check-in dùng room ID nội bộ, đúng ngày đến theo hotel timezone. Checkout là kết thúc lưu trú vật lý, không thể hiển thị “đã thanh toán”. Xem [STAYS.md](STAYS.md).
 
 Reservation luôn dùng hotel/actor từ Auth; `adults` và `children` áp dụng cho từng phòng, `quantity` là số phòng. Frontend không gửi giá, hotelId, status hay roomId. Availability chỉ tham khảo; POST có thể trả 409 nếu phòng đã được người khác đặt. POST tạo/hủy cần header CSRF. Hủy lặp lại trả 200, giữ lý do/người hủy/thời gian đầu tiên. ACCOUNTANT chỉ đọc: booker có id/fullName, không nhận private notes/cancellation reason, không được dùng `guestSearch` của Reservation. HOUSEKEEPING/TECHNICIAN không truy cập Reservation. Xem [RESERVATIONS.md](RESERVATIONS.md).
 

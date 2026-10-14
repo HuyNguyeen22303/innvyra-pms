@@ -35,20 +35,23 @@ model Role {
 }
 
 model StaffUser {
-  id                    BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId               BigInt        @map("hotel_id") @db.UnsignedBigInt
-  roleId                BigInt        @map("role_id") @db.UnsignedBigInt
-  fullName              String        @map("full_name") @db.VarChar(191)
-  username              String        @unique @db.VarChar(64)
-  email                 String?       @unique @db.VarChar(191)
-  passwordHash          String        @map("password_hash") @db.VarChar(255)
-  isActive              Boolean       @default(true) @map("is_active")
-  createdAt             DateTime      @default(now()) @map("created_at") @db.DateTime(3)
-  hotel                 Hotel         @relation(fields: [hotelId], references: [id], onDelete: Restrict)
-  role                  Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  id                    BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId               BigInt         @map("hotel_id") @db.UnsignedBigInt
+  roleId                BigInt         @map("role_id") @db.UnsignedBigInt
+  fullName              String         @map("full_name") @db.VarChar(191)
+  username              String         @unique @db.VarChar(64)
+  email                 String?        @unique @db.VarChar(191)
+  passwordHash          String         @map("password_hash") @db.VarChar(255)
+  isActive              Boolean        @default(true) @map("is_active")
+  createdAt             DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  hotel                 Hotel          @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  role                  Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
   sessions              AuthSession[]
-  createdReservations   Reservation[] @relation("ReservationCreator")
-  cancelledReservations Reservation[] @relation("ReservationCanceller")
+  createdReservations   Reservation[]  @relation("ReservationCreator")
+  cancelledReservations Reservation[]  @relation("ReservationCanceller")
+  checkedInStays        Stay[]         @relation("StayCheckinStaff")
+  checkedOutStays       Stay[]         @relation("StayCheckoutStaff")
+  roomTransfers         RoomTransfer[]
 
   @@unique([hotelId, id])
   @@index([hotelId])
@@ -139,6 +142,10 @@ model Room {
   hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
   roomType           RoomType           @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
   reservationRooms   ReservationRoom[]
+  stays              Stay[]
+  occupancy          RoomOccupancy?
+  transfersFrom      RoomTransfer[]     @relation("TransferFromRoom")
+  transfersTo        RoomTransfer[]     @relation("TransferToRoom")
 
   @@unique([hotelId, roomTypeId, id])
   @@unique([hotelId, roomNumber])
@@ -198,14 +205,14 @@ model Guest {
   @@map("guests")
 }
 
-// Phase 4 only creates CONFIRMED and transitions CONFIRMED -> CANCELLED.
-// Other states are reserved for explicit Stay / no-show workflows, never client writes.
+// Stay transitions are server-derived from individual reservation rooms.
 enum ReservationStatus {
   CONFIRMED
   CANCELLED
   CHECKED_IN
   CHECKED_OUT
   NO_SHOW
+  PARTIALLY_CHECKED_IN
 }
 
 model Reservation {
@@ -247,7 +254,7 @@ model ReservationRoom {
   hotelId       BigInt                 @map("hotel_id") @db.UnsignedBigInt
   reservationId BigInt                 @map("reservation_id") @db.UnsignedBigInt
   roomTypeId    BigInt                 @map("room_type_id") @db.UnsignedBigInt
-  // Always null in Phase 4; physical assignment needs a separate conflict-safe workflow.
+  // Current (or last, after checkout) assignment. Stay workflows own this field.
   roomId        BigInt?                @map("room_id") @db.UnsignedBigInt
   adults        Int                    @db.UnsignedSmallInt
   children      Int                    @default(0) @db.UnsignedSmallInt
@@ -257,7 +264,10 @@ model ReservationRoom {
   roomType      RoomType               @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
   room          Room?                  @relation(fields: [hotelId, roomTypeId, roomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
   nights        ReservationRoomNight[]
+  stay          Stay?
 
+  @@unique([hotelId, roomTypeId, id])
+  @@index([hotelId, roomId])
   @@index([hotelId, roomTypeId, reservationId])
   @@map("reservation_rooms")
 }
@@ -288,4 +298,73 @@ model GuestAuditLog {
 
   @@index([hotelId, guestId, createdAt])
   @@map("guest_audit_logs")
+}
+
+enum StayStatus {
+  CHECKED_IN
+  CHECKED_OUT
+}
+
+model Stay {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId           BigInt          @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId        BigInt          @map("room_type_id") @db.UnsignedBigInt
+  reservationRoomId BigInt          @unique @map("reservation_room_id") @db.UnsignedBigInt
+  currentRoomId     BigInt          @map("current_room_id") @db.UnsignedBigInt
+  status            StayStatus      @default(CHECKED_IN)
+  actualCheckinAt   DateTime        @map("actual_checkin_at") @db.DateTime(3)
+  actualCheckoutAt  DateTime?       @map("actual_checkout_at") @db.DateTime(3)
+  checkinStaffId    BigInt          @map("checkin_staff_id") @db.UnsignedBigInt
+  checkoutStaffId   BigInt?         @map("checkout_staff_id") @db.UnsignedBigInt
+  checkinNotes      String?         @map("checkin_notes") @db.VarChar(2000)
+  checkoutNotes     String?         @map("checkout_notes") @db.VarChar(2000)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.DateTime(3)
+  reservationRoom   ReservationRoom @relation(fields: [hotelId, roomTypeId, reservationRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  currentRoom       Room            @relation(fields: [hotelId, roomTypeId, currentRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  checkinStaff      StaffUser       @relation("StayCheckinStaff", fields: [hotelId, checkinStaffId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  checkoutStaff     StaffUser?      @relation("StayCheckoutStaff", fields: [hotelId, checkoutStaffId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  occupancy         RoomOccupancy?
+  transfers         RoomTransfer[]
+
+  @@unique([hotelId, roomTypeId, id])
+  @@unique([hotelId, roomTypeId, reservationRoomId])
+  @@index([hotelId, status, actualCheckinAt])
+  @@index([hotelId, actualCheckoutAt])
+  @@map("stays")
+}
+
+// Only current occupancy is deleted on checkout; Stay and transfers are retained.
+model RoomOccupancy {
+  roomId     BigInt   @id @map("room_id") @db.UnsignedBigInt
+  stayId     BigInt   @unique @map("stay_id") @db.UnsignedBigInt
+  hotelId    BigInt   @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId BigInt   @map("room_type_id") @db.UnsignedBigInt
+  occupiedAt DateTime @map("occupied_at") @db.DateTime(3)
+  room       Room     @relation(fields: [hotelId, roomTypeId, roomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  stay       Stay     @relation(fields: [hotelId, roomTypeId, stayId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, roomTypeId, roomId])
+  @@unique([hotelId, roomTypeId, stayId])
+  @@map("room_occupancies")
+}
+
+model RoomTransfer {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt    @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId    BigInt    @map("room_type_id") @db.UnsignedBigInt
+  stayId        BigInt    @map("stay_id") @db.UnsignedBigInt
+  fromRoomId    BigInt    @map("from_room_id") @db.UnsignedBigInt
+  toRoomId      BigInt    @map("to_room_id") @db.UnsignedBigInt
+  transferredAt DateTime  @map("transferred_at") @db.DateTime(3)
+  transferredBy BigInt    @map("transferred_by") @db.UnsignedBigInt
+  reason        String    @db.VarChar(2000)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  stay          Stay      @relation(fields: [hotelId, roomTypeId, stayId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  fromRoom      Room      @relation("TransferFromRoom", fields: [hotelId, roomTypeId, fromRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  toRoom        Room      @relation("TransferToRoom", fields: [hotelId, roomTypeId, toRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  staff         StaffUser @relation(fields: [hotelId, transferredBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, stayId, transferredAt])
+  @@map("room_transfers")
 }

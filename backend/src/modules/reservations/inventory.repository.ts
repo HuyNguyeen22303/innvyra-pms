@@ -3,7 +3,13 @@ import { asDate, hotelToday } from './reservation.dates.js';
 
 // Night rows are the inventory ledger. Only these states consume capacity.
 // All decisions that change capacity or occupancy hold the hotel row lock first.
-export const inventoryStatuses = ['CONFIRMED', 'CHECKED_IN'] as const;
+// Physical checkout (including early departure) never releases booked nights.
+export const inventoryStatuses = [
+  'CONFIRMED',
+  'PARTIALLY_CHECKED_IN',
+  'CHECKED_IN',
+  'CHECKED_OUT',
+] as const;
 export function reservedNights(
   db: Prisma.TransactionClient,
   hotelId: bigint,
