@@ -1,3 +1,4 @@
+import { memoryReservations } from './reservation-helpers.js';
 import request from 'supertest';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
@@ -26,7 +27,13 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
   beforeEach(async () => {
     auth = new MemoryAuthRepository(passwordHash);
     store = memoryGuests();
-    app = createApp(guestEnv, auth, memoryRooms().repositories, store.repository);
+    app = createApp(
+      guestEnv,
+      auth,
+      memoryRooms().repositories,
+      store.repository,
+      memoryReservations().repository,
+    );
     const login = await new AuthService(auth, guestEnv).login({
       username: 'admin',
       password: testPassword,
@@ -310,7 +317,13 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
   });
   it('fails closed without keys while allowing a minimal profile', async () => {
     const env = { ...guestEnv, GUEST_ENCRYPTION_KEY: undefined, GUEST_HASH_KEY: undefined };
-    app = createApp(env, auth, memoryRooms().repositories, store.repository);
+    app = createApp(
+      env,
+      auth,
+      memoryRooms().repositories,
+      store.repository,
+      memoryReservations().repository,
+    );
     expect((await post({ fullName: 'Minimal no documents' })).status).toBe(201);
     const size = store.records.size;
     expect((await post(guestInput)).status).toBe(503);
@@ -336,11 +349,11 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
       log.mockRestore();
     }
   });
-  it('documents all 20 operations, role projections, warnings and soft delete', async () => {
+  it('documents all 25 operations, role projections, warnings and soft delete', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = (await request(app).get('/api-docs/openapi.json')).body;
     expect(Object.values(spec.paths).flatMap((value) => Object.keys(value as object))).toHaveLength(
-      20,
+      25,
     );
     expect(spec.tags).toContainEqual({ name: 'Guests' });
     for (const path of ['/guests', '/guests/{id}'])

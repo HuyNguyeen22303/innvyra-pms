@@ -1,3 +1,4 @@
+import { memoryReservations } from './reservation-helpers.js';
 import request from 'supertest';
 import { memoryGuests } from './guest-helpers.js';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -18,7 +19,13 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
   });
   beforeEach(() => {
     repository = new MemoryAuthRepository(passwordHash);
-    app = createApp(testEnv, repository, memoryRooms().repositories, memoryGuests().repository);
+    app = createApp(
+      testEnv,
+      repository,
+      memoryRooms().repositories,
+      memoryGuests().repository,
+      memoryReservations().repository,
+    );
   });
   const login = (username = 'admin', password = testPassword) =>
     request(app)
@@ -245,6 +252,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
       repository,
       memoryRooms().repositories,
       memoryGuests().repository,
+      memoryReservations().repository,
     );
     expect((await login('missing')).status).toBe(401);
     const limited = await login();
@@ -257,6 +265,7 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
       repository,
       memoryRooms().repositories,
       memoryGuests().repository,
+      memoryReservations().repository,
     );
     const res = await login();
     expect(res.headers['set-cookie']?.[0]).toMatch(/Secure/);
@@ -277,8 +286,8 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
     const document = spec.body as { paths: Record<string, unknown> };
     expect(Object.keys(document.paths).filter((path) => path.startsWith('/auth/'))).toHaveLength(5);
   });
-  it('does not expose registration or unrelated modules', async () => {
+  it('does not expose registration and protects reservations', async () => {
     expect((await request(app).post('/api/v1/auth/register')).status).toBe(401);
-    expect((await request(app).get('/api/v1/reservations')).status).toBe(404);
+    expect((await request(app).get('/api/v1/reservations')).status).toBe(401);
   });
 });

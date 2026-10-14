@@ -183,7 +183,7 @@ function operations(name: 'RoomType' | 'Room', tag: string, query: z.ZodType, ex
   const deactivation =
     name === 'RoomType'
       ? 'Sets isActive=false. Returns 409 while active rooms reference the type. Inactive room references and all history remain. Repeating succeeds.'
-      : 'Sets isActive=false and retains the record and references. Repeating succeeds. Physical/housekeeping status is unchanged. Reservation/stay conflict checks are deferred until those tables and workflows exist in a later phase.';
+      : 'Sets isActive=false and retains the record and references. Repeating succeeds. Physical/housekeeping status is unchanged. Changes reducing sellable capacity (deactivation, room type reassignment or physical unavailability) return ROOM_INVENTORY_CONFLICT (409) if any current/future night would fall below confirmed/checked-in reservation demand. Uses the same hotel lock as booking/cancellation. Stay and physical room assignment workflows are not implemented.';
   return {
     collection: {
       get: {

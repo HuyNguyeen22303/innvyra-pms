@@ -1,3 +1,4 @@
+import { memoryReservations } from './reservation-helpers.js';
 import request from 'supertest';
 import { memoryGuests } from './guest-helpers.js';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -35,7 +36,13 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
     auth = new MemoryAuthRepository(passwordHash);
     hotelId = auth.users.get('admin')!.hotelId;
     store = memoryRooms();
-    app = createApp(testEnv, auth, store.repositories, memoryGuests().repository);
+    app = createApp(
+      testEnv,
+      auth,
+      store.repositories,
+      memoryGuests().repository,
+      memoryReservations().repository,
+    );
     token = (
       await new AuthService(auth, testEnv).login({ username: 'admin', password: testPassword })
     ).data.accessToken;
@@ -407,7 +414,7 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
       paths: Record<string, Record<string, unknown>>;
       components: { schemas: Record<string, unknown> };
     };
-    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(20);
+    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(25);
     const text = JSON.stringify(spec);
     for (const match of text.matchAll(/"\$ref":"#\/components\/schemas\/([^"]+)"/g))
       expect(spec.components.schemas).toHaveProperty(match[1]!);

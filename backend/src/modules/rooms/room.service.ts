@@ -48,8 +48,22 @@ export class RoomService {
         const existing = await repository.findByNumber(hotelId, input.roomNumber);
         if (existing && existing.id !== id) throw duplicate();
       }
-      // No booking/stay tables exist in Phase 2. Never delete or modify historical data.
-      // Add reservation conflict checks in this transaction when that module is introduced.
+      const removesCapacity =
+        record.isActive &&
+        record.physicalStatus === 'ACTIVE' &&
+        (input.isActive === false ||
+          (input.physicalStatus !== undefined && input.physicalStatus !== 'ACTIVE') ||
+          (input.roomTypeId !== undefined && BigInt(input.roomTypeId) !== record.roomTypeId));
+      if (
+        removesCapacity &&
+        (await repository.capacityAfterRemoval(hotelId, record.roomTypeId, id)) <
+          (await repository.reservedPeak(hotelId, record.roomTypeId))
+      )
+        throw new AppError(
+          409,
+          'ROOM_INVENTORY_CONFLICT',
+          'Room change would reduce capacity below existing reservations',
+        );
       return roomView(await repository.update(hotelId, id, input));
     });
   }

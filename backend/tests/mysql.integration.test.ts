@@ -1,3 +1,4 @@
+import { PrismaReservationRepository } from '../src/modules/reservations/reservation.repository.js';
 import 'dotenv/config';
 import { PrismaGuestRepository } from '../src/modules/guests/guest.repository.js';
 import { randomUUID } from 'node:crypto';
@@ -73,6 +74,7 @@ describe.skipIf(!testUrl)('MySQL integration (dedicated local database)', () => 
         rooms: new PrismaRoomRepository(prisma),
       },
       new PrismaGuestRepository(prisma),
+      new PrismaReservationRepository(prisma),
     );
   });
   afterAll(async () => {

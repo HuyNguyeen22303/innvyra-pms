@@ -11,54 +11,59 @@ datasource db {
 }
 
 model Hotel {
-  id    BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  code  String @unique @db.VarChar(50)
-  name  String @db.VarChar(191)
-  staff StaffUser[]
+  id       BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  code     String      @unique @db.VarChar(50)
+  name     String      @db.VarChar(191)
+  timezone String      @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  staff    StaffUser[]
 
-  roomTypes RoomType[]
-  rooms     Room[]
-  guests    Guest[]
+  roomTypes    RoomType[]
+  rooms        Room[]
+  guests       Guest[]
+  reservations Reservation[]
 
   @@map("hotels")
 }
 
 model Role {
-  id    BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  code  String @unique @db.VarChar(32)
-  name  String @db.VarChar(100)
+  id    BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  code  String      @unique @db.VarChar(32)
+  name  String      @db.VarChar(100)
   staff StaffUser[]
 
   @@map("roles")
 }
 
 model StaffUser {
-  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId      BigInt   @map("hotel_id") @db.UnsignedBigInt
-  roleId       BigInt   @map("role_id") @db.UnsignedBigInt
-  fullName     String   @map("full_name") @db.VarChar(191)
-  username     String   @unique @db.VarChar(64)
-  email        String?  @unique @db.VarChar(191)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  hotel        Hotel    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
-  role         Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  sessions     AuthSession[]
+  id                    BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId               BigInt        @map("hotel_id") @db.UnsignedBigInt
+  roleId                BigInt        @map("role_id") @db.UnsignedBigInt
+  fullName              String        @map("full_name") @db.VarChar(191)
+  username              String        @unique @db.VarChar(64)
+  email                 String?       @unique @db.VarChar(191)
+  passwordHash          String        @map("password_hash") @db.VarChar(255)
+  isActive              Boolean       @default(true) @map("is_active")
+  createdAt             DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  hotel                 Hotel         @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  role                  Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  sessions              AuthSession[]
+  createdReservations   Reservation[] @relation("ReservationCreator")
+  cancelledReservations Reservation[] @relation("ReservationCanceller")
 
+  @@unique([hotelId, id])
   @@index([hotelId])
   @@index([roleId])
   @@map("staff_users")
 }
 
 model AuthSession {
-  id            String   @id @db.Char(36)
-  staffUserId   BigInt   @map("staff_user_id") @db.UnsignedBigInt
-  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  expiresAt     DateTime @map("expires_at") @db.DateTime(3)
-  revokedAt     DateTime? @map("revoked_at") @db.DateTime(3)
-  revokedReason String?  @map("revoked_reason") @db.VarChar(32)
-  staffUser     StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+  id            String         @id @db.Char(36)
+  staffUserId   BigInt         @map("staff_user_id") @db.UnsignedBigInt
+  createdAt     DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt     DateTime       @map("expires_at") @db.DateTime(3)
+  revokedAt     DateTime?      @map("revoked_at") @db.DateTime(3)
+  revokedReason String?        @map("revoked_reason") @db.VarChar(32)
+  staffUser     StaffUser      @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
   refreshTokens RefreshToken[]
 
   @@index([staffUserId, revokedAt])
@@ -67,12 +72,12 @@ model AuthSession {
 }
 
 model RefreshToken {
-  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  sessionId String   @map("session_id") @db.Char(36)
-  tokenHash String   @unique @map("token_hash") @db.Char(64)
-  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  expiresAt DateTime @map("expires_at") @db.DateTime(3)
-  usedAt    DateTime? @map("used_at") @db.DateTime(3)
+  id        BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  sessionId String      @map("session_id") @db.Char(36)
+  tokenHash String      @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt DateTime    @map("expires_at") @db.DateTime(3)
+  usedAt    DateTime?   @map("used_at") @db.DateTime(3)
   session   AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
@@ -94,19 +99,20 @@ enum HousekeepingStatus {
 }
 
 model RoomType {
-  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId     BigInt   @map("hotel_id") @db.UnsignedBigInt
-  code        String   @db.VarChar(30)
-  name        String   @db.VarChar(100)
-  description String?  @db.Text
-  maxAdults   Int      @map("max_adults") @db.UnsignedSmallInt
-  maxChildren Int      @default(0) @map("max_children") @db.UnsignedSmallInt
-  basePrice   Decimal  @map("base_price") @db.Decimal(14, 2)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
-  rooms       Room[]
+  id               BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId          BigInt            @map("hotel_id") @db.UnsignedBigInt
+  code             String            @db.VarChar(30)
+  name             String            @db.VarChar(100)
+  description      String?           @db.Text
+  maxAdults        Int               @map("max_adults") @db.UnsignedSmallInt
+  maxChildren      Int               @default(0) @map("max_children") @db.UnsignedSmallInt
+  basePrice        Decimal           @map("base_price") @db.Decimal(14, 2)
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel            Hotel             @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  rooms            Room[]
+  reservationRooms ReservationRoom[]
 
   // Composite reference enforces hotel isolation even for writes outside the API.
   @@unique([hotelId, id])
@@ -132,7 +138,9 @@ model Room {
   updatedAt          DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
   hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
   roomType           RoomType           @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  reservationRooms   ReservationRoom[]
 
+  @@unique([hotelId, roomTypeId, id])
   @@unique([hotelId, roomNumber])
   @@index([hotelId, roomTypeId])
   @@index([hotelId, floorNumber])
@@ -176,6 +184,7 @@ model Guest {
   deletedAt                DateTime?          @map("deleted_at") @db.DateTime(3)
   hotel                    Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
   auditLogs                GuestAuditLog[]
+  reservations             Reservation[]
 
   // Future reservations/stay guests should use this composite reference with RESTRICT.
   // Contact details and document hashes deliberately are NOT unique.
@@ -187,6 +196,83 @@ model Guest {
   @@index([hotelId, documentNumberHash])
   @@index([hotelId, nationality])
   @@map("guests")
+}
+
+// Phase 4 only creates CONFIRMED and transitions CONFIRMED -> CANCELLED.
+// Other states are reserved for explicit Stay / no-show workflows, never client writes.
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+  CHECKED_IN
+  CHECKED_OUT
+  NO_SHOW
+}
+
+model Reservation {
+  id                 BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt            @map("hotel_id") @db.UnsignedBigInt
+  confirmationCode   String            @unique @map("confirmation_code") @db.VarChar(32)
+  bookerGuestId      BigInt            @map("booker_guest_id") @db.UnsignedBigInt
+  checkInDate        DateTime          @map("check_in_date") @db.Date
+  checkOutDate       DateTime          @map("check_out_date") @db.Date
+  status             ReservationStatus @default(CONFIRMED)
+  bookingSource      String            @default("DIRECT") @map("booking_source") @db.VarChar(32)
+  totalAmount        Decimal           @map("total_amount") @db.Decimal(14, 2)
+  currency           String            @default("VND") @db.Char(3)
+  notes              String?           @db.Text
+  cancellationReason String?           @map("cancellation_reason") @db.Text
+  cancelledAt        DateTime?         @map("cancelled_at") @db.DateTime(3)
+  cancelledBy        BigInt?           @map("cancelled_by") @db.UnsignedBigInt
+  createdBy          BigInt            @map("created_by") @db.UnsignedBigInt
+  createdAt          DateTime          @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel              Hotel             @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  bookerGuest        Guest             @relation(fields: [hotelId, bookerGuestId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator            StaffUser         @relation("ReservationCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  canceller          StaffUser?        @relation("ReservationCanceller", fields: [hotelId, cancelledBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  rooms              ReservationRoom[]
+
+  @@unique([hotelId, id])
+  @@index([hotelId, status, checkInDate, checkOutDate])
+  @@index([hotelId, bookerGuestId])
+  @@index([hotelId, checkInDate])
+  @@index([hotelId, checkOutDate])
+  @@index([hotelId, bookingSource])
+  @@index([hotelId, createdAt])
+  @@map("reservations")
+}
+
+model ReservationRoom {
+  id            BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt                 @map("hotel_id") @db.UnsignedBigInt
+  reservationId BigInt                 @map("reservation_id") @db.UnsignedBigInt
+  roomTypeId    BigInt                 @map("room_type_id") @db.UnsignedBigInt
+  // Always null in Phase 4; physical assignment needs a separate conflict-safe workflow.
+  roomId        BigInt?                @map("room_id") @db.UnsignedBigInt
+  adults        Int                    @db.UnsignedSmallInt
+  children      Int                    @default(0) @db.UnsignedSmallInt
+  createdAt     DateTime               @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime               @updatedAt @map("updated_at") @db.DateTime(3)
+  reservation   Reservation            @relation(fields: [hotelId, reservationId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  roomType      RoomType               @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  room          Room?                  @relation(fields: [hotelId, roomTypeId, roomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  nights        ReservationRoomNight[]
+
+  @@index([hotelId, roomTypeId, reservationId])
+  @@map("reservation_rooms")
+}
+
+model ReservationRoomNight {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  reservationRoomId BigInt          @map("reservation_room_id") @db.UnsignedBigInt
+  stayDate          DateTime        @map("stay_date") @db.Date
+  nightlyRate       Decimal         @map("nightly_rate") @db.Decimal(14, 2)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.DateTime(3)
+  reservationRoom   ReservationRoom @relation(fields: [reservationRoomId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationRoomId, stayDate])
+  @@index([stayDate, reservationRoomId])
+  @@map("reservation_room_nights")
 }
 
 model GuestAuditLog {
