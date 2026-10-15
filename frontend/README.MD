@@ -42,7 +42,9 @@ frontend/
 │   ├── api/                # Tầng gọi API qua Axios
 │   │   ├── axiosClient.ts  # Axios instance + CSRF header + 401 refresh interceptor
 │   │   ├── auth.api.ts     # Các hàm gọi API xác thực (/auth/login, /auth/me,...)
-│   │   └── rooms.api.ts    # API quản lý loại phòng (/room-types) & phòng vật lý (/rooms)
+│   │   ├── rooms.api.ts    # API quản lý loại phòng (/room-types) & phòng vật lý (/rooms)
+│   │   ├── guests.api.ts   # API quản lý hồ sơ khách hàng (/guests)
+│   │   └── reservations.api.ts # API đặt phòng & tra cứu tồn phòng (/reservations)
 │   ├── components/         # Reusable UI components
 │   │   ├── ProtectedRoute.tsx # Hộ tống Route theo trạng thái đăng nhập & role
 │   │   ├── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
@@ -54,6 +56,8 @@ frontend/
 │   │   ├── dashboard/      # Màn hình Tổng quan vận hành
 │   │   ├── room-types/     # Màn hình Danh mục Hạng / Loại phòng
 │   │   ├── rooms/          # Màn hình Quản lý Sơ đồ Lưới phòng (Grid) & Danh sách (Table)
+│   │   ├── guests/         # Màn hình Quản lý Khách hàng & Mã hóa CCCD/Passport
+│   │   ├── reservations/   # Màn hình Đặt phòng & Tra cứu Tồn phòng Thời gian thực
 │   │   └── common/         # Màn hình 403, 404, Placeholder thông báo phase
 │   ├── routes/             # Cấu hình định tuyến
 │   │   └── AppRoutes.tsx   # Khai báo tập trung toàn bộ route của ứng dụng
@@ -64,7 +68,9 @@ frontend/
 │   ├── types/              # Định nghĩa kiểu dữ liệu TypeScript
 │   │   ├── api.types.ts    # Chuẩn ApiResponse, ApiError, PaginatedResult, PaginationMeta
 │   │   ├── auth.types.ts   # Role, CurrentUser, LoginCredentials
-│   │   └── rooms.types.ts  # RoomTypeItem, RoomItem, Enums trạng thái & DTOs
+│   │   ├── rooms.types.ts  # RoomTypeItem, RoomItem, Enums trạng thái & DTOs
+│   │   ├── guests.types.ts # GuestSummary, GuestDetail, DocumentType, Enums
+│   │   └── reservations.types.ts # ReservationSummary, Detail, Availability, DTOs
 │   ├── App.tsx             # Root component bọc ErrorBoundary, ConfigProvider, QueryClient, Router
 │   ├── index.css           # Global reset styling
 │   └── main.tsx            # Entry point ReactDOM
@@ -86,9 +92,9 @@ develop (origin/develop)
   │
   ├── feature/fe-foundation            [Phase 1]  ✅ Khởi tạo dự án, Axios, Router, Layout (Merged)
   ├── feature/fe-auth                  [Phase 2]  ✅ Login, Quick Demo Selector, RBAC (Merged)
-  ├── feature/fe-rooms                 [Phase 3]  ✅ CRUD Loại phòng & Sơ đồ phòng vật lý
-  ├── feature/fe-guests                [Phase 4]  ⏳ Quản lý Khách hàng & Mã hóa hồ sơ định danh
-  ├── feature/fe-reservations          [Phase 5]  ⏳ Đặt phòng & Tra cứu phòng trống (Availability)
+  ├── feature/fe-rooms                 [Phase 3]  ✅ CRUD Loại phòng & Sơ đồ phòng vật lý (Merged)
+  ├── feature/fe-guests                [Phase 4]  ✅ Quản lý Khách hàng & Mã hóa hồ sơ định danh (Merged)
+  ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability)
   ├── feature/fe-stays                 [Phase 6]  ⏳ Check-in gán phòng READY, Check-out & Đổi phòng
   ├── feature/fe-operations            [Phase 7]  ⏳ Buồng phòng (Kanban) & Bảo trì kỹ thuật
   ├── feature/fe-billing               [Phase 8]  ⏳ Thu ngân & Quản lý Folio công nợ, hóa đơn
@@ -102,10 +108,10 @@ develop (origin/develop)
 | :---: | :--- | :--- | :---: |
 | **Phase 1** | `feature/fe-foundation` | Dựng khung Vite + React 19 + TS + AntD + Axios + Layout | ✅ Đã merge `develop` |
 | **Phase 2** | `feature/fe-auth` | Màn hình Login, Demo Account Chip Selector, JWT Refresh, RBAC | ✅ Đã merge `develop` |
-| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã hoàn thành |
-| **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ⏳ Tiếp theo |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Kế hoạch |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Kế hoạch |
+| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
+| **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã hoàn thành |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Tiếp theo |
 | **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |

@@ -61,7 +61,7 @@ const menuDefinitions: MenuItemDef[] = [
     key: '/reservations',
     icon: <BookOutlined />,
     label: 'Đặt phòng',
-    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST'],
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
   },
   {
     key: '/stays',

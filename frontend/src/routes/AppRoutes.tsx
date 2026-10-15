@@ -7,6 +7,7 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage.tsx';
 import { RoomsPage } from '../pages/rooms/RoomsPage.tsx';
 import { RoomTypesPage } from '../pages/room-types/RoomTypesPage.tsx';
 import { GuestsPage } from '../pages/guests/GuestsPage.tsx';
+import { ReservationsPage } from '../pages/reservations/ReservationsPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
@@ -46,12 +47,8 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="reservations"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST']}>
-              <PhasePlaceholderPage
-                title="Quản lý Đặt phòng & Tra cứu tồn phòng"
-                phase="Phase 5: feature/fe-reservations"
-                description="Tạo đơn, tra cứu phòng trống theo khoảng ngày, hủy đặt phòng."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']}>
+              <ReservationsPage />
             </ProtectedRoute>
           }
         />

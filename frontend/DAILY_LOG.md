@@ -158,9 +158,9 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 | **Phase 1** | `feature/fe-foundation` | Khởi tạo Vite, React 19, TS, AntD, Axios, Theme ngọc lục bảo, Layout | ✅ Đã merge `develop` |
 | **Phase 2** | `feature/fe-auth` | Đăng nhập, Demo Account Selector, JWT Silent Refresh, RBAC 6 Roles | ✅ Đã merge `develop` |
 | **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
-| **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã hoàn thành |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Tiếp theo |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Kế hoạch |
+| **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã hoàn thành |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Tiếp theo |
 | **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
@@ -204,5 +204,59 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 5. **Tích hợp & Kiểm thử (Verification):**
    - Kết nối route `/guests` vào `AppRoutes.tsx`.
    - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+
+---
+
+### 🛎️ Hoàn thành Phase 5 (`feature/fe-reservations`) — Quản lý Đặt phòng & Tra cứu Tồn phòng Thời gian thực:
+
+1. **Khởi tạo nhánh tính năng:**
+   - Tạo nhánh `feature/fe-reservations` từ nhánh `develop` đã tích hợp đầy đủ Phase 1, Phase 2, Phase 3, Phase 4.
+
+2. **Khảo sát nghiệp vụ & Ràng buộc Backend (Backend Invariants):**
+   - Phân tích chi tiết `reservation.service.ts`, `availability.service.ts` và `reservation.schema.ts`:
+     - **Tra cứu phòng trống (`GET /rooms/availability`)**: Bắt buộc `checkOutDate > checkInDate`, tính toán tồn phòng theo đêm cao điểm nhất (`snapshot` giao dịch) và tính dự toán chi phí toàn bộ kỳ lưu trú (`estimatedTotalPerRoom = basePrice * totalNights`).
+     - **Tạo đơn đặt phòng (`POST /reservations`)**: 
+       - Mảng `rooms` phải có ít nhất 1 phòng và tối đa 100 phòng.
+       - Mỗi `roomTypeId` chỉ được xuất hiện một lần trong danh sách; nếu khách đặt nhiều phòng cùng hạng thì sử dụng thuộc tính `quantity`.
+       - Ràng buộc sức chứa: `adults` và `children` không được vượt quá `maxAdults`, `maxChildren` của hạng phòng đã cấu hình.
+       - Kiểm tra tồn phòng trước khi ghi dữ liệu (với cơ chế khóa khách sạn `withHotelLock`).
+     - **Hủy đặt phòng (`POST /reservations/:id/cancel`)**:
+       - Chỉ áp dụng cho đơn ở trạng thái `CONFIRMED`.
+       - Bắt buộc nhập lý do hủy (`reason` tối thiểu 1 ký tự, tối đa 2000 ký tự).
+       - Ngay lập tức giải phóng toàn bộ số phòng giữ chỗ cho hệ thống.
+     - **Phân quyền RBAC**:
+       - `ADMIN`, `MANAGER`, `RECEPTIONIST`: Có toàn quyền tra cứu tồn phòng, xem danh sách, xem chi tiết, tạo đơn mới và hủy đơn.
+       - `ACCOUNTANT`: Được quyền xem danh sách và chi tiết đơn để phục vụ đối soát tài chính; bị chặn hoàn toàn quyền tạo mới/hủy đơn, và **backend cấm truyền tham số `guestSearch`** (trả về lỗi `403 FORBIDDEN` nếu truyền).
+
+3. **Xây dựng Types & API Client:**
+   - `src/types/reservations.types.ts`: Định nghĩa TypeScript interfaces chuẩn: `ReservationStatus`, `BookingSource`, `RoomAvailabilityItem`, `ReservationSummaryItem`, `ReservationDetailItem`, `CreateReservationDto`, `CancelReservationDto`, `AvailabilityQueryParams`, `ReservationFilterParams`.
+   - `src/api/reservations.api.ts`: Xây dựng đầy đủ các hàm gọi API: `getAll`, `getById`, `checkAvailability`, `create`, `cancel`.
+
+4. **Phát triển Màn hình Quản lý Đặt phòng (`ReservationsPage.tsx`) gồm 2 Tab vận hành:**
+   - **Tab 1: Danh sách Đơn đặt phòng (Reservations List):**
+     - **5 thẻ thống kê KPI trực quan**: Tổng số đơn, Đã xác nhận (CONFIRMED), Đang lưu trú (CHECKED_IN), Đã trả phòng (CHECKED_OUT), Đã hủy (CANCELLED).
+     - **Thanh công cụ lọc đa năng**: Lọc mã đặt phòng, tên khách hàng (ẩn an toàn với Kế toán), trạng thái, kênh đặt phòng, khoảng ngày check-in.
+     - **Bảng Ant Design Table chuyên nghiệp**: Mã xác nhận (màu xanh nổi bật), Tên khách, Lịch trình lưu trú (Check-in - Check-out kèm số đêm và số phòng), Kênh đặt với Tag màu (DIRECT, PHONE, EMAIL, WALK_IN, AGENT, OTHER), Tổng tiền định dạng chuẩn VND, Trạng thái Badge (Xanh lá, Xanh dương, Tím, Đỏ, Cam), Ngày tạo, Thao tác.
+     - **Drawer Chi tiết Đơn đặt phòng**:
+       - Thông tin người đặt, kênh bán, người tạo đơn, thời gian tạo.
+       - Lịch trình nhận/trả phòng.
+       - **Bảng chi tiết giá từng đêm (`ReservationRoomNight`)** cho từng phòng đã đặt kèm ngày lưu trú và đơn giá đêm.
+       - Ghi chú yêu cầu đặc biệt của khách hàng.
+       - Thông tin hủy đơn (nếu có): Thời gian hủy, người thực hiện hủy, lý do hủy chi tiết.
+     - **Modal Hủy Đơn Đặt Phòng**:
+       - Cảnh báo quy trình khách sạn về việc giải phóng phòng không thể hoàn tác.
+       - Bắt buộc nhập lý do hủy trước khi xác nhận.
+   - **Tab 2: Tra cứu Tồn phòng & Đặt phòng Nhanh (Real-time Availability & Booking Engine):**
+     - **Bước 1**: Chọn khoảng thời gian lưu trú (Check-in / Check-out), số lượng người lớn và trẻ em trên mỗi phòng; nút kiểm tra tồn phòng thời gian thực.
+     - **Bước 2**: Hiển thị thẻ các hạng phòng trống với số phòng còn lại, giá gốc, dự toán tổng tiền toàn bộ kỳ nghỉ. Cho phép chọn số lượng phòng muốn đặt và điều chỉnh số khách cho từng phòng.
+     - **Bước 3**: Chọn khách hàng đặt phòng (tích hợp danh sách 20 khách hàng demo từ Phase 4), nguồn đặt phòng, ghi chú đặc biệt; bảng tóm tắt chi phí tự động tính tổng tiền dự toán; nút xác nhận tạo đặt phòng gửi dữ liệu an toàn và nhận mã xác nhận `RES-...`.
+
+5. **Cập nhật Phân quyền & Định tuyến:**
+   - Tích hợp `<ReservationsPage />` vào `AppRoutes.tsx` với quyền `['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']`.
+   - Cập nhật menu `Đặt phòng` trong `MainLayout.tsx` cho phép cả Kế toán xem đối soát.
+
+6. **Kiểm thử & Biên dịch (Verification):**
+   - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+
 
 
