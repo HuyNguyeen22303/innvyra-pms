@@ -11,6 +11,7 @@ import { ReservationsPage } from '../pages/reservations/ReservationsPage.tsx';
 import { StaysPage } from '../pages/stays/StaysPage.tsx';
 import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
 import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
+import { BillingPage } from '../pages/billing/BillingPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
@@ -107,12 +108,8 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="folios"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'ACCOUNTANT']}>
-              <PhasePlaceholderPage
-                title="Sổ công nợ Folio & Thu/Hoàn tiền"
-                phase="Phase 7: feature/fe-dashboard-and-mock"
-                description="Tổng hợp tiền phòng, phí dịch vụ, cọc và quyết toán hoá đơn."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']}>
+              <BillingPage />
             </ProtectedRoute>
           }
         />

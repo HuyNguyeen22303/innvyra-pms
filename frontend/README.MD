@@ -45,7 +45,10 @@ frontend/
 │   │   ├── rooms.api.ts    # API quản lý loại phòng (/room-types) & phòng vật lý (/rooms)
 │   │   ├── guests.api.ts   # API quản lý hồ sơ khách hàng (/guests)
 │   │   ├── reservations.api.ts # API đặt phòng & tra cứu tồn phòng (/reservations)
-│   │   └── stays.api.ts    # API lưu trú, check-in, check-out, đổi phòng (/stays)
+│   │   ├── stays.api.ts    # API lưu trú, check-in, check-out, đổi phòng (/stays)
+│   │   ├── housekeeping.api.ts # API buồng phòng (/housekeeping)
+│   │   ├── maintenance.api.ts  # API sự cố & khóa phòng bảo trì (/maintenance)
+│   │   └── billing.api.ts  # API quản lý dịch vụ, đơn dịch vụ, Folio & thanh toán (/billing)
 │   ├── components/         # Reusable UI components
 │   │   ├── ProtectedRoute.tsx # Hộ tống Route theo trạng thái đăng nhập & role
 │   │   ├── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
@@ -60,6 +63,9 @@ frontend/
 │   │   ├── guests/         # Màn hình Quản lý Khách hàng & Mã hóa CCCD/Passport
 │   │   ├── reservations/   # Màn hình Đặt phòng & Tra cứu Tồn phòng Thời gian thực
 │   │   ├── stays/          # Màn hình Lưu trú, Quầy Check-in, Trả phòng, Đổi phòng
+│   │   ├── housekeeping/   # Màn hình Quản lý Buồng phòng (Kanban, nghiệm thu, phòng bẩn)
+│   │   ├── maintenance/    # Màn hình Bảo trì Kỹ thuật (Phiếu sự cố, Lệnh khóa phòng)
+│   │   ├── billing/        # Màn hình Thu ngân, Sổ công nợ Folio, Dịch vụ & In phiếu thu
 │   │   └── common/         # Màn hình 403, 404, Placeholder thông báo phase
 │   ├── routes/             # Cấu hình định tuyến
 │   │   └── AppRoutes.tsx   # Khai báo tập trung toàn bộ route của ứng dụng
@@ -73,7 +79,9 @@ frontend/
 │   │   ├── rooms.types.ts  # RoomTypeItem, RoomItem, Enums trạng thái & DTOs
 │   │   ├── guests.types.ts # GuestSummary, GuestDetail, DocumentType, Enums
 │   │   ├── reservations.types.ts # ReservationSummary, Detail, Availability, DTOs
-│   │   └── stays.types.ts  # StaySummaryItem, StayDetailItem, CheckinDto, DTOs
+│   │   ├── stays.types.ts  # StaySummaryItem, StayDetailItem, CheckinDto, DTOs
+│   │   ├── operations.types.ts # Housekeeping & Maintenance types
+│   │   └── billing.types.ts # Service, ServiceOrder, Folio, FolioItem, Payment, DTOs
 │   ├── App.tsx             # Root component bọc ErrorBoundary, ConfigProvider, QueryClient, Router
 │   ├── index.css           # Global reset styling
 │   └── main.tsx            # Entry point ReactDOM
@@ -98,9 +106,9 @@ develop (origin/develop)
   ├── feature/fe-rooms                 [Phase 3]  ✅ CRUD Loại phòng & Sơ đồ phòng vật lý (Merged)
   ├── feature/fe-guests                [Phase 4]  ✅ Quản lý Khách hàng & Mã hóa hồ sơ định danh (Merged)
   ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability) (Merged)
-  ├── feature/fe-stays                 [Phase 6]  ✅ Check-in gán phòng READY, Check-out & Đổi phòng
-  ├── feature/fe-operations            [Phase 7]  ✅ Buồng phòng (Kanban) & Bảo trì kỹ thuật
-  ├── feature/fe-billing               [Phase 8]  ⏳ Thu ngân & Quản lý Folio công nợ, hóa đơn
+  ├── feature/fe-stays                 [Phase 6]  ✅ Check-in gán phòng READY, Check-out & Đổi phòng (Merged)
+  ├── feature/fe-operations            [Phase 7]  ✅ Buồng phòng (Kanban) & Bảo trì kỹ thuật (Merged)
+  ├── feature/fe-billing               [Phase 8]  ✅ Thu ngân & Quản lý Folio công nợ, dịch vụ, hóa đơn (Đang thực hiện)
   ├── feature/fe-matrix-dashboard      [Phase 9]  ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
   └── feature/fe-final-polish          [Phase 10] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án
 ```
@@ -115,8 +123,8 @@ develop (origin/develop)
 | **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
 | **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
 | **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã merge `develop` |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã hoàn thành |
-| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Tiếp theo |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã merge `develop` |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Hoàn thành trên nhánh `feature/fe-billing` |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
 | **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
 
@@ -146,12 +154,12 @@ Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài li�
 
 | Vai trò (Role) | Tên hiển thị | Quyền hạn trên giao diện Frontend |
 | :--- | :--- | :--- |
-| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì) |
-| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì) |
-| `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì |
-| `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ **tối thiểu** (chỉ hiển thị `id` & `fullName`), xem Lịch sử lưu trú |
-| `HOUSEKEEPING` | Buồng phòng | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc |
-| `TECHNICIAN` | Kỹ thuật | Xem phiếu sự cố được phân công, Bắt đầu sửa (IN_PROGRESS), Báo hoàn thành sửa chữa (RESOLVED) |
+| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì, Danh mục Dịch vụ, Orders, Folio, Thanh toán, Điều chỉnh, Hoàn tiền, Đóng Folio) |
+| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì, Quản lý Dịch vụ & Orders, Thu tiền, Điều chỉnh, Hoàn tiền, Đóng Folio) |
+| `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì; Mở Folio, Tạo & Hoàn thành Order dịch vụ, Thu tiền Payment/Deposit, In phiếu thu |
+| `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ tối thiểu; Tra cứu Folio & Orders, Thu tiền Payment/Deposit, Điều chỉnh Debit/Credit, Ghi nhận Refund hoàn tiền, Quyết toán đóng Folio, In phiếu thu |
+| `HOUSEKEEPING` | Buồng phòng | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc; Không truy cập Thu ngân |
+| `TECHNICIAN` | Kỹ thuật | Xem phiếu sự cố được phân công, Bắt đầu sửa (IN_PROGRESS), Báo hoàn thành sửa chữa (RESOLVED); Không truy cập Thu ngân |
 
 ---
 

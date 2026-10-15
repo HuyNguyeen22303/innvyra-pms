@@ -102,7 +102,7 @@ const menuDefinitions: MenuItemDef[] = [
     key: '/folios',
     icon: <DollarOutlined />,
     label: 'Thu ngân / Folio',
-    roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'],
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
   },
   {
     key: '/reports',

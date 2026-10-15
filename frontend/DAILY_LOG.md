@@ -429,5 +429,111 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 #### 8. Kiểm thử & Biên dịch (Verification):
 - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript, 0 lỗi linter**.
 
+---
+
+### 🚀 Triển khai Phase 8 (`feature/fe-billing`) — Thu ngân & Quản lý Folio Công nợ, Dịch vụ & Hóa đơn:
+
+#### 1. Khởi tạo & Định hướng Kiến trúc:
+- Tạo và chuyển sang nhánh làm việc: `feature/fe-billing`.
+- Rà soát đối chiếu tài liệu kỹ thuật `backend/BILLING.md`, `backend/FRONTEND_PERMISSIONS.md` và mã nguồn OpenAPI/Prisma Schema backend:
+  - **Không có endpoint `GET /folios`**: Backend không hỗ trợ liệt kê toàn bộ Folio. Việc tra cứu Folio được thực hiện qua danh sách/chi tiết đơn đặt phòng (Reservations) kết hợp với:
+    - `GET /reservations/:reservationId/folio`: Lấy Folio của đơn. Nếu chưa có, trả về mã lỗi `FOLIO_NOT_FOUND` kèm HTTP 404.
+    - `POST /reservations/:reservationId/folio/open`: Mở Folio mới cho đơn đặt phòng.
+  - **Cơ chế Idempotency-Key**: Bắt buộc gắn header `Idempotency-Key` (chuỗi ASCII 8–128 ký tự) cho các thao tác tiền tệ nhạy cảm (`POST /folios/:id/payments`, `POST /payments/:id/refunds`, `POST /folios/:id/adjustments`) để ngăn chặn trừ tiền / thanh toán trùng lặp khi mạng chập chờn.
+  - **Quy tắc An toàn Dữ liệu Tiền (Money Safety)**: Tiền được biểu diễn bằng chuỗi `Decimal` VND (ví dụ: `"500000.00"`). Tuyệt đối không dùng số thực `number` của JavaScript để tính toán số dư nghiệp vụ mà luôn ưu tiên hiển thị các chỉ số tài chính do backend tính toán và trả về (`totalCharges`, `totalPayments`, `totalRefunds`, `balanceAmount`).
+  - **Chính sách Chụp giá Dịch vụ (Snapshot Pricing)**: Đơn giá của từng dịch vụ được chụp (snapshot) cố định tại thời điểm tạo đơn (`unitPriceSnapshot`, `totalAmount`). Khi hoàn thành đơn, số tiền sẽ được tự động ghi nợ vào Folio tương ứng.
+  - **Chu trình Đóng Folio (Folio Settlement)**: Chỉ đóng được khi backend thỏa mãn cả 3 điều kiện: số dư bằng 0 ₫, không còn yêu cầu dịch vụ nào ở trạng thái `REQUESTED`, và toàn bộ các phòng đã hoàn tất Check-out hoặc đơn đã hủy.
+  - **Phân quyền người dùng (RBAC 4 vai trò liên quan)**:
+    - `ADMIN` & `MANAGER`: Toàn quyền quản trị danh mục dịch vụ (CRUD), quản lý Service Orders, mở Folio, thu tiền, điều chỉnh công nợ, hoàn tiền, đóng Folio.
+    - `RECEPTIONIST`: Xem Folio & dịch vụ, tạo/hoàn thành/hủy Service Orders, mở Folio, thu tiền (Payment/Deposit), xem và in phiếu thu.
+    - `ACCOUNTANT`: Xem danh mục & Orders, mở Folio, thu tiền, thực hiện điều chỉnh Debit/Credit, hoàn tiền (Refund), quyết toán đóng Folio, xem và in phiếu thu.
+    - `HOUSEKEEPING` & `TECHNICIAN`: Bị chặn hoàn toàn, không hiển thị menu.
+
+#### 2. Xây dựng Types & API Client:
+- **`src/types/billing.types.ts`**:
+  - Định nghĩa các enum: `ServiceOrderStatus`, `FolioStatus`, `FolioItemType`, `PaymentType`, `PaymentMethod`, `PaymentStatus`.
+  - Định nghĩa các interface chuẩn: `ServiceItem`, `ServiceOrderItem`, `FolioResponse`, `FolioItem`, `PaymentItem`, các DTOs tạo/sửa dịch vụ, tạo order, thanh toán, điều chỉnh, hoàn tiền, đóng Folio.
+- **`src/api/billing.api.ts`**:
+  - Tích hợp hàm sinh khóa ngẫu nhiên an toàn: `createIdempotencyKey(prefix: string)`.
+  - Triển khai đầy đủ 13 API endpoints:
+    - Danh mục dịch vụ: `getServices`, `getServiceById`, `createService`, `updateService`.
+    - Đơn dịch vụ: `getServiceOrders`, `getServiceOrderById`, `createServiceOrder`, `completeServiceOrder`, `cancelServiceOrder`.
+    - Quản lý Folio: `getFolioByReservation`, `openFolioForReservation`, `getFolioById`, `getFolioItems`, `createAdjustment`, `closeFolio`.
+    - Thanh toán & Hoàn tiền: `recordPayment`, `refundPayment`.
+
+#### 3. Phát triển Thành phần Giao diện (Billing Components):
+- **Tab 1: Sổ công nợ Folio (`FolioTab.tsx`)**:
+  - **Thanh tra cứu Reservation**: Hỗ trợ chọn nhanh từ Select danh sách đơn đặt phòng đang hoạt động hoặc nhập mã Reservation ID tùy ý để tìm kiếm.
+  - **Trạng thái chưa mở Folio (`FOLIO_NOT_FOUND`)**: Hiển thị thẻ thông báo thân thiện kèm nút bấm "Mở Sổ công nợ Folio ngay" (dành cho Lễ tân, Quản lý, Kế toán).
+  - **Thống kê 4 Thẻ KPI Tài chính trực quan**:
+    - *Tổng phát sinh (Charges)*: Đỏ sẫm `#cf1322` (Tiền phòng + Dịch vụ).
+    - *Đã thanh toán (Payments)*: Xanh lá `#389e0d` (Bao gồm Đặt cọc + Thanh toán).
+    - *Đã hoàn tiền (Refunds)*: Cam `#d46b08` (Các khoản hoàn trả cho khách).
+    - *Số dư còn lại (Balance)*: Hiển thị nổi bật; nếu `> 0` cảnh báo khách còn nợ (Đỏ cam), nếu `= 0` hiển thị Đã quyết toán xong (Xanh lá).
+  - **Bảng Chi tiết Phí (Ledger Items)**: Liệt kê chi tiết từng khoản phòng, dịch vụ, khoản ghi nợ/ghi có điều chỉnh (Debit/Credit), hiển thị rõ số lượng, đơn giá và thời điểm phát sinh.
+  - **Bảng Lịch sử Giao dịch (Payments & Refunds)**: Liệt kê chi tiết từng đợt thu/hoàn tiền, phương thức (Tiền mặt/Chuyển khoản), mã tham chiếu, nhân viên xử lý và nút "In phiếu thu" trực tiếp.
+  - **Modal Thu tiền (Payment / Deposit)**:
+    - Lựa chọn loại giao dịch: Thanh toán (`PAYMENT`) hoặc Đặt cọc (`DEPOSIT`).
+    - Lựa chọn phương thức: Tiền mặt (`CASH`) hoặc Chuyển khoản (`BANK_TRANSFER`).
+    - Nếu là chuyển khoản: Bắt buộc nhập Mã tham chiếu ngân hàng (`referenceCode`).
+    - Bắt buộc tích xác nhận nhân viên đã thực nhận đủ tiền trước khi bấm Lưu.
+  - **Modal Điều chỉnh Công nợ (Debit / Credit Adjustment)**:
+    - Chọn loại: Ghi nợ phát sinh thêm (`DEBIT`) hoặc Ghi có giảm trừ (`CREDIT`).
+    - Bắt buộc nhập số tiền và lý do giải trình.
+    - Chặn giao diện không cho tạo khoản CREDIT lớn hơn tổng phí phát sinh khiến số dư âm.
+    - Hỗ trợ liên kết Ledger Item gốc nếu là điều chỉnh cho một mục cụ thể.
+  - **Modal Hoàn tiền (Refund)**:
+    - Bắt buộc nhập lý do hoàn tiền và tích cam kết đã thực hiện hoàn tiền cho khách.
+    - Yêu cầu mã tham chiếu giao dịch chuyển tiền nếu hoàn qua chuyển khoản.
+  - **Modal Quyết toán đóng Folio (Close Folio)**:
+    - Kiểm tra điều kiện và gửi yêu cầu đóng Folio.
+    - Trích xuất chi tiết mã lỗi nghiệp vụ từ backend nếu chưa đủ điều kiện đóng (còn dư nợ, còn order REQUESTED, phòng chưa check-out).
+
+- **Tab 2: Đơn dịch vụ (`ServiceOrdersTab.tsx`)**:
+  - Bảng danh sách đơn dịch vụ kèm phân trang, lọc trạng thái (`REQUESTED`, `COMPLETED`, `CANCELLED`) và tìm kiếm.
+  - Modal tạo đơn dịch vụ: Chọn đơn đặt phòng/stay, thêm động nhiều dịch vụ, chọn số lượng, hiển thị trực tiếp tạm tính tiền và cảnh báo Snapshot Pricing.
+  - Thao tác 1-click "Hoàn thành" đơn dịch vụ (tự động ghi nợ vào Folio).
+  - Modal "Hủy yêu cầu dịch vụ" với lý do hủy bắt buộc.
+
+- **Tab 3: Danh mục dịch vụ (`ServiceCatalogTab.tsx`)**:
+  - Bảng hiển thị danh mục dịch vụ: Tên, mã code, danh mục, đơn giá niêm yết VND, trạng thái Kích hoạt/Ngưng hoạt động.
+  - Modal tạo mới dịch vụ và Modal chỉnh sửa thông tin dịch vụ (dành riêng cho `ADMIN` và `MANAGER`).
+  - Nút chuyển đổi trạng thái Kích hoạt/Ngưng hoạt động nhanh.
+
+- **Thành phần In Phiếu thu (`ReceiptModal.tsx`)**:
+  - Giao diện thiết kế chuẩn in ấn (Print-friendly CSS `@media print`).
+  - Hiển thị đầy đủ thông tin: Logo Innvyra Hotel, Mã phiếu thu, Ngày in, Tên khách hàng, Số phòng, Đơn đặt phòng, Mã Folio, Loại giao dịch (Thanh toán / Đặt cọc / Hoàn tiền), Phương thức, Số tiền VND bằng số & chữ, Mã tham chiếu giao dịch, Chữ ký người nộp và nhân viên thu ngân.
+  - Kèm ghi chú pháp lý rõ ràng: Phiếu thu nội bộ, không thay thế hóa đơn tài chính VAT hoặc giấy báo có ngân hàng độc lập.
+
+#### 4. Cấu hình Định tuyến & Menu:
+- Cập nhật `src/routes/AppRoutes.tsx`: Chuyển route `/folios` từ màn hình placeholder sang `BillingPage`, cấp quyền cho `['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']`.
+- Cập nhật `src/layouts/MainLayout.tsx`: Mở rộng quyền xem mục menu "Thu ngân & Folio" cho `RECEPTIONIST`.
+
+#### 5. Sửa lỗi & Tối ưu hóa (Bug Fixes):
+- **Khắc phục lỗi `Invalid request` khi tạo Yêu cầu Dịch vụ mới**:
+  - *Nguyên nhân*: API lượt lưu trú (`GET /stays`) trả về đối tượng `StaySummaryItem` với thuộc tính định danh là `stayId` (thay vì `id`). Khi binding vào Select dropdown, giao diện đọc nhầm `s.id` khiến giá trị lưu vào form là chuỗi `"undefined"` (hiển thị trên giao diện dạng `Lưu trú #undefined - Phòng #302`). Khi submit, backend Zod validator (`idSchema`) kiểm tra chuỗi số nguyên và từ chối vì `"undefined"` không khớp định dạng ID, trả về lỗi `422 VALIDATION_ERROR: Invalid request`.
+  - *Giải pháp triển khai*:
+    1. Chuẩn hóa binding options đọc đúng `s.stayId`: `value: String(s.stayId)` và nhãn `Phòng #${s.room?.roomNumber} (Lưu trú #${s.stayId})`.
+    2. Bổ sung `Form.useWatch('reservationId')` để tự động lọc chỉ hiển thị các phòng lưu trú (`availableStays`) thuộc đơn đặt phòng được chọn.
+    3. Tự động chọn phòng nếu đơn chỉ có duy nhất 1 phòng đang lưu trú.
+    4. Lọc danh sách đơn đặt phòng ở modal tạo đơn dịch vụ chỉ hiển thị các đơn đang có khách lưu trú thực tế (`CHECKED_IN` hoặc `PARTIALLY_CHECKED_IN`) theo đúng quy định nghiệp vụ của backend (`SERVICE_NOT_ALLOWED: Services require an active stay`).
+    5. Viết hàm trích xuất lỗi chuyên biệt `getApiErrorMessage` bóc tách chính xác mảng `error.details` từ backend (ví dụ: `body.stayId: ...`) thay vì chỉ hiện dòng chữ `Invalid request` chung chung.
+
+- **Tối ưu hóa Giao diện Tra cứu Sổ công nợ Folio (Hiển thị Bảng danh sách Đơn đặt phòng có sẵn)**:
+  - *Vấn đề*: Backend không có endpoint `GET /folios` để lấy toàn bộ danh sách Folio, mà quản lý Folio theo quan hệ 1-1 với từng Đơn đặt phòng (`Reservation`). Trước đó giao diện để khung trống yêu cầu nhân viên phải tự tìm kiếm đơn trên dropdown thì mới hiển thị Folio, gây cảm giác thiếu trực quan.
+  - *Giải pháp triển khai*:
+    1. Khi chưa chọn đơn cụ thể, tab Folio sẽ hiển thị ngay **Bảng Danh sách Đơn đặt phòng** đầy đủ với phân trang, bộ lọc trạng thái (`CHECKED_IN`, `CONFIRMED`, `CHECKED_OUT`, `CANCELLED`), thanh tìm kiếm theo tên khách hoặc mã đơn.
+    2. Cung cấp nút 1-click **"Xem Folio"** trên từng dòng để nhân viên xem nhanh công nợ, thu tiền hoặc mở Folio mới mà không cần thao tác tìm kiếm thủ công.
+    3. Khi đang xem chi tiết một Folio, hiển thị thanh điều hướng phía trên với nút **"← Quay lại danh sách đơn"** và dropdown chọn nhanh để chuyển đổi tức thì giữa các đơn.
+    4. **Bổ sung cột "Sổ công nợ Folio" ngay trên Bảng danh sách ngoài**: Tích hợp `useQueries` kiểm tra đồng thời trạng thái Folio cho các đơn trên trang hiện tại, hiển thị rõ ràng:
+       - 🔒 **`ĐÃ QUYẾT TOÁN`**: Tag xám kèm icon khóa và mốc thời gian chốt sổ (`closedAt`). Nút hành động chuyển thành `Xem (Đã đóng)`.
+       - 🔓 **`ĐANG MỞ (OPEN)`**: Tag xanh kèm số dư nợ hiện tại. Nút hành động `Xem Folio`.
+       - ⚪ **`Chưa mở Folio`**: Tag cam cảnh báo đơn chưa mở sổ. Nút hành động đổi thành `Mở Folio`.
+    5. **Bổ sung Khung Thông báo Quyết toán Trang trọng (Settlement Banner)** khi xem chi tiết Folio đã đóng (`CLOSED`): Hiển thị rõ mốc thời gian đóng sổ (`closedAt`), chu kỳ ghi nợ từ lúc mở đến lúc chốt, thông tin giao dịch thanh toán chốt gần nhất kèm danh tính nhân viên thu ngân và xác nhận tình trạng số dư 0 ₫ đã đóng băng an toàn.
+
+#### 6. Kiểm thử & Đóng gói (Verification):
+- Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript, 0 cảnh báo linter**.
+- Giữ nguyên trạng thái code trên nhánh `feature/fe-billing` và **không commit, push hay merge** theo đúng chỉ thị người dùng.
+
 
 
