@@ -123,7 +123,11 @@ export const RoomsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể tạo phòng.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Không thể tạo phòng.';
+      message.error(msg);
     },
   });
 
@@ -141,7 +145,11 @@ export const RoomsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Cập nhật thất bại.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Cập nhật thất bại.';
+      message.error(msg);
     },
   });
 
@@ -156,9 +164,14 @@ export const RoomsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Thao tác không thành công.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Thao tác không thành công.';
+      message.error(msg);
     },
   });
+
 
   const handleOpenCreate = () => {
     setEditingRoom(null);
@@ -202,10 +215,9 @@ export const RoomsPage: React.FC = () => {
       updateMutation.mutate({
         id: editingRoom.id,
         data: {
-          floorNumber: values.floorNumber,
+          floorNumber: Number(values.floorNumber),
           roomTypeId: values.roomTypeId,
           physicalStatus: values.physicalStatus,
-          housekeepingStatus: values.housekeepingStatus,
           notes: values.notes,
           isActive: values.isActive,
         },
@@ -213,15 +225,16 @@ export const RoomsPage: React.FC = () => {
     } else {
       createMutation.mutate({
         roomNumber: values.roomNumber.trim(),
-        floorNumber: values.floorNumber,
+        floorNumber: Number(values.floorNumber),
         roomTypeId: values.roomTypeId,
-        physicalStatus: values.physicalStatus,
-        housekeepingStatus: values.housekeepingStatus,
+        physicalStatus: values.physicalStatus || 'ACTIVE',
+        housekeepingStatus: 'DIRTY', // Strictly enforced by hotel SOP & backend invariant
         notes: values.notes,
         isActive: values.isActive ?? true,
       });
     }
   };
+
 
   const handleQuickStatusSubmit = (values: any) => {
     if (!statusTargetRoom) return;
@@ -750,15 +763,27 @@ export const RoomsPage: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Form.Item
               name="housekeepingStatus"
-              label={<Text strong>Trạng thái vệ sinh</Text>}
+              label={<Text strong>Trạng thái vệ sinh ban đầu</Text>}
               rules={[{ required: true, message: 'Chọn trạng thái!' }]}
+              extra={
+                !editingRoom && (
+                  <div style={{ fontSize: 11, color: '#0284c7', marginTop: 4 }}>
+                    ℹ️ <strong>Quy chuẩn:</strong> Phòng mới tạo luôn là <strong>DIRTY (Chờ dọn dẹp)</strong> để buồng phòng setup trước khi đón khách.
+                  </div>
+                )
+              }
             >
               <Select
+                disabled={!editingRoom}
                 options={[
-                  { label: 'READY (Sẵn sàng nhận khách)', value: 'READY' },
-                  { label: 'DIRTY (Chờ dọn dẹp)', value: 'DIRTY' },
-                  { label: 'CLEANING (Đang dọn)', value: 'CLEANING' },
-                  { label: 'INSPECTION (Chờ kiểm tra)', value: 'INSPECTION' },
+                  { label: 'DIRTY (Chờ dọn dẹp ban đầu)', value: 'DIRTY' },
+                  ...(editingRoom
+                    ? [
+                        { label: 'READY (Sẵn sàng nhận khách)', value: 'READY' },
+                        { label: 'CLEANING (Đang dọn)', value: 'CLEANING' },
+                        { label: 'INSPECTION (Chờ kiểm tra)', value: 'INSPECTION' },
+                      ]
+                    : []),
                 ]}
               />
             </Form.Item>
@@ -770,13 +795,16 @@ export const RoomsPage: React.FC = () => {
             >
               <Select
                 options={[
-                  { label: 'ACTIVE (Bình thường)', value: 'ACTIVE' },
-                  { label: 'MAINTENANCE (Đang bảo trì)', value: 'MAINTENANCE' },
+                  { label: 'ACTIVE (Vận hành bình thường)', value: 'ACTIVE' },
                   { label: 'OUT_OF_SERVICE (Ngừng vận hành)', value: 'OUT_OF_SERVICE' },
+                  ...(editingRoom
+                    ? [{ label: 'MAINTENANCE (Đang bảo trì)', value: 'MAINTENANCE' }]
+                    : []),
                 ]}
               />
             </Form.Item>
           </div>
+
 
           <Form.Item name="notes" label={<Text strong>Ghi chú sự cố / tiện ích phòng</Text>}>
             <Input.TextArea rows={2} placeholder="VD: Máy lạnh hơi kêu, view sân vườn đẹp..." />

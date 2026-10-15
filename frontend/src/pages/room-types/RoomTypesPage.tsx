@@ -68,7 +68,11 @@ export const RoomTypesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['roomTypes'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể tạo hạng phòng.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Không thể tạo hạng phòng.';
+      message.error(msg);
     },
   });
 
@@ -84,7 +88,11 @@ export const RoomTypesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['roomTypes'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Cập nhật thất bại.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Cập nhật thất bại.';
+      message.error(msg);
     },
   });
 
@@ -101,9 +109,14 @@ export const RoomTypesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['roomTypes'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Thao tác không thành công.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Thao tác không thành công.';
+      message.error(msg);
     },
   });
+
 
   const handleOpenCreate = () => {
     setEditingItem(null);
