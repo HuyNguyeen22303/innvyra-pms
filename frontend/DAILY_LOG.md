@@ -258,5 +258,8 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 6. **Kiểm thử & Biên dịch (Verification):**
    - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
 
+7. **Tinh chỉnh giao diện (UI Polish & Clarity):**
+   - Thay thế các nhãn viết tắt `NL / phòng` và `TE / phòng` thành văn bản đầy đủ `Người lớn / phòng:` và `Trẻ em / phòng:` trên thẻ chọn hạng phòng của Tab 2 để tăng tính trực quan, chuyên nghiệp và tránh nhầm lẫn cho nhân viên khi thao tác đặt phòng.
+
 
 

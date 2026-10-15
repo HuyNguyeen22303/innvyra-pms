@@ -953,10 +953,10 @@ export const ReservationsPage: React.FC = () => {
                                           }}
                                         >
                                           <Row gutter={8} align="middle">
-                                            <Col span={10}>
+                                            <Col span={12}>
                                               <Text style={{ fontSize: 12 }}>Số lượng phòng:</Text>
                                             </Col>
-                                            <Col span={14}>
+                                            <Col span={12}>
                                               <InputNumber
                                                 min={0}
                                                 max={item.availableRooms}
@@ -977,10 +977,10 @@ export const ReservationsPage: React.FC = () => {
                                           {selected.quantity > 0 && (
                                             <>
                                               <Row gutter={8} align="middle" style={{ marginTop: 8 }}>
-                                                <Col span={10}>
-                                                  <Text style={{ fontSize: 12 }}>NL / phòng:</Text>
+                                                <Col span={12}>
+                                                  <Text style={{ fontSize: 12 }}>Người lớn / phòng:</Text>
                                                 </Col>
-                                                <Col span={14}>
+                                                <Col span={12}>
                                                   <InputNumber
                                                     min={1}
                                                     max={matchingType?.maxAdults || 10}
@@ -999,10 +999,10 @@ export const ReservationsPage: React.FC = () => {
                                                 </Col>
                                               </Row>
                                               <Row gutter={8} align="middle" style={{ marginTop: 8 }}>
-                                                <Col span={10}>
-                                                  <Text style={{ fontSize: 12 }}>TE / phòng:</Text>
+                                                <Col span={12}>
+                                                  <Text style={{ fontSize: 12 }}>Trẻ em / phòng:</Text>
                                                 </Col>
-                                                <Col span={14}>
+                                                <Col span={12}>
                                                   <InputNumber
                                                     min={0}
                                                     max={matchingType?.maxChildren || 10}
