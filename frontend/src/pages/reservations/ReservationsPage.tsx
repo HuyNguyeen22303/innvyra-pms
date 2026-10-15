@@ -66,6 +66,13 @@ const formatCurrency = (amount: string | number): string => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
 };
 
+// Helper: Format Day of Week in Vietnamese
+const formatDayOfWeek = (dateStr: string): string => {
+  const d = dayjs(dateStr).day();
+  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  return days[d] || '';
+};
+
 // Helper: Booking Source Vietnamese Mapping
 const BOOKING_SOURCE_LABELS: Record<BookingSource, { text: string; color: string }> = {
   DIRECT: { text: 'Trực tiếp', color: 'blue' },
@@ -1194,7 +1201,7 @@ export const ReservationsPage: React.FC = () => {
             )}
           </div>
         }
-        width={680}
+        width={720}
         open={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);
@@ -1244,19 +1251,109 @@ export const ReservationsPage: React.FC = () => {
             </Descriptions>
 
             {/* Stay Dates */}
-            <Descriptions title="2. Lịch trình lưu trú" bordered size="small" column={{ xs: 1, sm: 3 }}>
-              <Descriptions.Item label="Ngày nhận phòng (Check-in)">
-                <Text strong>{dayjs(reservationDetail.checkInDate).format('DD/MM/YYYY')}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày trả phòng (Check-out)">
-                <Text strong>{dayjs(reservationDetail.checkOutDate).format('DD/MM/YYYY')}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời gian">
-                <Tag color="cyan">
-                  {reservationDetail.totalNights} đêm • {reservationDetail.totalRooms} phòng
-                </Tag>
-              </Descriptions.Item>
-            </Descriptions>
+            <div>
+              <Title level={5} style={{ marginBottom: 8, fontSize: 14 }}>
+                2. Lịch trình lưu trú
+              </Title>
+              <Card
+                size="small"
+                style={{
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <Row gutter={[16, 16]} align="middle" justify="space-between">
+                  {/* Check-in */}
+                  <Col xs={24} sm={10}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 10,
+                          backgroundColor: '#e6f4ff',
+                          color: '#0958d9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 20,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <CalendarOutlined />
+                      </div>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                          Nhận phòng (Check-in):
+                        </Text>
+                        <Text strong style={{ fontSize: 16, color: '#0958d9', whiteSpace: 'nowrap' }}>
+                          {dayjs(reservationDetail.checkInDate).format('DD/MM/YYYY')}
+                        </Text>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                          {formatDayOfWeek(reservationDetail.checkInDate)} • Sau 14:00
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+
+                  {/* Middle Duration Badge */}
+                  <Col xs={24} sm={4} style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <Tag
+                        color="blue"
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          padding: '2px 10px',
+                          borderRadius: 12,
+                          margin: 0,
+                        }}
+                      >
+                        {reservationDetail.totalNights} đêm
+                      </Tag>
+                      <RightOutlined style={{ color: '#94a3b8', fontSize: 12 }} />
+                      <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                        {reservationDetail.totalRooms} phòng
+                      </Text>
+                    </div>
+                  </Col>
+
+                  {/* Check-out */}
+                  <Col xs={24} sm={10}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 10,
+                          backgroundColor: '#f6ffed',
+                          color: '#389e0d',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 20,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <CalendarOutlined />
+                      </div>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                          Trả phòng (Check-out):
+                        </Text>
+                        <Text strong style={{ fontSize: 16, color: '#389e0d', whiteSpace: 'nowrap' }}>
+                          {dayjs(reservationDetail.checkOutDate).format('DD/MM/YYYY')}
+                        </Text>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                          {formatDayOfWeek(reservationDetail.checkOutDate)} • Trước 12:00
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </div>
 
             {/* Room breakdown & Nightly Rates */}
             <div>
@@ -1298,7 +1395,7 @@ export const ReservationsPage: React.FC = () => {
                         title: 'Ngày lưu trú (Stay Date)',
                         dataIndex: 'stayDate',
                         key: 'stayDate',
-                        render: (date: string) => dayjs(date).format('DD/MM/YYYY (dddd)'),
+                        render: (date: string) => `${dayjs(date).format('DD/MM/YYYY')} (${formatDayOfWeek(date)})`,
                       },
                       {
                         title: 'Giá phòng / đêm (VND)',

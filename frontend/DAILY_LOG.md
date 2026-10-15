@@ -260,6 +260,12 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 7. **Tinh chỉnh giao diện (UI Polish & Clarity):**
    - Thay thế các nhãn viết tắt `NL / phòng` và `TE / phòng` thành văn bản đầy đủ `Người lớn / phòng:` và `Trẻ em / phòng:` trên thẻ chọn hạng phòng của Tab 2 để tăng tính trực quan, chuyên nghiệp và tránh nhầm lẫn cho nhân viên khi thao tác đặt phòng.
+   - **Tái thiết kế khối Lịch trình lưu trú trong Drawer Chi tiết đơn**: Thay thế bảng `Descriptions` 3 cột bị co hẹp làm gãy chữ ngày tháng (`16/10/2026` bị ngắt thành nhiều dòng) thành thẻ Card Timeline 2 khối đối xứng Check-in / Check-out riêng biệt:
+     - Biểu tượng Lịch màu xanh dương và xanh lá trực quan.
+     - Ngày tháng cỡ lớn 17px in đậm (`white-space: nowrap`), không bị co gãy.
+     - Bổ sung thứ trong tuần bằng tiếng Việt (`Thứ Sáu`) và quy chuẩn giờ nhận/trả phòng khách sạn (`Sau 14:00` / `Trước 12:00`).
+     - Huy hiệu ở giữa hiển thị tổng số đêm và số phòng kèm mũi tên điều hướng.
+     - Mở rộng chiều rộng Drawer lên 720px và Việt hóa thứ trong tuần cho bảng giá từng đêm (`ReservationRoomNight`).
 
 
 
