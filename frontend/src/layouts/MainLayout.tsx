@@ -7,6 +7,7 @@ import {
   Space,
   Typography,
   Button,
+  Tag,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -24,6 +25,7 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.ts';
@@ -38,19 +40,18 @@ interface MenuItemDef {
   icon: React.ReactNode;
   label: string;
   roles?: Role[];
-  badge?: string;
 }
 
 const menuDefinitions: MenuItemDef[] = [
   {
     key: '/dashboard',
     icon: <DashboardOutlined />,
-    label: 'Tổng quan',
+    label: 'Tổng quan vận hành',
   },
   {
     key: '/calendar',
     icon: <CalendarOutlined />,
-    label: 'Lịch phòng',
+    label: 'Lịch phòng (Matrix)',
   },
   {
     key: '/reservations',
@@ -73,23 +74,23 @@ const menuDefinitions: MenuItemDef[] = [
   {
     key: '/rooms',
     icon: <ApartmentOutlined />,
-    label: 'Phòng',
+    label: 'Phòng vật lý',
   },
   {
     key: '/room-types',
     icon: <AppstoreOutlined />,
-    label: 'Loại phòng',
+    label: 'Hạng / Loại phòng',
   },
   {
     key: '/housekeeping',
     icon: <CheckCircleOutlined />,
-    label: 'Buồng phòng',
+    label: 'Buồng phòng (Kanban)',
     roles: ['ADMIN', 'MANAGER', 'HOUSEKEEPING'],
   },
   {
     key: '/maintenance',
     icon: <ToolOutlined />,
-    label: 'Bảo trì',
+    label: 'Bảo trì kỹ thuật',
     roles: ['ADMIN', 'MANAGER', 'TECHNICIAN'],
   },
   {
@@ -101,7 +102,7 @@ const menuDefinitions: MenuItemDef[] = [
   {
     key: '/reports',
     icon: <BarChartOutlined />,
-    label: 'Báo cáo',
+    label: 'Báo cáo điều hành',
     roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'],
   },
 ];
@@ -122,10 +123,12 @@ export const MainLayout: React.FC = () => {
       key: 'user-info',
       disabled: true,
       label: (
-        <div style={{ padding: '4px 0' }}>
-          <Text strong>{user?.fullName}</Text>
+        <div style={{ padding: '6px 2px' }}>
+          <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
+            {user?.fullName}
+          </Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12, color: '#64748b' }}>
             @{user?.username}
           </Text>
         </div>
@@ -135,13 +138,12 @@ export const MainLayout: React.FC = () => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Đăng xuất',
+      label: 'Đăng xuất tài khoản',
       danger: true,
       onClick: handleLogout,
     },
   ];
 
-  // Filter menu items by user role
   const filteredMenuItems: MenuProps['items'] = menuDefinitions
     .filter((item) => !item.roles || (user && item.roles.includes(user.role)))
     .map((item) => ({
@@ -151,12 +153,12 @@ export const MainLayout: React.FC = () => {
     }));
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
-        width={240}
+        width={250}
         theme="dark"
         style={{
           overflow: 'auto',
@@ -166,64 +168,177 @@ export const MainLayout: React.FC = () => {
           top: 0,
           bottom: 0,
           zIndex: 100,
-          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+          background: '#0f2922', // Forest Slate
+          borderRight: '1px solid #163d33',
+          boxShadow: '3px 0 12px rgba(15,41,34,0.12)',
         }}
       >
+        {/* Brand Header */}
         <div
           style={{
-            height: 64,
+            height: 70,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            background: '#071d36',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: collapsed ? 14 : 18,
-            letterSpacing: 1,
+            padding: '0 20px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.2s',
+            background: '#091c17',
           }}
         >
-          {collapsed ? 'PMS' : '🏨 INNVYRA PMS'}
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 8,
+              backgroundColor: '#1b4d3e',
+              border: '1px solid #2d6b58',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              marginRight: collapsed ? 0 : 12,
+              flexShrink: 0,
+            }}
+          >
+            🏨
+          </div>
+          {!collapsed && (
+            <div style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  letterSpacing: 0.8,
+                  lineHeight: 1.2,
+                }}
+              >
+                INNVYRA PMS
+              </div>
+              <div
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 10,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  marginTop: 2,
+                }}
+              >
+                Boutique Hotel & Resort
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Property & Shift Strip */}
+        {!collapsed && (
+          <div
+            style={{
+              margin: '14px 16px',
+              padding: '10px 12px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: '#cbd5e1',
+                fontWeight: 600,
+                display: 'flex',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>Innvyra Hotel</span>
+              <span style={{ color: '#4ade80' }}>● 50 phòng</span>
+            </div>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>
+              Ca sáng: 06:00 – 14:00
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Menu */}
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
           items={filteredMenuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ borderRight: 0, marginTop: 8 }}
+          style={{
+            background: 'transparent',
+            borderRight: 0,
+            padding: '4px 8px',
+          }}
         />
       </Sider>
 
-      <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: 'all 0.2s' }}>
+      <Layout style={{ marginLeft: collapsed ? 80 : 250, transition: 'all 0.2s', background: '#f8fafc' }}>
         <Header
           style={{
-            padding: '0 24px',
-            background: '#fff',
+            padding: '0 28px',
+            background: '#ffffff',
+            borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,21,41,0.08)',
             position: 'sticky',
             top: 0,
             zIndex: 99,
+            height: 64,
           }}
         >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: 16, width: 48, height: 48 }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{ fontSize: 17, color: '#334155' }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+              <span>Không gian làm việc</span>
+              <span>/</span>
+              <strong style={{ color: '#0f172a', fontWeight: 600 }}>Hệ thống quản lý PMS</strong>
+            </div>
+          </div>
 
-          <Space size="middle" align="center">
+          <Space size="large" align="center">
+            {/* Operational Date Tag */}
+            <Tag
+              icon={<ClockCircleOutlined />}
+              style={{
+                backgroundColor: '#f1f5f9',
+                borderColor: '#cbd5e1',
+                color: '#334155',
+                fontSize: 12,
+                padding: '4px 10px',
+                borderRadius: 6,
+                fontWeight: 500,
+              }}
+            >
+              Ngày vận hành: 20/10/2026
+            </Tag>
+
             {user && <RoleBadge role={user.role} />}
+
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar style={{ backgroundColor: '#0f4c81' }} icon={<UserOutlined />} />
-                <span style={{ fontWeight: 500, color: '#333' }}>{user?.fullName}</span>
+              <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}>
+                <Avatar
+                  style={{
+                    backgroundColor: '#1b4d3e',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                  }}
+                  icon={<UserOutlined />}
+                />
+                <div style={{ lineHeight: 1.2, textAlign: 'left' }}>
+                  <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
+                    {user?.fullName}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    {user?.role}
+                  </div>
+                </div>
               </Space>
             </Dropdown>
           </Space>
@@ -231,12 +346,13 @@ export const MainLayout: React.FC = () => {
 
         <Content
           style={{
-            margin: '24px',
-            padding: '24px',
-            background: '#fff',
-            borderRadius: 10,
-            minHeight: 280,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            margin: '24px 28px',
+            padding: '24px 28px',
+            background: '#ffffff',
+            borderRadius: 12,
+            minHeight: 'calc(100vh - 112px)',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
           }}
         >
           <Outlet />

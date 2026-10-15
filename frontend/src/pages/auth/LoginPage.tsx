@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined, BankOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.ts';
 import type { LoginCredentials } from '../../types/auth.types.ts';
@@ -35,43 +35,46 @@ export const LoginPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0b2545 0%, #134074 50%, #006d77 100%)',
-        padding: '20px',
+        background: 'linear-gradient(145deg, #091c17 0%, #0f2922 45%, #1b4d3e 100%)',
+        padding: '24px',
       }}
     >
       <Card
         style={{
           width: '100%',
-          maxWidth: 420,
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+          maxWidth: 440,
+          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.35)',
           borderRadius: 16,
-          border: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: '#ffffff',
+          padding: '8px 12px',
         }}
       >
         <Space orientation="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
+          {/* Logo Badge */}
           <div
             style={{
-              width: 56,
-              height: 56,
-              margin: '0 auto',
-              background: '#e8f1f5',
+              width: 64,
+              height: 64,
+              margin: '6px auto 0',
+              background: '#ecfdf5',
+              border: '2px solid #a7f3d0',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#0f4c81',
-              fontSize: 28,
+              fontSize: 32,
             }}
           >
-            <BankOutlined />
+            🏨
           </div>
 
           <div>
-            <Title level={3} style={{ margin: 0, color: '#0b2545' }}>
+            <Title level={2} style={{ margin: 0, color: '#0f172a', fontWeight: 700, letterSpacing: -0.5 }}>
               INNVYRA PMS
             </Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Hệ thống Quản lý Khách sạn & Tài sản Lưu trú
+            <Text style={{ fontSize: 13, color: '#475569', display: 'block', marginTop: 4 }}>
+              Hệ thống Quản lý Vận hành Khách sạn & Lưu trú
             </Text>
           </div>
 
@@ -85,7 +88,7 @@ export const LoginPage: React.FC = () => {
                 clearError();
                 setCustomError(null);
               }}
-              style={{ textAlign: 'left' }}
+              style={{ textAlign: 'left', borderRadius: 8 }}
             />
           )}
 
@@ -100,25 +103,29 @@ export const LoginPage: React.FC = () => {
           >
             <Form.Item
               name="username"
+              label={<Text strong style={{ color: '#1e293b', fontSize: 13 }}>Tên đăng nhập</Text>}
               rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
+              style={{ marginBottom: 16 }}
             >
               <Input
-                prefix={<UserOutlined style={{ color: '#8c8c8c' }} />}
-                placeholder="Tên đăng nhập"
+                prefix={<UserOutlined style={{ color: '#64748b', marginRight: 4 }} />}
+                placeholder="Nhập tên đăng nhập (VD: le_tan_01, admin)"
               />
             </Form.Item>
 
             <Form.Item
               name="password"
+              label={<Text strong style={{ color: '#1e293b', fontSize: 13 }}>Mật khẩu</Text>}
               rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+              style={{ marginBottom: 20 }}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: '#8c8c8c' }} />}
-                placeholder="Mật khẩu"
+                prefix={<LockOutlined style={{ color: '#64748b', marginRight: 4 }} />}
+                placeholder="Nhập mật khẩu"
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 12 }}>
+            <Form.Item style={{ marginBottom: 16 }}>
               <Button
                 type="primary"
                 htmlType="submit"
@@ -126,18 +133,33 @@ export const LoginPage: React.FC = () => {
                 block
                 style={{
                   height: 44,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: 600,
-                  backgroundColor: '#0f4c81',
+                  backgroundColor: '#1b4d3e',
+                  borderColor: '#1b4d3e',
+                  boxShadow: '0 4px 12px rgba(27,77,62,0.25)',
                 }}
               >
-                Đăng nhập
+                Đăng nhập hệ thống
               </Button>
             </Form.Item>
 
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Tài khoản được cấp bởi Quản trị viên hệ thống.
-            </Text>
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: '10px 12px',
+                textAlign: 'left',
+                fontSize: 12,
+                color: '#475569',
+              }}
+            >
+              <strong style={{ color: '#0f172a' }}>ℹ️ Lưu ý bảo mật:</strong>
+              <div style={{ marginTop: 2 }}>
+                Tài khoản nội bộ được phân quyền theo 6 vai trò bởi Quản lý khách sạn.
+              </div>
+            </div>
           </Form>
         </Space>
       </Card>
