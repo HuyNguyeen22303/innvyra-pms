@@ -121,6 +121,7 @@ export const RoomsPage: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
     onError: (err: any) => {
       const msg =
@@ -143,6 +144,7 @@ export const RoomsPage: React.FC = () => {
       setStatusTargetRoom(null);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
     onError: (err: any) => {
       const msg =
@@ -162,7 +164,9 @@ export const RoomsPage: React.FC = () => {
         vars.currentActive ? 'Đã vô hiệu hóa phòng!' : 'Đã kích hoạt lại phòng!'
       );
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
+
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||

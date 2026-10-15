@@ -28,9 +28,13 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import dayjs from 'dayjs';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore.ts';
 import { RoleBadge } from '../components/RoleBadge.tsx';
+import { roomsApi } from '../api/rooms.api.ts';
 import type { Role } from '../types/auth.types.ts';
+
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -113,10 +117,34 @@ export const MainLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 
+  // Dynamic room count from backend API
+  const { data: roomsRes } = useQuery({
+    queryKey: ['rooms-count'],
+    queryFn: () => roomsApi.getAll(),
+    staleTime: 30000,
+  });
+  const rawRooms = roomsRes?.data;
+  const roomCount = Array.isArray(rawRooms)
+    ? rawRooms.length
+    : Array.isArray((rawRooms as any)?.items)
+    ? (rawRooms as any).items.length
+    : ((rawRooms as any)?.pagination?.total ?? 20);
+
+  // Dynamic real-time operational date & shift
+  const currentDate = dayjs().format('DD/MM/YYYY');
+  const currentHour = dayjs().hour();
+  const currentShift =
+    currentHour >= 6 && currentHour < 14
+      ? 'Ca sáng: 06:00 – 14:00'
+      : currentHour >= 14 && currentHour < 22
+      ? 'Ca chiều: 14:00 – 22:00'
+      : 'Ca đêm: 22:00 – 06:00';
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
+
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -250,11 +278,12 @@ export const MainLayout: React.FC = () => {
               }}
             >
               <span>Innvyra Hotel</span>
-              <span style={{ color: '#4ade80' }}>● 50 phòng</span>
+              <span style={{ color: '#4ade80' }}>● {roomCount} phòng</span>
             </div>
             <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>
-              Ca sáng: 06:00 – 14:00
+              {currentShift}
             </div>
+
           </div>
         )}
 
@@ -316,8 +345,9 @@ export const MainLayout: React.FC = () => {
                 fontWeight: 500,
               }}
             >
-              Ngày vận hành: 20/10/2026
+              Ngày vận hành: {currentDate}
             </Tag>
+
 
             {user && <RoleBadge role={user.role} />}
 
