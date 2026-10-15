@@ -44,6 +44,11 @@ import dayjs from 'dayjs';
 import { maintenanceApi } from '../../api/maintenance.api.ts';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
+import {
+  getStaffDisplay,
+  getMaintenanceActionDisplay,
+  formatAuditNote,
+} from '../../utils/staffDirectory.ts';
 import type {
   MaintenanceTicketItem,
   MaintenanceBlockItem,
@@ -227,11 +232,6 @@ export const MaintenancePage: React.FC = () => {
     return found ? found.name : `Hạng #${roomTypeId}`;
   };
 
-  const getTechName = (staffId: string | null) => {
-    if (!staffId) return null;
-    const found = TECHNICIAN_STAFF_OPTIONS.find((s) => s.value === String(staffId));
-    return found ? found.label.split(' (')[0] : `Kỹ thuật viên #${staffId}`;
-  };
 
   // ----------------------------------------------------
   // MUTATIONS - TICKETS
@@ -498,19 +498,25 @@ export const MaintenancePage: React.FC = () => {
       title: 'Kỹ thuật viên',
       dataIndex: 'assignedTo',
       key: 'assignedTo',
-      width: 180,
-      render: (staffId: string | null) => (
-        <Space size={4}>
-          <UserOutlined style={{ color: staffId ? '#1b4d3e' : '#8c8c8c' }} />
-          {staffId ? (
+      width: 200,
+      render: (staffId: string | null) => {
+        if (!staffId) return <Tag color="orange">Chưa phân công</Tag>;
+        const staff = getStaffDisplay(staffId, user);
+        return (
+          <Space size={4}>
+            <UserOutlined style={{ color: '#1b4d3e' }} />
             <Text strong style={{ color: '#1b4d3e' }}>
-              {getTechName(staffId)}
+              {staff.fullName}
             </Text>
-          ) : (
-            <Tag color="orange">Chưa phân công</Tag>
-          )}
-        </Space>
-      ),
+            <Tag
+              color={staff.color}
+              style={{ fontSize: 10, margin: 0, padding: '0 4px', lineHeight: '18px' }}
+            >
+              {staff.roleTitle}
+            </Tag>
+          </Space>
+        );
+      },
     },
     {
       title: 'Thời gian báo',
@@ -1548,9 +1554,17 @@ export const MaintenancePage: React.FC = () => {
                 <Col span={12}>
                   <Text type="secondary" style={{ fontSize: 12 }}>Kỹ thuật viên phụ trách:</Text>
                   <div>
-                    <Text strong style={{ color: '#1b4d3e' }}>
-                      {getTechName(ticketDetailRes.data.assignedTo) || 'Chưa phân công'}
-                    </Text>
+                    {ticketDetailRes.data.assignedTo ? (() => {
+                      const staff = getStaffDisplay(ticketDetailRes.data.assignedTo, user);
+                      return (
+                        <Space size={4}>
+                          <Text strong style={{ color: '#1b4d3e' }}>{staff.fullName}</Text>
+                          <Tag color={staff.color} style={{ fontSize: 11 }}>{staff.roleTitle}</Tag>
+                        </Space>
+                      );
+                    })() : (
+                      <Tag color="orange">Chưa phân công</Tag>
+                    )}
                   </div>
                 </Col>
                 <Col span={12}>
@@ -1563,27 +1577,41 @@ export const MaintenancePage: React.FC = () => {
             <Title level={5} style={{ marginBottom: 16 }}>Dòng thời gian kiểm toán</Title>
             {ticketDetailRes.data.history && ticketDetailRes.data.history.length > 0 ? (
               <Timeline
-                items={ticketDetailRes.data.history.map((log) => ({
-                  color: log.toStatus === 'CLOSED' ? 'green' : log.toStatus === 'CANCELLED' ? 'red' : 'blue',
-                  children: (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text strong style={{ fontSize: 13 }}>{log.action}</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>
-                          {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
-                        </Text>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#595959', marginTop: 2 }}>
-                        Người thực hiện: <Text strong>{log.actor?.fullName || `Nhân viên #${log.actorId}`}</Text>
-                      </div>
-                      {log.notes && (
-                        <div style={{ marginTop: 4, padding: '4px 8px', background: '#f5f5f5', borderRadius: 4, fontSize: 12 }}>
-                          💬 {log.notes}
+                items={ticketDetailRes.data.history.map((log) => {
+                  const actionMeta = getMaintenanceActionDisplay(log.action);
+                  const actor = getStaffDisplay(log.actorId, user);
+                  const isClosed = log.toStatus === 'CLOSED' || log.action === 'TICKET_CLOSE';
+                  const isCancel = log.toStatus === 'CANCELLED' || log.action === 'TICKET_CANCEL';
+                  const timelineColor = isClosed ? 'green' : isCancel ? 'red' : 'blue';
+
+                  return {
+                    color: timelineColor,
+                    children: (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Tag color={actionMeta.color} style={{ margin: 0, fontWeight: 600 }}>
+                            {actionMeta.label}
+                          </Tag>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
+                          </Text>
                         </div>
-                      )}
-                    </div>
-                  ),
-                }))}
+                        <div style={{ fontSize: 12, color: '#595959', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>Người thực hiện:</span>
+                          <Text strong>{actor.fullName}</Text>
+                          <Tag color={actor.color} style={{ fontSize: 11, margin: 0 }}>
+                            {actor.roleTitle}
+                          </Tag>
+                        </div>
+                        {log.notes && (
+                          <div style={{ marginTop: 6, padding: '6px 10px', background: '#fafafa', borderRadius: 4, fontSize: 12 }}>
+                            💬 {formatAuditNote(log.notes)}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  };
+                })}
               />
             ) : (
               <Text type="secondary">Chưa có lịch sử</Text>
@@ -1655,27 +1683,41 @@ export const MaintenancePage: React.FC = () => {
             <Title level={5} style={{ marginBottom: 16 }}>Dòng thời gian kiểm toán</Title>
             {blockDetailRes.data.history && blockDetailRes.data.history.length > 0 ? (
               <Timeline
-                items={blockDetailRes.data.history.map((log) => ({
-                  color: log.toStatus === 'RELEASED' ? 'green' : log.toStatus === 'CANCELLED' ? 'red' : 'blue',
-                  children: (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text strong style={{ fontSize: 13 }}>{log.action}</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>
-                          {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
-                        </Text>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#595959', marginTop: 2 }}>
-                        Người thực hiện: <Text strong>{log.actor?.fullName || `Nhân viên #${log.actorId}`}</Text>
-                      </div>
-                      {log.notes && (
-                        <div style={{ marginTop: 4, padding: '4px 8px', background: '#f5f5f5', borderRadius: 4, fontSize: 12 }}>
-                          💬 {log.notes}
+                items={blockDetailRes.data.history.map((log) => {
+                  const actionMeta = getMaintenanceActionDisplay(log.action);
+                  const actor = getStaffDisplay(log.actorId, user);
+                  const isReleased = log.toStatus === 'RELEASED' || log.action === 'BLOCK_RELEASE';
+                  const isCancel = log.toStatus === 'CANCELLED' || log.action === 'BLOCK_CANCEL';
+                  const timelineColor = isReleased ? 'green' : isCancel ? 'red' : 'blue';
+
+                  return {
+                    color: timelineColor,
+                    children: (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Tag color={actionMeta.color} style={{ margin: 0, fontWeight: 600 }}>
+                            {actionMeta.label}
+                          </Tag>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
+                          </Text>
                         </div>
-                      )}
-                    </div>
-                  ),
-                }))}
+                        <div style={{ fontSize: 12, color: '#595959', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>Người thực hiện:</span>
+                          <Text strong>{actor.fullName}</Text>
+                          <Tag color={actor.color} style={{ fontSize: 11, margin: 0 }}>
+                            {actor.roleTitle}
+                          </Tag>
+                        </div>
+                        {log.notes && (
+                          <div style={{ marginTop: 6, padding: '6px 10px', background: '#fafafa', borderRadius: 4, fontSize: 12 }}>
+                            💬 {formatAuditNote(log.notes)}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  };
+                })}
               />
             ) : (
               <Text type="secondary">Chưa có lịch sử</Text>

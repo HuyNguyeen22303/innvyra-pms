@@ -99,7 +99,7 @@ develop (origin/develop)
   ├── feature/fe-guests                [Phase 4]  ✅ Quản lý Khách hàng & Mã hóa hồ sơ định danh (Merged)
   ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability) (Merged)
   ├── feature/fe-stays                 [Phase 6]  ✅ Check-in gán phòng READY, Check-out & Đổi phòng
-  ├── feature/fe-operations            [Phase 7]  ⏳ Buồng phòng (Kanban) & Bảo trì kỹ thuật
+  ├── feature/fe-operations            [Phase 7]  ✅ Buồng phòng (Kanban) & Bảo trì kỹ thuật
   ├── feature/fe-billing               [Phase 8]  ⏳ Thu ngân & Quản lý Folio công nợ, hóa đơn
   ├── feature/fe-matrix-dashboard      [Phase 9]  ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
   └── feature/fe-final-polish          [Phase 10] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án

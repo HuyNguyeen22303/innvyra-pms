@@ -414,7 +414,19 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - Đã chuẩn hóa sanitization trên form: `notes: values.notes?.trim() ? values.notes.trim() : undefined`. Nếu không nhập ghi chú thì loại bỏ field khỏi payload.
   - Cập nhật trích xuất thông báo lỗi từ server: `err.response?.data?.message || err.response?.data?.error?.message` để hiển thị rõ ràng nguyên nhân lỗi.
 
-#### 7. Kiểm thử & Biên dịch (Verification):
+#### 7. Tối ưu hóa hiển thị danh tính nhân sự & Dòng thời gian kiểm toán (Operations Audit Log):
+- **Vấn đề nhận diện**: Trong Drawer xem chi tiết nhiệm vụ buồng phòng và phiếu sự cố bảo trì, các bản ghi kiểm toán chỉ hiển thị ID thô dạng `Nhân viên #2`, `Nhân viên #4` và các mã hành động tiếng Anh kỹ thuật (`TASK_START`, `TASK_COMPLETE`, `TASK_CANCEL`, `BLOCK_RELEASE`...), gây khó khăn cho nhân viên khi theo dõi ca trực.
+- **Giải pháp triển khai**:
+  - Tạo module trợ năng `src/utils/staffDirectory.ts`:
+    - Quản lý danh bạ nhân sự khách sạn `KNOWN_STAFF_DIRECTORY` (Nguyễn Minh Anh - Quản lý, Trần Ngọc Linh - Lễ tân, Lê Thu Hà - Kế toán, Phạm Thị Lan - Buồng phòng, Hoàng Văn Nam - Kỹ thuật viên, System Administrator - Quản trị viên).
+    - Hàm `getStaffDisplay(staffId, currentUser)`: Tự động phân giải ID thành đối tượng `{ fullName, roleTitle, roleCode, color }`.
+    - Hàm `getHousekeepingActionDisplay` và `getMaintenanceActionDisplay`: Chuyển đổi mã hành động sang tiếng Việt kèm màu Tag chuyên nghiệp (Xanh lục: Đạt chuẩn/Hoàn tất; Vàng/Cam: Đang chờ nghiệm thu/Mới báo cáo; Tím: Đã khắc phục/Rework; Đỏ: Không đạt/Khóa phòng; Xám: Đã hủy).
+    - Hàm `formatAuditNote`: Chuyển đổi tự động các ghi chú mặc định tiếng Anh sang tiếng Việt (`Turnover after checkout or room transfer` ➔ `Dọn dẹp phòng sau khi khách trả phòng hoặc đổi phòng`; `Assigned to staff 4` ➔ `Phân công nhiệm vụ cho: Phạm Thị Lan (Buồng phòng)`).
+  - Tích hợp toàn diện vào `HousekeepingPage.tsx` và `MaintenancePage.tsx`:
+    - Bảng Kanban buồng phòng và bảng sự cố bảo trì hiển thị tên nhân viên kèm Huy hiệu chức vụ (Role Tag).
+    - Toàn bộ Dòng thời gian Timeline kiểm toán hiển thị trực quan: Tên nhân viên rõ ràng, chức danh, nhãn hành động tiếng Việt và ghi chú kiểm toán format chuẩn.
+
+#### 8. Kiểm thử & Biên dịch (Verification):
 - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript, 0 lỗi linter**.
 
 

@@ -44,6 +44,11 @@ import dayjs from 'dayjs';
 import { housekeepingApi } from '../../api/housekeeping.api.ts';
 import { roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
+import {
+  getStaffDisplay,
+  getHousekeepingActionDisplay,
+  formatAuditNote,
+} from '../../utils/staffDirectory.ts';
 import type {
   HousekeepingTaskItem,
   HousekeepingPriority,
@@ -159,10 +164,10 @@ export const HousekeepingPage: React.FC = () => {
     return found ? found.name : `Hạng #${roomTypeId}`;
   };
 
-  const getStaffName = (staffId: string | null) => {
+  const getStaffName = (staffId: string | number | null | undefined) => {
     if (!staffId) return null;
-    const found = HOUSEKEEPING_STAFF_OPTIONS.find((s) => s.value === String(staffId));
-    return found ? found.label.split(' (')[0] : `Nhân viên #${staffId}`;
+    const staff = getStaffDisplay(staffId, user);
+    return staff.fullName;
   };
 
   // ----------------------------------------------------
@@ -487,13 +492,24 @@ export const HousekeepingPage: React.FC = () => {
 
         {/* Assigned Staff */}
         <div style={{ marginBottom: 8 }}>
-          <Space size={6}>
+          <Space size={6} wrap>
             <UserOutlined style={{ color: task.assignedTo ? '#1b4d3e' : '#8c8c8c' }} />
-            {task.assignedTo ? (
-              <Text strong style={{ fontSize: 12, color: '#1b4d3e' }}>
-                {getStaffName(task.assignedTo)}
-              </Text>
-            ) : (
+            {task.assignedTo ? (() => {
+              const staff = getStaffDisplay(task.assignedTo, user);
+              return (
+                <Space size={4}>
+                  <Text strong style={{ fontSize: 12, color: '#1b4d3e' }}>
+                    {staff.fullName}
+                  </Text>
+                  <Tag
+                    color={staff.color}
+                    style={{ fontSize: 10, margin: 0, padding: '0 4px', lineHeight: '18px' }}
+                  >
+                    {staff.roleTitle}
+                  </Tag>
+                </Space>
+              );
+            })() : (
               <Tag color="orange" style={{ fontSize: 11 }}>
                 Chưa phân công
               </Tag>
@@ -1268,9 +1284,17 @@ export const HousekeepingPage: React.FC = () => {
                 <Col span={12}>
                   <Text type="secondary" style={{ fontSize: 12 }}>Người được phân công:</Text>
                   <div>
-                    <Text strong style={{ color: '#1b4d3e' }}>
-                      {getStaffName(taskDetailRes.data.assignedTo) || 'Chưa phân công'}
-                    </Text>
+                    {taskDetailRes.data.assignedTo ? (() => {
+                      const staff = getStaffDisplay(taskDetailRes.data.assignedTo, user);
+                      return (
+                        <Space size={4}>
+                          <Text strong style={{ color: '#1b4d3e' }}>{staff.fullName}</Text>
+                          <Tag color={staff.color} style={{ fontSize: 11 }}>{staff.roleTitle}</Tag>
+                        </Space>
+                      );
+                    })() : (
+                      <Tag color="orange">Chưa phân công</Tag>
+                    )}
                   </div>
                 </Col>
                 <Col span={12}>
@@ -1287,58 +1311,59 @@ export const HousekeepingPage: React.FC = () => {
 
             {taskDetailRes.data.history && taskDetailRes.data.history.length > 0 ? (
               <Timeline
-                items={taskDetailRes.data.history.map((log) => ({
-                  color:
-                    log.action.includes('PASSED') || log.toStatus === 'COMPLETED'
-                      ? 'green'
-                      : log.action.includes('FAILED') || log.action.includes('CANCEL')
-                      ? 'red'
-                      : 'blue',
-                  children: (
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text strong style={{ fontSize: 13 }}>
-                          {log.action === 'TASK_CREATED' && 'Tạo nhiệm vụ dọn phòng'}
-                          {log.action === 'TASK_ASSIGNED' && 'Phân công nhân viên'}
-                          {log.action === 'CLEANING_STARTED' && 'Bắt đầu làm vệ sinh'}
-                          {log.action === 'AWAITING_INSPECTION' && 'Đã dọn xong, chờ kiểm tra'}
-                          {log.action === 'INSPECTION_PASSED' && 'Nghiệm thu: ĐẠT CHUẨN'}
-                          {log.action === 'INSPECTION_FAILED' && 'Nghiệm thu: KHÔNG ĐẠT'}
-                          {log.action === 'TASK_CANCELLED' && 'Hủy nhiệm vụ dọn phòng'}
-                          {!['TASK_CREATED', 'TASK_ASSIGNED', 'CLEANING_STARTED', 'AWAITING_INSPECTION', 'INSPECTION_PASSED', 'INSPECTION_FAILED', 'TASK_CANCELLED'].includes(log.action) && log.action}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>
-                          {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
-                        </Text>
-                      </div>
+                items={taskDetailRes.data.history.map((log) => {
+                  const actionMeta = getHousekeepingActionDisplay(log.action);
+                  const actor = getStaffDisplay(log.actorId, user);
+                  const isSuccess = log.action.includes('PASSED') || log.toStatus === 'COMPLETED';
+                  const isFailOrCancel = log.action.includes('FAILED') || log.action.includes('CANCEL');
+                  const timelineColor = isSuccess ? 'green' : isFailOrCancel ? 'red' : 'blue';
 
-                      <div style={{ fontSize: 12, color: '#595959', marginTop: 2 }}>
-                        Người thực hiện: <Text strong>{log.actor?.fullName || `Nhân viên #${log.actorId}`}</Text>
-                      </div>
-
-                      {log.fromStatus && (
-                        <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                          Trạng thái: {log.fromStatus} ➔ <Tag color="blue">{log.toStatus}</Tag>
+                  return {
+                    color: timelineColor,
+                    children: (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Tag color={actionMeta.color} style={{ margin: 0, fontWeight: 600 }}>
+                            {actionMeta.label}
+                          </Tag>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {dayjs(log.createdAt).format('DD/MM/YYYY HH:mm:ss')}
+                          </Text>
                         </div>
-                      )}
 
-                      {log.notes && (
-                        <div
-                          style={{
-                            marginTop: 4,
-                            padding: '4px 8px',
-                            background: '#f5f5f5',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            color: '#262626',
-                          }}
-                        >
-                          💬 {log.notes}
+                        <div style={{ fontSize: 12, color: '#595959', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>Người thực hiện:</span>
+                          <Text strong>{actor.fullName}</Text>
+                          <Tag color={actor.color} style={{ fontSize: 11, margin: 0 }}>
+                            {actor.roleTitle}
+                          </Tag>
                         </div>
-                      )}
-                    </div>
-                  ),
-                }))}
+
+                        {log.fromStatus && (
+                          <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                            Trạng thái: {log.fromStatus} ➔ <Tag color="blue">{log.toStatus}</Tag>
+                          </div>
+                        )}
+
+                        {log.notes && (
+                          <div
+                            style={{
+                              marginTop: 6,
+                              padding: '6px 10px',
+                              background: '#f6ffed',
+                              border: '1px solid #b7eb8f',
+                              borderRadius: 4,
+                              fontSize: 12,
+                              color: '#262626',
+                            }}
+                          >
+                            💬 {formatAuditNote(log.notes)}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  };
+                })}
               />
             ) : (
               <Empty description="Chưa có dữ liệu lịch sử" />
