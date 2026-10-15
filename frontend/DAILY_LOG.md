@@ -157,12 +157,52 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 | :---: | :--- | :--- | :---: |
 | **Phase 1** | `feature/fe-foundation` | Khởi tạo Vite, React 19, TS, AntD, Axios, Theme ngọc lục bảo, Layout | ✅ Đã merge `develop` |
 | **Phase 2** | `feature/fe-auth` | Đăng nhập, Demo Account Selector, JWT Silent Refresh, RBAC 6 Roles | ✅ Đã merge `develop` |
-| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã hoàn thành |
-| **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ⏳ Chuẩn bị bắt đầu |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Kế hoạch |
+| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
+| **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã hoàn thành |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Tiếp theo |
 | **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Kế hoạch |
 | **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
 | **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E toàn diện, tài liệu hướng dẫn và đóng gói đồ án | ⏳ Kế hoạch |
+
+---
+
+### 👥 Hoàn thành Phase 4 (`feature/fe-guests`) — Quản lý Khách hàng & Hồ sơ Định danh:
+
+1. **Khởi tạo nhánh tính năng:**
+   - Tạo nhánh `feature/fe-guests` từ nhánh `develop` đã tích hợp đầy đủ Phase 1, Phase 2, Phase 3.
+
+2. **Khảo sát nghiệp vụ & Bảo mật PII Backend:**
+   - Phân tích cơ chế mã hóa AES-GCM và fingerprint HMAC SHA-256 cho trường `documentNumber` (CCCD/Hộ chiếu).
+   - Phân quyền nghiêm ngặt 4 cấp độ theo `guestPermissions`:
+     - `write`: `ADMIN`, `MANAGER`, `RECEPTIONIST` (Tạo mới, chỉnh sửa hồ sơ).
+     - `delete`: `ADMIN`, `MANAGER` (Xóa mềm lưu vết Audit Log).
+     - `sensitive`: `ADMIN`, `MANAGER`, `RECEPTIONIST` (Được xem SĐT, Email, giải mã số CCCD/Passport).
+     - `read` (Chế độ Kế toán): `ACCOUNTANT` chỉ được xem Mã và Tên khách hàng để đối soát hóa đơn; toàn bộ PII (SĐT, Email, CCCD, Ngày sinh, Địa chỉ) bị backend tước bỏ để bảo vệ quyền riêng tư của khách hàng.
+
+3. **Xây dựng Types & API Client:**
+   - `src/types/guests.types.ts`: Định nghĩa TypeScript interfaces chuẩn cho `GuestSummary`, `GuestDetail`, `CreateGuestDto`, `UpdateGuestDto`, `GuestGender`, `DocumentType`.
+   - `src/api/guests.api.ts`: Xây dựng đầy đủ các hàm gọi API cho `/guests` (GET danh sách phân trang có tìm kiếm, GET chi tiết giải mã, POST tạo mới, PATCH cập nhật, DELETE xóa mềm).
+
+4. **Phát triển Màn hình Quản lý Khách hàng (`GuestsPage.tsx`):**
+   - **Thẻ thống kê định danh (Metrics Cards):** Tổng hồ sơ khách, Khách nội địa (Việt Nam), Khách quốc tế.
+   - **Thanh công cụ tìm kiếm & lọc:** Tìm kiếm theo tên khách, số điện thoại, email; lọc theo quốc tịch; sắp xếp theo tên hoặc ngày tạo mới nhất.
+   - **Bảng danh sách khách hàng (Ant Design Table):** Mã khách monospace, Avatar đại diện, Tên khách hàng, Số điện thoại, Email, Quốc tịch (Tag), Ngày tạo hồ sơ, các nút thao tác.
+   - **Bảo mật phân quyền (RBAC):**
+     - Khi `ACCOUNTANT` đăng nhập: Hiển thị Banner màu xanh thông báo cơ chế bảo vệ PII; các cột SĐT, Email hiển thị trạng thái `🔒 Đã mã hóa`; các nút Sửa/Xóa bị ẩn hoàn toàn.
+     - Nút Xóa hồ sơ chỉ xuất hiện cho `ADMIN` và `MANAGER` (kèm xác nhận Popconfirm bảo vệ dữ liệu).
+   - **Drawer Xem chi tiết hồ sơ định danh:**
+     - Thiết kế giao diện sang trọng chuẩn Boutique Hotel.
+     - Hiển thị đầy đủ thông tin cá nhân, ngày sinh, địa chỉ, ghi chú đặc quyền.
+     - **Tính năng ẩn/hiện số CCCD/Passport**: Mặc định hiển thị dưới dạng che giấu (`07920******`) với nút con mắt để xem toàn bộ khi cần đối chiếu thủ tục check-in.
+   - **Modal Thêm mới / Chỉnh sửa khách hàng:**
+     - Form layout 2 cột rõ ràng, trực quan.
+     - Validation thông minh: Nếu nhập số giấy tờ thì bắt buộc chọn loại giấy tờ (`NATIONAL_ID`, `PASSPORT`, `DRIVER_LICENSE`, `OTHER`); số điện thoại kiểm tra format chuẩn quốc tế và nội địa.
+     - Bắt thông điệp lỗi chi tiết từ Backend.
+
+5. **Tích hợp & Kiểm thử (Verification):**
+   - Kết nối route `/guests` vào `AppRoutes.tsx`.
+   - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+
 
