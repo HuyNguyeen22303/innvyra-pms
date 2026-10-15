@@ -3,6 +3,8 @@ import { Prisma, type PrismaClient, type Stay } from '../../generated/prisma/cli
 import { AppError } from '../../shared/errors/app-error.js';
 import type { StayOperations, StayQuery, StayScope } from './stay.types.js';
 import { localDateRange } from './stay.dates.js';
+import { ensureTurnoverTask } from '../housekeeping/housekeeping.repository.js';
+import { asDate, hotelToday } from '../reservations/reservation.dates.js';
 
 const identity = { select: { id: true, fullName: true } } as const;
 const roomIdentity = { select: { id: true, roomNumber: true } } as const;
@@ -126,6 +128,22 @@ export class PrismaStayRepository {
       select: { id: true },
     });
   }
+  async maintenanceConflict(hotelId: bigint, roomId: bigint, from: Date, until: Date) {
+    const { timezone } = await this.hotel(hotelId);
+    const today = asDate(hotelToday(timezone));
+    return this.db.maintenanceBlock.findFirst({
+      where: {
+        hotelId,
+        roomId,
+        OR: [
+          { status: 'ACTIVE' },
+          { status: 'SCHEDULED', startDate: { lte: today } },
+          { status: 'SCHEDULED', startDate: { lt: until }, endDate: { gt: from } },
+        ],
+      },
+      select: { id: true },
+    });
+  }
   findById(
     hotelId: bigint,
     id: bigint,
@@ -235,8 +253,19 @@ export class PrismaStayRepository {
       where: { roomId: stay.currentRoomId, stayId: stay.id, hotelId: stay.hotelId },
     });
   }
-  dirty(hotelId: bigint, id: bigint) {
-    return this.db.room.update({ where: { id, hotelId }, data: { housekeepingStatus: 'DIRTY' } });
+  async dirty(hotelId: bigint, id: bigint, actorId: bigint) {
+    const room = await this.db.room.update({
+      where: { id, hotelId },
+      data: { housekeepingStatus: 'DIRTY' },
+    });
+    await ensureTurnoverTask(
+      this.db,
+      hotelId,
+      id,
+      actorId,
+      'Turnover after checkout or room transfer',
+    );
+    return room;
   }
   async transfer(stay: Stay, toRoomId: bigint, actorId: bigint, now: Date, reason: string) {
     // Updating the unique room key atomically claims the destination and releases the source.

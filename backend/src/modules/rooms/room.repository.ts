@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { roomTransaction } from '../../database/room-transaction.js';
-import { futureReservedPeak } from '../reservations/inventory.repository.js';
+import { futureReservedPeak, sellableRoomWhere } from '../reservations/inventory.repository.js';
 import type { CreateRoomInput, UpdateRoomInput, RoomQuery, RoomOperations } from './room.types.js';
 
 const include = {
@@ -39,14 +39,24 @@ export class PrismaRoomRepository {
   async findRoomType(hotelId: bigint, id: bigint) {
     return this.db.roomType.findFirst({ where: { hotelId, id } });
   }
+  async operationLocks(hotelId: bigint, roomId: bigint) {
+    const task = await this.db.housekeepingTask.findFirst({
+      where: { hotelId, activeRoomId: roomId },
+      select: { id: true },
+    });
+    const block = await this.db.maintenanceBlock.findFirst({
+      where: { hotelId, roomId, status: { in: ['SCHEDULED', 'ACTIVE'] } },
+      select: { id: true },
+    });
+    return { task: !!task, block: !!block };
+  }
   async capacityAfterRemoval(hotelId: bigint, roomTypeId: bigint, excludeId: bigint) {
     return this.db.room.count({
       where: {
         hotelId,
         roomTypeId,
         id: { not: excludeId },
-        isActive: true,
-        physicalStatus: 'ACTIVE',
+        ...sellableRoomWhere,
       },
     });
   }

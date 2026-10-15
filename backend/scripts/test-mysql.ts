@@ -11,7 +11,7 @@ async function main() {
   if (!applicationUrl) throw new Error('DATABASE_URL is required');
   const application = new URL(applicationUrl);
   const target = new URL(process.env.TEST_DATABASE_URL || applicationUrl);
-  if (!process.env.TEST_DATABASE_URL) target.pathname = '/innvyra_pms_stays_phase5_test';
+  if (!process.env.TEST_DATABASE_URL) target.pathname = '/innvyra_pms_operations_phase7_test';
   if (
     !['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname) ||
     !/^\/[A-Za-z0-9_]+_test$/.test(target.pathname) ||
@@ -21,7 +21,10 @@ async function main() {
   const name = target.pathname.slice(1);
   const { database: _database, ...options } = databaseOptions(target.toString());
   void _database;
-  const connection = await createConnection(options);
+  // Only after the loopback + separate _test schema guard above. A restarted MySQL
+  // server may require full caching_sha2_password authentication instead of its cache.
+  // Confined to local test bootstrap; application connection policy is unchanged.
+  const connection = await createConnection({ ...options, allowPublicKeyRetrieval: true });
   try {
     const rows = await connection.query<{ version: string }[]>('SELECT VERSION() AS version');
     console.info('Test server version:', rows[0]?.version);

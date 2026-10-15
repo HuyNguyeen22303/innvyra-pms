@@ -117,7 +117,7 @@ export class StayService {
         throw new AppError(409, 'INVALID_CHECKOUT_OPERATION', 'Checkout cannot precede check-in');
       await repository.checkout(stay, scope.actorId, now, input.notes ?? null);
       await repository.release(stay);
-      await repository.dirty(scope.hotelId, stay.currentRoomId);
+      await repository.dirty(scope.hotelId, stay.currentRoomId, scope.actorId);
       await repository.syncReservation(scope.hotelId, stay.reservationRoom.reservationId);
       return stayDetail(await this.requireStay(repository, scope, id), scope.role);
     });
@@ -157,7 +157,7 @@ export class StayService {
       );
       await repository.transfer(stay, toRoomId, scope.actorId, now, input.reason);
       await repository.assign(scope.hotelId, stay.reservationRoomId, toRoomId);
-      await repository.dirty(scope.hotelId, stay.currentRoomId);
+      await repository.dirty(scope.hotelId, stay.currentRoomId, scope.actorId);
       return stayDetail(await this.requireStay(repository, scope, id), scope.role);
     });
   }

@@ -255,13 +255,12 @@ describe.skipIf(!testUrl)(
       const target = await roomService.createRoom(hotelId, {
         ...roomInput(`${code}B`),
         floorNumber: -1,
-        housekeepingStatus: 'READY',
-        physicalStatus: 'MAINTENANCE',
+        housekeepingStatus: 'DIRTY',
+        physicalStatus: 'OUT_OF_SERVICE',
       });
       for (const filter of [
         { floorNumber: '-1' },
-        { housekeepingStatus: 'READY' },
-        { physicalStatus: 'MAINTENANCE' },
+        { physicalStatus: 'OUT_OF_SERVICE' },
         { search: `${code}B` },
       ]) {
         const page = await roomService.getRooms(

@@ -16,6 +16,8 @@ import { createReservationBody } from '../src/modules/reservations/reservation.s
 import { asDate, asDateOnly, hotelToday } from '../src/modules/reservations/reservation.dates.js';
 import { PrismaStayRepository } from '../src/modules/stays/stay.repository.js';
 import { StayService } from '../src/modules/stays/stay.service.js';
+import { HousekeepingService } from '../src/modules/housekeeping/housekeeping.service.js';
+import { PrismaHousekeepingRepository } from '../src/modules/housekeeping/housekeeping.repository.js';
 import type { StayScope } from '../src/modules/stays/stay.types.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import type { RoleCode } from '../src/shared/types/roles.js';
@@ -254,6 +256,8 @@ describe.skipIf(!testUrl)(
       vi.restoreAllMocks();
       if (!db || !hotels.length) return;
       const where = { hotelId: { in: hotels } };
+      await db.operationsAuditLog.deleteMany({ where });
+      await db.housekeepingTask.deleteMany({ where });
       // Delete only synthetic fixtures created by this test, in foreign-key order.
       await db.roomOccupancy.deleteMany({ where });
       await db.roomTransfer.deleteMany({ where });
@@ -416,9 +420,16 @@ describe.skipIf(!testUrl)(
       const path = checkinPath(0, another.id, another.rooms[0]!.id);
       const body = { roomId: roomIds[0]!.toString() };
       expect((await post(path, body)).body.error.code).toBe('ROOM_NOT_READY');
-      await new RoomService(new PrismaRoomRepository(db)).updateRoom(scope.hotelId, roomIds[0]!, {
-        housekeepingStatus: 'READY',
+      await changeRole('MANAGER');
+      const operationsScope = { ...scope, role: 'MANAGER' as const };
+      const housekeeping = new HousekeepingService(new PrismaHousekeepingRepository(db));
+      const task = await db.housekeepingTask.findFirstOrThrow({
+        where: { hotelId: scope.hotelId, activeRoomId: roomIds[0]! },
       });
+      await housekeeping.assign(operationsScope, task.id, scope.actorId);
+      await housekeeping.start(operationsScope, task.id);
+      await housekeeping.complete(operationsScope, task.id);
+      await housekeeping.inspect(operationsScope, task.id, { passed: true });
       expect((await post(path, body)).status).toBe(201);
       await assertConsistent();
     });
@@ -560,10 +571,9 @@ describe.skipIf(!testUrl)(
     it('allows operational cleaning while occupied but refuses deactivation, maintenance or type reassignment', async () => {
       await active();
       const rooms = new RoomService(new PrismaRoomRepository(db));
-      expect(
-        (await rooms.updateRoom(scope.hotelId, roomIds[0]!, { housekeepingStatus: 'CLEANING' }))
-          .occupancyStatus,
-      ).toBe('OCCUPIED');
+      await expect(
+        rooms.updateRoom(scope.hotelId, roomIds[0]!, { housekeepingStatus: 'CLEANING' }),
+      ).rejects.toMatchObject({ code: 'HOUSEKEEPING_WORKFLOW_REQUIRED' });
       for (const input of [
         { isActive: false },
         { physicalStatus: 'MAINTENANCE' as const },
@@ -574,7 +584,10 @@ describe.skipIf(!testUrl)(
         },
       ])
         await expect(rooms.updateRoom(scope.hotelId, roomIds[0]!, input)).rejects.toMatchObject({
-          code: 'ROOM_OCCUPIED',
+          code:
+            input.physicalStatus === 'MAINTENANCE'
+              ? 'MAINTENANCE_WORKFLOW_REQUIRED'
+              : 'ROOM_OCCUPIED',
         });
     });
     it('honors temporal boundaries: no time reversal or overdue transfer; late checkout allowed', async () => {

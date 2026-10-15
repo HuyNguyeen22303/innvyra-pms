@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
-import { reservedNights } from './inventory.repository.js';
+import { inventoryNights, sellableRoomWhere } from './inventory.repository.js';
 import { asDate } from './reservation.dates.js';
 import type {
   ReservationOperations,
@@ -93,11 +93,11 @@ export class PrismaReservationRepository {
   }
   async capacity(hotelId: bigint, roomTypeId: bigint) {
     return this.db.room.count({
-      where: { hotelId, roomTypeId, isActive: true, physicalStatus: 'ACTIVE' },
+      where: { hotelId, roomTypeId, ...sellableRoomWhere },
     });
   }
   async occupied(hotelId: bigint, roomTypeId: bigint, from: Date, until: Date) {
-    return reservedNights(this.db, hotelId, roomTypeId, from, until);
+    return inventoryNights(this.db, hotelId, roomTypeId, from, until);
   }
   async findById(hotelId: bigint, id: bigint) {
     return this.db.reservation.findFirst({ where: { id, hotelId }, include: detailInclude });

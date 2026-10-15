@@ -12,11 +12,14 @@ export type RoomRecord = Room & {
   roomType: Pick<RoomType, 'id' | 'code' | 'name' | 'isActive'>;
   occupancy: { roomId: bigint } | null;
 };
-export const roomView = ({ occupancy, ...record }: RoomRecord) => ({
-  ...record,
-  id: record.id.toString(),
-  hotelId: record.hotelId.toString(),
-  roomTypeId: record.roomTypeId.toString(),
-  roomType: { ...record.roomType, id: record.roomType.id.toString() },
-  occupancyStatus: occupancy ? 'OCCUPIED' : 'VACANT',
-});
+export const roomView = ({ occupancy, maintenanceManaged, ...record }: RoomRecord) => {
+  void maintenanceManaged;
+  return {
+    ...record,
+    id: record.id.toString(),
+    hotelId: record.hotelId.toString(),
+    roomTypeId: record.roomTypeId.toString(),
+    roomType: { ...record.roomType, id: record.roomType.id.toString() },
+    occupancyStatus: occupancy ? 'OCCUPIED' : 'VACANT',
+  };
+};

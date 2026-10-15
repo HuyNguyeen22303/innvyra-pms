@@ -349,11 +349,11 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
       log.mockRestore();
     }
   });
-  it('documents all 30 operations, role projections, warnings and soft delete', async () => {
+  it('documents all 79 operations, role projections, warnings and soft delete', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = (await request(app).get('/api-docs/openapi.json')).body;
     expect(Object.values(spec.paths).flatMap((value) => Object.keys(value as object))).toHaveLength(
-      30,
+      79,
     );
     expect(spec.tags).toContainEqual({ name: 'Guests' });
     for (const path of ['/guests', '/guests/{id}'])

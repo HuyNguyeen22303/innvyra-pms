@@ -530,3 +530,15 @@ Windows sandbox gây EPERM khi Vitest resolve đường dẫn và chặn kết n
 ## Stay Management (Phase 5)
 
 Check-in, check-out, same-type room transfer, occupancy, RBAC, migrations and verification: [STAYS.md](STAYS.md). Swagger includes the Stays tag and all five endpoints. Run npm run test:mysql for the complete suite against a separate local test database.
+
+## Billing & Payment Management (Phase 6)
+
+Service catalog/orders, folios, immutable charges, deposits, payments, refunds, adjustments, concurrency, migration and Swagger/Postman walkthrough: [BILLING.md](BILLING.md). Run `npm run test:mysql` for all suites using the dedicated local test database. Physical checkout remains separate from financial settlement.
+
+## Operations Management (Phase 7)
+
+Housekeeping tasks/inspection, maintenance tickets/blocks, automatic turnover on checkout/transfer, nightly availability integration, RBAC, audit history and MySQL concurrency tests: [OPERATIONS.md](OPERATIONS.md). Swagger now documents 71 operations, including 22 Operations endpoints. Room readiness must use the cleaning/inspection workflow. `npm run test:mysql` defaults to the separate local `innvyra_pms_operations_phase7_test` schema.
+
+## Reporting & Analytics (Phase 8)
+
+Dashboard, billed/cash activity, historical balances, operational occupancy/ADR/RevPAR, reservation/payment statistics, departmental operations, CSV export, RBAC and data-quality policies: [REPORTS.md](REPORTS.md). Swagger adds the Reports tag with eight GET endpoints. Money is serialized as Decimal strings; historical capacity is explicitly estimated where status history is unavailable. Reporting is read-only and adds no migration. Run `npm run test:mysql` for the full regression suite against the guarded local test database.

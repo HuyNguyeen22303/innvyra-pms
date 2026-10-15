@@ -2,6 +2,9 @@ import { roomPaths, roomSchemas } from './rooms.openapi.js';
 import { guestPaths, guestSchemas } from './guests.openapi.js';
 import { reservationPaths, reservationSchemas } from './reservations.openapi.js';
 import { stayPaths, staySchemas } from './stays.openapi.js';
+import { billingPaths, billingSchemas } from './billing.openapi.js';
+import { operationsPaths, operationsSchemas } from './operations.openapi.js';
+import { reportPaths, reportSchemas } from './reports.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -57,18 +60,37 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: 'Innvyra PMS API',
-    version: '5.0.0',
+    version: '8.0.0',
     description:
       'Staff authentication and RBAC. No public registration. IDs are decimal strings. Login/refresh/logout require X-CSRF-Protection: 1. Browser clients must use credentials: include. Refresh sessions have an absolute lifetime (default 7 days); rotation does not extend it. Serialize refresh requests: reuse revokes the entire session. For Swagger Try it out, add this API origin to CORS_ORIGINS.',
   },
   servers: [{ url: '/api/v1' }],
   tags: [
+    {
+      name: 'Reports',
+      description:
+        'Hotel-scoped financial activity, operational analytics and CSV exports. All periods are [startDate, endDate) in the hotel timezone.',
+    },
+    {
+      name: 'Housekeeping',
+      description:
+        'Turnover cleaning and authorized inspection; occupancy remains derived from stays.',
+    },
+    {
+      name: 'Maintenance',
+      description:
+        'Technical tickets and dated room blocks share inventory locking with reservations.',
+    },
     { name: 'Authentication' },
     { name: 'Room Types' },
     { name: 'Rooms' },
     { name: 'Guests' },
     { name: 'Reservations' },
     { name: 'Stays' },
+    { name: 'Services' },
+    { name: 'Service Orders' },
+    { name: 'Folios' },
+    { name: 'Payments' },
   ],
   components: {
     securitySchemes: {
@@ -86,6 +108,9 @@ export const openApiDocument = {
       ...guestSchemas,
       ...reservationSchemas,
       ...staySchemas,
+      ...billingSchemas,
+      ...operationsSchemas,
+      ...reportSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -129,6 +154,9 @@ export const openApiDocument = {
   paths: {
     ...reservationPaths,
     ...stayPaths,
+    ...billingPaths,
+    ...operationsPaths,
+    ...reportPaths,
     ...roomPaths,
     ...guestPaths,
     '/auth/login': {

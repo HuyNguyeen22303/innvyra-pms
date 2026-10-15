@@ -23,6 +23,12 @@ export class RoomAssignmentService {
           ? 'Transfers must keep the booked room type'
           : 'Room must match the booked room type',
       );
+    if (await repository.maintenanceConflict(hotelId, roomId, from, until))
+      throw new AppError(
+        409,
+        'ROOM_UNDER_MAINTENANCE',
+        'Room has an unreleased current block or a block overlapping this stay',
+      );
     if (!room.isActive || room.physicalStatus !== 'ACTIVE' || !room.roomType.isActive)
       throw new AppError(409, 'ROOM_UNAVAILABLE', 'Room is not available for occupancy');
     if (room.occupancy)
