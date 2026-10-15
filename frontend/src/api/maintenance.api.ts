@@ -6,7 +6,6 @@ import type {
   CreateMaintenanceTicketDto,
   AssignMaintenanceTicketDto,
   ResolveMaintenanceTicketDto,
-  CloseMaintenanceTicketDto,
   CancelMaintenanceTicketDto,
   TicketFilterParams,
   CreateMaintenanceBlockDto,
@@ -108,12 +107,11 @@ export const maintenanceApi = {
    * POST /maintenance/tickets/:id/close
    */
   closeTicket: async (
-    id: string,
-    data?: CloseMaintenanceTicketDto
+    id: string
   ): Promise<ApiResponse<MaintenanceTicketItem>> => {
     const res = await apiClient.post<ApiResponse<MaintenanceTicketItem>>(
       `/maintenance/tickets/${id}/close`,
-      data ?? {}
+      {}
     );
     return res.data;
   },

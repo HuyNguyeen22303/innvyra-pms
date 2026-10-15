@@ -126,7 +126,6 @@ export const MaintenancePage: React.FC = () => {
   const [createBlockForm] = Form.useForm();
   const [assignTechId, setAssignTechId] = useState<string>('5');
   const [resolutionNotes, setResolutionNotes] = useState<string>('');
-  const [closingNotes, setClosingNotes] = useState<string>('');
   const [cancelTicketReason, setCancelTicketReason] = useState<string>('');
   const [releaseNotes, setReleaseNotes] = useState<string>('');
   const [cancelBlockReason, setCancelBlockReason] = useState<string>('');
@@ -294,12 +293,10 @@ export const MaintenancePage: React.FC = () => {
   });
 
   const closeTicketMutation = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
-      maintenanceApi.closeTicket(id, { closingNotes: notes }),
+    mutationFn: (id: string) => maintenanceApi.closeTicket(id),
     onSuccess: () => {
       message.success('Nghiệm thu & Đóng phiếu sự cố thành công! Trạng thái: CLOSED.');
       setIsCloseTicketModalOpen(false);
-      setClosingNotes('');
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
@@ -606,7 +603,6 @@ export const MaintenancePage: React.FC = () => {
                   icon={<CheckCircleOutlined />}
                   onClick={() => {
                     setActionTicket(record);
-                    setClosingNotes('');
                     setIsCloseTicketModalOpen(true);
                   }}
                 >
@@ -1230,7 +1226,7 @@ export const MaintenancePage: React.FC = () => {
         }}
         onOk={() => {
           if (actionTicket) {
-            closeTicketMutation.mutate({ id: actionTicket.id, notes: closingNotes.trim() || undefined });
+            closeTicketMutation.mutate(actionTicket.id);
           }
         }}
         okText="Xác nhận Đóng phiếu"
@@ -1245,19 +1241,30 @@ export const MaintenancePage: React.FC = () => {
             description="Xác nhận chất lượng sửa chữa đạt tiêu chuẩn vận hành an toàn. Phiếu sự cố sẽ được đóng chính thức (CLOSED)."
           />
 
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Ghi chú nghiệm thu (tùy chọn):
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="Ghi chú xác nhận chất lượng kỹ thuật..."
-              value={closingNotes}
-              onChange={(e) => setClosingNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
+          {actionTicket && (
+            <Card size="small" style={{ background: '#fafafa', borderRadius: 8 }}>
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Số phòng: </Text>
+                <Tag color="#1b4d3e" style={{ fontWeight: 600 }}>#{actionTicket.room.roomNumber}</Tag>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Tiêu đề sự cố: </Text>
+                <Text strong>{actionTicket.title}</Text>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Mô tả ban đầu: </Text>
+                <div><Text>{actionTicket.description}</Text></div>
+              </div>
+              {actionTicket.resolutionNotes && (
+                <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', color: '#389e0d', fontWeight: 600 }}>
+                    🔧 Kết quả xử lý từ Kỹ thuật viên:
+                  </Text>
+                  <Text>{actionTicket.resolutionNotes}</Text>
+                </div>
+              )}
+            </Card>
+          )}
         </Space>
       </Modal>
 
