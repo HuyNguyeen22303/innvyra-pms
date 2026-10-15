@@ -37,6 +37,8 @@ export const RoomTypesPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RoomTypeItem | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Check RBAC: Only ADMIN and MANAGER can create, edit, deactivate room types
   const canManage = user?.role === 'ADMIN' || user?.role === 'MANAGER';
@@ -361,7 +363,17 @@ export const RoomTypesPage: React.FC = () => {
           columns={columns}
           rowKey="id"
           loading={isLoading}
-          pagination={{ pageSize: 8, showSizeChanger: true }}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['5', '8', '10', '20', '50'],
+            showTotal: (total) => `Tổng cộng ${total} loại phòng`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+          }}
           size="middle"
         />
       </Card>
