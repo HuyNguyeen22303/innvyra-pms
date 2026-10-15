@@ -96,4 +96,49 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
    - Click chọn vai trò sẽ tự động điền username và password, sẵn sàng bấm đăng nhập kiểm thử.
    - Kiểm tra API `/api/v1/auth/login` hoạt động hoàn hảo 100%, trả về JWT Access Token và HttpOnly Refresh Cookie.
 6. Build test `npm run build`: **Thành công 100%, 0 lỗi TypeScript**.
+7. Merge nhánh `feature/fe-auth` vào `develop` và đẩy lên GitHub origin (`commit 34af998`).
 
+---
+
+### 🏨 Hoàn thành Phase 3 (`feature/fe-rooms`) — Quản lý Hạng phòng & Sơ đồ Phòng vật lý:
+
+1. **Khởi tạo nhánh tính năng:**
+   - Tạo nhánh `feature/fe-rooms` từ `develop` mới nhất.
+
+2. **Đồng bộ cơ sở dữ liệu & Backend:**
+   - Chạy lệnh `npx prisma migrate deploy` để áp dụng các migration mới nhất từ phía Backend:
+     - `20261014020000_reservation_management`
+     - `20261014030000_stay_management`
+     - `20261015000000_billing_management`
+     - `20261015010000_operations_management`
+   - Tạo lại Prisma Client (`npx prisma generate`) để cập nhật type định nghĩa.
+   - Kiểm tra dữ liệu seed idempotency: 20 hạng phòng chuẩn quốc tế và 20 phòng vật lý phân bố trên các tầng.
+
+3. **Xây dựng Types & API Client:**
+   - `src/types/rooms.types.ts`: Định nghĩa đầy đủ interface TypeScript cho RoomType, RoomItem, Enums trạng thái (`PhysicalStatus`: ACTIVE/MAINTENANCE/OUT_OF_SERVICE, `HousekeepingStatus`: READY/DIRTY/CLEANING/INSPECTION) và DTOs.
+   - `src/api/rooms.api.ts`: Xây dựng đầy đủ các hàm gọi API cho `/room-types` và `/rooms` (GET danh sách có lọc, GET chi tiết, POST tạo mới, PATCH cập nhật, DELETE vô hiệu hóa).
+
+4. **Phát triển Màn hình Quản lý Loại phòng (`RoomTypesPage.tsx`):**
+   - Bảng Ant Design Table hiển thị: Mã hạng phòng, Tên hạng phòng, Giá cơ bản (VND định dạng chuẩn), Sức chứa (người lớn / trẻ em), Mô tả và Trạng thái kích hoạt.
+   - Modal Thêm mới và Chỉnh sửa loại phòng với validation chặt chẽ (mã phòng viết hoa, giá tối thiểu > 0).
+   - Nút bật/tắt kích hoạt (Kích hoạt lại / Ngưng áp dụng).
+   - Phân quyền (RBAC): Chỉ `ADMIN` và `MANAGER` được quyền thao tác thêm/sửa/tắt; các vai trò khác ở chế độ chỉ đọc.
+
+5. **Phát triển Màn hình Quản lý Phòng vật lý (`RoomsPage.tsx`):**
+   - **Chuyển đổi 2 chế độ hiển thị (View Mode):**
+     - **Grid View (Sơ đồ phòng trực quan):** Phân chia theo từng tầng (Tầng 1, Tầng 2...), hiển thị thẻ phòng trực quan với màu sắc phản ánh trạng thái dọn buồng (READY - Xanh lá, DIRTY - Cam đỏ, CLEANING - Xanh dương, INSPECTION - Tím) và huy hiệu bảo trì khi phòng gặp sự cố kỹ thuật. Click vào phòng để xem chi tiết hoặc cập nhật nhanh trạng thái.
+     - **Table View (Danh sách bảng chi tiết):** Hiển thị chi tiết số phòng, tầng, hạng phòng tương ứng, trạng thái buồng phòng, trạng thái vật lý, ghi chú và các nút thao tác.
+   - **Thanh công cụ lọc đa tiêu chí:**
+     - Lọc theo tầng (Tất cả, Tầng 1, Tầng 2, Tầng 3...).
+     - Lọc theo hạng phòng (Standard, Superior, Deluxe, Suite...).
+     - Lọc theo tình trạng dọn dẹp (READY, DIRTY, CLEANING, INSPECTION).
+     - Lọc theo tình trạng vật lý (Bình thường, Bảo trì, Ngừng vận hành).
+     - Tìm kiếm nhanh theo số phòng (Search input).
+   - **Cập nhật nhanh trạng thái (Quick Status Modal):**
+     - Cho phép quản lý đổi nhanh trạng thái buồng phòng và trạng thái vật lý cùng ghi chú bảo trì mà không cần vào form sửa cồng kềnh.
+   - **Kiểm soát bảo mật RBAC:**
+     - Tuân thủ nghiêm ngặt theo phân quyền backend: Chỉ `ADMIN` và `MANAGER` thấy và thực hiện các hành động can thiệp dữ liệu phòng. Nhân viên Lễ tân, Buồng phòng, Kế toán chỉ có quyền tra cứu tình trạng phòng để phục vụ công việc hàng ngày.
+
+6. **Kiểm thử & Biên dịch (Verification):**
+   - Tích hợp route `/rooms/types` và `/rooms/inventory` vào `src/routes/AppRoutes.tsx`.
+   - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.

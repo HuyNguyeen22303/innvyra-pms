@@ -4,6 +4,8 @@ import { MainLayout } from '../layouts/MainLayout.tsx';
 import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
 import { LoginPage } from '../pages/auth/LoginPage.tsx';
 import { DashboardPage } from '../pages/dashboard/DashboardPage.tsx';
+import { RoomsPage } from '../pages/rooms/RoomsPage.tsx';
+import { RoomTypesPage } from '../pages/room-types/RoomTypesPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
 import { PhasePlaceholderPage } from '../pages/common/PhasePlaceholderPage.tsx';
@@ -81,28 +83,10 @@ export const AppRoutes: React.FC = () => {
         />
 
         {/* Rooms */}
-        <Route
-          path="rooms"
-          element={
-            <PhasePlaceholderPage
-              title="Quản lý Phòng vật lý"
-              phase="Phase 3: feature/fe-rooms"
-              description="Danh sách phòng theo tầng, trạng thái vệ sinh & vận hành."
-            />
-          }
-        />
+        <Route path="rooms" element={<RoomsPage />} />
 
         {/* Room Types */}
-        <Route
-          path="room-types"
-          element={
-            <PhasePlaceholderPage
-              title="Danh mục Loại phòng"
-              phase="Phase 3: feature/fe-rooms"
-              description="Cấu hình loại phòng Standard, Superior, Deluxe, Suite, giá cơ bản & sức chứa."
-            />
-          }
-        />
+        <Route path="room-types" element={<RoomTypesPage />} />
 
         {/* Housekeeping */}
         <Route
