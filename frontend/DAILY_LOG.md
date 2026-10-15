@@ -142,3 +142,27 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 6. **Kiểm thử & Biên dịch (Verification):**
    - Tích hợp route `/rooms/types` và `/rooms/inventory` vào `src/routes/AppRoutes.tsx`.
    - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+
+7. **Xử lý sự cố kỹ thuật & Tinh chỉnh (Bug Fixes & Refinements):**
+   - **Fix lỗi trắng màn hình**: Backend trả về cấu trúc phân trang `{ success: true, data: { items: [...], pagination: { ... } } }`. Ở phiên bản đầu, UI mong đợi mảng phẳng `[...]` nên hàm `rooms.reduce(...)` gây lỗi runtime `TypeError`. Đã bổ sung cơ chế Safe Extraction bóc tách dữ liệu mảng an toàn và bọc `ErrorBoundary.tsx` quanh toàn bộ app để triệt tiêu hiện tượng sập giao diện trắng tinh.
+   - **Tuân thủ quy chuẩn khách sạn (Hotel SOP Invariant)**: Khi tạo phòng mới, backend bắt buộc phòng ban đầu phải là `DIRTY` (Chờ dọn dẹp) để nhân viên buồng phòng vào setup trước khi đón khách. Đã khóa ô chọn vệ sinh ban đầu là `DIRTY` kèm hướng dẫn trực quan, đồng thời trích xuất thông báo lỗi chi tiết từ server (`err.response.data.message`).
+   - **Tự động hóa Ngày vận hành & Ca trực**: Thay thế ngày tĩnh mẫu đồ án cũ bằng `dayjs().format('DD/MM/YYYY')` lấy chính xác ngày thực tế của máy tính (`15/10/2026`) và ca trực theo giờ.
+   - **Đồng bộ số lượng phòng thời gian thực**: Huy hiệu phòng ở Sidebar kết nối API tự động đếm số phòng có trong cơ sở dữ liệu (`● 21 phòng`), tự động cập nhật ngay khi tạo phòng mới.
+
+---
+
+### 🗺️ Bảng Kế Hoạch 10 Phases Toàn Diện Của Đồ Án Innvyra PMS:
+
+| Phase | Nhánh Git | Nội dung công việc | Trạng thái |
+| :---: | :--- | :--- | :---: |
+| **Phase 1** | `feature/fe-foundation` | Khởi tạo Vite, React 19, TS, AntD, Axios, Theme ngọc lục bảo, Layout | ✅ Đã merge `develop` |
+| **Phase 2** | `feature/fe-auth` | Đăng nhập, Demo Account Selector, JWT Silent Refresh, RBAC 6 Roles | ✅ Đã merge `develop` |
+| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã hoàn thành |
+| **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ⏳ Chuẩn bị bắt đầu |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Kế hoạch |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Kế hoạch |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
+| **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
+| **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E toàn diện, tài liệu hướng dẫn và đóng gói đồ án | ⏳ Kế hoạch |
+
