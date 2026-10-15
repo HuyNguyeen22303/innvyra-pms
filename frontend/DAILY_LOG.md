@@ -407,7 +407,15 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `/housekeeping`: `ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`.
   - `/maintenance`: `ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`, `TECHNICIAN`.
 
-#### 6. Kiểm thử & Biên dịch (Verification):
+#### 6. Tinh chỉnh & Sửa lỗi (Bug Fixes):
+- **Sửa lỗi gửi ghi chú rỗng (`notes: ''`) khi tạo nhiệm vụ buồng phòng**:
+  - Khi bấm nút "Tạo việc dọn" từ bảng Hàng đợi phòng bẩn hoặc mở Modal tạo việc dọn dẹp, nếu người dùng để trống ô ghi chú thì form gửi chuỗi rỗng `notes: ""`.
+  - Backend sử dụng Zod schema: `notes: z.string().trim().min(1).max(2000).optional()`. Do `""` không phải `undefined` nên Zod báo lỗi 422: `Too small: expected string to have >=1 characters`.
+  - Đã chuẩn hóa sanitization trên form: `notes: values.notes?.trim() ? values.notes.trim() : undefined`. Nếu không nhập ghi chú thì loại bỏ field khỏi payload.
+  - Cập nhật trích xuất thông báo lỗi từ server: `err.response?.data?.message || err.response?.data?.error?.message` để hiển thị rõ ràng nguyên nhân lỗi.
+
+#### 7. Kiểm thử & Biên dịch (Verification):
 - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript, 0 lỗi linter**.
+
 
 

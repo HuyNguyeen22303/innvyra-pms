@@ -246,7 +246,7 @@ export const MaintenancePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể tạo phiếu sự cố.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo phiếu sự cố.');
     },
   });
 
@@ -261,7 +261,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể phân công kỹ thuật viên.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công kỹ thuật viên.');
     },
   });
 
@@ -273,7 +273,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể bắt đầu sửa chữa.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu sửa chữa.');
     },
   });
 
@@ -289,7 +289,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể báo cáo hoàn thành.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể báo cáo hoàn thành.');
     },
   });
 
@@ -305,7 +305,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể đóng phiếu sự cố.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể đóng phiếu sự cố.');
     },
   });
 
@@ -321,7 +321,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể hủy phiếu sự cố.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy phiếu sự cố.');
     },
   });
 
@@ -339,7 +339,7 @@ export const MaintenancePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
     },
   });
 
@@ -358,7 +358,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedBlockForDetail) refetchBlockDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể mở khóa phòng.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể mở khóa phòng.');
     },
   });
 
@@ -375,7 +375,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedBlockForDetail) refetchBlockDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể hủy lệnh bảo trì.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy lệnh bảo trì.');
     },
   });
 
@@ -1037,7 +1037,14 @@ export const MaintenancePage: React.FC = () => {
           form={createTicketForm}
           layout="vertical"
           initialValues={{ priority: 'NORMAL' }}
-          onFinish={(values) => createTicketMutation.mutate(values)}
+          onFinish={(values) =>
+            createTicketMutation.mutate({
+              roomId: values.roomId,
+              title: values.title.trim(),
+              description: values.description.trim(),
+              priority: values.priority,
+            })
+          }
         >
           <Form.Item
             name="roomId"
@@ -1326,7 +1333,7 @@ export const MaintenancePage: React.FC = () => {
               roomId: values.roomId,
               startDate: start.format('YYYY-MM-DD'),
               endDate: end.format('YYYY-MM-DD'),
-              reason: values.reason,
+              reason: values.reason.trim(),
               maintenanceTicketId: values.maintenanceTicketId || undefined,
             });
           }}

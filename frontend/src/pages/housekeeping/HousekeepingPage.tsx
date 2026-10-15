@@ -179,7 +179,7 @@ export const HousekeepingPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dirty-rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể tạo nhiệm vụ dọn phòng.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo nhiệm vụ dọn phòng.');
     },
   });
 
@@ -194,7 +194,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể phân công nhân viên.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công nhân viên.');
     },
   });
 
@@ -207,7 +207,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể bắt đầu dọn phòng.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu dọn phòng.');
     },
   });
 
@@ -224,7 +224,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể hoàn thành dọn phòng.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hoàn thành dọn phòng.');
     },
   });
 
@@ -246,7 +246,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể ghi nhận kết quả nghiệm thu.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể ghi nhận kết quả nghiệm thu.');
     },
   });
 
@@ -263,7 +263,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error?.message || 'Không thể hủy nhiệm vụ.');
+      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy nhiệm vụ.');
     },
   });
 
@@ -428,7 +428,7 @@ export const HousekeepingPage: React.FC = () => {
               createForm.setFieldsValue({
                 roomId: String(record.id),
                 priority: 'NORMAL',
-                notes: '',
+                notes: undefined,
               });
               setIsCreateModalOpen(true);
             }}
@@ -929,7 +929,14 @@ export const HousekeepingPage: React.FC = () => {
           form={createForm}
           layout="vertical"
           initialValues={{ priority: 'NORMAL' }}
-          onFinish={(values) => createMutation.mutate(values)}
+          onFinish={(values) => {
+            const payload: CreateHousekeepingTaskDto = {
+              roomId: values.roomId,
+              priority: values.priority,
+              notes: values.notes?.trim() ? values.notes.trim() : undefined,
+            };
+            createMutation.mutate(payload);
+          }}
         >
           <Form.Item
             name="roomId"
@@ -940,7 +947,7 @@ export const HousekeepingPage: React.FC = () => {
               placeholder="Chọn số phòng..."
               showSearch
               filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
               options={dirtyRoomList.map((r) => ({
                 value: String(r.id),
@@ -1040,7 +1047,10 @@ export const HousekeepingPage: React.FC = () => {
         }}
         onOk={() => {
           if (actionTask) {
-            completeMutation.mutate({ id: actionTask.id, notes: completeNotes });
+            completeMutation.mutate({
+              id: actionTask.id,
+              notes: completeNotes.trim() ? completeNotes.trim() : undefined,
+            });
           }
         }}
         okText="Gửi nghiệm thu"
