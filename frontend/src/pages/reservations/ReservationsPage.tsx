@@ -1111,7 +1111,7 @@ export const ReservationsPage: React.FC = () => {
                                 />
                               </div>
 
-                              <div>
+                              <div style={{ paddingBottom: 16 }}>
                                 <Text strong style={{ display: 'block', marginBottom: 6 }}>
                                   Ghi chú đặt phòng (Yêu cầu đặc biệt):
                                 </Text>
@@ -1495,7 +1495,7 @@ export const ReservationsPage: React.FC = () => {
             description="Khi xác nhận hủy đơn, toàn bộ các đêm phòng đã giữ chỗ cho khách hàng sẽ được giải phóng ngay lập tức trên hệ thống và quay lại trạng thái phòng trống cho khách khác đặt. Thao tác này KHÔNG thể hoàn tác."
           />
 
-          <div>
+          <div style={{ paddingBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
               Lý do hủy đặt phòng: <span style={{ color: '#ff4d4f' }}>*</span>
             </Text>

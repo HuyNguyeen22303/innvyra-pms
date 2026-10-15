@@ -1006,7 +1006,7 @@ export const StaysPage: React.FC = () => {
             )}
 
             {/* Check-in Notes */}
-            <div>
+            <div style={{ paddingBottom: 16 }}>
               <Text strong style={{ display: 'block', marginBottom: 6 }}>
                 Ghi chú khi nhận phòng:
               </Text>
@@ -1068,7 +1068,7 @@ export const StaysPage: React.FC = () => {
               </Descriptions>
             </Card>
 
-            <div>
+            <div style={{ paddingBottom: 16 }}>
               <Text strong style={{ display: 'block', marginBottom: 6 }}>
                 Ghi chú khi trả phòng:
               </Text>
@@ -1141,7 +1141,7 @@ export const StaysPage: React.FC = () => {
               )}
             </div>
 
-            <div>
+            <div style={{ paddingBottom: 16 }}>
               <Text strong style={{ display: 'block', marginBottom: 6 }}>
                 Lý do đổi phòng: <span style={{ color: '#ff4d4f' }}>*</span>
               </Text>

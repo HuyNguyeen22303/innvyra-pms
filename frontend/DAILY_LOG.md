@@ -320,9 +320,13 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
        - Ô nhập ghi chú khi nhận phòng.
 
 5. **Tích hợp liên kết chéo giữa các Phase (Cross-Phase Integration)**:
-   - Thêm nút tắt Check-in nhanh (biểu tượng Login màu xanh lá) trực tiếp trên bảng danh sách của ReservationsPage.tsx cho các đơn CONFIRMED và PARTIALLY_CHECKED_IN để điều hướng ngay sang quầy Check-in.
-   - Cập nhật định tuyến /stays trong AppRoutes.tsx và sidebar menu trong MainLayout.tsx.
+   - Thêm nút tắt Check-in nhanh (biểu tượng Login màu xanh lá) trực tiếp trên bảng danh sách của `ReservationsPage.tsx` cho các đơn `CONFIRMED` và `PARTIALLY_CHECKED_IN` để điều hướng ngay sang quầy Check-in.
+   - Cập nhật định tuyến `/stays` trong `AppRoutes.tsx` và sidebar menu trong `MainLayout.tsx`.
 
-6. **Kiểm thử & Biên dịch (Verification)**:
-   - Chạy 
-pm run build: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+6. **Tinh chỉnh UI / UX (Khắc phục lỗi trùng số đếm ký tự 0/2000)**:
+   - Khắc phục hiện tượng bộ đếm ký tự `showCount` (`0 / 2000`) của `Input.TextArea` trong Ant Design bị tràn sát mép footer của Modal.
+   - Bổ sung khoảng đệm an toàn `paddingBottom: 16` tại các khung chứa TextArea trong `StaysPage.tsx` (Check-in, Check-out, Đổi phòng) và `ReservationsPage.tsx` (Hủy phòng, Ghi chú đặt phòng).
+
+7. **Kiểm thử & Biên dịch (Verification)**:
+   - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+
