@@ -41,63 +41,76 @@ frontend/
 ├── src/
 │   ├── api/                # Tầng gọi API qua Axios
 │   │   ├── axiosClient.ts  # Axios instance + CSRF header + 401 refresh interceptor
-│   │   └── auth.api.ts     # Các hàm gọi API xác thực (/auth/login, /auth/me,...)
+│   │   ├── auth.api.ts     # Các hàm gọi API xác thực (/auth/login, /auth/me,...)
+│   │   └── rooms.api.ts    # API quản lý loại phòng (/room-types) & phòng vật lý (/rooms)
 │   ├── components/         # Reusable UI components
 │   │   ├── ProtectedRoute.tsx # Hộ tống Route theo trạng thái đăng nhập & role
-│   │   └── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
+│   │   ├── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
+│   │   └── ErrorBoundary.tsx # Bắt lỗi giao diện React an toàn, chống crash trắng màn hình
 │   ├── layouts/            # Khung giao diện chính
-│   │   └── MainLayout.tsx  # Layout chuẩn: Sider thu gọn, Header có avatar, role menu
+│   │   └── MainLayout.tsx  # Layout chuẩn: Sider thu gọn, ngày vận hành & ca trực động, số phòng realtime
 │   ├── pages/              # Màn hình chức năng
-│   │   ├── auth/           # Màn hình Đăng nhập
+│   │   ├── auth/           # Màn hình Đăng nhập (tích hợp Quick Demo Account Selector)
 │   │   ├── dashboard/      # Màn hình Tổng quan vận hành
+│   │   ├── room-types/     # Màn hình Danh mục Hạng / Loại phòng
+│   │   ├── rooms/          # Màn hình Quản lý Sơ đồ Lưới phòng (Grid) & Danh sách (Table)
 │   │   └── common/         # Màn hình 403, 404, Placeholder thông báo phase
 │   ├── routes/             # Cấu hình định tuyến
 │   │   └── AppRoutes.tsx   # Khai báo tập trung toàn bộ route của ứng dụng
 │   ├── store/              # State management toàn cục
 │   │   └── authStore.ts    # Zustand store lưu phiên đăng nhập & thông tin User
 │   ├── theme/              # Tùy biến giao diện Ant Design
-│   │   └── themeConfig.ts  # Bộ màu Hospitality Navy/Teal (#0f4c81)
+│   │   └── themeConfig.ts  # Bộ màu Hospitality Boutique Emerald (#1b4d3e) & Slate
 │   ├── types/              # Định nghĩa kiểu dữ liệu TypeScript
-│   │   ├── api.types.ts    # Chuẩn ApiResponse, ApiError, PaginatedResult
-│   │   └── auth.types.ts   # Role, CurrentUser, LoginCredentials
-│   ├── App.tsx             # Root component bọc ConfigProvider, QueryClient, Router
+│   │   ├── api.types.ts    # Chuẩn ApiResponse, ApiError, PaginatedResult, PaginationMeta
+│   │   ├── auth.types.ts   # Role, CurrentUser, LoginCredentials
+│   │   └── rooms.types.ts  # RoomTypeItem, RoomItem, Enums trạng thái & DTOs
+│   ├── App.tsx             # Root component bọc ErrorBoundary, ConfigProvider, QueryClient, Router
 │   ├── index.css           # Global reset styling
 │   └── main.tsx            # Entry point ReactDOM
 ├── package.json            # Khai báo dependencies & scripts
 ├── tsconfig.app.json       # Cấu hình TypeScript cho App
 ├── vite.config.ts          # Cấu hình Vite server & alias (@/*)
+├── DAILY_LOG.md            # Nhật ký tiến độ chi tiết từng ngày
 └── README.md               # Tài liệu này
 ```
 
 ---
 
-## 4. 🗺️ Kế Hoạch Triển Khai 7 Phases & Git Branching
+## 4. 🗺️ Kế Hoạch Triển Khai Chi Tiết & Git Branching
 
 Dự án áp dụng mô hình **Git Flow chuẩn** kết hợp với bạn làm Backend. Cả hai dùng chung nhánh trung tâm `develop`. Mỗi Phase ở Frontend là một nhánh `feature/fe-...` độc lập:
 
 ```text
 develop (origin/develop)
   │
-  ├── feature/fe-foundation            [Phase 1] ✅ Khởi tạo dự án, Axios, Router, Layout
-  ├── feature/fe-auth                  [Phase 2] 🚀 Login, Auth Store, Phân quyền RBAC
-  ├── feature/fe-rooms                 [Phase 3] 📦 CRUD Loại phòng & Phòng vật lý
-  ├── feature/fe-guests                [Phase 4] 👥 Quản lý Khách hàng & Mã hóa hồ sơ
-  ├── feature/fe-reservations          [Phase 5] 📅 Đặt phòng & Tra cứu phòng trống
-  ├── feature/fe-stays                 [Phase 6] 🛎️ Check-in, Check-out & Đổi phòng
-  └── feature/fe-dashboard-and-mock    [Phase 7] 📊 Lịch phòng trực quan & Module đồ án
+  ├── feature/fe-foundation            [Phase 1]  ✅ Khởi tạo dự án, Axios, Router, Layout (Merged)
+  ├── feature/fe-auth                  [Phase 2]  ✅ Login, Quick Demo Selector, RBAC (Merged)
+  ├── feature/fe-rooms                 [Phase 3]  ✅ CRUD Loại phòng & Sơ đồ phòng vật lý
+  ├── feature/fe-guests                [Phase 4]  ⏳ Quản lý Khách hàng & Mã hóa hồ sơ định danh
+  ├── feature/fe-reservations          [Phase 5]  ⏳ Đặt phòng & Tra cứu phòng trống (Availability)
+  ├── feature/fe-stays                 [Phase 6]  ⏳ Check-in gán phòng READY, Check-out & Đổi phòng
+  ├── feature/fe-operations            [Phase 7]  ⏳ Buồng phòng (Kanban) & Bảo trì kỹ thuật
+  ├── feature/fe-billing               [Phase 8]  ⏳ Thu ngân & Quản lý Folio công nợ, hóa đơn
+  ├── feature/fe-matrix-dashboard      [Phase 9]  ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
+  └── feature/fe-final-polish          [Phase 10] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án
 ```
 
-### Chi tiết các Phase:
+### Bảng theo dõi tiến độ các Phase:
 
-| Phase | Nhánh | Mục tiêu & Chức năng | Trạng thái API |
+| Phase | Nhánh | Mục tiêu & Chức năng | Trạng thái |
 | :---: | :--- | :--- | :---: |
-| **Phase 1** | `feature/fe-foundation` | Dựng khung Vite + React + TS + Ant Design + Axios + Layout | ✅ Hoàn thành |
-| **Phase 2** | `feature/fe-auth` | Màn hình Login, xử lý JWT, tự động refresh token, phân quyền Menu theo 6 Roles | ✅ API Có sẵn |
-| **Phase 3** | `feature/fe-rooms` | Quản lý Loại phòng (Standard, Superior, Deluxe, Suite) & Phòng vật lý theo tầng | ✅ API Có sẵn |
-| **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, xem chi tiết CCCD/Passport, phân quyền Kế toán tối thiểu | ✅ API Có sẵn |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ API Có sẵn |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ API Có sẵn |
-| **Phase 7** | `feature/fe-dashboard-and-mock` | Dashboard KPI, Lịch phòng dạng lưới (Room Calendar Matrix), Folio/Báo cáo | 🟡 Mock Data cho Đồ án |
+| **Phase 1** | `feature/fe-foundation` | Dựng khung Vite + React 19 + TS + AntD + Axios + Layout | ✅ Đã merge `develop` |
+| **Phase 2** | `feature/fe-auth` | Màn hình Login, Demo Account Chip Selector, JWT Refresh, RBAC | ✅ Đã merge `develop` |
+| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã hoàn thành |
+| **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ⏳ Tiếp theo |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ⏳ Kế hoạch |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Kế hoạch |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
+| **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
+| **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
+
 
 ---
 
