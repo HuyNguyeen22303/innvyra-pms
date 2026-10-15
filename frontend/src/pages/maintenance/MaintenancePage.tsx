@@ -339,7 +339,12 @@ export const MaintenancePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
+      const details = err.response?.data?.details;
+      let detailMsg = Array.isArray(details) && details.length > 0 ? details[0].message : null;
+      if (detailMsg === 'Use a half-open interval of 1–365 nights') {
+        detailMsg = 'Khoảng thời gian khóa phòng phải từ 1 đến 365 đêm (Ngày kết thúc phải sau Ngày bắt đầu ít nhất 1 ngày).';
+      }
+      message.error(detailMsg || err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
     },
   });
 
@@ -1365,7 +1370,21 @@ export const MaintenancePage: React.FC = () => {
           <Form.Item
             name="dateRange"
             label="Khoảng thời gian khóa phòng [Ngày bắt đầu - Ngày kết thúc)"
-            rules={[{ required: true, message: 'Vui lòng chọn khoảng ngày bảo trì' }]}
+            extra="Quy tắc tính đêm phòng: Tối thiểu là 1 đêm (Ví dụ: Từ 15/10/2026 đến 16/10/2026)."
+            rules={[
+              { required: true, message: 'Vui lòng chọn khoảng ngày bảo trì' },
+              {
+                validator: async (_, value) => {
+                  if (value && value[0] && value[1]) {
+                    if (value[0].isSame(value[1], 'day')) {
+                      return Promise.reject(
+                        new Error('Khoảng thời gian khóa tối thiểu là 1 đêm (Ngày kết thúc phải sau Ngày bắt đầu ít nhất 1 ngày)!')
+                      );
+                    }
+                  }
+                },
+              },
+            ]}
           >
             <RangePicker
               style={{ width: '100%' }}
