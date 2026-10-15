@@ -9,6 +9,12 @@ import { PrismaRoomRepository } from './modules/rooms/room.repository.js';
 import { PrismaGuestRepository } from './modules/guests/guest.repository.js';
 import { PrismaReservationRepository } from './modules/reservations/reservation.repository.js';
 import { PrismaStayRepository } from './modules/stays/stay.repository.js';
+import { PrismaBillingRepository } from './modules/billing/billing.repository.js';
+import { PrismaHousekeepingRepository } from './modules/housekeeping/housekeeping.repository.js';
+import { PrismaMaintenanceRepository } from './modules/maintenance/maintenance.repository.js';
+import { MaintenanceBlockService } from './modules/maintenance/maintenance-block.service.js';
+import { startMaintenanceWorker } from './modules/maintenance/maintenance-worker.js';
+import { PrismaReportRepository } from './modules/reports/report.repository.js';
 
 async function main() {
   const env = parseEnv(process.env);
@@ -17,6 +23,8 @@ async function main() {
     await prisma.$connect();
     await prisma.$queryRaw`SELECT 1`;
     await getDummyPasswordHash();
+    const maintenance = new PrismaMaintenanceRepository(prisma);
+    const stopMaintenanceWorker = startMaintenanceWorker(new MaintenanceBlockService(maintenance));
     const server = createApp(
       env,
       new PrismaAuthRepository(prisma),
@@ -27,12 +35,15 @@ async function main() {
       new PrismaGuestRepository(prisma),
       new PrismaReservationRepository(prisma),
       new PrismaStayRepository(prisma),
+      new PrismaBillingRepository(prisma),
+      { housekeeping: new PrismaHousekeepingRepository(prisma), maintenance },
+      new PrismaReportRepository(prisma),
     ).listen(env.PORT, () => {
       console.info(`Innvyra PMS API listening on port ${env.PORT}`);
     });
     server.on('error', () => {
       console.error('HTTP server could not start');
-      void prisma.$disconnect();
+      void stopMaintenanceWorker().finally(() => prisma.$disconnect());
       process.exitCode = 1;
     });
     let stopping = false;
@@ -43,9 +54,11 @@ async function main() {
         process.exit(1);
       }, 10000).unref();
       server.close(() => {
-        void prisma.$disconnect().finally(() => {
-          clearTimeout(deadline);
-        });
+        void stopMaintenanceWorker()
+          .finally(() => prisma.$disconnect())
+          .finally(() => {
+            clearTimeout(deadline);
+          });
       });
     };
     process.once('SIGTERM', shutdown);

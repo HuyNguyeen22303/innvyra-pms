@@ -87,13 +87,13 @@ export const roomSchemas = {
   CreateRoom: {
     ...schema(roomCreateBody),
     description:
-      'Room type must be active and belong to the authenticated hotel. Basement floors may be negative. Unknown fields are rejected.',
+      'Room type must be active and belong to the authenticated hotel. Basement floors may be negative. New rooms must be DIRTY; READY requires a completed cleaning task and authorized inspection. MAINTENANCE requires a Maintenance Block. Unknown fields are rejected.',
   },
   UpdateRoom: {
     ...schema(roomUpdateBody),
     minProperties: 1,
     description:
-      'Partial update. Reassignment and reactivation require an active room type in the same hotel.',
+      'Partial update. Reassignment and reactivation require an active room type in the same hotel. housekeepingStatus may only be DIRTY for vacant rooms without active tasks. Other cleaning states require the Housekeeping workflow. MAINTENANCE requires the Maintenance Block workflow. Live tasks/blocks protect operational changes. Reopening an independently restricted room sets DIRTY.',
   },
   RoomType: {
     type: 'object',
@@ -190,7 +190,7 @@ function operations(name: 'RoomType' | 'Room', tag: string, query: z.ZodType, ex
   const deactivation =
     name === 'RoomType'
       ? 'Sets isActive=false. Returns 409 while active rooms reference the type. Inactive room references and all history remain. Repeating succeeds.'
-      : 'Sets isActive=false and retains the record and references. Repeating succeeds. Physical/housekeeping status is unchanged. Changes reducing sellable capacity (deactivation, room type reassignment or physical unavailability) return ROOM_INVENTORY_CONFLICT (409) if any current/future night would fall below confirmed/checked-in reservation demand. Uses the same hotel lock as booking/cancellation. Stay and physical room assignment workflows are not implemented.';
+      : 'Sets isActive=false and retains the record and references. Repeating succeeds when no active operations prevent it. Changes reducing capacity are checked against reservations plus maintenance blocks for every current/future night under the hotel lock. Occupied rooms cannot be deactivated or change type. Live Operations records prevent status/type bypass. READY/CLEANING/INSPECTION require the Housekeeping workflow; MAINTENANCE requires a block.';
   return {
     collection: {
       get: {
@@ -247,7 +247,7 @@ function operations(name: 'RoomType' | 'Room', tag: string, query: z.ZodType, ex
                   floorNumber: 3,
                   roomTypeId: '3',
                   physicalStatus: 'ACTIVE',
-                  housekeepingStatus: 'READY',
+                  housekeepingStatus: 'DIRTY',
                   notes: 'Near elevator',
                 },
           ),
@@ -285,7 +285,7 @@ function operations(name: 'RoomType' | 'Room', tag: string, query: z.ZodType, ex
           required: true,
           content: json(
             ref(`Update${name}`),
-            name === 'RoomType' ? { basePrice: '950000.00' } : { housekeepingStatus: 'READY' },
+            name === 'RoomType' ? { basePrice: '950000.00' } : { notes: 'Near elevator' },
           ),
         },
         responses: {
