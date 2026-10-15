@@ -79,10 +79,21 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 ---
 
-### 📌 Dự kiến công việc tiếp theo (Phase 2):
-1. Chốt và merge nhánh `feature/fe-foundation` vào `develop`.
-2. Tạo nhánh mới `feature/fe-auth` để tập trung làm tính năng **Xác thực & Phân quyền**:
-   - Kết nối form đăng nhập với API thật `/auth/login`.
-   - Lưu trữ phiên đăng nhập và tự động khôi phục qua `/auth/me` khi F5 trang.
-   - Thử nghiệm đăng nhập thực tế với các tài khoản demo của từng role (`ADMIN`, `RECEPTIONIST`, `ACCOUNTANT`, `HOUSEKEEPING`, `TECHNICIAN`).
-   - Kiểm tra logic ẩn/hiện menu và chặn truy cập trái phép.
+### 🚀 Bắt đầu Phase 2 (`feature/fe-auth`) — Đăng nhập & Xác thực API:
+1. Đã merge hoàn tất nhánh `feature/fe-foundation` vào nhánh chính `develop`.
+2. Khởi tạo nhánh tính năng mới: `feature/fe-auth`.
+3. Kiểm tra và khởi động Backend Express API listening trên cổng 3000 kết nối MySQL cục bộ.
+4. Kiểm tra tài khoản seed trong database:
+   - Mật khẩu mặc định: `Innvyra@Demo2026!`
+   - Danh sách tài khoản:
+     - `receptionist` (Lễ tân - Trần Ngọc Linh)
+     - `manager` (Quản lý - Nguyễn Minh Anh)
+     - `accountant` (Kế toán - Lê Thu Hà)
+     - `housekeeping` (Buồng phòng - Phạm Thị Lan)
+     - `technician` (Kỹ thuật - Hoàng Văn Nam)
+5. Nâng cấp màn hình `LoginPage.tsx`:
+   - Thêm bộ chọn nhanh tài khoản thử nghiệm (Quick Demo Account Selector).
+   - Click chọn vai trò sẽ tự động điền username và password, sẵn sàng bấm đăng nhập kiểm thử.
+   - Kiểm tra API `/api/v1/auth/login` hoạt động hoàn hảo 100%, trả về JWT Access Token và HttpOnly Refresh Cookie.
+6. Build test `npm run build`: **Thành công 100%, 0 lỗi TypeScript**.
+

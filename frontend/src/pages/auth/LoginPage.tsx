@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Typography, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, Typography, Alert, Space, Divider, Tag } from 'antd';
+import { UserOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.ts';
 import type { LoginCredentials } from '../../types/auth.types.ts';
 
 const { Title, Text } = Typography;
+
+const demoAccounts = [
+  { label: 'Lễ tân', username: 'receptionist', role: 'RECEPTIONIST', color: 'blue' },
+  { label: 'Quản lý', username: 'manager', role: 'MANAGER', color: 'green' },
+  { label: 'Kế toán', username: 'accountant', role: 'ACCOUNTANT', color: 'gold' },
+  { label: 'Buồng phòng', username: 'housekeeping', role: 'HOUSEKEEPING', color: 'cyan' },
+  { label: 'Kỹ thuật', username: 'technician', role: 'TECHNICIAN', color: 'purple' },
+];
 
 export const LoginPage: React.FC = () => {
   const [form] = Form.useForm();
@@ -26,6 +34,15 @@ export const LoginPage: React.FC = () => {
       const msg = err.response?.data?.error?.message || 'Đăng nhập không thành công.';
       setCustomError(msg);
     }
+  };
+
+  const fillDemoAccount = (username: string) => {
+    form.setFieldsValue({
+      username,
+      password: 'Innvyra@Demo2026!',
+    });
+    clearError();
+    setCustomError(null);
   };
 
   return (
@@ -109,7 +126,7 @@ export const LoginPage: React.FC = () => {
             >
               <Input
                 prefix={<UserOutlined style={{ color: '#64748b', marginRight: 4 }} />}
-                placeholder="Nhập tên đăng nhập (VD: le_tan_01, admin)"
+                placeholder="Nhập tên đăng nhập (VD: receptionist, manager)"
               />
             </Form.Item>
 
@@ -144,21 +161,32 @@ export const LoginPage: React.FC = () => {
               </Button>
             </Form.Item>
 
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 8,
-                padding: '10px 12px',
-                textAlign: 'left',
-                fontSize: 12,
-                color: '#475569',
-              }}
-            >
-              <strong style={{ color: '#0f172a' }}>ℹ️ Lưu ý bảo mật:</strong>
-              <div style={{ marginTop: 2 }}>
-                Tài khoản nội bộ được phân quyền theo 6 vai trò bởi Quản lý khách sạn.
-              </div>
+            <Divider style={{ margin: '14px 0 10px', fontSize: 12, color: '#64748b' }}>
+              <Space size={4}>
+                <KeyOutlined />
+                <span>Chọn nhanh tài khoản thử nghiệm</span>
+              </Space>
+            </Divider>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+              {demoAccounts.map((acc) => (
+                <Tag.CheckableTag
+                  key={acc.username}
+                  checked={false}
+                  onChange={() => fillDemoAccount(acc.username)}
+                  style={{
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    backgroundColor: '#f8fafc',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: '#1e293b' }}>{acc.label}</span>
+                  <span style={{ color: '#64748b', marginLeft: 4, fontSize: 11 }}>({acc.username})</span>
+                </Tag.CheckableTag>
+              ))}
             </div>
           </Form>
         </Space>
