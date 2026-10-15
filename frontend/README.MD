@@ -114,9 +114,9 @@ develop (origin/develop)
 | **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
 | **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
 | **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã hoàn thành |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Tiếp theo |
-| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã merge `develop` |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã hoàn thành |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Tiếp theo |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
 | **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
 
@@ -125,7 +125,7 @@ develop (origin/develop)
 
 ## 5. 🔐 Chuẩn Giao Tiếp Backend & Quy Tắc Bảo Mật
 
-Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài liệu `backend/FRONTEND_PERMISSIONS.md`:
+Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài liệu `backend/FRONTEND_PERMISSIONS.md` và `backend/OPERATIONS.md`:
 
 1. **Prefix URL:** Mọi request hướng tới `http://localhost:3000/api/v1`.
 2. **CSRF Protection:** Mọi request thay đổi dữ liệu (POST, PATCH, DELETE) và login/refresh/logout đều tự động đính kèm header:
@@ -146,12 +146,12 @@ Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài li�
 
 | Vai trò (Role) | Tên hiển thị | Quyền hạn trên giao diện Frontend |
 | :--- | :--- | :--- |
-| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module |
-| `MANAGER` | Quản lý KS | Toàn quyền vận hành (loại phòng, phòng, khách hàng, đặt phòng, lưu trú) |
-| `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Xem phòng |
-| `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ **tối thiểu** (chỉ hiển thị `id` & `fullName`) |
-| `HOUSEKEEPING` | Buồng phòng | Chỉ xem danh sách Phòng & Loại phòng để phục vụ công tác vệ sinh |
-| `TECHNICIAN` | Kỹ thuật | Chỉ xem danh sách Phòng & Loại phòng để phục vụ sửa chữa bảo trì |
+| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì) |
+| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì) |
+| `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì |
+| `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ **tối thiểu** (chỉ hiển thị `id` & `fullName`), xem Lịch sử lưu trú |
+| `HOUSEKEEPING` | Buồng phòng | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc |
+| `TECHNICIAN` | Kỹ thuật | Xem phiếu sự cố được phân công, Bắt đầu sửa (IN_PROGRESS), Báo hoàn thành sửa chữa (RESOLVED) |
 
 ---
 

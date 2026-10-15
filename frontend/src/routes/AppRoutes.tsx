@@ -9,6 +9,8 @@ import { RoomTypesPage } from '../pages/room-types/RoomTypesPage.tsx';
 import { GuestsPage } from '../pages/guests/GuestsPage.tsx';
 import { ReservationsPage } from '../pages/reservations/ReservationsPage.tsx';
 import { StaysPage } from '../pages/stays/StaysPage.tsx';
+import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
+import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
@@ -85,12 +87,8 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="housekeeping"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'HOUSEKEEPING']}>
-              <PhasePlaceholderPage
-                title="Quản lý Buồng phòng (Housekeeping)"
-                phase="Phase 7: feature/fe-dashboard-and-mock"
-                description="Nhiệm vụ dọn dẹp DIRTY -> CLEANING -> INSPECTION -> READY."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING']}>
+              <HousekeepingPage />
             </ProtectedRoute>
           }
         />
@@ -99,12 +97,8 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="maintenance"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'TECHNICIAN']}>
-              <PhasePlaceholderPage
-                title="Bảo trì & Khóa phòng kỹ thuật"
-                phase="Phase 7: feature/fe-dashboard-and-mock"
-                description="Khóa phòng hỏng, xử lý sự cố thiết bị phòng khách sạn."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN']}>
+              <MaintenancePage />
             </ProtectedRoute>
           }
         />

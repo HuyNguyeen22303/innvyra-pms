@@ -330,3 +330,84 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 7. **Kiểm thử & Biên dịch (Verification)**:
    - Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript**.
 
+---
+
+### 💻 Phase 7: Quản lý Buồng phòng (Housekeeping Kanban) & Lệnh Bảo trì Kỹ thuật (Maintenance Operations)
+
+- **Nhánh Git**: `feature/fe-operations` (tách từ `develop` sau khi merge Phase 6).
+- **Mục tiêu**:
+  - Triển khai phân hệ Vận hành khách sạn (Operations) gồm Quản lý Buồng phòng và Quản lý Kỹ thuật & Khóa phòng bảo trì.
+  - Tuân thủ nghiêm ngặt theo tài liệu đặc tả `backend/OPERATIONS.md` và `backend/FRONTEND_PERMISSIONS.md`.
+  - Phân quyền RBAC chuẩn xác cho cả 6 vai trò (`ADMIN`, `MANAGER`, `RECEPTIONIST`, `ACCOUNTANT`, `HOUSEKEEPING`, `TECHNICIAN`).
+
+#### 1. Khảo sát Nghiệp vụ & Ràng buộc Hệ thống (Backend Invariants):
+1. **Chu trình Buồng phòng (Housekeeping Turnover State Machine)**:
+   - Quy trình: `PENDING ➔ IN_PROGRESS ➔ AWAITING_INSPECTION ➔ COMPLETED`.
+   - Song song với việc cập nhật trạng thái phòng vật lý: `DIRTY ➔ CLEANING ➔ INSPECTION ➔ READY`.
+   - **Tạo nhiệm vụ (`POST /housekeeping/tasks`)**: Chỉ áp dụng cho phòng trống đang `DIRTY`. Mỗi phòng tại một thời điểm chỉ tồn tại duy nhất 1 nhiệm vụ dọn dẹp hoạt động (`activeRoomId`).
+   - **Phân công (`PATCH /housekeeping/tasks/:id/assign`)**: Chỉ phân công cho nhân viên buồng phòng (`HOUSEKEEPING`), Quản lý (`MANAGER`) hoặc Quản trị viên (`ADMIN`).
+   - **Bắt đầu & Báo xong**: Chỉ nhân viên được phân công mới có quyền bấm bắt đầu dọn phòng (`/start`) và báo dọn xong (`/complete`).
+   - **Nghiệm thu (`POST /housekeeping/tasks/:id/inspect`)**: Chỉ `ADMIN` và `MANAGER` được duyệt.
+     - Nếu **Đạt (Pass)**: Phòng chính thức chuyển sang trạng thái `READY: Sạch sẽ` để quầy lễ tân check-in cho khách.
+     - Nếu **Không đạt (Reject)**: Bắt buộc nhập lý do lỗi; nhiệm vụ quay về `PENDING` và phòng quay về `DIRTY` để dọn lại.
+   - **Hủy nhiệm vụ (`POST /housekeeping/tasks/:id/cancel`)**: Bắt buộc nhập lý do; phòng duy trì `DIRTY`.
+
+2. **Chu trình Phiếu sự cố kỹ thuật (Maintenance Tickets)**:
+   - Quy trình: `OPEN ➔ ASSIGNED ➔ IN_PROGRESS ➔ RESOLVED ➔ CLOSED`.
+   - Báo cáo sự cố: Mở cho mọi nhân viên (`ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`, `TECHNICIAN`).
+   - Phân công: Chỉ phân công cho kỹ thuật viên (`TECHNICIAN`), `MANAGER`, `ADMIN`.
+   - Bắt đầu sửa & Báo xong: Dành cho kỹ thuật viên được phân công (`resolutionNotes`).
+   - Nghiệm thu đóng phiếu: Dành cho Quản lý / Admin (`closingNotes`).
+
+3. **Chu trình Lệnh khóa phòng bảo trì (Maintenance Blocks)**:
+   - Trạng thái: `SCHEDULED ➔ ACTIVE ➔ RELEASED` (hoặc `CANCELLED` nếu hủy lịch tương lai).
+   - Khoảng ngày khóa nửa mở `[startDate, endDate)` (1–365 đêm) loại trừ trực tiếp phòng khỏi kho bán phòng (`/rooms/availability`).
+   - Phòng phải không có khách đang ở trước khi tạo lệnh khóa (`ROOM_CURRENTLY_OCCUPIED`).
+   - **Mở khóa phòng (`POST /maintenance/blocks/:id/release`)**: Bắt buộc ghi nhận biên bản nghiệm thu an toàn kỹ thuật (`notes`). Khi giải phóng, phòng vật lý tự động chuyển sang **`DIRTY`** và tự động sinh 1 nhiệm vụ dọn dẹp buồng phòng trước khi có thể đón khách.
+
+#### 2. Xây dựng Types & API Clients:
+- `src/types/operations.types.ts`: Định nghĩa đầy đủ `HousekeepingTaskItem`, `DirtyRoomItem`, `MaintenanceTicketItem`, `MaintenanceBlockItem`, `OperationsAuditLogItem`, các DTOs và params.
+- `src/api/housekeeping.api.ts`: Xây dựng các hàm gọi API buồng phòng: `getAll`, `getById`, `create`, `assign`, `start`, `complete`, `inspect`, `cancel`, `getDirtyRooms`.
+- `src/api/maintenance.api.ts`: Xây dựng các hàm gọi API bảo trì: `getTickets`, `getTicketById`, `createTicket`, `assignTicket`, `startRepair`, `resolveTicket`, `closeTicket`, `cancelTicket`, `getBlocks`, `getBlockById`, `createBlock`, `releaseBlock`, `cancelBlock`.
+
+#### 3. Phát triển Giao diện Quản lý Buồng phòng (HousekeepingPage.tsx):
+- **Thống kê KPI**: 4 thẻ màu phân biệt theo trạng thái (Chờ dọn, Đang dọn, Chờ kiểm tra, Đã hoàn thành).
+- **Tab 1: Bảng Kanban Buồng phòng (Kanban Board)**:
+  - 4 cột tiến trình chuẩn kèm thẻ đếm số lượng.
+  - Thẻ nhiệm vụ (Task Card): Mã phòng, Tầng, Hạng phòng, Tag mức độ ưu tiên (`URGENT`, `HIGH`, `NORMAL`, `LOW`), Avatar nhân viên phụ trách, Ghi chú và thời gian.
+  - Các nút hành động ngữ cảnh (Contextual Actions) theo vai trò: Phân công, Bắt đầu dọn, Báo dọn xong, Nghiệm thu chất lượng, Hủy việc, Xem lịch sử.
+- **Tab 2: Hàng đợi phòng bẩn (Dirty Rooms Queue)**:
+  - Bảng danh sách các phòng `DIRTY` từ endpoint `GET /housekeeping/dirty-rooms`.
+  - Nút "Tạo việc dọn" 1-click cho phép chuyển nhanh phòng bẩn vào chu trình xử lý.
+- **Modals & Drawer**:
+  - Modal tạo nhiệm vụ (chọn phòng DIRTY, chọn mức ưu tiên, ghi chú có `paddingBottom: 16`).
+  - Modal phân công nhân viên (danh sách nhân viên buồng phòng active).
+  - Modal nghiệm thu chất lượng (chọn Đạt/Không đạt, bắt buộc nhập lý do nếu từ chối).
+  - Modal gửi yêu cầu nghiệm thu & Modal hủy nhiệm vụ.
+  - Drawer hiển thị dòng thời gian kiểm toán (`OperationsAuditLog`) trực quan với đầy đủ nhân viên thao tác và ghi chú.
+
+#### 4. Phát triển Giao diện Bảo trì Kỹ thuật (MaintenancePage.tsx):
+- **Tab 1: Phiếu sự cố kỹ thuật (Maintenance Tickets)**:
+  - 4 thẻ KPI: Mới báo cáo, Đang xử lý, Đã sửa xong, Đã nghiệm thu đóng phiếu.
+  - Thanh tìm kiếm và bộ lọc đa năng (theo từ khóa, trạng thái, mức độ ưu tiên).
+  - Bảng danh sách Ant Design Table đầy đủ thông tin phòng, tiêu đề, mô tả, kỹ thuật viên phụ trách.
+  - Các modal nghiệp vụ: Báo cáo sự cố mới, Phân công kỹ thuật viên, Báo hoàn thành sửa chữa, Nghiệm thu đóng phiếu, Hủy phiếu.
+  - Drawer xem lịch sử kiểm toán dòng thời gian của phiếu sự cố.
+- **Tab 2: Lệnh khóa phòng bảo trì (Maintenance Blocks)**:
+  - 3 thẻ KPI: Đang khóa kỹ thuật (ACTIVE), Đã lên lịch tương lai (SCHEDULED), Đã mở khóa (RELEASED).
+  - Bảng danh sách các khoảng ngày khóa, số đêm giữ chỗ, lý do khóa, liên kết phiếu sự cố.
+  - Modal tạo lệnh khóa phòng với RangePicker ngày bắt đầu - kết thúc.
+  - Modal mở khóa phòng nghiệm thu an toàn (cảnh báo phòng tự động chuyển về DIRTY).
+  - Modal hủy lệnh bảo trì tương lai.
+  - Drawer xem chi tiết và dòng thời gian lịch sử lệnh khóa.
+
+#### 5. Tích hợp Định tuyến & RBAC Menu:
+- Cập nhật `src/routes/AppRoutes.tsx`: Gắn `HousekeepingPage` vào `/housekeeping` và `MaintenancePage` vào `/maintenance`.
+- Cập nhật `src/layouts/MainLayout.tsx`: Phân quyền hiển thị menu sidebar:
+  - `/housekeeping`: `ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`.
+  - `/maintenance`: `ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`, `TECHNICIAN`.
+
+#### 6. Kiểm thử & Biên dịch (Verification):
+- Chạy `npm run build`: **Biên dịch thành công 100%, 0 lỗi TypeScript, 0 lỗi linter**.
+
+

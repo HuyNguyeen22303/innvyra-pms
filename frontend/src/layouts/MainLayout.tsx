@@ -18,6 +18,7 @@ import {
   ApartmentOutlined,
   AppstoreOutlined,
   CheckCircleOutlined,
+  SyncOutlined,
   ToolOutlined,
   DollarOutlined,
   BarChartOutlined,
@@ -87,15 +88,15 @@ const menuDefinitions: MenuItemDef[] = [
   },
   {
     key: '/housekeeping',
-    icon: <CheckCircleOutlined />,
+    icon: <SyncOutlined />,
     label: 'Buồng phòng (Kanban)',
-    roles: ['ADMIN', 'MANAGER', 'HOUSEKEEPING'],
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING'],
   },
   {
     key: '/maintenance',
     icon: <ToolOutlined />,
     label: 'Bảo trì kỹ thuật',
-    roles: ['ADMIN', 'MANAGER', 'TECHNICIAN'],
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN'],
   },
   {
     key: '/folios',
