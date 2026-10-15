@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import viVN from 'antd/locale/vi_VN';
 import { pmsTheme } from './theme/themeConfig.ts';
 import { useAuthStore } from './store/authStore.ts';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AppRoutes } from './routes/AppRoutes.tsx';
 
 const queryClient = new QueryClient({
@@ -25,16 +26,19 @@ export const App: React.FC = () => {
   }, [checkAuth]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={pmsTheme} locale={viVN}>
-        <AntdApp>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </AntdApp>
-      </ConfigProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ConfigProvider theme={pmsTheme} locale={viVN}>
+          <AntdApp>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </AntdApp>
+        </ConfigProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
+
 
 export default App;

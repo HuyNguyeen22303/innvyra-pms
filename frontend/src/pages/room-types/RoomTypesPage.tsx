@@ -51,7 +51,12 @@ export const RoomTypesPage: React.FC = () => {
     queryFn: () => roomTypesApi.getAll(),
   });
 
-  const roomTypes = response?.data || [];
+  const rawData = response?.data;
+  const roomTypes: RoomTypeItem[] = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray((rawData as any)?.items)
+    ? (rawData as any).items
+    : [];
 
   // Create Mutation
   const createMutation = useMutation({

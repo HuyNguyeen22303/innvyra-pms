@@ -21,10 +21,15 @@ export interface PaginationParams {
   order?: 'asc' | 'desc';
 }
 
-export interface PaginatedResult<T> {
-  items: T[];
-  total: number;
+export interface PaginationMeta {
   page: number;
   limit: number;
+  total: number;
   totalPages: number;
 }
+
+export interface PaginatedResult<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+

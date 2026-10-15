@@ -1,5 +1,5 @@
 import { apiClient } from './axiosClient.ts';
-import type { ApiResponse } from '../types/api.types.ts';
+import type { ApiResponse, PaginatedResult } from '../types/api.types.ts';
 import type {
   RoomTypeItem,
   CreateRoomTypeDto,
@@ -11,8 +11,10 @@ import type {
 } from '../types/rooms.types.ts';
 
 export const roomTypesApi = {
-  getAll: async (): Promise<ApiResponse<RoomTypeItem[]>> => {
-    const res = await apiClient.get<ApiResponse<RoomTypeItem[]>>('/room-types');
+  getAll: async (params?: { limit?: number; page?: number }): Promise<ApiResponse<PaginatedResult<RoomTypeItem>>> => {
+    const res = await apiClient.get<ApiResponse<PaginatedResult<RoomTypeItem>>>('/room-types', {
+      params: { limit: 100, ...params },
+    });
     return res.data;
   },
 
@@ -38,8 +40,10 @@ export const roomTypesApi = {
 };
 
 export const roomsApi = {
-  getAll: async (params?: RoomFilterParams): Promise<ApiResponse<RoomItem[]>> => {
-    const res = await apiClient.get<ApiResponse<RoomItem[]>>('/rooms', { params });
+  getAll: async (params?: RoomFilterParams): Promise<ApiResponse<PaginatedResult<RoomItem>>> => {
+    const res = await apiClient.get<ApiResponse<PaginatedResult<RoomItem>>>('/rooms', {
+      params: { limit: 100, ...params },
+    });
     return res.data;
   },
 

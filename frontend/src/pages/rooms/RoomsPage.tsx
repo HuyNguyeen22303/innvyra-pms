@@ -34,10 +34,12 @@ import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import type {
   RoomItem,
+  RoomTypeItem,
   CreateRoomDto,
   PhysicalStatus,
   HousekeepingStatus,
 } from '../../types/rooms.types.ts';
+
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -71,7 +73,13 @@ export const RoomsPage: React.FC = () => {
     queryKey: ['roomTypes'],
     queryFn: () => roomTypesApi.getAll(),
   });
-  const roomTypes = roomTypesRes?.data || [];
+  const rawTypes = roomTypesRes?.data;
+  const roomTypes: RoomTypeItem[] = Array.isArray(rawTypes)
+    ? rawTypes
+    : Array.isArray((rawTypes as any)?.items)
+    ? (rawTypes as any).items
+    : [];
+
 
   // Fetch Rooms with filters
   const {
@@ -97,7 +105,13 @@ export const RoomsPage: React.FC = () => {
       }),
   });
 
-  const rooms = roomsRes?.data || [];
+  const rawRooms = roomsRes?.data;
+  const rooms: RoomItem[] = Array.isArray(rawRooms)
+    ? rawRooms
+    : Array.isArray((rawRooms as any)?.items)
+    ? (rawRooms as any).items
+    : [];
+
 
   // Create Mutation
   const createMutation = useMutation({
