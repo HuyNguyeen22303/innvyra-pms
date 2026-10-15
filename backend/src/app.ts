@@ -14,6 +14,15 @@ import type { RoomTypeRepository } from './modules/room-types/room-type.types.js
 import type { RoomRepository } from './modules/rooms/room.types.js';
 import type { GuestRepository } from './modules/guests/guest.types.js';
 import type { ReservationRepository } from './modules/reservations/reservation.types.js';
+import type { StayRepository } from './modules/stays/stay.types.js';
+import type { BillingRepository } from './modules/billing/billing.types.js';
+import type { HousekeepingRepository } from './modules/housekeeping/housekeeping.types.js';
+import type { MaintenanceRepository } from './modules/maintenance/maintenance.types.js';
+import type { ReportRepository } from './modules/reports/report.types.js';
+export type OperationsRepositories = {
+  housekeeping: HousekeepingRepository;
+  maintenance: MaintenanceRepository;
+};
 
 export type RoomRepositories = { roomTypes: RoomTypeRepository; rooms: RoomRepository };
 
@@ -23,6 +32,10 @@ export function createApp(
   rooms: RoomRepositories,
   guests: GuestRepository,
   reservations: ReservationRepository,
+  stays?: StayRepository,
+  billing?: BillingRepository,
+  operations?: OperationsRepositories,
+  reports?: ReportRepository,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -51,7 +64,20 @@ export function createApp(
       swaggerOptions: { persistAuthorization: false, withCredentials: true },
     }),
   );
-  app.use('/api/v1', apiRoutes(new AuthService(repository, env), env, rooms, guests, reservations));
+  app.use(
+    '/api/v1',
+    apiRoutes(
+      new AuthService(repository, env),
+      env,
+      rooms,
+      guests,
+      reservations,
+      stays,
+      billing,
+      operations,
+      reports,
+    ),
+  );
   app.use(notFound);
   app.use(errorHandler);
   return app;

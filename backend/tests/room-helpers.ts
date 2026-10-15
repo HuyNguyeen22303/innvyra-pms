@@ -11,6 +11,7 @@ export function memoryRooms() {
     const type = types.get(room.roomTypeId)!;
     return {
       ...room,
+      occupancy: null,
       roomType: { id: type.id, code: type.code, name: type.name, isActive: type.isActive },
     };
   };
@@ -85,6 +86,7 @@ export function memoryRooms() {
       },
     },
     rooms: {
+      operationLocks: async () => ({ task: false, block: false }),
       reservedPeak: async () => 0,
       capacityAfterRemoval: async (hotelId, roomTypeId, excludeId) =>
         [...records.values()].filter(
@@ -121,6 +123,7 @@ export function memoryRooms() {
       },
       create: async (hotelId, input) => {
         const record: Room = {
+          maintenanceManaged: false,
           ...input,
           roomTypeId: BigInt(input.roomTypeId),
           notes: input.notes ?? null,

@@ -40,6 +40,7 @@ export function reservationDetail(record: ReservationRecord, role: RoleCode) {
       id: room.id.toString(),
       roomType: { ...room.roomType, id: room.roomType.id.toString() },
       roomId: room.roomId?.toString() ?? null,
+      stay: room.stay ? { ...room.stay, id: room.stay.id.toString() } : null,
       adults: room.adults,
       children: room.children,
       nights: room.nights.map((night) => ({

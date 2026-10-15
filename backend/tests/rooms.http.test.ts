@@ -112,8 +112,8 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
         (
           await patch(`/rooms/${roomId}`, {
             notes: 'Changed',
-            housekeepingStatus: 'CLEANING',
-            physicalStatus: 'MAINTENANCE',
+            housekeepingStatus: 'DIRTY',
+            physicalStatus: 'OUT_OF_SERVICE',
           })
         ).status,
       ).toBe(200);
@@ -290,15 +290,15 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
       roomNumber: 'B01',
       floorNumber: -1,
       roomTypeId: secondId,
-      physicalStatus: 'MAINTENANCE',
-      housekeepingStatus: 'CLEANING',
+      physicalStatus: 'OUT_OF_SERVICE',
+      housekeepingStatus: 'DIRTY',
       isActive: false,
     });
     for (const query of [
       'floorNumber=-1',
       `roomTypeId=${secondId}`,
-      'physicalStatus=MAINTENANCE',
-      'housekeepingStatus=CLEANING',
+      'physicalStatus=OUT_OF_SERVICE',
+      'housekeepingStatus=DIRTY',
       'isActive=false',
       'search=B0',
     ]) {
@@ -317,7 +317,9 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
     ).toMatchObject({
       data: { items: [{ roomNumber: 'B01' }], pagination: { total: 2, totalPages: 2 } },
     });
-    expect((await get('/rooms')).text).not.toMatch(/isAvailable|occupancy|password|tokenHash/);
+    const roomList = await get('/rooms');
+    expect(roomList.text).not.toMatch(/isAvailable|"occupancy":|password|tokenHash/);
+    expect(roomList.body.data.items[0].occupancyStatus).toBe('VACANT');
   });
   it.each([
     { basePrice: '-0.01' },
@@ -407,14 +409,14 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
     expect(preflight.headers['access-control-allow-methods']).toContain('PATCH');
     expect(preflight.headers['access-control-allow-methods']).toContain('DELETE');
   });
-  it('publishes all 15 operations with resolvable schema references and matching response envelopes', async () => {
+  it('publishes all 79 operations with resolvable schema references and matching response envelopes', async () => {
     const response = await request(app).get('/api-docs/openapi.json');
     expect(response.status).toBe(200);
     const spec = response.body as {
       paths: Record<string, Record<string, unknown>>;
       components: { schemas: Record<string, unknown> };
     };
-    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(25);
+    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(79);
     const text = JSON.stringify(spec);
     for (const match of text.matchAll(/"\$ref":"#\/components\/schemas\/([^"]+)"/g))
       expect(spec.components.schemas).toHaveProperty(match[1]!);

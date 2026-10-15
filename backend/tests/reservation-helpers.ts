@@ -40,7 +40,12 @@ export function memoryReservations(hotelId = 9007199254740995n) {
     occupied: async (hid, typeId, from, until) => {
       const nights = new Map<string, number>();
       for (const record of records.values()) {
-        if (record.hotelId !== hid || !['CONFIRMED', 'CHECKED_IN'].includes(record.status))
+        if (
+          record.hotelId !== hid ||
+          !['CONFIRMED', 'PARTIALLY_CHECKED_IN', 'CHECKED_IN', 'CHECKED_OUT'].includes(
+            record.status,
+          )
+        )
           continue;
         for (const room of record.rooms.filter((r) => r.roomTypeId === typeId))
           for (const night of room.nights.filter((n) => n.stayDate >= from && n.stayDate < until)) {
@@ -99,6 +104,7 @@ export function memoryReservations(hotelId = 9007199254740995n) {
             reservationId: id,
             roomTypeId: room.roomTypeId,
             roomId: null,
+            stay: null,
             adults: room.adults,
             children: room.children,
             createdAt: now,

@@ -17,10 +17,15 @@ model Hotel {
   timezone String      @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
   staff    StaffUser[]
 
-  roomTypes    RoomType[]
-  rooms        Room[]
-  guests       Guest[]
-  reservations Reservation[]
+  roomTypes          RoomType[]
+  rooms              Room[]
+  guests             Guest[]
+  reservations       Reservation[]
+  services           Service[]
+  billingKeys        BillingIdempotency[]
+  housekeepingTasks  HousekeepingTask[]
+  maintenanceTickets MaintenanceTicket[]
+  maintenanceBlocks  MaintenanceBlock[]
 
   @@map("hotels")
 }
@@ -35,20 +40,38 @@ model Role {
 }
 
 model StaffUser {
-  id                    BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId               BigInt        @map("hotel_id") @db.UnsignedBigInt
-  roleId                BigInt        @map("role_id") @db.UnsignedBigInt
-  fullName              String        @map("full_name") @db.VarChar(191)
-  username              String        @unique @db.VarChar(64)
-  email                 String?       @unique @db.VarChar(191)
-  passwordHash          String        @map("password_hash") @db.VarChar(255)
-  isActive              Boolean       @default(true) @map("is_active")
-  createdAt             DateTime      @default(now()) @map("created_at") @db.DateTime(3)
-  hotel                 Hotel         @relation(fields: [hotelId], references: [id], onDelete: Restrict)
-  role                  Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  sessions              AuthSession[]
-  createdReservations   Reservation[] @relation("ReservationCreator")
-  cancelledReservations Reservation[] @relation("ReservationCanceller")
+  id                     BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId                BigInt               @map("hotel_id") @db.UnsignedBigInt
+  roleId                 BigInt               @map("role_id") @db.UnsignedBigInt
+  fullName               String               @map("full_name") @db.VarChar(191)
+  username               String               @unique @db.VarChar(64)
+  email                  String?              @unique @db.VarChar(191)
+  passwordHash           String               @map("password_hash") @db.VarChar(255)
+  isActive               Boolean              @default(true) @map("is_active")
+  createdAt              DateTime             @default(now()) @map("created_at") @db.DateTime(3)
+  hotel                  Hotel                @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  role                   Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  sessions               AuthSession[]
+  createdReservations    Reservation[]        @relation("ReservationCreator")
+  cancelledReservations  Reservation[]        @relation("ReservationCanceller")
+  checkedInStays         Stay[]               @relation("StayCheckinStaff")
+  checkedOutStays        Stay[]               @relation("StayCheckoutStaff")
+  roomTransfers          RoomTransfer[]
+  createdServiceOrders   ServiceOrder[]       @relation("OrderCreator")
+  completedServiceOrders ServiceOrder[]       @relation("OrderCompleter")
+  cancelledServiceOrders ServiceOrder[]       @relation("OrderCanceller")
+  folioItems             FolioItem[]
+  payments               Payment[]
+  billingAudits          BillingAuditLog[]
+  housekeepingAssigned   HousekeepingTask[]   @relation("HousekeepingAssignee")
+  housekeepingCreated    HousekeepingTask[]   @relation("HousekeepingCreator")
+  housekeepingInspected  HousekeepingTask[]   @relation("HousekeepingInspector")
+  maintenanceReported    MaintenanceTicket[]  @relation("MaintenanceReporter")
+  maintenanceAssigned    MaintenanceTicket[]  @relation("MaintenanceAssignee")
+  maintenanceResolved    MaintenanceTicket[]  @relation("MaintenanceResolver")
+  blocksCreated          MaintenanceBlock[]   @relation("BlockCreator")
+  blocksReleased         MaintenanceBlock[]   @relation("BlockReleaser")
+  operationsAudits       OperationsAuditLog[]
 
   @@unique([hotelId, id])
   @@index([hotelId])
@@ -125,21 +148,30 @@ model RoomType {
 }
 
 model Room {
-  id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId            BigInt             @map("hotel_id") @db.UnsignedBigInt
-  roomTypeId         BigInt             @map("room_type_id") @db.UnsignedBigInt
-  roomNumber         String             @map("room_number") @db.VarChar(20)
-  floorNumber        Int                @map("floor_number") @db.SmallInt
-  physicalStatus     PhysicalStatus     @default(ACTIVE) @map("physical_status")
-  housekeepingStatus HousekeepingStatus @default(DIRTY) @map("housekeeping_status")
-  notes              String?            @db.Text
-  isActive           Boolean            @default(true) @map("is_active")
-  createdAt          DateTime           @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt          DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
-  hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
-  roomType           RoomType           @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  id                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt              @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId         BigInt              @map("room_type_id") @db.UnsignedBigInt
+  roomNumber         String              @map("room_number") @db.VarChar(20)
+  floorNumber        Int                 @map("floor_number") @db.SmallInt
+  physicalStatus     PhysicalStatus      @default(ACTIVE) @map("physical_status")
+  maintenanceManaged Boolean             @default(false) @map("maintenance_managed")
+  housekeepingStatus HousekeepingStatus  @default(DIRTY) @map("housekeeping_status")
+  notes              String?             @db.Text
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel              Hotel               @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  roomType           RoomType            @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
   reservationRooms   ReservationRoom[]
+  stays              Stay[]
+  occupancy          RoomOccupancy?
+  transfersFrom      RoomTransfer[]      @relation("TransferFromRoom")
+  transfersTo        RoomTransfer[]      @relation("TransferToRoom")
+  housekeepingTasks  HousekeepingTask[]
+  maintenanceTickets MaintenanceTicket[]
+  maintenanceBlocks  MaintenanceBlock[]
 
+  @@unique([hotelId, id])
   @@unique([hotelId, roomTypeId, id])
   @@unique([hotelId, roomNumber])
   @@index([hotelId, roomTypeId])
@@ -198,18 +230,20 @@ model Guest {
   @@map("guests")
 }
 
-// Phase 4 only creates CONFIRMED and transitions CONFIRMED -> CANCELLED.
-// Other states are reserved for explicit Stay / no-show workflows, never client writes.
+// Stay transitions are server-derived from individual reservation rooms.
 enum ReservationStatus {
   CONFIRMED
   CANCELLED
   CHECKED_IN
   CHECKED_OUT
   NO_SHOW
+  PARTIALLY_CHECKED_IN
 }
 
 model Reservation {
   id                 BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  folio              Folio?
+  serviceOrders      ServiceOrder[]
   hotelId            BigInt            @map("hotel_id") @db.UnsignedBigInt
   confirmationCode   String            @unique @map("confirmation_code") @db.VarChar(32)
   bookerGuestId      BigInt            @map("booker_guest_id") @db.UnsignedBigInt
@@ -247,7 +281,7 @@ model ReservationRoom {
   hotelId       BigInt                 @map("hotel_id") @db.UnsignedBigInt
   reservationId BigInt                 @map("reservation_id") @db.UnsignedBigInt
   roomTypeId    BigInt                 @map("room_type_id") @db.UnsignedBigInt
-  // Always null in Phase 4; physical assignment needs a separate conflict-safe workflow.
+  // Current (or last, after checkout) assignment. Stay workflows own this field.
   roomId        BigInt?                @map("room_id") @db.UnsignedBigInt
   adults        Int                    @db.UnsignedSmallInt
   children      Int                    @default(0) @db.UnsignedSmallInt
@@ -257,13 +291,17 @@ model ReservationRoom {
   roomType      RoomType               @relation(fields: [hotelId, roomTypeId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
   room          Room?                  @relation(fields: [hotelId, roomTypeId, roomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
   nights        ReservationRoomNight[]
+  stay          Stay?
 
+  @@unique([hotelId, roomTypeId, id])
+  @@index([hotelId, roomId])
   @@index([hotelId, roomTypeId, reservationId])
   @@map("reservation_rooms")
 }
 
 model ReservationRoomNight {
   id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  folioItem         FolioItem?
   reservationRoomId BigInt          @map("reservation_room_id") @db.UnsignedBigInt
   stayDate          DateTime        @map("stay_date") @db.Date
   nightlyRate       Decimal         @map("nightly_rate") @db.Decimal(14, 2)
@@ -288,4 +326,438 @@ model GuestAuditLog {
 
   @@index([hotelId, guestId, createdAt])
   @@map("guest_audit_logs")
+}
+
+enum StayStatus {
+  CHECKED_IN
+  CHECKED_OUT
+}
+
+model Stay {
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  serviceOrders     ServiceOrder[]
+  hotelId           BigInt          @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId        BigInt          @map("room_type_id") @db.UnsignedBigInt
+  reservationRoomId BigInt          @unique @map("reservation_room_id") @db.UnsignedBigInt
+  currentRoomId     BigInt          @map("current_room_id") @db.UnsignedBigInt
+  status            StayStatus      @default(CHECKED_IN)
+  actualCheckinAt   DateTime        @map("actual_checkin_at") @db.DateTime(3)
+  actualCheckoutAt  DateTime?       @map("actual_checkout_at") @db.DateTime(3)
+  checkinStaffId    BigInt          @map("checkin_staff_id") @db.UnsignedBigInt
+  checkoutStaffId   BigInt?         @map("checkout_staff_id") @db.UnsignedBigInt
+  checkinNotes      String?         @map("checkin_notes") @db.VarChar(2000)
+  checkoutNotes     String?         @map("checkout_notes") @db.VarChar(2000)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.DateTime(3)
+  reservationRoom   ReservationRoom @relation(fields: [hotelId, roomTypeId, reservationRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  currentRoom       Room            @relation(fields: [hotelId, roomTypeId, currentRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  checkinStaff      StaffUser       @relation("StayCheckinStaff", fields: [hotelId, checkinStaffId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  checkoutStaff     StaffUser?      @relation("StayCheckoutStaff", fields: [hotelId, checkoutStaffId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  occupancy         RoomOccupancy?
+  transfers         RoomTransfer[]
+
+  @@unique([hotelId, roomTypeId, id])
+  @@unique([hotelId, roomTypeId, reservationRoomId])
+  @@unique([hotelId, id])
+  @@index([hotelId, status, actualCheckinAt])
+  @@index([hotelId, actualCheckoutAt])
+  @@map("stays")
+}
+
+// Only current occupancy is deleted on checkout; Stay and transfers are retained.
+model RoomOccupancy {
+  roomId     BigInt   @id @map("room_id") @db.UnsignedBigInt
+  stayId     BigInt   @unique @map("stay_id") @db.UnsignedBigInt
+  hotelId    BigInt   @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId BigInt   @map("room_type_id") @db.UnsignedBigInt
+  occupiedAt DateTime @map("occupied_at") @db.DateTime(3)
+  room       Room     @relation(fields: [hotelId, roomTypeId, roomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  stay       Stay     @relation(fields: [hotelId, roomTypeId, stayId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, roomTypeId, roomId])
+  @@unique([hotelId, roomTypeId, stayId])
+  @@map("room_occupancies")
+}
+
+model RoomTransfer {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt    @map("hotel_id") @db.UnsignedBigInt
+  roomTypeId    BigInt    @map("room_type_id") @db.UnsignedBigInt
+  stayId        BigInt    @map("stay_id") @db.UnsignedBigInt
+  fromRoomId    BigInt    @map("from_room_id") @db.UnsignedBigInt
+  toRoomId      BigInt    @map("to_room_id") @db.UnsignedBigInt
+  transferredAt DateTime  @map("transferred_at") @db.DateTime(3)
+  transferredBy BigInt    @map("transferred_by") @db.UnsignedBigInt
+  reason        String    @db.VarChar(2000)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  stay          Stay      @relation(fields: [hotelId, roomTypeId, stayId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  fromRoom      Room      @relation("TransferFromRoom", fields: [hotelId, roomTypeId, fromRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  toRoom        Room      @relation("TransferToRoom", fields: [hotelId, roomTypeId, toRoomId], references: [hotelId, roomTypeId, id], onDelete: Restrict, onUpdate: Restrict)
+  staff         StaffUser @relation(fields: [hotelId, transferredBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, stayId, transferredAt])
+  @@map("room_transfers")
+}
+
+enum HousekeepingTaskType {
+  TURNOVER_CLEANING
+}
+
+enum HousekeepingTaskStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_INSPECTION
+  COMPLETED
+  CANCELLED
+}
+
+enum HousekeepingPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MaintenanceTicketStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum MaintenanceBlockStatus {
+  SCHEDULED
+  ACTIVE
+  RELEASED
+  CANCELLED
+}
+
+model HousekeepingTask {
+  id           BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId      BigInt                 @map("hotel_id") @db.UnsignedBigInt
+  roomId       BigInt                 @map("room_id") @db.UnsignedBigInt
+  // Nullable unique slot: only nonterminal tasks hold the room. SQL CHECK enforces it.
+  activeRoomId BigInt?                @unique @map("active_room_id") @db.UnsignedBigInt
+  assignedTo   BigInt?                @map("assigned_to") @db.UnsignedBigInt
+  createdBy    BigInt                 @map("created_by") @db.UnsignedBigInt
+  taskType     HousekeepingTaskType   @default(TURNOVER_CLEANING) @map("task_type")
+  status       HousekeepingTaskStatus @default(PENDING)
+  priority     HousekeepingPriority   @default(NORMAL)
+  notes        String?                @db.Text
+  startedAt    DateTime?              @map("started_at") @db.DateTime(3)
+  completedAt  DateTime?              @map("completed_at") @db.DateTime(3)
+  inspectedAt  DateTime?              @map("inspected_at") @db.DateTime(3)
+  inspectedBy  BigInt?                @map("inspected_by") @db.UnsignedBigInt
+  createdAt    DateTime               @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt    DateTime               @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel        Hotel                  @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  room         Room                   @relation(fields: [hotelId, roomId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  assignee     StaffUser?             @relation("HousekeepingAssignee", fields: [hotelId, assignedTo], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator      StaffUser              @relation("HousekeepingCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  inspector    StaffUser?             @relation("HousekeepingInspector", fields: [hotelId, inspectedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  history      OperationsAuditLog[]
+
+  @@unique([hotelId, id])
+  @@index([hotelId, status, priority])
+  @@index([hotelId, assignedTo, createdAt])
+  @@index([hotelId, roomId, createdAt])
+  @@map("housekeeping_tasks")
+}
+
+model MaintenanceTicket {
+  id              BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId         BigInt                  @map("hotel_id") @db.UnsignedBigInt
+  roomId          BigInt                  @map("room_id") @db.UnsignedBigInt
+  title           String                  @db.VarChar(200)
+  description     String                  @db.Text
+  priority        MaintenancePriority     @default(NORMAL)
+  status          MaintenanceTicketStatus @default(OPEN)
+  reportedBy      BigInt                  @map("reported_by") @db.UnsignedBigInt
+  assignedTo      BigInt?                 @map("assigned_to") @db.UnsignedBigInt
+  resolvedBy      BigInt?                 @map("resolved_by") @db.UnsignedBigInt
+  reportedAt      DateTime                @default(now()) @map("reported_at") @db.DateTime(3)
+  startedAt       DateTime?               @map("started_at") @db.DateTime(3)
+  resolvedAt      DateTime?               @map("resolved_at") @db.DateTime(3)
+  closedAt        DateTime?               @map("closed_at") @db.DateTime(3)
+  resolutionNotes String?                 @map("resolution_notes") @db.Text
+  createdAt       DateTime                @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel           Hotel                   @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  room            Room                    @relation(fields: [hotelId, roomId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  reporter        StaffUser               @relation("MaintenanceReporter", fields: [hotelId, reportedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  assignee        StaffUser?              @relation("MaintenanceAssignee", fields: [hotelId, assignedTo], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  resolver        StaffUser?              @relation("MaintenanceResolver", fields: [hotelId, resolvedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  blocks          MaintenanceBlock[]
+  history         OperationsAuditLog[]
+
+  @@unique([hotelId, roomId, id])
+  @@unique([hotelId, id])
+  @@index([hotelId, status, priority, reportedAt])
+  @@index([hotelId, assignedTo, reportedAt])
+  @@map("maintenance_tickets")
+}
+
+model MaintenanceBlock {
+  id                  BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId             BigInt                 @map("hotel_id") @db.UnsignedBigInt
+  roomId              BigInt                 @map("room_id") @db.UnsignedBigInt
+  maintenanceTicketId BigInt?                @map("maintenance_ticket_id") @db.UnsignedBigInt
+  startDate           DateTime               @map("start_date") @db.Date
+  endDate             DateTime               @map("end_date") @db.Date
+  status              MaintenanceBlockStatus @default(SCHEDULED)
+  reason              String                 @db.VarChar(2000)
+  createdBy           BigInt                 @map("created_by") @db.UnsignedBigInt
+  releasedBy          BigInt?                @map("released_by") @db.UnsignedBigInt
+  releasedAt          DateTime?              @map("released_at") @db.DateTime(3)
+  createdAt           DateTime               @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt           DateTime               @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel               Hotel                  @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  room                Room                   @relation(fields: [hotelId, roomId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  ticket              MaintenanceTicket?     @relation(fields: [hotelId, roomId, maintenanceTicketId], references: [hotelId, roomId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator             StaffUser              @relation("BlockCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  releaser            StaffUser?             @relation("BlockReleaser", fields: [hotelId, releasedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  history             OperationsAuditLog[]
+
+  @@unique([hotelId, id])
+  @@index([hotelId, roomId, status, startDate, endDate])
+  @@index([status, startDate])
+  @@map("maintenance_blocks")
+}
+
+model OperationsAuditLog {
+  id         BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId    BigInt             @map("hotel_id") @db.UnsignedBigInt
+  actorId    BigInt             @map("actor_id") @db.UnsignedBigInt
+  taskId     BigInt?            @map("task_id") @db.UnsignedBigInt
+  ticketId   BigInt?            @map("ticket_id") @db.UnsignedBigInt
+  blockId    BigInt?            @map("block_id") @db.UnsignedBigInt
+  action     String             @db.VarChar(40)
+  fromStatus String?            @map("from_status") @db.VarChar(32)
+  toStatus   String             @map("to_status") @db.VarChar(32)
+  notes      String?            @db.VarChar(2000)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  actor      StaffUser          @relation(fields: [hotelId, actorId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  task       HousekeepingTask?  @relation(fields: [hotelId, taskId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  ticket     MaintenanceTicket? @relation(fields: [hotelId, ticketId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  block      MaintenanceBlock?  @relation(fields: [hotelId, blockId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, taskId, createdAt])
+  @@index([hotelId, ticketId, createdAt])
+  @@index([hotelId, blockId, createdAt])
+  @@map("operations_audit_logs")
+}
+
+enum ServiceOrderStatus {
+  REQUESTED
+  COMPLETED
+  CANCELLED
+}
+
+enum FolioStatus {
+  OPEN
+  CLOSED
+}
+
+enum FolioEntryType {
+  DEBIT
+  CREDIT
+}
+
+enum FolioSourceType {
+  ROOM_NIGHT
+  SERVICE_ORDER_ITEM
+  MANUAL_ADJUSTMENT
+}
+
+enum PaymentType {
+  PAYMENT
+  DEPOSIT
+  REFUND
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  CONFIRMED
+  PENDING
+  FAILED
+}
+
+model Service {
+  id          BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId     BigInt             @map("hotel_id") @db.UnsignedBigInt
+  code        String             @db.VarChar(40)
+  name        String             @db.VarChar(150)
+  description String?            @db.Text
+  unit        String             @db.VarChar(30)
+  price       Decimal            @db.Decimal(18, 2)
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel       Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  items       ServiceOrderItem[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, code])
+  @@index([hotelId, isActive, name])
+  @@map("services")
+}
+
+model ServiceOrder {
+  id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt             @map("hotel_id") @db.UnsignedBigInt
+  reservationId      BigInt             @map("reservation_id") @db.UnsignedBigInt
+  stayId             BigInt?            @map("stay_id") @db.UnsignedBigInt
+  status             ServiceOrderStatus @default(REQUESTED)
+  notes              String?            @db.VarChar(2000)
+  createdBy          BigInt             @map("created_by") @db.UnsignedBigInt
+  completedBy        BigInt?            @map("completed_by") @db.UnsignedBigInt
+  completedAt        DateTime?          @map("completed_at") @db.DateTime(3)
+  cancelledBy        BigInt?            @map("cancelled_by") @db.UnsignedBigInt
+  cancelledAt        DateTime?          @map("cancelled_at") @db.DateTime(3)
+  cancellationReason String?            @map("cancellation_reason") @db.VarChar(2000)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+  reservation        Reservation        @relation(fields: [hotelId, reservationId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  stay               Stay?              @relation(fields: [hotelId, stayId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator            StaffUser          @relation("OrderCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  completer          StaffUser?         @relation("OrderCompleter", fields: [hotelId, completedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  canceller          StaffUser?         @relation("OrderCanceller", fields: [hotelId, cancelledBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  items              ServiceOrderItem[]
+
+  @@unique([hotelId, id])
+  @@index([hotelId, reservationId, status])
+  @@index([hotelId, createdAt])
+  @@map("service_orders")
+}
+
+model ServiceOrderItem {
+  id                BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId           BigInt       @map("hotel_id") @db.UnsignedBigInt
+  serviceOrderId    BigInt       @map("service_order_id") @db.UnsignedBigInt
+  serviceId         BigInt       @map("service_id") @db.UnsignedBigInt
+  nameSnapshot      String       @map("name_snapshot") @db.VarChar(150)
+  unitSnapshot      String       @map("unit_snapshot") @db.VarChar(30)
+  quantity          Int          @db.UnsignedInt
+  unitPriceSnapshot Decimal      @map("unit_price_snapshot") @db.Decimal(18, 2)
+  lineTotal         Decimal      @map("line_total") @db.Decimal(18, 2)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  order             ServiceOrder @relation(fields: [hotelId, serviceOrderId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  service           Service      @relation(fields: [hotelId, serviceId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  folioItem         FolioItem?
+
+  @@unique([hotelId, id])
+  @@unique([serviceOrderId, serviceId])
+  @@map("service_order_items")
+}
+
+model Folio {
+  id            BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt      @map("hotel_id") @db.UnsignedBigInt
+  reservationId BigInt      @unique @map("reservation_id") @db.UnsignedBigInt
+  currency      String      @default("VND") @db.Char(3)
+  status        FolioStatus @default(OPEN)
+  openedAt      DateTime    @default(now()) @map("opened_at") @db.DateTime(3)
+  closedAt      DateTime?   @map("closed_at") @db.DateTime(3)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
+  reservation   Reservation @relation(fields: [hotelId, reservationId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  items         FolioItem[]
+  payments      Payment[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, reservationId])
+  @@index([hotelId, status])
+  @@map("folios")
+}
+
+model FolioItem {
+  id                 BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt                @map("hotel_id") @db.UnsignedBigInt
+  folioId            BigInt                @map("folio_id") @db.UnsignedBigInt
+  entryType          FolioEntryType        @map("entry_type")
+  sourceType         FolioSourceType       @map("source_type")
+  sourceId           BigInt?               @map("source_id") @db.UnsignedBigInt
+  roomNightId        BigInt?               @unique @map("room_night_id") @db.UnsignedBigInt
+  serviceOrderItemId BigInt?               @unique @map("service_order_item_id") @db.UnsignedBigInt
+  amount             Decimal               @db.Decimal(18, 2)
+  description        String                @db.VarChar(2000)
+  relatedItemId      BigInt?               @map("related_item_id") @db.UnsignedBigInt
+  createdBy          BigInt                @map("created_by") @db.UnsignedBigInt
+  createdAt          DateTime              @default(now()) @map("created_at") @db.DateTime(3)
+  folio              Folio                 @relation(fields: [hotelId, folioId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  roomNight          ReservationRoomNight? @relation(fields: [roomNightId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  serviceOrderItem   ServiceOrderItem?     @relation(fields: [hotelId, serviceOrderItemId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  relatedItem        FolioItem?            @relation("ItemAdjustment", fields: [hotelId, folioId, relatedItemId], references: [hotelId, folioId, id], onDelete: Restrict, onUpdate: Restrict)
+  adjustments        FolioItem[]           @relation("ItemAdjustment")
+  creator            StaffUser             @relation(fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, folioId, id])
+  @@unique([hotelId, serviceOrderItemId])
+  @@unique([hotelId, sourceType, sourceId])
+  @@index([hotelId, folioId, createdAt])
+  @@map("folio_items")
+}
+
+model Payment {
+  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId           BigInt        @map("hotel_id") @db.UnsignedBigInt
+  folioId           BigInt        @map("folio_id") @db.UnsignedBigInt
+  paymentType       PaymentType   @map("payment_type")
+  paymentMethod     PaymentMethod @map("payment_method")
+  amount            Decimal       @db.Decimal(18, 2)
+  status            PaymentStatus
+  referenceNumber   String?       @map("reference_number") @db.VarChar(100)
+  originalPaymentId BigInt?       @map("original_payment_id") @db.UnsignedBigInt
+  reason            String?       @db.VarChar(2000)
+  processedBy       BigInt        @map("processed_by") @db.UnsignedBigInt
+  processedAt       DateTime      @default(now()) @map("processed_at") @db.DateTime(3)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  folio             Folio         @relation(fields: [hotelId, folioId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  processor         StaffUser     @relation(fields: [hotelId, processedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  originalPayment   Payment?      @relation("PaymentRefund", fields: [hotelId, folioId, originalPaymentId], references: [hotelId, folioId, id], onDelete: Restrict, onUpdate: Restrict)
+  refunds           Payment[]     @relation("PaymentRefund")
+
+  @@unique([hotelId, folioId, id])
+  @@index([hotelId, folioId, status, createdAt])
+  @@map("payments")
+}
+
+model BillingIdempotency {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId     BigInt   @map("hotel_id") @db.UnsignedBigInt
+  keyHash     String   @map("key_hash") @db.Char(64)
+  requestHash String   @map("request_hash") @db.Char(64)
+  response    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+
+  @@unique([hotelId, keyHash])
+  @@map("billing_idempotency")
+}
+
+model BillingAuditLog {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId   BigInt    @map("hotel_id") @db.UnsignedBigInt
+  actorId   BigInt    @map("actor_id") @db.UnsignedBigInt
+  action    String    @db.VarChar(40)
+  entityId  BigInt    @map("entity_id") @db.UnsignedBigInt
+  reason    String?   @db.VarChar(2000)
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  actor     StaffUser @relation(fields: [hotelId, actorId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, action, entityId, createdAt])
+  @@map("billing_audit_logs")
 }

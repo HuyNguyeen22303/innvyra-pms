@@ -1,8 +1,8 @@
-# Innvyra PMS — Authentication, RBAC, Rooms, Guests & Reservations (Phases 1–4)
+# Innvyra PMS — Authentication, RBAC, Rooms, Guests, Reservations & Stays (Phases 1–5)
 
-Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8.0.16+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 4 bổ sung đặt nhiều phòng, availability theo đêm, snapshot giá và hủy đơn an toàn dưới concurrent requests; chưa triển khai Stay.
+Backend Express 5 + TypeScript strict/ESM, Prisma 7.10 với MariaDB driver adapter cho **MySQL 8.0.16+**, JWT (`jose`), Argon2id, Zod, Swagger, Vitest và Supertest. Toàn bộ thay đổi nằm trong `backend/`; không có frontend hoặc đăng ký công khai. Phase 4 bổ sung đặt nhiều phòng, availability theo đêm, snapshot giá và hủy đơn. Phase 5 bổ sung check-in, physical checkout, chuyển phòng cùng loại, occupancy và lịch sử với transaction/concurrency control.
 
-**Bàn giao Phase 4:** xem [RESERVATIONS.md](RESERVATIONS.md) để biết thiết kế khóa/tồn phòng, API, migration, hướng dẫn Swagger/Postman, kiểm thử và giới hạn. Các mục kết quả Phase 1–3 bên dưới là ghi nhận lịch sử; OpenAPI hiện có 25 operations.
+**Bàn giao Phase 5:** xem [STAYS.md](STAYS.md) cho thiết kế, file manifest, API, migration, Swagger/Postman, kiểm thử và giới hạn. Reservation được mô tả trong [RESERVATIONS.md](RESERVATIONS.md). Các mục kết quả Phase 1–3 bên dưới là ghi nhận lịch sử; OpenAPI hiện có 30 operations.
 
 ## Cấu trúc và trách nhiệm
 
@@ -345,7 +345,7 @@ DELETE và PATCH `isActive:false` sử dụng cùng service. Loại phòng còn 
 
 Mọi thao tác ghi room/type khóa dòng hotel bằng parameterized `SELECT ... FOR UPDATE` trong transaction ReadCommitted, rồi kiểm tra và ghi trong transaction đó. Thứ tự khóa chung ngăn race tạo/kích hoạt lại phòng với việc vô hiệu hóa loại phòng; unique constraints vẫn là lớp bảo vệ cuối cùng. Đây là khóa ở mức hotel, phù hợp số lượng thao tác quản trị hiện tại; cần đo tải nếu triển khai nhiều thao tác ghi đồng thời.
 
-**Tích hợp Reservation từ Phase 4:** đổi loại phòng, vô hiệu hóa hoặc đổi physical status làm giảm tồn sẽ kiểm tra số phòng đã đặt của từng đêm từ hôm nay theo timezone hotel, trong cùng transaction khóa hotel. Nếu tồn sau thay đổi thấp hơn nhu cầu thì trả `ROOM_INVENTORY_CONFLICT` (409). Luồng đặt/hủy phòng dùng cùng khóa. Chưa có Stay, gán phòng vật lý hoặc lịch bảo trì; không ghi trực tiếp bỏ qua service. Xem [RESERVATIONS.md](RESERVATIONS.md).
+**Tích hợp Reservation và Stay:** đổi loại phòng, vô hiệu hóa hoặc đổi physical status làm giảm tồn sẽ kiểm tra số phòng đã đặt của từng đêm từ hôm nay theo timezone hotel, trong cùng transaction khóa hotel. Nếu tồn sau thay đổi thấp hơn nhu cầu thì trả `ROOM_INVENTORY_CONFLICT` (409). Phòng có occupancy phải được chuyển khách/checkout trước khi thay đổi operation/type (`ROOM_OCCUPIED`). Luồng đặt/hủy và Stay dùng cùng khóa; chưa có lịch bảo trì. Không ghi trực tiếp bỏ qua service. Xem [RESERVATIONS.md](RESERVATIONS.md) và [STAYS.md](STAYS.md).
 
 ### Migration và thử trên Swagger/Postman
 
@@ -526,3 +526,19 @@ Kết quả chạy ngày **14/10/2026** trên MySQL **8.0.41**:
 | Smoke bản build ESM                                                  | Swagger UI/JSON HTTP 200; đủ 20 operations; mọi schema reference nội bộ hợp lệ; Guest/Auth/Rooms yêu cầu token |
 
 Windows sandbox gây EPERM khi Vitest resolve đường dẫn và chặn kết nối MySQL; các bước đó đã chạy lại ngoài sandbox sau khi được cấp quyền. Lệnh kiểm chứng dùng helper gitignored trong `.tmp/`, không ghi credentials vào tệp. Chưa triển khai production, chạy tải hoặc rotation khóa; migration database ứng dụng và cấu hình khóa là các bước vận hành còn lại.
+
+## Stay Management (Phase 5)
+
+Check-in, check-out, same-type room transfer, occupancy, RBAC, migrations and verification: [STAYS.md](STAYS.md). Swagger includes the Stays tag and all five endpoints. Run npm run test:mysql for the complete suite against a separate local test database.
+
+## Billing & Payment Management (Phase 6)
+
+Service catalog/orders, folios, immutable charges, deposits, payments, refunds, adjustments, concurrency, migration and Swagger/Postman walkthrough: [BILLING.md](BILLING.md). Run `npm run test:mysql` for all suites using the dedicated local test database. Physical checkout remains separate from financial settlement.
+
+## Operations Management (Phase 7)
+
+Housekeeping tasks/inspection, maintenance tickets/blocks, automatic turnover on checkout/transfer, nightly availability integration, RBAC, audit history and MySQL concurrency tests: [OPERATIONS.md](OPERATIONS.md). Swagger now documents 71 operations, including 22 Operations endpoints. Room readiness must use the cleaning/inspection workflow. `npm run test:mysql` defaults to the separate local `innvyra_pms_operations_phase7_test` schema.
+
+## Reporting & Analytics (Phase 8)
+
+Dashboard, billed/cash activity, historical balances, operational occupancy/ADR/RevPAR, reservation/payment statistics, departmental operations, CSV export, RBAC and data-quality policies: [REPORTS.md](REPORTS.md). Swagger adds the Reports tag with eight GET endpoints. Money is serialized as Decimal strings; historical capacity is explicitly estimated where status history is unavailable. Reporting is read-only and adds no migration. Run `npm run test:mysql` for the full regression suite against the guarded local test database.

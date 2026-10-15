@@ -253,7 +253,9 @@ describe.skipIf(!testUrl)(
     it('does not count inactive or unavailable physical rooms but ignores housekeeping for future bookings', async () => {
       expect((await availability())[0]!.availableRooms).toBe(1); // fixture is DIRTY
       for (const physicalStatus of ['MAINTENANCE', 'OUT_OF_SERVICE'] as const) {
-        await roomService.updateRoom(scope.hotelId, roomId, { physicalStatus });
+        // Legacy independent physical restrictions are database fixtures. Phase 7
+        // requires Maintenance Blocks for new MAINTENANCE mutations through the API.
+        await prisma.room.update({ where: { id: roomId }, data: { physicalStatus } });
         expect((await availability())[0]!.availableRooms).toBe(0);
         await expect(service.create(scope, input())).rejects.toMatchObject({
           code: 'INSUFFICIENT_AVAILABILITY',
@@ -284,7 +286,10 @@ describe.skipIf(!testUrl)(
         { physicalStatus: 'OUT_OF_SERVICE' as const },
       ])
         await expect(roomService.updateRoom(scope.hotelId, roomId, change)).rejects.toMatchObject({
-          code: 'ROOM_INVENTORY_CONFLICT',
+          code:
+            change.physicalStatus === 'MAINTENANCE'
+              ? 'MAINTENANCE_WORKFLOW_REQUIRED'
+              : 'ROOM_INVENTORY_CONFLICT',
         });
       const otherType = await prisma.roomType.create({
         data: { hotelId: scope.hotelId, code: 'OTHER', name: 'Other', maxAdults: 2, basePrice: 1 },

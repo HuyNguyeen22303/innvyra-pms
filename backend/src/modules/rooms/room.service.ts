@@ -19,6 +19,18 @@ export class RoomService {
     if (!roomType.isActive) throw new AppError(409, 'ROOM_TYPE_INACTIVE', 'Room type is inactive');
   }
   async createRoom(hotelId: bigint, input: CreateRoomInput) {
+    if (input.housekeepingStatus !== 'DIRTY')
+      throw new AppError(
+        409,
+        'HOUSEKEEPING_WORKFLOW_REQUIRED',
+        'New rooms must be DIRTY; use cleaning and inspection to confirm readiness',
+      );
+    if (input.physicalStatus === 'MAINTENANCE')
+      throw new AppError(
+        409,
+        'MAINTENANCE_WORKFLOW_REQUIRED',
+        'Create a maintenance block to put a room into maintenance',
+      );
     return this.repository.withHotelLock(hotelId, async (repository) => {
       await this.requireActiveType(repository, hotelId, BigInt(input.roomTypeId));
       if (await repository.findByNumber(hotelId, input.roomNumber)) throw duplicate();
@@ -38,6 +50,51 @@ export class RoomService {
     return this.repository.withHotelLock(hotelId, async (repository) => {
       const record = await repository.findById(hotelId, id);
       if (!record) throw missing();
+      if (input.housekeepingStatus !== undefined && input.housekeepingStatus !== 'DIRTY')
+        throw new AppError(
+          409,
+          'HOUSEKEEPING_WORKFLOW_REQUIRED',
+          'Use the housekeeping task workflow',
+        );
+      if (input.physicalStatus === 'MAINTENANCE' && record.physicalStatus !== 'MAINTENANCE')
+        throw new AppError(409, 'MAINTENANCE_WORKFLOW_REQUIRED', 'Use maintenance blocks');
+      const locks = await repository.operationLocks(hotelId, id);
+      if (
+        (locks.block &&
+          (input.physicalStatus !== undefined ||
+            input.isActive === false ||
+            input.roomTypeId !== undefined)) ||
+        (locks.task &&
+          (input.housekeepingStatus !== undefined ||
+            input.physicalStatus !== undefined ||
+            input.isActive === false ||
+            input.roomTypeId !== undefined))
+      )
+        throw new AppError(
+          409,
+          'ROOM_OPERATIONS_CONFLICT',
+          'Resolve active operations before changing room state or type',
+        );
+      if (record.occupancy && input.housekeepingStatus !== undefined)
+        throw new AppError(
+          409,
+          'ROOM_OCCUPIED',
+          'Turnover state cannot be changed for an occupied room',
+        );
+      // Reopening an independently restricted room always requires a fresh inspection.
+      if (input.physicalStatus === 'ACTIVE' && record.physicalStatus !== 'ACTIVE')
+        input = { ...input, housekeepingStatus: 'DIRTY' };
+      if (
+        record.occupancy &&
+        (input.isActive === false ||
+          (input.physicalStatus !== undefined && input.physicalStatus !== 'ACTIVE') ||
+          (input.roomTypeId !== undefined && BigInt(input.roomTypeId) !== record.roomTypeId))
+      )
+        throw new AppError(
+          409,
+          'ROOM_OCCUPIED',
+          'Transfer or check out the active stay before changing room operation or type',
+        );
       if (input.roomTypeId !== undefined || input.isActive === true)
         await this.requireActiveType(
           repository,

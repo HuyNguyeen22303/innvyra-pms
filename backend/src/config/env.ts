@@ -63,6 +63,8 @@ const schema = z
     REFRESH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(60),
     RESERVATION_MAX_NIGHTS: z.coerce.number().int().min(1).max(366).default(30),
     RESERVATION_MAX_ROOMS: z.coerce.number().int().min(1).max(100).default(20),
+    REPORT_MAX_DAYS: z.coerce.number().int().min(1).max(366).default(366),
+    REPORT_EXPORT_MAX_ROWS: z.coerce.number().int().min(1).max(1000).default(366),
     GUEST_ENCRYPTION_KEY: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z
