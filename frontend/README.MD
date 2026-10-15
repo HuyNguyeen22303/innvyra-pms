@@ -44,7 +44,8 @@ frontend/
 │   │   ├── auth.api.ts     # Các hàm gọi API xác thực (/auth/login, /auth/me,...)
 │   │   ├── rooms.api.ts    # API quản lý loại phòng (/room-types) & phòng vật lý (/rooms)
 │   │   ├── guests.api.ts   # API quản lý hồ sơ khách hàng (/guests)
-│   │   └── reservations.api.ts # API đặt phòng & tra cứu tồn phòng (/reservations)
+│   │   ├── reservations.api.ts # API đặt phòng & tra cứu tồn phòng (/reservations)
+│   │   └── stays.api.ts    # API lưu trú, check-in, check-out, đổi phòng (/stays)
 │   ├── components/         # Reusable UI components
 │   │   ├── ProtectedRoute.tsx # Hộ tống Route theo trạng thái đăng nhập & role
 │   │   ├── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
@@ -58,6 +59,7 @@ frontend/
 │   │   ├── rooms/          # Màn hình Quản lý Sơ đồ Lưới phòng (Grid) & Danh sách (Table)
 │   │   ├── guests/         # Màn hình Quản lý Khách hàng & Mã hóa CCCD/Passport
 │   │   ├── reservations/   # Màn hình Đặt phòng & Tra cứu Tồn phòng Thời gian thực
+│   │   ├── stays/          # Màn hình Lưu trú, Quầy Check-in, Trả phòng, Đổi phòng
 │   │   └── common/         # Màn hình 403, 404, Placeholder thông báo phase
 │   ├── routes/             # Cấu hình định tuyến
 │   │   └── AppRoutes.tsx   # Khai báo tập trung toàn bộ route của ứng dụng
@@ -70,7 +72,8 @@ frontend/
 │   │   ├── auth.types.ts   # Role, CurrentUser, LoginCredentials
 │   │   ├── rooms.types.ts  # RoomTypeItem, RoomItem, Enums trạng thái & DTOs
 │   │   ├── guests.types.ts # GuestSummary, GuestDetail, DocumentType, Enums
-│   │   └── reservations.types.ts # ReservationSummary, Detail, Availability, DTOs
+│   │   ├── reservations.types.ts # ReservationSummary, Detail, Availability, DTOs
+│   │   └── stays.types.ts  # StaySummaryItem, StayDetailItem, CheckinDto, DTOs
 │   ├── App.tsx             # Root component bọc ErrorBoundary, ConfigProvider, QueryClient, Router
 │   ├── index.css           # Global reset styling
 │   └── main.tsx            # Entry point ReactDOM
@@ -94,8 +97,8 @@ develop (origin/develop)
   ├── feature/fe-auth                  [Phase 2]  ✅ Login, Quick Demo Selector, RBAC (Merged)
   ├── feature/fe-rooms                 [Phase 3]  ✅ CRUD Loại phòng & Sơ đồ phòng vật lý (Merged)
   ├── feature/fe-guests                [Phase 4]  ✅ Quản lý Khách hàng & Mã hóa hồ sơ định danh (Merged)
-  ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability)
-  ├── feature/fe-stays                 [Phase 6]  ⏳ Check-in gán phòng READY, Check-out & Đổi phòng
+  ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability) (Merged)
+  ├── feature/fe-stays                 [Phase 6]  ✅ Check-in gán phòng READY, Check-out & Đổi phòng
   ├── feature/fe-operations            [Phase 7]  ⏳ Buồng phòng (Kanban) & Bảo trì kỹ thuật
   ├── feature/fe-billing               [Phase 8]  ⏳ Thu ngân & Quản lý Folio công nợ, hóa đơn
   ├── feature/fe-matrix-dashboard      [Phase 9]  ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
@@ -110,9 +113,9 @@ develop (origin/develop)
 | **Phase 2** | `feature/fe-auth` | Màn hình Login, Demo Account Chip Selector, JWT Refresh, RBAC | ✅ Đã merge `develop` |
 | **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
 | **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã hoàn thành |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Tiếp theo |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã hoàn thành |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Tiếp theo |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
 | **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |

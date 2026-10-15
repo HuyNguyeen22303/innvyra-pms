@@ -67,7 +67,7 @@ const menuDefinitions: MenuItemDef[] = [
     key: '/stays',
     icon: <CheckCircleOutlined />,
     label: 'Lưu trú / Check-in',
-    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST'],
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
   },
   {
     key: '/guests',

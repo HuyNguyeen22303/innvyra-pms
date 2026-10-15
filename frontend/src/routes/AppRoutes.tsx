@@ -8,6 +8,7 @@ import { RoomsPage } from '../pages/rooms/RoomsPage.tsx';
 import { RoomTypesPage } from '../pages/room-types/RoomTypesPage.tsx';
 import { GuestsPage } from '../pages/guests/GuestsPage.tsx';
 import { ReservationsPage } from '../pages/reservations/ReservationsPage.tsx';
+import { StaysPage } from '../pages/stays/StaysPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
@@ -57,12 +58,8 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="stays"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST']}>
-              <PhasePlaceholderPage
-                title="Quản lý Lưu trú & Check-in / Check-out"
-                phase="Phase 6: feature/fe-stays"
-                description="Gán phòng READY, check-in khách lưu trú, check-out và đổi phòng."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']}>
+              <StaysPage />
             </ProtectedRoute>
           }
         />

@@ -159,9 +159,9 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 | **Phase 2** | `feature/fe-auth` | Đăng nhập, Demo Account Selector, JWT Silent Refresh, RBAC 6 Roles | ✅ Đã merge `develop` |
 | **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
 | **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã hoàn thành |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ⏳ Tiếp theo |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Kế hoạch |
+| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã hoàn thành |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Tiếp theo |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
 | **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
 | **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E toàn diện, tài liệu hướng dẫn và đóng gói đồ án | ⏳ Kế hoạch |
@@ -269,3 +269,60 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 
 
+
+---
+
+### 🔑 Hoàn thành Phase 6 (eature/fe-stays) — Quản lý Lưu trú & Check-in / Check-out:
+
+1. **Khởi tạo nhánh tính năng:**
+   - Tạo nhánh eature/fe-stays từ nhánh develop đã tích hợp đầy đủ Phase 1 đến Phase 5.
+
+2. **Khảo sát nghiệp vụ & Ràng buộc Backend (Backend Invariants):**
+   - Phân tích chi tiết stay.service.ts, oom-assignment.service.ts, stay.dates.ts và stay.schema.ts:
+     - **Chính sách ngày nhận phòng (alidateArrival)**: Check-in chỉ được phép thực hiện vào đúng ngày khách đến theo múi giờ khách sạn (sDateOnly(checkInDate) === hotelToday(timezone, now)). Nếu ngày nhận phòng khác hôm nay, server trả về mã lỗi 409 INVALID_CHECKIN_DATE.
+     - **Điều kiện phòng vật lý để check-in (ssignment.eligible)**:
+       - Phòng vật lý bắt buộc phải cùng hạng phòng (oomTypeId) với phòng đã đặt trong đơn (ROOM_TYPE_MISMATCH).
+       - Phòng vật lý bắt buộc phải ở trạng thái buồng phòng **READY** (Đã dọn dẹp sạch sẽ, đã kiểm tra). Nếu là DIRTY, CLEANING hoặc INSPECTION sẽ bị từ chối với mã lỗi 409 ROOM_NOT_READY.
+       - Phòng vật lý phải có trạng thái vật lý ACTIVE (không bị khóa bảo trì ROOM_UNDER_MAINTENANCE hoặc ngừng vận hành ROOM_UNAVAILABLE).
+       - Phòng vật lý chưa bị gán cho lượt lưu trú khác đang diễn ra (ROOM_ALREADY_OCCUPIED).
+     - **Nghiệp vụ gán phòng & cập nhật trạng thái đơn đặt phòng**:
+       - Khi gán phòng thành công: oomId được cập nhật vào ReservationRoom, tạo bản ghi Stay, chuyển phòng vật lý sang trạng thái occupied.
+       - Nếu đơn đặt phòng có nhiều phòng: khi mới check-in 1 phòng thì trạng thái đơn chuyển thành PARTIALLY_CHECKED_IN; khi check-in đủ tất cả các phòng thì chuyển thành CHECKED_IN.
+     - **Nghiệp vụ Trả phòng (POST /stays/:id/check-out)**:
+       - Chỉ áp dụng cho lượt lưu trú đang CHECKED_IN.
+       - Sau khi check-out thành công: phòng vật lý tự động được giải phóng khỏi khách và **tự động chuyển sang trạng thái DIRTY (Cần dọn dẹp)** để bộ phận Buồng phòng vào làm vệ sinh.
+     - **Nghiệp vụ Đổi phòng giữa kỳ (POST /stays/:id/transfers)**:
+       - Khách đang lưu trú có thể được đổi sang phòng khác cùng hạng phòng (oomTypeId) nếu phòng đích đang ở trạng thái READY.
+       - Bắt buộc nhập lý do đổi phòng (eason từ 1 đến 2000 ký tự).
+       - Phòng cũ tự động chuyển sang trạng thái DIRTY và hệ thống lưu lại vết lịch sử đổi phòng (romRoom, 	oRoom, 	ransferredAt, 	ransferredBy, eason).
+     - **Phân quyền RBAC**:
+       - ADMIN, MANAGER, RECEPTIONIST: Toàn quyền thực hiện Check-in gán phòng, Check-out trả phòng và Đổi phòng.
+       - ACCOUNTANT: Được xem danh sách và chi tiết lượt lưu trú phục vụ công tác đối soát doanh thu & công nợ (ẩn các nút thao tác nghiệp vụ).
+
+3. **Xây dựng Types & API Client:**
+   - src/types/stays.types.ts: Định nghĩa TypeScript interfaces chuẩn: StayStatus, StaySummaryItem, StayDetailItem, CheckinDto, CheckoutDto, TransferRoomDto, StayFilterParams.
+   - src/api/stays.api.ts: Xây dựng đầy đủ các hàm gọi API: getAll, getById, checkin, checkout, 	ransfer.
+
+4. **Phát triển Màn hình Quản lý Lưu trú (StaysPage.tsx) gồm 2 Tab chuyên nghiệp:**
+   - **Tab 1: Danh sách Đang lưu trú & Lịch sử trả phòng (In-house & Checked-out)**:
+     - 3 thẻ thống kê KPI: Khách đang lưu trú trong khách sạn (In-house), Đã trả phòng (Checked-out), Tổng lượt lưu trú ghi nhận.
+     - Thanh công cụ lọc theo số phòng, mã đơn đặt phòng, trạng thái lưu trú.
+     - Bảng Ant Design Table hiển thị: Số phòng (Badge xanh nổi bật), Hạng phòng, Tên khách lưu trú, Mã đơn đặt phòng (kèm nút copy), Thời gian nhận phòng thực tế, Thời gian trả phòng thực tế, Trạng thái (Xanh lá / Tím), Nút Thao tác.
+     - Nút Xem chi tiết: Mở Drawer hiển thị đầy đủ thông tin lưu trú, nhân viên check-in/checkout, ghi chú nghiệp vụ và dòng thời gian lịch sử đổi phòng (Timeline).
+     - Nút Đổi phòng (Transfer): Mở Modal chọn phòng vật lý READY cùng hạng và nhập lý do đổi phòng.
+     - Nút Trả phòng (Check-out): Mở Modal xác nhận trả phòng, cảnh báo phòng tự động chuyển về DIRTY.
+   - **Tab 2: Quầy làm thủ tục Check-in (Check-in Arrival Desk)**:
+     - Danh sách các đơn đặt phòng chờ nhận hôm nay (trạng thái CONFIRMED và PARTIALLY_CHECKED_IN).
+     - Bấm nút "Làm thủ tục" mở Modal Check-in:
+       - Hỗ trợ đơn đặt nhiều phòng: Cho phép chọn phòng cụ thể trong đơn để gán phòng vật lý.
+       - Lọc danh sách phòng vật lý tự động: Chỉ hiển thị các phòng thuộc đúng hạng phòng đã đặt và đang ở trạng thái READY: Sạch sẽ. Nếu không có phòng sẵn sàng, hệ thống hiển thị cảnh báo yêu cầu liên hệ Buồng phòng.
+       - Kiểm tra ngày check-in hợp lệ theo chính sách khách sạn.
+       - Ô nhập ghi chú khi nhận phòng.
+
+5. **Tích hợp liên kết chéo giữa các Phase (Cross-Phase Integration)**:
+   - Thêm nút tắt Check-in nhanh (biểu tượng Login màu xanh lá) trực tiếp trên bảng danh sách của ReservationsPage.tsx cho các đơn CONFIRMED và PARTIALLY_CHECKED_IN để điều hướng ngay sang quầy Check-in.
+   - Cập nhật định tuyến /stays trong AppRoutes.tsx và sidebar menu trong MainLayout.tsx.
+
+6. **Kiểm thử & Biên dịch (Verification)**:
+   - Chạy 
+pm run build: **Biên dịch thành công 100%, 0 lỗi TypeScript**.

@@ -62,6 +62,8 @@ export interface CreateRoomDto {
 export type UpdateRoomDto = Partial<CreateRoomDto>;
 
 export interface RoomFilterParams {
+  page?: number;
+  limit?: number;
   search?: string;
   roomTypeId?: string;
   floorNumber?: number;

@@ -38,7 +38,9 @@ import {
   RightOutlined,
   ShoppingCartOutlined,
   StopOutlined,
+  LoginOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { reservationsApi } from '../../api/reservations.api.ts';
@@ -97,6 +99,7 @@ const STATUS_CONFIG: Record<
 };
 
 export const ReservationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
@@ -513,6 +516,15 @@ export const ReservationsPage: React.FC = () => {
                 }}
               />
             </Tooltip>
+            {canWrite && (record.status === 'CONFIRMED' || record.status === 'PARTIALLY_CHECKED_IN') && (
+              <Tooltip title="Làm thủ tục nhận phòng (Check-in)">
+                <Button
+                  type="text"
+                  icon={<LoginOutlined style={{ color: '#52c41a' }} />}
+                  onClick={() => navigate('/stays')}
+                />
+              </Tooltip>
+            )}
             {canWrite && isConfirmed && (
               <Tooltip title="Hủy đơn đặt phòng này">
                 <Button
