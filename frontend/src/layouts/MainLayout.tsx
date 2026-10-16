@@ -21,6 +21,7 @@ import {
   SyncOutlined,
   ToolOutlined,
   DollarOutlined,
+  TeamOutlined,
   BarChartOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -103,6 +104,12 @@ const menuDefinitions: MenuItemDef[] = [
     icon: <DollarOutlined />,
     label: 'Thu ngân / Folio',
     roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
+  },
+  {
+    key: '/employees',
+    icon: <TeamOutlined />,
+    label: 'Quản lý Nhân sự',
+    roles: ['ADMIN', 'MANAGER'],
   },
   {
     key: '/reports',

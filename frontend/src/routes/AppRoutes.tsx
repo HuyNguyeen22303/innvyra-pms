@@ -12,6 +12,7 @@ import { StaysPage } from '../pages/stays/StaysPage.tsx';
 import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
 import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
 import { BillingPage } from '../pages/billing/BillingPage.tsx';
+import { EmployeesPage } from '../pages/employees/EmployeesPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
@@ -110,6 +111,16 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']}>
               <BillingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Employees */}
+        <Route
+          path="employees"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+              <EmployeesPage />
             </ProtectedRoute>
           }
         />

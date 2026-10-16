@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography,
@@ -43,11 +43,13 @@ import {
 import dayjs from 'dayjs';
 import { maintenanceApi } from '../../api/maintenance.api.ts';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
+import { employeesApi } from '../../api/employees.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import {
   getStaffDisplay,
   getMaintenanceActionDisplay,
   formatAuditNote,
+  registerStaffMembers,
 } from '../../utils/staffDirectory.ts';
 import type {
   MaintenanceTicketItem,
@@ -62,12 +64,7 @@ import type {
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
-// Preset Active Staff accounts for Technical assignments
-const TECHNICIAN_STAFF_OPTIONS = [
-  { value: '5', label: 'Hoàng Văn Nam (Kỹ thuật viên - ID: 5)', role: 'TECHNICIAN' },
-  { value: '1', label: 'Nguyễn Minh Anh (Quản lý KS - ID: 1)', role: 'MANAGER' },
-  { value: '6', label: 'System Administrator (Quản trị viên - ID: 6)', role: 'ADMIN' },
-];
+// Dynamic Technician Options loaded from employeesApi
 
 export const MaintenancePage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -124,7 +121,32 @@ export const MaintenancePage: React.FC = () => {
   // Forms
   const [createTicketForm] = Form.useForm();
   const [createBlockForm] = Form.useForm();
-  const [assignTechId, setAssignTechId] = useState<string>('5');
+  // Dynamic Technicians Query (GET /employees?role=TECHNICIAN&isActive=true)
+  const { data: techniciansRes } = useQuery({
+    queryKey: ['employees', { role: 'TECHNICIAN', isActive: true }],
+    queryFn: () => employeesApi.list({ role: 'TECHNICIAN', isActive: true, limit: 100 }),
+    staleTime: 60000,
+  });
+
+  useEffect(() => {
+    if (techniciansRes?.data?.items) {
+      registerStaffMembers(techniciansRes.data.items);
+    }
+  }, [techniciansRes]);
+
+  const technicianOptions = useMemo(() => {
+    const items = techniciansRes?.data?.items || [];
+    if (items.length === 0) {
+      return [{ value: '', label: 'Chưa có kỹ thuật viên đang hoạt động' }];
+    }
+    return items.map((tech) => ({
+      value: String(tech.id),
+      label: `${tech.fullName} (Kỹ thuật viên - ID: ${tech.id})`,
+      role: tech.role,
+    }));
+  }, [techniciansRes]);
+
+  const [assignTechId, setAssignTechId] = useState<string>('');
   const [resolutionNotes, setResolutionNotes] = useState<string>('');
   const [cancelTicketReason, setCancelTicketReason] = useState<string>('');
   const [releaseNotes, setReleaseNotes] = useState<string>('');
@@ -554,7 +576,7 @@ export const MaintenancePage: React.FC = () => {
                   icon={<UserSwitchOutlined />}
                   onClick={() => {
                     setActionTicket(record);
-                    setAssignTechId(record.assignedTo ? String(record.assignedTo) : '5');
+                    setAssignTechId(record.assignedTo ? String(record.assignedTo) : (technicianOptions[0]?.value || ''));
                     setIsAssignTicketModalOpen(true);
                   }}
                 />
@@ -1154,7 +1176,7 @@ export const MaintenancePage: React.FC = () => {
               value={assignTechId}
               onChange={(val) => setAssignTechId(val)}
               style={{ width: '100%' }}
-              options={TECHNICIAN_STAFF_OPTIONS}
+              options={technicianOptions}
             />
           </div>
         </Space>

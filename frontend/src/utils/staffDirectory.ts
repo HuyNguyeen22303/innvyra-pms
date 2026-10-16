@@ -1,7 +1,9 @@
 /**
- * Innvyra PMS - Staff Directory & Formatter
- * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn
+ * Innvyra PMS - Dynamic Staff Directory & Formatter
+ * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn từ API và fallback an toàn
  */
+
+import { ROLE_CONFIG, type Role } from '../types/employees.types.ts';
 
 export interface StaffMemberInfo {
   id: string;
@@ -11,6 +13,33 @@ export interface StaffMemberInfo {
   color: string;
 }
 
+// In-memory dynamic registry of loaded staff members from API queries
+const dynamicStaffRegistry = new Map<string, StaffMemberInfo>();
+
+/**
+ * Register employee records into the dynamic directory cache
+ */
+export const registerStaffMembers = (
+  employees: Array<{ id: string | bigint | number; fullName: string; role: Role | string }>
+) => {
+  if (!Array.isArray(employees)) return;
+  employees.forEach((emp) => {
+    const idStr = String(emp.id);
+    const roleCode = (emp.role as Role) || 'STAFF';
+    const meta = ROLE_CONFIG[roleCode as Role];
+    dynamicStaffRegistry.set(idStr, {
+      id: idStr,
+      fullName: emp.fullName,
+      roleTitle: meta ? meta.label : roleCode,
+      roleCode,
+      color: meta ? meta.color : 'default',
+    });
+  });
+};
+
+/**
+ * Known baseline staff from initial database seed for backwards compatibility
+ */
 export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
   '1': {
     id: '1',
@@ -58,6 +87,7 @@ export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
 
 /**
  * Trả về thông tin hiển thị gồm Họ tên, Chức vụ và Màu sắc Tag
+ * Kiểm tra dynamicStaffRegistry -> KNOWN_STAFF_DIRECTORY -> currentUser -> fallback trung tính
  */
 export const getStaffDisplay = (
   staffId: string | number | null | undefined,
@@ -74,41 +104,37 @@ export const getStaffDisplay = (
   }
 
   const idStr = String(staffId);
+
+  // 1. Check dynamic registry first (loaded from API)
+  if (dynamicStaffRegistry.has(idStr)) {
+    return dynamicStaffRegistry.get(idStr)!;
+  }
+
+  // 2. Check baseline directory
   const found = KNOWN_STAFF_DIRECTORY[idStr];
   if (found) {
     return found;
   }
 
+  // 3. Check current user
   if (currentUser && String(currentUser.id) === idStr) {
-    const roleCode = currentUser.role || 'STAFF';
-    const roleTitle =
-      roleCode === 'MANAGER'
-        ? 'Quản lý KS'
-        : roleCode === 'RECEPTIONIST'
-        ? 'Lễ tân'
-        : roleCode === 'ACCOUNTANT'
-        ? 'Kế toán'
-        : roleCode === 'HOUSEKEEPING'
-        ? 'Buồng phòng'
-        : roleCode === 'TECHNICIAN'
-        ? 'Kỹ thuật viên'
-        : roleCode === 'ADMIN'
-        ? 'Quản trị viên'
-        : 'Nhân viên';
+    const roleCode = (currentUser.role as Role) || 'STAFF';
+    const meta = ROLE_CONFIG[roleCode as Role];
 
     return {
       id: idStr,
       fullName: currentUser.fullName || `Nhân viên #${idStr}`,
-      roleTitle,
+      roleTitle: meta ? meta.label : roleCode,
       roleCode,
-      color: 'blue',
+      color: meta ? meta.color : 'blue',
     };
   }
 
+  // 4. Safe neutral fallback for historical or deactivated staff without guessing names
   return {
     id: idStr,
     fullName: `Nhân viên #${idStr}`,
-    roleTitle: 'Nhân sự KS',
+    roleTitle: 'Nhân viên',
     roleCode: 'STAFF',
     color: 'default',
   };

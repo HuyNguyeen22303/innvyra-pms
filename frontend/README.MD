@@ -48,7 +48,8 @@ frontend/
 │   │   ├── stays.api.ts    # API lưu trú, check-in, check-out, đổi phòng (/stays)
 │   │   ├── housekeeping.api.ts # API buồng phòng (/housekeeping)
 │   │   ├── maintenance.api.ts  # API sự cố & khóa phòng bảo trì (/maintenance)
-│   │   └── billing.api.ts  # API quản lý dịch vụ, đơn dịch vụ, Folio & thanh toán (/billing)
+│   │   ├── billing.api.ts  # API quản lý dịch vụ, đơn dịch vụ, Folio & thanh toán (/billing)
+│   │   └── employees.api.ts # API quản lý nhân sự & phân quyền tài khoản (/employees)
 │   ├── components/         # Reusable UI components
 │   │   ├── ProtectedRoute.tsx # Hộ tống Route theo trạng thái đăng nhập & role
 │   │   ├── RoleBadge.tsx   # Tag màu hiển thị vai trò người dùng
@@ -66,6 +67,7 @@ frontend/
 │   │   ├── housekeeping/   # Màn hình Quản lý Buồng phòng (Kanban, nghiệm thu, phòng bẩn)
 │   │   ├── maintenance/    # Màn hình Bảo trì Kỹ thuật (Phiếu sự cố, Lệnh khóa phòng)
 │   │   ├── billing/        # Màn hình Thu ngân, Sổ công nợ Folio, Dịch vụ & In phiếu thu
+│   │   ├── employees/      # Màn hình Quản lý Nhân sự, Cấp tài khoản & Phân quyền Role Hierarchy
 │   │   └── common/         # Màn hình 403, 404, Placeholder thông báo phase
 │   ├── routes/             # Cấu hình định tuyến
 │   │   └── AppRoutes.tsx   # Khai báo tập trung toàn bộ route của ứng dụng
@@ -81,7 +83,8 @@ frontend/
 │   │   ├── reservations.types.ts # ReservationSummary, Detail, Availability, DTOs
 │   │   ├── stays.types.ts  # StaySummaryItem, StayDetailItem, CheckinDto, DTOs
 │   │   ├── operations.types.ts # Housekeeping & Maintenance types
-│   │   └── billing.types.ts # Service, ServiceOrder, Folio, FolioItem, Payment, DTOs
+│   │   ├── billing.types.ts # Service, ServiceOrder, Folio, FolioItem, Payment, DTOs
+│   │   └── employees.types.ts # EmployeeItem, Query, Create/UpdateDto, RoleHierarchy
 │   ├── App.tsx             # Root component bọc ErrorBoundary, ConfigProvider, QueryClient, Router
 │   ├── index.css           # Global reset styling
 │   └── main.tsx            # Entry point ReactDOM
@@ -108,9 +111,10 @@ develop (origin/develop)
   ├── feature/fe-reservations          [Phase 5]  ✅ Đặt phòng & Tra cứu phòng trống (Availability) (Merged)
   ├── feature/fe-stays                 [Phase 6]  ✅ Check-in gán phòng READY, Check-out & Đổi phòng (Merged)
   ├── feature/fe-operations            [Phase 7]  ✅ Buồng phòng (Kanban) & Bảo trì kỹ thuật (Merged)
-  ├── feature/fe-billing               [Phase 8]  ✅ Thu ngân & Quản lý Folio công nợ, dịch vụ, hóa đơn (Đang thực hiện)
-  ├── feature/fe-matrix-dashboard      [Phase 9]  ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
-  └── feature/fe-final-polish          [Phase 10] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án
+  ├── feature/fe-billing               [Phase 8]  ✅ Thu ngân & Quản lý Folio công nợ, dịch vụ, hóa đơn (Merged)
+  ├── feature/fe-employees             [Phase 9]  ✅ Quản lý Nhân sự, Cấp phát tài khoản & Phân quyền Role Hierarchy
+  ├── feature/fe-matrix-dashboard      [Phase 10] ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
+  └── feature/fe-final-polish          [Phase 11] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án
 ```
 
 ### Bảng theo dõi tiến độ các Phase:
@@ -124,9 +128,10 @@ develop (origin/develop)
 | **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
 | **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã merge `develop` |
 | **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã merge `develop` |
-| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Hoàn thành trên nhánh `feature/fe-billing` |
-| **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
-| **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Đã merge `develop` |
+| **Phase 9** | `feature/fe-employees` | Quản lý Nhân sự, Cấp phát tài khoản, Phân quyền Role Hierarchy & Dynamic Staffing | ✅ Đã hoàn thành |
+| **Phase 10**| `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
+| **Phase 11**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
 
 
 ---
@@ -154,8 +159,8 @@ Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài li�
 
 | Vai trò (Role) | Tên hiển thị | Quyền hạn trên giao diện Frontend |
 | :--- | :--- | :--- |
-| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì, Danh mục Dịch vụ, Orders, Folio, Thanh toán, Điều chỉnh, Hoàn tiền, Đóng Folio) |
-| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì, Quản lý Dịch vụ & Orders, Thu tiền, Điều chỉnh, Hoàn tiền, Đóng Folio) |
+| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì, Dịch vụ & Folio, Thu tiền; **Quản lý toàn bộ Nhân sự & Cấp tài khoản mọi cấp bậc**) |
+| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì, Dịch vụ & Folio; **Quản lý Nhân sự & Cấp tài khoản theo Role Hierarchy cho Lễ tân, Buồng phòng, Kế toán, Kỹ thuật**) |
 | `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì; Mở Folio, Tạo & Hoàn thành Order dịch vụ, Thu tiền Payment/Deposit, In phiếu thu |
 | `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ tối thiểu; Tra cứu Folio & Orders, Thu tiền Payment/Deposit, Điều chỉnh Debit/Credit, Ghi nhận Refund hoàn tiền, Quyết toán đóng Folio, In phiếu thu |
 | `HOUSEKEEPING` | Buồng phòng | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc; Không truy cập Thu ngân |
