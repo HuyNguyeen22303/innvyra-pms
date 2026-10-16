@@ -81,10 +81,10 @@ export const ReportsPage: React.FC = () => {
   // Active Tab
   const [activeTab, setActiveTab] = useState<string>(() => availableTabs[0]?.key || 'operations');
 
-  // Date Range state: default to 30 completed days [today - 30 days, today) for audited report
+  // Date Range state: default to 30 days up to end of today [today - 30 days, today + 1 day)
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
     dayjs().subtract(30, 'day').startOf('day'),
-    dayjs().startOf('day'),
+    dayjs().add(1, 'day').startOf('day'),
   ]);
 
   const startDateStr = dateRange[0].format('YYYY-MM-DD');
@@ -284,18 +284,36 @@ export const ReportsPage: React.FC = () => {
   };
 
   // Quick period presets
-  const handlePresetChange = (days: number, includeToday = false) => {
+  const handlePreset7Days = () => {
     setDateRange([
-      dayjs().subtract(days, 'day').startOf('day'),
-      includeToday ? dayjs().add(1, 'day').startOf('day') : dayjs().startOf('day'),
+      dayjs().subtract(6, 'day').startOf('day'),
+      dayjs().add(1, 'day').startOf('day'),
     ]);
+    setGroupBy('day');
   };
 
-  const handleThisMonthPreset = (includeToday = false) => {
+  const handlePresetMonth = () => {
     setDateRange([
       dayjs().startOf('month'),
-      includeToday ? dayjs().add(1, 'day').startOf('day') : dayjs().startOf('day'),
+      dayjs().add(1, 'day').startOf('day'),
     ]);
+    setGroupBy('day');
+  };
+
+  const handlePresetQuarter = () => {
+    setDateRange([
+      dayjs().subtract(89, 'day').startOf('day'),
+      dayjs().add(1, 'day').startOf('day'),
+    ]);
+    setGroupBy('month');
+  };
+
+  const handlePresetYear = () => {
+    setDateRange([
+      dayjs().startOf('year'),
+      dayjs().add(1, 'day').startOf('day'),
+    ]);
+    setGroupBy('month');
   };
 
   // ----------------------------------------------------
@@ -1688,17 +1706,17 @@ export const ReportsPage: React.FC = () => {
                 }}
               />
               <Space wrap size={4}>
-                <Button size="small" onClick={() => handlePresetChange(7)}>
-                  7 ngày đã chốt
+                <Button size="small" onClick={handlePreset7Days}>
+                  Theo 7 ngày
                 </Button>
-                <Button size="small" onClick={() => handlePresetChange(30)}>
-                  30 ngày đã chốt
+                <Button size="small" onClick={handlePresetMonth}>
+                  Theo tháng
                 </Button>
-                <Button size="small" onClick={() => handlePresetChange(30, true)}>
-                  Bao gồm hôm nay
+                <Button size="small" onClick={handlePresetQuarter}>
+                  Theo quý
                 </Button>
-                <Button size="small" onClick={() => handleThisMonthPreset()}>
-                  Tháng này
+                <Button size="small" onClick={handlePresetYear}>
+                  Theo năm
                 </Button>
               </Space>
             </Space>
