@@ -39,6 +39,7 @@ import {
 import dayjs from 'dayjs';
 import { billingApi, createIdempotencyKey } from '../../../api/billing.api.ts';
 import { reservationsApi } from '../../../api/reservations.api.ts';
+import { roomsApi } from '../../../api/rooms.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
 import type { ReservationStatus, ReservationSummaryItem } from '../../../types/reservations.types.ts';
 import type {
@@ -135,6 +136,25 @@ export const FolioTab: React.FC = () => {
 
   const reservationList = reservationsRes?.data?.items || [];
   const reservationTotal = reservationsRes?.data?.pagination?.total || 0;
+
+  // Fetch physical rooms to map roomId to real physical roomNumber
+  const { data: allRoomsRes } = useQuery({
+    queryKey: ['allRoomsForLookup'],
+    queryFn: () => roomsApi.getAll({ limit: 100 }),
+    staleTime: 60000,
+  });
+  const allRoomsList = useMemo(() => {
+    const raw = allRoomsRes?.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
+    return [];
+  }, [allRoomsRes]);
+
+  const getPhysicalRoomNumber = (roomId: string | null | undefined): string => {
+    if (!roomId) return '';
+    const found = allRoomsList.find((r: any) => String(r.id) === String(roomId));
+    return found ? found.roomNumber : roomId;
+  };
 
   // Batch check Folio status for visible reservations on the current table page
   const folioQueries = useQueries({
@@ -1576,7 +1596,7 @@ export const FolioTab: React.FC = () => {
         guestName={reservationDetail?.bookerGuest?.fullName}
         roomNumber={
           reservationDetail?.rooms?.[0]?.roomId
-            ? `#${reservationDetail.rooms[0].roomId}`
+            ? `#${getPhysicalRoomNumber(reservationDetail.rooms[0].roomId)}`
             : reservationDetail?.rooms?.[0]?.roomType?.name
         }
       />

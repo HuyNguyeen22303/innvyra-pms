@@ -45,7 +45,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { guestsApi } from '../../api/guests.api.ts';
-import { roomTypesApi } from '../../api/rooms.api.ts';
+import { roomTypesApi, roomsApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import type {
   ReservationSummaryItem,
@@ -56,7 +56,7 @@ import type {
   CreateReservationDto,
 } from '../../types/reservations.types.ts';
 import type { GuestSummary } from '../../types/guests.types.ts';
-import type { RoomTypeItem } from '../../types/rooms.types.ts';
+import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -250,6 +250,25 @@ export const ReservationsPage: React.FC = () => {
   const roomTypesList: RoomTypeItem[] = Array.isArray(roomTypesRes?.data)
     ? roomTypesRes.data
     : roomTypesRes?.data?.items || [];
+
+  // Fetch physical rooms to map roomId to real physical roomNumber (e.g. 101, 102, 201...)
+  const { data: allRoomsRes } = useQuery({
+    queryKey: ['allRoomsForLookup'],
+    queryFn: () => roomsApi.getAll({ limit: 100 }),
+    staleTime: 60000,
+  });
+  const allRoomsList: RoomItem[] = useMemo(() => {
+    const raw = allRoomsRes?.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
+    return [];
+  }, [allRoomsRes]);
+
+  const getPhysicalRoomNumber = (roomId: string | null | undefined): string => {
+    if (!roomId) return '';
+    const found = allRoomsList.find((r) => String(r.id) === String(roomId));
+    return found ? found.roomNumber : roomId;
+  };
 
   // Check Availability Query
   const {
@@ -1390,7 +1409,7 @@ export const ReservationsPage: React.FC = () => {
                       <Tag color="blue">{room.adults} Người lớn</Tag>
                       {room.children > 0 && <Tag color="green">{room.children} Trẻ em</Tag>}
                       {room.roomId ? (
-                        <Tag color="purple">Phòng #{room.roomId}</Tag>
+                        <Tag color="purple">Phòng #{getPhysicalRoomNumber(room.roomId)}</Tag>
                       ) : (
                         <Tag color="default">Chưa gán phòng vật lý</Tag>
                       )}
