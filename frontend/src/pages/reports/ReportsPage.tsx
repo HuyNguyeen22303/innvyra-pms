@@ -27,6 +27,8 @@ import {
   SyncOutlined,
   DownloadOutlined,
   FileTextOutlined,
+  BarChartOutlined,
+  PieChartOutlined,
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +36,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.ts';
 import { reportsApi } from '../../api/reports.api.ts';
 import { roomTypesApi } from '../../api/rooms.api.ts';
+import { BarComparisonChart, type BarComparisonItem } from '../../components/charts/BarComparisonChart.tsx';
+import { DonutChart, type DonutSlice } from '../../components/charts/DonutChart.tsx';
 import type {
   RevenueSeriesItem,
   PaymentSeriesItem,
@@ -302,6 +306,26 @@ export const ReportsPage: React.FC = () => {
     const summary = rev?.summary;
     const balance = rev?.balance;
 
+    const revenueChartData: BarComparisonItem[] = (rev?.series || []).map((item) => ({
+      key: item.date,
+      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
+      value1: Math.max(0, parseFloat(item.netBilledCharges || '0')),
+      value2: Math.max(0, parseFloat(item.netCashCollected || '0')),
+      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
+      tooltipText1: `Doanh thu Billed: ${formatVnd(item.netBilledCharges)} (Phòng: ${formatVnd(item.roomCharges)} | Dịch vụ: ${formatVnd(item.serviceCharges)})`,
+      tooltipText2: `Thực thu ròng: ${formatVnd(item.netCashCollected)}`,
+    }));
+
+    const revenueDonutData: DonutSlice[] = [];
+    const roomChargesNum = parseFloat(summary?.roomCharges || '0');
+    const serviceChargesNum = parseFloat(summary?.serviceCharges || '0');
+    if (roomChargesNum > 0) {
+      revenueDonutData.push({ key: 'room', label: 'Tiền phòng', value: roomChargesNum, color: '#1b4d3e' });
+    }
+    if (serviceChargesNum > 0) {
+      revenueDonutData.push({ key: 'service', label: 'Dịch vụ & Minibar', value: serviceChargesNum, color: '#1890ff' });
+    }
+
     const columns: ColumnsType<RevenueSeriesItem> = [
       {
         title: 'Mốc thời gian',
@@ -479,6 +503,53 @@ export const ReportsPage: React.FC = () => {
           </Card>
         )}
 
+        {/* Visual Charts: Comparison Bar & Revenue Breakdown Donut */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          <Col xs={24} lg={15}>
+            <Card
+              title={
+                <Space>
+                  <BarChartOutlined style={{ color: '#1b4d3e' }} />
+                  <Text strong>So sánh Doanh thu ghi nhận vs Dòng tiền thực thu ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <BarComparisonChart
+                data={revenueChartData}
+                series1Label="Doanh thu ghi nhận (Net Billed)"
+                series2Label="Dòng tiền thực thu (Net Cash)"
+                series1Color="#1b4d3e"
+                series2Color="#1890ff"
+                valueFormatter={(val) => formatVnd(val)}
+                height={260}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={9}>
+            <Card
+              title={
+                <Space>
+                  <PieChartOutlined style={{ color: '#1890ff' }} />
+                  <Text strong>Cơ cấu doanh thu kỳ này</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <div style={{ paddingTop: 12 }}>
+                <DonutChart
+                  data={revenueDonutData}
+                  totalLabel="Tổng Billed"
+                  valueFormatter={(val) => formatVnd(val)}
+                  size={160}
+                />
+              </div>
+            </Card>
+          </Col>
+        </Row>
+
         {/* Time series table */}
         <Card
           title={`Chi tiết chuỗi dữ liệu doanh thu (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
@@ -504,6 +575,22 @@ export const ReportsPage: React.FC = () => {
   const renderPaymentsTab = () => {
     const pay = paymentsRes?.data;
     const summary = pay?.summary;
+
+    const paymentChartData: BarComparisonItem[] = (pay?.series || []).map((item) => ({
+      key: item.date,
+      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
+      value1: Math.max(0, parseFloat(item.cashPayments || '0')),
+      value2: Math.max(0, parseFloat(item.bankTransferPayments || '0')),
+      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
+      tooltipText1: `Tiền mặt (CASH): ${formatVnd(item.cashPayments)}`,
+      tooltipText2: `Chuyển khoản (BANK): ${formatVnd(item.bankTransferPayments)}`,
+    }));
+
+    const paymentDonutData: DonutSlice[] = [];
+    const cashNum = parseFloat(summary?.cashPayments || '0');
+    const bankNum = parseFloat(summary?.bankTransferPayments || '0');
+    if (cashNum > 0) paymentDonutData.push({ key: 'cash', label: 'Tiền mặt (CASH)', value: cashNum, color: '#389e0d' });
+    if (bankNum > 0) paymentDonutData.push({ key: 'bank', label: 'Chuyển khoản (BANK)', value: bankNum, color: '#096dd9' });
 
     const columns: ColumnsType<PaymentSeriesItem> = [
       {
@@ -639,6 +726,53 @@ export const ReportsPage: React.FC = () => {
           </Col>
         </Row>
 
+        {/* Payment Charts */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          <Col xs={24} lg={15}>
+            <Card
+              title={
+                <Space>
+                  <BarChartOutlined style={{ color: '#1b4d3e' }} />
+                  <Text strong>So sánh Tiền mặt vs Chuyển khoản ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <BarComparisonChart
+                data={paymentChartData}
+                series1Label="Tiền mặt (CASH)"
+                series2Label="Chuyển khoản (BANK)"
+                series1Color="#389e0d"
+                series2Color="#096dd9"
+                valueFormatter={(val) => formatVnd(val)}
+                height={260}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={9}>
+            <Card
+              title={
+                <Space>
+                  <PieChartOutlined style={{ color: '#096dd9' }} />
+                  <Text strong>Tỷ trọng phương thức thanh toán</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <div style={{ paddingTop: 12 }}>
+                <DonutChart
+                  data={paymentDonutData}
+                  totalLabel="Tổng thanh toán"
+                  valueFormatter={(val) => formatVnd(val)}
+                  size={160}
+                />
+              </div>
+            </Card>
+          </Col>
+        </Row>
+
         <Card
           title={`Chi tiết dòng tiền thanh toán (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
           size="small"
@@ -677,6 +811,16 @@ export const ReportsPage: React.FC = () => {
     const displayOccupancyRate = summary?.occupancyRate ?? closedOccupancyRate;
     const displayAdr = summary?.operationalAdr ?? closedAdr;
     const displayRevpar = summary?.operationalRevpar ?? closedRevpar;
+
+    const occupancyChartData: BarComparisonItem[] = (occ?.series || []).map((item) => ({
+      key: item.date,
+      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
+      value1: item.occupiedRoomNights ?? 0,
+      value2: item.sellableRoomNights ?? 0,
+      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
+      tooltipText1: `Phòng có khách: ${item.occupiedRoomNights ?? 0} đêm (${item.occupancyRate !== null && item.occupancyRate !== undefined ? item.occupancyRate + '%' : 'Chưa chốt'})`,
+      tooltipText2: `Phòng sẵn bán: ${item.sellableRoomNights} đêm`,
+    }));
 
     const columns: ColumnsType<OccupancySeriesItem> = [
       {
@@ -874,6 +1018,28 @@ export const ReportsPage: React.FC = () => {
           </Col>
         </Row>
 
+        {/* Occupancy Chart */}
+        <Card
+          title={
+            <Space>
+              <BarChartOutlined style={{ color: '#1b4d3e' }} />
+              <Text strong>Biểu đồ so sánh Phòng có khách vs Phòng sẵn sàng bán ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+            </Space>
+          }
+          size="small"
+          style={{ marginBottom: 20, borderRadius: 8 }}
+        >
+          <BarComparisonChart
+            data={occupancyChartData}
+            series1Label="Phòng có khách (Occupied)"
+            series2Label="Phòng sẵn bán (Sellable)"
+            series1Color="#1b4d3e"
+            series2Color="#52c41a"
+            valueFormatter={(val) => `${val} đêm`}
+            height={260}
+          />
+        </Card>
+
         <Card
           title={`Chi tiết chuỗi công suất phòng (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
           size="small"
@@ -899,6 +1065,35 @@ export const ReportsPage: React.FC = () => {
     const res = reservationsRes?.data;
     const summary = res?.summary;
     const sources = res?.bookingSources || [];
+
+    const reservationChartData: BarComparisonItem[] = (res?.series || []).map((item) => ({
+      key: item.date,
+      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
+      value1: item.reservationsCreated ?? 0,
+      value2: item.actualCheckins ?? 0,
+      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
+      tooltipText1: `Lượt đặt tạo mới: ${item.reservationsCreated} (${item.reservationRoomsCreated} phòng)`,
+      tooltipText2: `Check-in thực tế: ${item.actualCheckins}`,
+    }));
+
+    const channelColors: Record<string, string> = {
+      DIRECT: '#1b4d3e',
+      WALK_IN: '#fa8c16',
+      OTA: '#1890ff',
+      ONLINE: '#1890ff',
+      PHONE: '#722ed1',
+      EMAIL: '#13c2c2',
+      AGENT: '#eb2f96',
+      CORPORATE: '#fa541c',
+      OTHER: '#8c8c8c',
+    };
+    const defaultPalette = ['#1b4d3e', '#1890ff', '#fa8c16', '#52c41a', '#722ed1', '#13c2c2', '#eb2f96'];
+    const bookingSourcesDonutData: DonutSlice[] = sources.map((src, idx) => ({
+      key: src.source,
+      label: src.source,
+      value: src.reservations,
+      color: channelColors[src.source] || defaultPalette[idx % defaultPalette.length],
+    }));
 
     const columns: ColumnsType<ReservationSeriesItem> = [
       {
@@ -1019,31 +1214,52 @@ export const ReportsPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Booking Sources breakdown */}
-        <Card
-          title="Phân tích nguồn đặt phòng (Booking Channels)"
-          size="small"
-          style={{ marginBottom: 20, borderRadius: 8 }}
-        >
-          {sources.length === 0 ? (
-            <Text type="secondary">Chưa ghi nhận nguồn đặt nào trong kỳ này.</Text>
-          ) : (
-            <Row gutter={[16, 16]}>
-              {sources.map((src, i) => (
-                <Col xs={12} sm={8} md={4} key={i}>
-                  <Card size="small" style={{ textAlign: 'center', background: '#fafafa', borderRadius: 6 }}>
-                    <Tag color="geekblue" style={{ fontSize: 13, padding: '2px 8px' }}>{src.source}</Tag>
-                    <div style={{ marginTop: 8 }}>
-                      <Text strong style={{ fontSize: 18, color: '#1b4d3e' }}>{src.reservations}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 11 }}>lượt đặt</Text>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Card>
+        {/* Visual Charts: Reservations vs Checkins Bar & Booking Channels Donut */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          <Col xs={24} lg={15}>
+            <Card
+              title={
+                <Space>
+                  <BarChartOutlined style={{ color: '#1b4d3e' }} />
+                  <Text strong>So sánh Lượt đặt tạo mới vs Check-in thực tế ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <BarComparisonChart
+                data={reservationChartData}
+                series1Label="Lượt đặt mới"
+                series2Label="Check-in thực tế"
+                series1Color="#1b4d3e"
+                series2Color="#52c41a"
+                valueFormatter={(val) => `${val} lượt`}
+                height={260}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={9}>
+            <Card
+              title={
+                <Space>
+                  <PieChartOutlined style={{ color: '#1890ff' }} />
+                  <Text strong>Cơ cấu nguồn đặt phòng (Booking Channels)</Text>
+                </Space>
+              }
+              size="small"
+              style={{ borderRadius: 8, height: '100%' }}
+            >
+              <div style={{ paddingTop: 12 }}>
+                <DonutChart
+                  data={bookingSourcesDonutData}
+                  totalLabel="Tổng lượt đặt"
+                  valueFormatter={(val) => `${val} lượt`}
+                  size={160}
+                />
+              </div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Time series */}
         <Card
