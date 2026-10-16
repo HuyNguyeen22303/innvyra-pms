@@ -785,10 +785,10 @@ export const StaysPage: React.FC = () => {
                         placeholder="Trạng thái lưu trú"
                         style={{ width: '100%' }}
                         value={statusFilter}
-                        onChange={(val) => setStatusFilter(val)}
+                        onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả trạng thái', value: undefined },
+                          { label: 'Tất cả trạng thái', value: 'ALL' },
                           { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
                           { label: 'Đã trả phòng (CHECKED_OUT)', value: 'CHECKED_OUT' },
                         ]}

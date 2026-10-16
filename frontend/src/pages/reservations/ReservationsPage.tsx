@@ -712,10 +712,10 @@ export const ReservationsPage: React.FC = () => {
                         placeholder="Trạng thái"
                         style={{ width: '100%' }}
                         value={statusFilter}
-                        onChange={(val) => setStatusFilter(val)}
+                        onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả trạng thái', value: undefined },
+                          { label: 'Tất cả trạng thái', value: 'ALL' },
                           { label: 'Đã xác nhận (CONFIRMED)', value: 'CONFIRMED' },
                           { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
                           { label: 'Nhận 1 phần (PARTIALLY)', value: 'PARTIALLY_CHECKED_IN' },
@@ -730,10 +730,10 @@ export const ReservationsPage: React.FC = () => {
                         placeholder="Kênh đặt"
                         style={{ width: '100%' }}
                         value={sourceFilter}
-                        onChange={(val) => setSourceFilter(val)}
+                        onChange={(val: any) => setSourceFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả nguồn', value: undefined },
+                          { label: 'Tất cả nguồn', value: 'ALL' },
                           { label: 'Trực tiếp (DIRECT)', value: 'DIRECT' },
                           { label: 'Điện thoại (PHONE)', value: 'PHONE' },
                           { label: 'Email (EMAIL)', value: 'EMAIL' },

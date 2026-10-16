@@ -386,14 +386,15 @@ export const ServiceOrdersTab: React.FC = () => {
               />
               <Select
                 value={statusFilter}
-                onChange={(val) => {
-                  setStatusFilter(val);
+                onChange={(val: any) => {
+                  setStatusFilter(!val || val === 'ALL' ? undefined : val);
                   setPage(1);
                 }}
                 placeholder="Lọc trạng thái..."
                 style={{ width: 170 }}
                 allowClear
                 options={[
+                  { value: 'ALL', label: 'Tất cả trạng thái' },
                   { value: 'REQUESTED', label: 'Chờ cung cấp' },
                   { value: 'COMPLETED', label: 'Đã hoàn thành' },
                   { value: 'CANCELLED', label: 'Đã hủy' },

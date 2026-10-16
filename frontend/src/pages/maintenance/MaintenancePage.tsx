@@ -902,8 +902,9 @@ export const MaintenancePage: React.FC = () => {
                         style={{ width: '100%' }}
                         allowClear
                         value={ticketStatusFilter}
-                        onChange={(v) => setTicketStatusFilter(v)}
+                        onChange={(v: any) => setTicketStatusFilter(!v || v === 'ALL' ? undefined : v)}
                         options={[
+                          { value: 'ALL', label: 'Tất cả trạng thái phiếu' },
                           { value: 'OPEN', label: '🔴 Mới báo cáo (OPEN)' },
                           { value: 'ASSIGNED', label: '🟠 Đã phân công (ASSIGNED)' },
                           { value: 'IN_PROGRESS', label: '🔵 Đang sửa chữa (IN_PROGRESS)' },
@@ -919,8 +920,9 @@ export const MaintenancePage: React.FC = () => {
                         style={{ width: '100%' }}
                         allowClear
                         value={ticketPriorityFilter}
-                        onChange={(v) => setTicketPriorityFilter(v)}
+                        onChange={(v: any) => setTicketPriorityFilter(!v || v === 'ALL' ? undefined : v)}
                         options={[
+                          { value: 'ALL', label: 'Tất cả mức độ ưu tiên' },
                           { value: 'CRITICAL', label: '🔴 Khẩn cấp' },
                           { value: 'HIGH', label: '🟠 Ưu tiên cao' },
                           { value: 'NORMAL', label: '🔵 Bình thường' },
@@ -992,8 +994,9 @@ export const MaintenancePage: React.FC = () => {
                         style={{ width: '100%' }}
                         allowClear
                         value={blockStatusFilter}
-                        onChange={(v) => setBlockStatusFilter(v)}
+                        onChange={(v: any) => setBlockStatusFilter(!v || v === 'ALL' ? undefined : v)}
                         options={[
+                          { value: 'ALL', label: 'Tất cả lệnh khóa' },
                           { value: 'ACTIVE', label: '🔴 Đang khóa kỹ thuật (ACTIVE)' },
                           { value: 'SCHEDULED', label: '🟠 Đã lên lịch tương lai (SCHEDULED)' },
                           { value: 'RELEASED', label: '🟢 Đã mở khóa an toàn (RELEASED)' },

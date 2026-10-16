@@ -615,8 +615,9 @@ export const GuestsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedNationality}
-              onChange={setSelectedNationality}
+              onChange={(val) => setSelectedNationality(val === 'ALL' || !val ? undefined : val)}
               options={[
+                { label: 'Tất cả quốc tịch', value: 'ALL' },
                 { label: 'Việt Nam', value: 'Việt Nam' },
                 { label: 'Hoa Kỳ (USA)', value: 'United States' },
                 { label: 'Hàn Quốc (Korea)', value: 'South Korea' },

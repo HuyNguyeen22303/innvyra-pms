@@ -822,11 +822,12 @@ export const FolioTab: React.FC = () => {
                 allowClear
                 style={{ width: 190 }}
                 value={resTableStatus}
-                onChange={(val) => {
-                  setResTableStatus(val);
+                onChange={(val: any) => {
+                  setResTableStatus(!val || val === 'ALL' ? undefined : val);
                   setResTablePage(1);
                 }}
                 options={[
+                  { value: 'ALL', label: 'Tất cả trạng thái' },
                   { value: 'CHECKED_IN', label: 'Đang ở (CHECKED_IN)' },
                   { value: 'CONFIRMED', label: 'Đã xác nhận (CONFIRMED)' },
                   { value: 'CHECKED_OUT', label: 'Đã trả phòng (CHECKED_OUT)' },

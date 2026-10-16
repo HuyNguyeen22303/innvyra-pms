@@ -487,9 +487,9 @@ export const RoomsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedFloor}
-              onChange={setSelectedFloor}
+              onChange={(val: any) => setSelectedFloor(!val || val === 'ALL' ? undefined : Number(val))}
               options={[
-                { label: 'Tất cả tầng', value: undefined },
+                { label: 'Tất cả tầng', value: 'ALL' },
                 { label: 'Tầng 1', value: 1 },
                 { label: 'Tầng 2', value: 2 },
                 { label: 'Tầng 3', value: 3 },
@@ -505,8 +505,11 @@ export const RoomsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedRoomType}
-              onChange={setSelectedRoomType}
-              options={roomTypes.map((t) => ({ label: `${t.code} - ${t.name}`, value: t.id }))}
+              onChange={(val: any) => setSelectedRoomType(!val || val === 'ALL' ? undefined : val)}
+              options={[
+                { label: 'Tất cả loại phòng', value: 'ALL' },
+                ...roomTypes.map((t) => ({ label: `${t.code} - ${t.name}`, value: t.id })),
+              ]}
             />
           </Col>
 
@@ -516,8 +519,9 @@ export const RoomsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedHK}
-              onChange={setSelectedHK}
+              onChange={(val: any) => setSelectedHK(!val || val === 'ALL' ? undefined : val)}
               options={[
+                { label: 'Tất cả trạng thái vệ sinh', value: 'ALL' },
                 { label: 'READY (Sẵn sàng)', value: 'READY' },
                 { label: 'DIRTY (Chờ dọn)', value: 'DIRTY' },
                 { label: 'CLEANING (Đang dọn)', value: 'CLEANING' },
@@ -532,8 +536,9 @@ export const RoomsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedPhysical}
-              onChange={setSelectedPhysical}
+              onChange={(val: any) => setSelectedPhysical(!val || val === 'ALL' ? undefined : val)}
               options={[
+                { label: 'Tất cả trạng thái vận hành', value: 'ALL' },
                 { label: 'ACTIVE (Bình thường)', value: 'ACTIVE' },
                 { label: 'MAINTENANCE (Bảo trì)', value: 'MAINTENANCE' },
                 { label: 'OUT_OF_SERVICE (Khóa)', value: 'OUT_OF_SERVICE' },
