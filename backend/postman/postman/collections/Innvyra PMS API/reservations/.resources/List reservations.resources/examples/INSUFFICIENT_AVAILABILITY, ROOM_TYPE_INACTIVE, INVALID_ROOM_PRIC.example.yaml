@@ -1,7 +1,7 @@
 $kind: http-example
 name: INSUFFICIENT_AVAILABILITY, ROOM_TYPE_INACTIVE, INVALID_ROOM_PRICE, RESERVATION_CONFLICT or RESERVATION_CANNOT_BE_CANCELLED
 request:
-  url: "{{baseUrl}}/reservations?page=1&limit=20&search=string&guestId=12&guestSearch=string&status=CHECKED_OUT&checkInDate=2026-10-20&checkOutDate=2026-10-20&bookingSource=DIRECT&sortBy=createdAt&sortOrder=desc"
+  url: "{{baseUrl}}/reservations?page=1&limit=20&search=string&guestId=12&guestSearch=string&status=PARTIALLY_CHECKED_IN&checkInDate=2026-10-20&checkOutDate=2026-10-20&bookingSource=DIRECT&sortBy=createdAt&sortOrder=desc"
   method: GET
   headers:
     - key: Accept
@@ -31,7 +31,7 @@ request:
       disabled: false
       description: Guest name contains; front desk roles only
     - key: status
-      value: CHECKED_OUT
+      value: PARTIALLY_CHECKED_IN
       disabled: false
       description: Reservation status
     - key: checkInDate

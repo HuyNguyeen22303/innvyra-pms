@@ -1,7 +1,7 @@
 $kind: http-example
 name: Sanitized internal error; no SQL or stack trace.
 request:
-  url: "{{baseUrl}}/reports/dashboard?date=2019-09-17"
+  url: "{{baseUrl}}/reports/dashboard?date=2018-07-12"
   method: GET
   headers:
     - key: Accept
@@ -10,7 +10,7 @@ request:
       value: Bearer <token>
       description: "Added as a part of security scheme: bearer"
   queryParams:
-    date: 2019-09-17
+    date: 2018-07-12
   body:
     type: text
     content: ""

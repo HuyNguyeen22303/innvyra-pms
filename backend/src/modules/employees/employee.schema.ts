@@ -59,4 +59,16 @@ export const updateEmployeeSchema = z.object({
   query: emptyQuery,
 });
 export const employeeIdSchema = z.object({ params: idParams, query: emptyQuery });
+export const employeeResetPasswordBody = z
+  .object({
+    password: password.optional(),
+  })
+  .strict()
+  .optional();
+export const resetPasswordEmployeeSchema = z.object({
+  body: employeeResetPasswordBody,
+  params: idParams,
+  query: emptyQuery,
+});
 export const listEmployeesSchema = z.object({ query: employeeListQuery });
+

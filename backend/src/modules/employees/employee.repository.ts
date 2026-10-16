@@ -133,6 +133,22 @@ export class PrismaEmployeeRepository {
     });
   }
 
+  async activate(hotelId: bigint, id: bigint) {
+    return this.db.staffUser.update({
+      where: { hotelId_id: { hotelId, id } },
+      data: { isActive: true },
+      include: staffInclude,
+    });
+  }
+
+  async resetPassword(hotelId: bigint, id: bigint, passwordHash: string) {
+    return this.db.staffUser.update({
+      where: { hotelId_id: { hotelId, id } },
+      data: { passwordHash },
+      include: staffInclude,
+    });
+  }
+
   async revokeAllSessions(staffUserId: bigint, now: Date, reason: string) {
     await this.db.authSession.updateMany({
       where: { staffUserId, revokedAt: null },

@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, ACCOUNTANT, TECHNICIAN. Data is scoped to the authenticated user's current hotel, including ADMIN. Unknown query parameters are rejected. No occupancy or date availability is calculated."
-url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=false&sortOrder=asc&roomTypeId=637531104767522725&floorNumber=-12691&physicalStatus=MAINTENANCE&housekeepingStatus=CLEANING&sortBy=roomNumber"
+url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=553249&floorNumber=-23523&physicalStatus=ACTIVE&housekeepingStatus=INSPECTION&sortBy=roomNumber"
 method: GET
 headers:
   Accept: application/json
@@ -53,7 +53,7 @@ queryParams:
         }
       }
   - key: isActive
-    value: "false"
+    value: "true"
     disabled: false
     description: Literal true or false. Omitted includes active and inactive records.
     $type: boolean
@@ -76,7 +76,7 @@ queryParams:
         }
       }
   - key: roomTypeId
-    value: "637531104767522725"
+    value: "553249"
     disabled: false
     description: ""
     $type: |-
@@ -90,7 +90,7 @@ queryParams:
         }
       }
   - key: floorNumber
-    value: "-12691"
+    value: "-23523"
     disabled: false
     description: Signed SMALLINT, -32768–32767; includes basement floors.
     $type: |-
@@ -105,7 +105,7 @@ queryParams:
         }
       }
   - key: physicalStatus
-    value: MAINTENANCE
+    value: ACTIVE
     disabled: false
     description: ""
     $type: |-
@@ -123,7 +123,7 @@ queryParams:
         }
       }
   - key: housekeepingStatus
-    value: CLEANING
+    value: INSPECTION
     disabled: false
     description: ""
     $type: |-

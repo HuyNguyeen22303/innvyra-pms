@@ -1,7 +1,7 @@
 $kind: http-example
 name: Missing/invalid token, revoked session or inactive account
 request:
-  url: "{{baseUrl}}/employees?page=1&limit=20&search=string&role=ACCOUNTANT&isActive=true&sortBy=fullName&sortOrder=asc"
+  url: "{{baseUrl}}/employees?page=1&limit=20&search=string&role=HOUSEKEEPING&isActive=true&sortBy=fullName&sortOrder=asc"
   method: GET
   headers:
     - key: Accept
@@ -23,7 +23,7 @@ request:
       disabled: false
       description: Search by fullName, username or email
     - key: role
-      value: ACCOUNTANT
+      value: HOUSEKEEPING
       disabled: false
       description: Filter by role
     - key: isActive

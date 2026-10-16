@@ -69,6 +69,15 @@ export const employeeSchemas = {
     description:
       'Only supplied fields change. Username and password cannot be changed through this endpoint.',
   },
+  ResetPasswordEmployee: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      password: { type: 'string', format: 'password', minLength: 15, maxLength: 128 },
+    },
+    description:
+      'Optional. If omitted, a cryptographically secure random temporary password is automatically generated.',
+  },
   Employee: {
     type: 'object',
     required: Object.keys(employeeExample),
@@ -220,6 +229,43 @@ export const employeePaths = {
           ...employeeExample,
           isActive: false,
         }),
+      },
+    },
+  },
+  '/employees/{id}/activate': {
+    patch: {
+      tags: ['Employees'],
+      summary: 'Activate employee',
+      security,
+      description: `Roles: ${writeRoles}. Re-enables the account (isActive=true). Does not restore previously revoked sessions. Role hierarchy enforced. Cannot activate employees with equal or higher role.`,
+      parameters: [idParam, csrf],
+      responses: {
+        ...writeErrors,
+        404: notFound,
+        200: response(ref('Employee'), 'Employee activated', {
+          ...employeeExample,
+          isActive: true,
+        }),
+      },
+    },
+  },
+  '/employees/{id}/reset-password': {
+    post: {
+      tags: ['Employees'],
+      summary: 'Reset employee password',
+      security,
+      description: `Roles: ${writeRoles}. Resets employee password and revokes all active sessions. Password is encrypted with Argon2id before storage. Does not expose password or secrets in response or logs. Role hierarchy enforced.`,
+      parameters: [idParam, csrf],
+      requestBody: {
+        required: false,
+        content: json(ref('ResetPasswordEmployee'), {
+          password: 'Innvyra@NewSecure2026!',
+        }),
+      },
+      responses: {
+        ...writeErrors,
+        404: notFound,
+        200: response(ref('Employee'), 'Employee password reset', employeeExample),
       },
     },
   },
