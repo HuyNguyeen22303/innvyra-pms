@@ -540,20 +540,166 @@ async function main() {
         });
       }
 
-      // 8. Service charges for some rooms (Manual adjustment)
+      // 8. Service charges for some rooms via real ServiceOrder
       let extraServiceAmount = 0;
       if (i % 2 === 0) {
+        const beerService = serviceMap.get('SRV-BEER')!;
         extraServiceAmount = 90000; // 2 beers
+
+        // A. Create ServiceOrder (COMPLETED)
+        const srvOrder = await prisma.serviceOrder.create({
+          data: {
+            hotelId: hotel.id,
+            reservationId: res.id,
+            stayId: stay.id,
+            status: 'COMPLETED',
+            notes: `Phụ thu minibar phòng ${roomNum}`,
+            createdBy: receptionist.id,
+            completedBy: receptionist.id,
+            createdAt: new Date(`${today}T09:30:00.000Z`),
+            completedAt: new Date(`${today}T10:00:00.000Z`),
+          },
+        });
+
+        // B. Create ServiceOrderItem
+        const srvItem = await prisma.serviceOrderItem.create({
+          data: {
+            hotelId: hotel.id,
+            serviceOrderId: srvOrder.id,
+            serviceId: beerService.id,
+            nameSnapshot: beerService.name,
+            unitSnapshot: beerService.unit,
+            quantity: 2,
+            unitPriceSnapshot: beerService.price,
+            lineTotal: '90000.00',
+            createdAt: new Date(`${today}T09:30:00.000Z`),
+          },
+        });
+
+        // C. FolioItem linked to ServiceOrderItem
         await prisma.folioItem.create({
           data: {
             hotelId: hotel.id,
             folioId: folio.id,
             entryType: 'DEBIT',
-            sourceType: 'MANUAL_ADJUSTMENT',
+            sourceType: 'SERVICE_ORDER_ITEM',
+            sourceId: srvItem.id,
+            serviceOrderItemId: srvItem.id,
             amount: '90000.00',
-            description: 'Phụ thu minibar: 2 lon Bia Heineken',
+            description: `${srvItem.nameSnapshot} (${srvItem.quantity} ${srvItem.unitSnapshot})`,
             createdBy: receptionist.id,
             createdAt: new Date(`${today}T10:00:00.000Z`),
+          },
+        });
+      } else if (i === 1) {
+        // Pending request: 2 Lavie waters for Room 105
+        const waterService = serviceMap.get('SRV-WATER')!;
+        const pendingOrder = await prisma.serviceOrder.create({
+          data: {
+            hotelId: hotel.id,
+            reservationId: res.id,
+            stayId: stay.id,
+            status: 'REQUESTED',
+            notes: `Khách gọi mang 2 chai nước khoáng lên phòng ${roomNum}`,
+            createdBy: receptionist.id,
+            createdAt: new Date(`${today}T11:15:00.000Z`),
+          },
+        });
+        await prisma.serviceOrderItem.create({
+          data: {
+            hotelId: hotel.id,
+            serviceOrderId: pendingOrder.id,
+            serviceId: waterService.id,
+            nameSnapshot: waterService.name,
+            unitSnapshot: waterService.unit,
+            quantity: 2,
+            unitPriceSnapshot: waterService.price,
+            lineTotal: '50000.00',
+            createdAt: new Date(`${today}T11:15:00.000Z`),
+          },
+        });
+      } else if (i === 3) {
+        // Pending request: 2 Breakfast buffet for Room 109
+        const bfService = serviceMap.get('SRV-BREAKFAST')!;
+        const pendingOrder = await prisma.serviceOrder.create({
+          data: {
+            hotelId: hotel.id,
+            reservationId: res.id,
+            stayId: stay.id,
+            status: 'REQUESTED',
+            notes: `Khách đăng ký 2 suất ăn sáng buffet tại nhà hàng`,
+            createdBy: receptionist.id,
+            createdAt: new Date(`${today}T12:00:00.000Z`),
+          },
+        });
+        await prisma.serviceOrderItem.create({
+          data: {
+            hotelId: hotel.id,
+            serviceOrderId: pendingOrder.id,
+            serviceId: bfService.id,
+            nameSnapshot: bfService.name,
+            unitSnapshot: bfService.unit,
+            quantity: 2,
+            unitPriceSnapshot: bfService.price,
+            lineTotal: '360000.00',
+            createdAt: new Date(`${today}T12:00:00.000Z`),
+          },
+        });
+      } else if (i === 5) {
+        // Pending request: 3 kg Laundry for Room 202
+        const laundryService = serviceMap.get('SRV-LAUNDRY')!;
+        const pendingOrder = await prisma.serviceOrder.create({
+          data: {
+            hotelId: hotel.id,
+            reservationId: res.id,
+            stayId: stay.id,
+            status: 'REQUESTED',
+            notes: `Giặt ủi quần áo lấy ngay trong ngày`,
+            createdBy: receptionist.id,
+            createdAt: new Date(`${today}T13:30:00.000Z`),
+          },
+        });
+        await prisma.serviceOrderItem.create({
+          data: {
+            hotelId: hotel.id,
+            serviceOrderId: pendingOrder.id,
+            serviceId: laundryService.id,
+            nameSnapshot: laundryService.name,
+            unitSnapshot: laundryService.unit,
+            quantity: 3,
+            unitPriceSnapshot: laundryService.price,
+            lineTotal: '150000.00',
+            createdAt: new Date(`${today}T13:30:00.000Z`),
+          },
+        });
+      } else if (i === 7) {
+        // Cancelled request: Airport shuttle for Room 205
+        const airportService = serviceMap.get('SRV-AIRPORT')!;
+        const cancelledOrder = await prisma.serviceOrder.create({
+          data: {
+            hotelId: hotel.id,
+            reservationId: res.id,
+            stayId: stay.id,
+            status: 'CANCELLED',
+            notes: `Khách đặt xe tiễn sân bay nhưng sau đó báo hủy`,
+            createdBy: receptionist.id,
+            createdAt: new Date(`${today}T08:00:00.000Z`),
+            cancelledBy: receptionist.id,
+            cancelledAt: new Date(`${today}T09:00:00.000Z`),
+            cancellationReason: 'Khách tự bắt taxi đi cùng bạn nên không dùng xe khách sạn',
+          },
+        });
+        await prisma.serviceOrderItem.create({
+          data: {
+            hotelId: hotel.id,
+            serviceOrderId: cancelledOrder.id,
+            serviceId: airportService.id,
+            nameSnapshot: airportService.name,
+            unitSnapshot: airportService.unit,
+            quantity: 1,
+            unitPriceSnapshot: airportService.price,
+            lineTotal: '350000.00',
+            createdAt: new Date(`${today}T08:00:00.000Z`),
           },
         });
       }
