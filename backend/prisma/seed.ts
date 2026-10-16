@@ -326,6 +326,7 @@ async function main() {
           maxChildren: rt.maxChildren,
           basePrice: rt.basePrice,
           isActive: true,
+          createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
       });
       roomTypeMap.set(rt.code, createdRt);
@@ -345,6 +346,7 @@ async function main() {
           physicalStatus,
           housekeepingStatus,
           notes: `Phòng ${roomNumber} - Tầng ${floorNumber} (${rt.name})`,
+          createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
       });
       roomMap.set(roomNumber, room);
@@ -412,6 +414,7 @@ async function main() {
     const hkCuc = staffMap.get('hk_cuc')!;
 
     // A. 20 IN-HOUSE STAYS (Occupied Rooms)
+    const validBookingSources = ['DIRECT', 'PHONE', 'EMAIL', 'WALK_IN', 'AGENT', 'OTHER'] as const;
     // List of 20 occupied rooms from our config
     const occupiedRoomNumbers = [
       '101', '105', '106', '109',
@@ -427,13 +430,14 @@ async function main() {
       const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: room.roomTypeId } });
       const guest = guestList[guestIdx++ % guestList.length];
 
-      // Check-in dates: 1-2 days ago, check-out: 1-3 days in future
+      // Check-in dates: 1-3 days ago, check-out: 1-3 days in future
       const stayDaysAgo = (i % 3) + 1;
       const stayDaysAhead = (i % 2) + 2;
       const checkInDate = addDays(today, -stayDaysAgo);
       const checkOutDate = addDays(today, stayDaysAhead);
       const totalNights = stayDaysAgo + stayDaysAhead;
       const totalRate = parseFloat(rt.basePrice.toString()) * totalNights;
+      const bookingCreatedAt = new Date(`${addDays(checkInDate, -3)}T10:00:00.000Z`);
 
       // 1. Reservation
       const res = await prisma.reservation.create({
@@ -444,9 +448,10 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CHECKED_IN',
-          bookingSource: i % 3 === 0 ? 'DIRECT' : i % 3 === 1 ? 'OTA' : 'WEBSITE',
+          bookingSource: validBookingSources[i % validBookingSources.length],
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -459,6 +464,7 @@ async function main() {
           roomId: room.id,
           adults: 2,
           children: 0,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -621,6 +627,7 @@ async function main() {
       const checkInDate = today;
       const checkOutDate = addDays(today, 2);
       const totalRate = parseFloat(rt.basePrice.toString()) * 2;
+      const bookingCreatedAt = new Date(`${addDays(today, -2)}T09:30:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
@@ -630,9 +637,10 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CONFIRMED',
-          bookingSource: i % 2 === 0 ? 'DIRECT' : 'OTA',
+          bookingSource: validBookingSources[(i + 1) % validBookingSources.length],
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -644,6 +652,7 @@ async function main() {
           roomId: room.id,
           adults: 2,
           children: 0,
+          createdAt: bookingCreatedAt,
         },
       });
     }
@@ -659,6 +668,7 @@ async function main() {
       const checkInDate = addDays(today, 1);
       const checkOutDate = addDays(today, 3);
       const totalRate = parseFloat(rt.basePrice.toString()) * 2;
+      const bookingCreatedAt = new Date(`${addDays(today, -1)}T11:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
@@ -668,9 +678,10 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CONFIRMED',
-          bookingSource: 'WEBSITE',
+          bookingSource: validBookingSources[(i + 3) % validBookingSources.length],
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -682,20 +693,35 @@ async function main() {
           roomId: null, // UNASSIGNED!
           adults: 2,
           children: 0,
+          createdAt: bookingCreatedAt,
         },
       });
     }
     console.info(`✅ Đã tạo 4 Đặt phòng chưa gán phòng (Unassigned Bookings) để test Matrix.`);
 
-    // D. 4 PAST CHECKED-OUT STAYS
-    const pastRooms = ['103', '110', '307', '410'];
-    for (let i = 0; i < 4; i++) {
+    // D. 10 PAST CHECKED-OUT STAYS (Distributed across past 11 days for natural reporting)
+    const pastStaysConfig = [
+      { roomNum: '103', checkInDaysAgo: 5, stayNights: 4 }, // -5 to -1
+      { roomNum: '110', checkInDaysAgo: 6, stayNights: 4 }, // -6 to -2
+      { roomNum: '307', checkInDaysAgo: 7, stayNights: 4 }, // -7 to -3
+      { roomNum: '410', checkInDaysAgo: 4, stayNights: 3 }, // -4 to -1
+      { roomNum: '102', checkInDaysAgo: 9, stayNights: 3 }, // -9 to -6
+      { roomNum: '107', checkInDaysAgo: 10, stayNights: 3 }, // -10 to -7
+      { roomNum: '203', checkInDaysAgo: 8, stayNights: 4 }, // -8 to -4
+      { roomNum: '208', checkInDaysAgo: 11, stayNights: 3 }, // -11 to -8
+      { roomNum: '303', checkInDaysAgo: 7, stayNights: 3 }, // -7 to -4
+      { roomNum: '403', checkInDaysAgo: 6, stayNights: 4 }, // -6 to -2
+    ];
+
+    for (let i = 0; i < pastStaysConfig.length; i++) {
+      const item = pastStaysConfig[i];
       const guest = guestList[guestIdx++ % guestList.length];
-      const targetRoom = roomMap.get(pastRooms[i])!;
+      const targetRoom = roomMap.get(item.roomNum)!;
       const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: targetRoom.roomTypeId } });
-      const checkInDate = addDays(today, -5);
-      const checkOutDate = addDays(today, -1);
-      const pastTotalAmount = (parseFloat(rt.basePrice.toString()) * 4).toFixed(2);
+      const checkInDate = addDays(today, -item.checkInDaysAgo);
+      const checkOutDate = addDays(checkInDate, item.stayNights);
+      const pastTotalAmount = (parseFloat(rt.basePrice.toString()) * item.stayNights).toFixed(2);
+      const bookingCreatedAt = new Date(`${addDays(checkInDate, -3)}T08:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
@@ -705,9 +731,10 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CHECKED_OUT',
-          bookingSource: 'OTA',
+          bookingSource: validBookingSources[i % validBookingSources.length],
           totalAmount: pastTotalAmount,
           createdBy: receptionist.id,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -719,6 +746,7 @@ async function main() {
           roomId: targetRoom.id,
           adults: rt.maxAdults,
           children: 0,
+          createdAt: bookingCreatedAt,
         },
       });
 
@@ -729,10 +757,11 @@ async function main() {
           reservationRoomId: resRoom.id,
           currentRoomId: targetRoom.id,
           status: 'CHECKED_OUT',
-          actualCheckinAt: new Date(`${checkInDate}T14:00:00.000Z`),
-          actualCheckoutAt: new Date(`${checkOutDate}T11:45:00.000Z`),
+          actualCheckinAt: new Date(`${checkInDate}T14:15:00.000Z`),
+          actualCheckoutAt: new Date(`${checkOutDate}T11:30:00.000Z`),
           checkinStaffId: receptionist.id,
           checkoutStaffId: receptionist.id,
+          createdAt: new Date(`${checkInDate}T14:15:00.000Z`),
         },
       });
 
@@ -742,12 +771,13 @@ async function main() {
           reservationId: res.id,
           currency: 'VND',
           status: 'CLOSED',
-          openedAt: new Date(`${checkInDate}T14:00:00.000Z`),
-          closedAt: new Date(`${checkOutDate}T11:45:00.000Z`),
+          openedAt: new Date(`${checkInDate}T14:15:00.000Z`),
+          closedAt: new Date(`${checkOutDate}T11:30:00.000Z`),
+          createdAt: new Date(`${checkInDate}T14:15:00.000Z`),
         },
       });
 
-      for (let n = 0; n < 4; n++) {
+      for (let n = 0; n < item.stayNights; n++) {
         const pastNight = await prisma.reservationRoomNight.create({
           data: {
             reservationRoomId: resRoom.id,
@@ -764,7 +794,7 @@ async function main() {
             roomNightId: pastNight.id,
             sourceId: pastNight.id,
             amount: rt.basePrice,
-            description: `Tiền phòng ${pastRooms[i]} (Đêm ${n + 1})`,
+            description: `Tiền phòng ${item.roomNum} (Đêm ${n + 1})`,
             createdBy: accountant.id,
             createdAt: new Date(`${addDays(checkInDate, n)}T23:59:00.000Z`),
           },
@@ -776,16 +806,109 @@ async function main() {
           hotelId: hotel.id,
           folioId: folio.id,
           paymentType: 'PAYMENT',
-          paymentMethod: 'BANK_TRANSFER',
+          paymentMethod: i % 2 === 0 ? 'BANK_TRANSFER' : 'CASH',
           amount: pastTotalAmount,
           status: 'CONFIRMED',
-          referenceNumber: `PAST-SETTLED-${i}`,
+          referenceNumber: `PAST-SETTLED-${i + 1}`,
           processedBy: accountant.id,
-          processedAt: new Date(`${checkOutDate}T11:40:00.000Z`),
+          processedAt: new Date(`${checkOutDate}T11:25:00.000Z`),
         },
       });
     }
-    console.info(`✅ Đã tạo 4 Lịch sử lưu trú quá khứ đã trả phòng và tất toán.`);
+    console.info(`✅ Đã tạo 10 Lịch sử lưu trú quá khứ đã trả phòng và tất toán trải đều các ngày.`);
+
+    // E. 3 CANCELLED RESERVATIONS
+    const cancelledConfig = [
+      { daysAgoCreated: 8, daysAgoCancelled: 6, source: 'PHONE' as const },
+      { daysAgoCreated: 5, daysAgoCancelled: 3, source: 'EMAIL' as const },
+      { daysAgoCreated: 3, daysAgoCancelled: 1, source: 'AGENT' as const },
+    ];
+    for (let i = 0; i < cancelledConfig.length; i++) {
+      const cfg = cancelledConfig[i];
+      const rt = roomTypesConfig[i % roomTypesConfig.length];
+      const rtRecord = roomTypeMap.get(rt.code)!;
+      const guest = guestList[guestIdx++ % guestList.length];
+      const checkInDate = addDays(today, 2 + i);
+      const checkOutDate = addDays(checkInDate, 2);
+      const totalAmount = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
+      const createdDate = new Date(`${addDays(today, -cfg.daysAgoCreated)}T09:00:00.000Z`);
+      const cancelledDate = new Date(`${addDays(today, -cfg.daysAgoCancelled)}T14:00:00.000Z`);
+
+      const res = await prisma.reservation.create({
+        data: {
+          hotelId: hotel.id,
+          confirmationCode: `RES-CANC-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          bookerGuestId: guest.id,
+          checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
+          checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
+          status: 'CANCELLED',
+          bookingSource: cfg.source,
+          totalAmount,
+          createdBy: receptionist.id,
+          createdAt: createdDate,
+          cancelledAt: cancelledDate,
+          cancelledBy: receptionist.id,
+          cancellationReason: 'Khách thay đổi lịch công tác đột xuất',
+        },
+      });
+
+      await prisma.reservationRoom.create({
+        data: {
+          hotelId: hotel.id,
+          reservationId: res.id,
+          roomTypeId: rtRecord.id,
+          roomId: null,
+          adults: 2,
+          children: 0,
+          createdAt: createdDate,
+        },
+      });
+    }
+    console.info(`✅ Đã tạo 3 Đơn đặt phòng đã hủy (Cancelled Reservations).`);
+
+    // F. 2 NO-SHOW RESERVATIONS
+    const noShowConfig = [
+      { daysAgoCreated: 6, checkInDaysAgo: 3, source: 'DIRECT' as const },
+      { daysAgoCreated: 5, checkInDaysAgo: 2, source: 'WALK_IN' as const },
+    ];
+    for (let i = 0; i < noShowConfig.length; i++) {
+      const cfg = noShowConfig[i];
+      const rt = roomTypesConfig[(i + 2) % roomTypesConfig.length];
+      const rtRecord = roomTypeMap.get(rt.code)!;
+      const guest = guestList[guestIdx++ % guestList.length];
+      const checkInDate = addDays(today, -cfg.checkInDaysAgo);
+      const checkOutDate = addDays(checkInDate, 2);
+      const totalAmount = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
+      const createdDate = new Date(`${addDays(today, -cfg.daysAgoCreated)}T11:00:00.000Z`);
+
+      const res = await prisma.reservation.create({
+        data: {
+          hotelId: hotel.id,
+          confirmationCode: `RES-NOSHOW-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          bookerGuestId: guest.id,
+          checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
+          checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
+          status: 'NO_SHOW',
+          bookingSource: cfg.source,
+          totalAmount,
+          createdBy: receptionist.id,
+          createdAt: createdDate,
+        },
+      });
+
+      await prisma.reservationRoom.create({
+        data: {
+          hotelId: hotel.id,
+          reservationId: res.id,
+          roomTypeId: rtRecord.id,
+          roomId: null,
+          adults: 2,
+          children: 0,
+          createdAt: createdDate,
+        },
+      });
+    }
+    console.info(`✅ Đã tạo 2 Đơn đặt phòng khách không đến (No-Show Reservations).`);
 
     // E. HOUSEKEEPING TASKS
     // 1. DIRTY rooms -> PENDING tasks

@@ -77,10 +77,10 @@ export const ReportsPage: React.FC = () => {
   // Active Tab
   const [activeTab, setActiveTab] = useState<string>(() => availableTabs[0]?.key || 'operations');
 
-  // Date Range state: default to 30 days window [today - 30 days, today + 1 day)
+  // Date Range state: default to 30 completed days [today - 30 days, today) for audited report
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
     dayjs().subtract(30, 'day').startOf('day'),
-    dayjs().add(1, 'day').startOf('day'),
+    dayjs().startOf('day'),
   ]);
 
   const startDateStr = dateRange[0].format('YYYY-MM-DD');
@@ -280,17 +280,17 @@ export const ReportsPage: React.FC = () => {
   };
 
   // Quick period presets
-  const handlePresetChange = (days: number) => {
+  const handlePresetChange = (days: number, includeToday = false) => {
     setDateRange([
       dayjs().subtract(days, 'day').startOf('day'),
-      dayjs().add(1, 'day').startOf('day'),
+      includeToday ? dayjs().add(1, 'day').startOf('day') : dayjs().startOf('day'),
     ]);
   };
 
-  const handleThisMonthPreset = () => {
+  const handleThisMonthPreset = (includeToday = false) => {
     setDateRange([
       dayjs().startOf('month'),
-      dayjs().add(1, 'day').startOf('day'),
+      includeToday ? dayjs().add(1, 'day').startOf('day') : dayjs().startOf('day'),
     ]);
   };
 
@@ -680,6 +680,19 @@ export const ReportsPage: React.FC = () => {
     const summary = occ?.summary;
     const isReceptionist = userRole === 'RECEPTIONIST';
 
+    // Aggregates computed on closed days in the current series as fallback for ongoing day periods
+    const closedSeries = occ?.series?.filter((s) => s.unclosedDays === 0 && s.sellableRoomNights > 0) || [];
+    const closedOccupied = closedSeries.reduce((acc, s) => acc + (s.occupiedRoomNights ?? 0), 0);
+    const closedSellable = closedSeries.reduce((acc, s) => acc + s.sellableRoomNights, 0);
+    const closedSales = closedSeries.reduce((acc, s) => acc + (s.roomSalesValue ? parseFloat(s.roomSalesValue) : 0), 0);
+    const closedOccupancyRate = closedSellable > 0 ? Number(((closedOccupied / closedSellable) * 100).toFixed(2)) : null;
+    const closedAdr = closedOccupied > 0 ? (closedSales / closedOccupied).toFixed(2) : null;
+    const closedRevpar = closedSellable > 0 ? (closedSales / closedSellable).toFixed(2) : null;
+
+    const displayOccupancyRate = summary?.occupancyRate ?? closedOccupancyRate;
+    const displayAdr = summary?.operationalAdr ?? closedAdr;
+    const displayRevpar = summary?.operationalRevpar ?? closedRevpar;
+
     const columns: ColumnsType<OccupancySeriesItem> = [
       {
         title: 'Mốc thời gian',
@@ -777,8 +790,22 @@ export const ReportsPage: React.FC = () => {
         {summary?.unclosedDays && summary.unclosedDays > 0 ? (
           <Alert
             type="warning"
-            message={`Có ${summary.unclosedDays} ngày trong kỳ chưa hoàn tất chốt đêm (Night Audit)`}
-            description="Tỷ lệ lấp đầy, ADR và RevPAR cho các ngày chưa chốt đêm sẽ hiển thị trạng thái 'Chưa đủ dữ liệu đêm đã chốt' để bảo đảm tính chính xác của sổ sách kế toán."
+            message={`Có ${summary.unclosedDays} ngày trong kỳ chưa hoàn tất chốt đêm (Night Audit - ngày hôm nay đang diễn ra)`}
+            description={
+              <Space direction="vertical" style={{ width: '100%', marginTop: 4 }}>
+                <Text>
+                  Theo chuẩn kiểm toán khách sạn, ngày hôm nay đang mở và chỉ chốt đêm khi chạy Night Audit vào rạng sáng hôm sau. Thẻ tổng quan bên dưới phản ánh số liệu từ {closedSeries.length} ngày đã chốt xong đêm.
+                </Text>
+                <Button
+                  size="small"
+                  type="primary"
+                  ghost
+                  onClick={() => setDateRange([dateRange[0], dayjs().startOf('day')])}
+                >
+                  Chỉ xem các đêm đã hoàn tất chốt đêm
+                </Button>
+              </Space>
+            }
             showIcon
             style={{ marginBottom: 16 }}
           />
@@ -809,14 +836,14 @@ export const ReportsPage: React.FC = () => {
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tỷ lệ lấp đầy (Occupancy)</Text>}
                 value={
-                  summary?.occupancyRate !== null && summary?.occupancyRate !== undefined
-                    ? `${summary.occupancyRate}%`
+                  displayOccupancyRate !== null && displayOccupancyRate !== undefined
+                    ? `${displayOccupancyRate}%`
                     : 'Chưa đủ dữ liệu'
                 }
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {summary?.occupiedRoomNights ?? '-'} / {summary?.sellableRoomNights ?? '-'} phòng-đêm
+                {summary?.occupiedRoomNights ?? closedOccupied} / {summary?.sellableRoomNights ?? closedSellable} phòng-đêm
               </Text>
             </Card>
           </Col>
@@ -826,7 +853,7 @@ export const ReportsPage: React.FC = () => {
                 <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}>
                   <Statistic
                     title={<Text strong style={{ color: '#595959' }}>Giá phòng bình quân (ADR)</Text>}
-                    value={summary?.operationalAdr ? formatVnd(summary.operationalAdr) : 'Chưa đủ dữ liệu'}
+                    value={displayAdr ? formatVnd(displayAdr) : 'Chưa đủ dữ liệu'}
                     styles={{ content: { color: '#1890ff', fontWeight: 600, fontSize: 20 } }}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
@@ -838,7 +865,7 @@ export const ReportsPage: React.FC = () => {
                 <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}>
                   <Statistic
                     title={<Text strong style={{ color: '#595959' }}>Doanh thu trên phòng sẵn có (RevPAR)</Text>}
-                    value={summary?.operationalRevpar ? formatVnd(summary.operationalRevpar) : 'Chưa đủ dữ liệu'}
+                    value={displayRevpar ? formatVnd(displayRevpar) : 'Chưa đủ dữ liệu'}
                     styles={{ content: { color: '#52c41a', fontWeight: 600, fontSize: 20 } }}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
@@ -898,15 +925,15 @@ export const ReportsPage: React.FC = () => {
       },
       {
         title: 'Đặt tạo mới',
-        dataIndex: 'totalReservationsCreated',
-        key: 'totalReservationsCreated',
+        dataIndex: 'reservationsCreated',
+        key: 'reservationsCreated',
         align: 'center',
         render: (v) => <Text strong>{v}</Text>,
       },
       {
         title: 'Số phòng đặt',
-        dataIndex: 'totalReservationRoomsCreated',
-        key: 'totalReservationRoomsCreated',
+        dataIndex: 'reservationRoomsCreated',
+        key: 'reservationRoomsCreated',
         align: 'center',
       },
       {
@@ -932,15 +959,15 @@ export const ReportsPage: React.FC = () => {
       },
       {
         title: 'Check-in thực tế',
-        dataIndex: 'actualCheckedInReservations',
-        key: 'actualCheckedInReservations',
+        dataIndex: 'actualCheckins',
+        key: 'actualCheckins',
         align: 'center',
         render: (v) => <Tag color="green">{v}</Tag>,
       },
       {
         title: 'Check-out thực tế',
-        dataIndex: 'actualCheckedOutReservations',
-        key: 'actualCheckedOutReservations',
+        dataIndex: 'actualCheckouts',
+        key: 'actualCheckouts',
         align: 'center',
       },
     ];
@@ -961,11 +988,11 @@ export const ReportsPage: React.FC = () => {
             <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Lượt đặt tạo mới trong kỳ</Text>}
-                value={summary?.totalReservationsCreated || 0}
+                value={summary?.reservationsCreated || 0}
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Tổng {summary?.totalReservationRoomsCreated || 0} phòng được đặt
+                Tổng {summary?.reservationRoomsCreated || 0} phòng được đặt
               </Text>
             </Card>
           </Col>
@@ -973,7 +1000,7 @@ export const ReportsPage: React.FC = () => {
             <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}>
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Check-in thực tế</Text>}
-                value={summary?.actualCheckedInReservations || 0}
+                value={summary?.actualCheckins || 0}
                 styles={{ content: { color: '#52c41a', fontWeight: 600, fontSize: 20 } }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -985,7 +1012,7 @@ export const ReportsPage: React.FC = () => {
             <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}>
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Check-out thực tế</Text>}
-                value={summary?.actualCheckedOutReservations || 0}
+                value={summary?.actualCheckouts || 0}
                 styles={{ content: { color: '#1890ff', fontWeight: 600, fontSize: 20 } }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1461,16 +1488,16 @@ export const ReportsPage: React.FC = () => {
               />
               <Space wrap size={4}>
                 <Button size="small" onClick={() => handlePresetChange(7)}>
-                  7 ngày
+                  7 ngày đã chốt
                 </Button>
                 <Button size="small" onClick={() => handlePresetChange(30)}>
-                  30 ngày
+                  30 ngày đã chốt
                 </Button>
-                <Button size="small" onClick={handleThisMonthPreset}>
+                <Button size="small" onClick={() => handlePresetChange(30, true)}>
+                  Bao gồm hôm nay
+                </Button>
+                <Button size="small" onClick={() => handleThisMonthPreset()}>
                   Tháng này
-                </Button>
-                <Button size="small" onClick={() => handlePresetChange(90)}>
-                  Quý này
                 </Button>
               </Space>
             </Space>

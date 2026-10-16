@@ -148,14 +148,15 @@ export interface OccupancyReport {
 // 4. Reservation Report
 // ----------------------------------------------------
 export interface ReservationMetrics {
-  totalReservationsCreated: number;
-  totalReservationRoomsCreated: number;
+  reservationsCreated: number;
+  reservationRoomsCreated: number;
   cancelledReservations: number;
   confirmedReservationsInCreatedCohort: number;
   noShowReservationsInCreatedCohort: number;
-  actualCheckedInReservations: number;
-  actualCheckedOutReservations: number;
-  activeStaysCreated: number;
+  expectedArrivals: number;
+  expectedDepartures: number;
+  actualCheckins: number;
+  actualCheckouts: number;
 }
 
 export interface ReservationSeriesItem extends ReservationMetrics {
