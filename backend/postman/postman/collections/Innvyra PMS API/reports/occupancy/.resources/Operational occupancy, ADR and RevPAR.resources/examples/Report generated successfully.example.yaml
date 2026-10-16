@@ -1,0 +1,364 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/occupancy?startDate=2019-09-17&endDate=2019-09-17&groupBy=day&roomTypeId=9916030"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: startDate
+      value: 2019-09-17
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 2019-09-17
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+    - key: roomTypeId
+      value: "9916030"
+      disabled: false
+      description: Must belong to authenticated hotel; foreign IDs return 404.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Report generated successfully",
+        "data": {
+          "period": {
+            "startDate": "2026-10-01",
+            "endDate": "2026-10-02",
+            "endExclusive": true
+          },
+          "timezone": "Asia/Ho_Chi_Minh",
+          "currency": "VND",
+          "groupBy": "day",
+          "generatedAt": "2026-10-15T05:00:00.000Z",
+          "dataQuality": {
+            "status": "estimated",
+            "limitations": [
+              "Historical activation/status history unavailable."
+            ]
+          },
+          "summary": {
+            "totalRoomNights": 10,
+            "sellableRoomNights": 9,
+            "maintenanceBlockedRoomNights": 1,
+            "occupiedRoomNights": 8,
+            "roomSalesValue": "7200000.00",
+            "operationalAdr": "900000.00",
+            "operationalRevpar": "800000.00",
+            "occupancyRate": 88.89,
+            "missingPriceNights": 0,
+            "conflictingRoomNights": 0,
+            "unclosedDays": 0,
+            "outOfServiceRoomNights": null
+          },
+          "series": [
+            {
+              "date": "2026-10-01",
+              "totalRoomNights": 10,
+              "sellableRoomNights": 9,
+              "maintenanceBlockedRoomNights": 1,
+              "occupiedRoomNights": 8,
+              "roomSalesValue": "7200000.00",
+              "operationalAdr": "900000.00",
+              "operationalRevpar": "800000.00",
+              "occupancyRate": 88.89,
+              "missingPriceNights": 0,
+              "conflictingRoomNights": 0,
+              "unclosedDays": 0,
+              "outOfServiceRoomNights": null
+            }
+          ],
+          "filters": {
+            "roomTypeId": null
+          },
+          "basis": "OPERATIONAL_NIGHT_END_SNAPSHOT_WITH_ESTIMATED_CAPACITY"
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endExclusive": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "startDate",
+                  "endDate",
+                  "endExclusive"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "example": "Asia/Ho_Chi_Minh"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "groupBy": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "month"
+                ]
+              },
+              "generatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "dataQuality": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "estimated",
+                      "incomplete"
+                    ]
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "status",
+                  "limitations"
+                ]
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "totalRoomNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "sellableRoomNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maintenanceBlockedRoomNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "missingPriceNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "conflictingRoomNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unclosedDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "occupiedRoomNights": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "outOfServiceRoomNights": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Null: historical physical-status ledger unavailable."
+                  },
+                  "roomSalesValue": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "operationalAdr": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "operationalRevpar": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "occupancyRate": {
+                    "type": "number",
+                    "description": "Occupied / estimated sellable room nights × 100; 2 decimals, null for zero denominator or incomplete occupancy."
+                  }
+                },
+                "required": [
+                  "totalRoomNights",
+                  "sellableRoomNights",
+                  "maintenanceBlockedRoomNights",
+                  "missingPriceNights",
+                  "conflictingRoomNights",
+                  "unclosedDays",
+                  "occupiedRoomNights",
+                  "outOfServiceRoomNights",
+                  "occupancyRate"
+                ]
+              },
+              "series": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "totalRoomNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sellableRoomNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "maintenanceBlockedRoomNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "missingPriceNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "conflictingRoomNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unclosedDays": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "occupiedRoomNights": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "outOfServiceRoomNights": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Null: historical physical-status ledger unavailable."
+                    },
+                    "roomSalesValue": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "operationalAdr": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "operationalRevpar": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "occupancyRate": {
+                      "type": "number",
+                      "description": "Occupied / estimated sellable room nights × 100; 2 decimals, null for zero denominator or incomplete occupancy."
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "totalRoomNights",
+                    "sellableRoomNights",
+                    "maintenanceBlockedRoomNights",
+                    "missingPriceNights",
+                    "conflictingRoomNights",
+                    "unclosedDays",
+                    "occupiedRoomNights",
+                    "outOfServiceRoomNights",
+                    "occupancyRate"
+                  ]
+                }
+              },
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "roomTypeId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "roomTypeId"
+                ]
+              },
+              "basis": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "period",
+              "timezone",
+              "currency",
+              "groupBy",
+              "generatedAt",
+              "dataQuality",
+              "summary",
+              "series",
+              "filters",
+              "basis"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

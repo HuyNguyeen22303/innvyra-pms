@@ -1,0 +1,305 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/operations?startDate=2019-09-17&endDate=2019-09-17&groupBy=day"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: startDate
+      value: 2019-09-17
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 2019-09-17
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Report generated successfully",
+        "data": {
+          "period": {
+            "startDate": "2026-10-01",
+            "endDate": "2026-10-02",
+            "endExclusive": true
+          },
+          "timezone": "Asia/Ho_Chi_Minh",
+          "currency": "VND",
+          "groupBy": "day",
+          "generatedAt": "2026-10-15T05:00:00.000Z",
+          "dataQuality": {
+            "status": "complete",
+            "limitations": [
+              "Illustrative example only; see endpoint definitions."
+            ]
+          },
+          "snapshotAt": "2026-10-15T05:00:00.000Z",
+          "housekeeping": {
+            "snapshot": {
+              "dirtyRooms": 0,
+              "readyRooms": 0,
+              "cleaningRooms": 0,
+              "roomsAwaitingInspection": 0,
+              "activeHousekeepingTasks": 0,
+              "cleaningTasks": 0
+            },
+            "period": {
+              "completedHousekeepingTasks": 0,
+              "inspectedHousekeepingTasks": 0
+            }
+          },
+          "maintenance": {
+            "snapshot": {
+              "roomsUnderMaintenance": 0,
+              "roomsOutOfService": 0,
+              "openMaintenanceTickets": 0,
+              "inProgressMaintenanceTickets": 0,
+              "activeMaintenanceBlocks": 0
+            },
+            "period": {
+              "maintenanceBlockedRoomNights": 0
+            }
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endExclusive": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "startDate",
+                  "endDate",
+                  "endExclusive"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "example": "Asia/Ho_Chi_Minh"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "groupBy": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "month"
+                ]
+              },
+              "generatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "dataQuality": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "estimated",
+                      "incomplete"
+                    ]
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "status",
+                  "limitations"
+                ]
+              },
+              "snapshotAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "housekeeping": {
+                "type": "object",
+                "properties": {
+                  "snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "dirtyRooms": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "readyRooms": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "cleaningRooms": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "roomsAwaitingInspection": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "activeHousekeepingTasks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "cleaningTasks": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "dirtyRooms",
+                      "readyRooms",
+                      "cleaningRooms",
+                      "roomsAwaitingInspection",
+                      "activeHousekeepingTasks",
+                      "cleaningTasks"
+                    ]
+                  },
+                  "period": {
+                    "type": "object",
+                    "properties": {
+                      "completedHousekeepingTasks": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "inspectedHousekeepingTasks": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "completedHousekeepingTasks",
+                      "inspectedHousekeepingTasks"
+                    ]
+                  }
+                },
+                "required": [
+                  "snapshot",
+                  "period"
+                ]
+              },
+              "maintenance": {
+                "type": "object",
+                "properties": {
+                  "snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "roomsUnderMaintenance": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "roomsOutOfService": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "openMaintenanceTickets": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "inProgressMaintenanceTickets": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "activeMaintenanceBlocks": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "roomsUnderMaintenance",
+                      "roomsOutOfService",
+                      "openMaintenanceTickets",
+                      "inProgressMaintenanceTickets",
+                      "activeMaintenanceBlocks"
+                    ]
+                  },
+                  "period": {
+                    "type": "object",
+                    "properties": {
+                      "maintenanceBlockedRoomNights": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "maintenanceBlockedRoomNights"
+                    ]
+                  }
+                },
+                "required": [
+                  "snapshot",
+                  "period"
+                ]
+              }
+            },
+            "required": [
+              "period",
+              "timezone",
+              "currency",
+              "groupBy",
+              "generatedAt",
+              "dataQuality",
+              "snapshotAt"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

@@ -1,0 +1,317 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/reservations?startDate=2019-09-17&endDate=2019-09-17&groupBy=day"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: startDate
+      value: 2019-09-17
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 2019-09-17
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Report generated successfully",
+        "data": {
+          "period": {
+            "startDate": "2026-10-01",
+            "endDate": "2026-10-02",
+            "endExclusive": true
+          },
+          "timezone": "Asia/Ho_Chi_Minh",
+          "currency": "VND",
+          "groupBy": "day",
+          "generatedAt": "2026-10-15T05:00:00.000Z",
+          "dataQuality": {
+            "status": "complete",
+            "limitations": [
+              "Illustrative example only; see endpoint definitions."
+            ]
+          },
+          "summary": {
+            "reservationsCreated": 0,
+            "confirmedReservationsInCreatedCohort": 0,
+            "noShowReservationsInCreatedCohort": 0,
+            "cancelledReservations": 0,
+            "reservationRoomsCreated": 0,
+            "expectedArrivals": 0,
+            "expectedDepartures": 0,
+            "actualCheckins": 0,
+            "actualCheckouts": 0
+          },
+          "series": [
+            {
+              "date": "2026-10-01",
+              "reservationsCreated": 0,
+              "confirmedReservationsInCreatedCohort": 0,
+              "noShowReservationsInCreatedCohort": 0,
+              "cancelledReservations": 0,
+              "reservationRoomsCreated": 0,
+              "expectedArrivals": 0,
+              "expectedDepartures": 0,
+              "actualCheckins": 0,
+              "actualCheckouts": 0
+            }
+          ],
+          "bookingSources": []
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endExclusive": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "startDate",
+                  "endDate",
+                  "endExclusive"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "example": "Asia/Ho_Chi_Minh"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "groupBy": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "month"
+                ]
+              },
+              "generatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "dataQuality": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "estimated",
+                      "incomplete"
+                    ]
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "status",
+                  "limitations"
+                ]
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "reservationsCreated": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "confirmedReservationsInCreatedCohort": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "noShowReservationsInCreatedCohort": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cancelledReservations": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reservationRoomsCreated": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "expectedArrivals": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "expectedDepartures": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "actualCheckins": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "actualCheckouts": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "reservationsCreated",
+                  "confirmedReservationsInCreatedCohort",
+                  "noShowReservationsInCreatedCohort",
+                  "cancelledReservations",
+                  "reservationRoomsCreated",
+                  "expectedArrivals",
+                  "expectedDepartures",
+                  "actualCheckins",
+                  "actualCheckouts"
+                ]
+              },
+              "series": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "reservationsCreated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "confirmedReservationsInCreatedCohort": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "noShowReservationsInCreatedCohort": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cancelledReservations": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reservationRoomsCreated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expectedArrivals": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expectedDepartures": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "actualCheckins": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "actualCheckouts": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "reservationsCreated",
+                    "confirmedReservationsInCreatedCohort",
+                    "noShowReservationsInCreatedCohort",
+                    "cancelledReservations",
+                    "reservationRoomsCreated",
+                    "expectedArrivals",
+                    "expectedDepartures",
+                    "actualCheckins",
+                    "actualCheckouts"
+                  ]
+                }
+              },
+              "bookingSources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "reservations": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "reservations"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "period",
+              "timezone",
+              "currency",
+              "groupBy",
+              "generatedAt",
+              "dataQuality",
+              "summary",
+              "series",
+              "bookingSources"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

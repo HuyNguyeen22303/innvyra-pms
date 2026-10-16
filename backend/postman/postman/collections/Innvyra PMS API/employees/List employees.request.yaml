@@ -1,0 +1,127 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, ACCOUNTANT, TECHNICIAN. All roles can view employees in their hotel. Data is scoped to the authenticated user's hotel. Cache-Control: no-store. Supports search by name/username/email, filter by role and active status, and paginated sorting."
+url: "{{baseUrl}}/employees?page=1&limit=20&search=string&role=ACCOUNTANT&isActive=true&sortBy=fullName&sortOrder=asc"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: Page number
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: Bounded page size
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: Search by fullName, username or email
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191
+          }
+        }
+      }
+  - key: role
+    value: ACCOUNTANT
+    disabled: false
+    description: Filter by role
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "MANAGER",
+              "RECEPTIONIST",
+              "HOUSEKEEPING",
+              "ACCOUNTANT",
+              "TECHNICIAN"
+            ]
+          }
+        }
+      }
+  - key: isActive
+    value: "true"
+    disabled: false
+    description: Filter by active status; omit to include all
+    $type: boolean
+  - key: sortBy
+    value: fullName
+    disabled: false
+    description: Sort whitelist
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "fullName",
+            "enum": [
+              "fullName",
+              "createdAt",
+              "username"
+            ]
+          }
+        }
+      }
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: Sort direction
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List employees.resources/examples
+order: 1000

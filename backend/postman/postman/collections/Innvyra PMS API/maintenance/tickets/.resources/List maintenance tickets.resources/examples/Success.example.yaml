@@ -1,0 +1,364 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=RESOLVED&priority=CRITICAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: false
+      description: ""
+    - key: limit
+      value: "20"
+      disabled: false
+      description: ""
+    - key: sortOrder
+      value: asc
+      disabled: false
+      description: ""
+    - key: search
+      value: string
+      disabled: false
+      description: ""
+    - key: status
+      value: RESOLVED
+      disabled: false
+      description: ""
+    - key: priority
+      value: CRITICAL
+      disabled: false
+      description: ""
+    - key: roomId
+      value: "301"
+      disabled: false
+      description: ""
+    - key: assignedTo
+      value: "301"
+      disabled: false
+      description: ""
+    - key: fromDate
+      value: 2026-11-01
+      disabled: false
+      description: Inclusive reported date in the hotel timezone
+    - key: toDate
+      value: 2026-11-01
+      disabled: false
+      description: Inclusive reported date in the hotel timezone
+    - key: sortBy
+      value: reportedAt
+      disabled: false
+      description: ""
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "items": [
+            {
+              "id": "301",
+              "hotelId": "301",
+              "roomId": "301",
+              "createdAt": "2006-11-02T20:42:36.001Z",
+              "updatedAt": "2007-08-01T09:56:25.938Z",
+              "room": {
+                "id": "301",
+                "roomNumber": "string",
+                "floorNumber": 6412,
+                "roomTypeId": "301",
+                "physicalStatus": "MAINTENANCE",
+                "housekeepingStatus": "READY",
+                "isActive": true
+              },
+              "title": "string",
+              "description": "string",
+              "priority": "HIGH",
+              "status": "CANCELLED",
+              "reportedBy": "301",
+              "assignedTo": "301",
+              "resolvedBy": "301",
+              "reportedAt": "1993-11-19T23:50:13.357Z",
+              "startedAt": "1977-03-24T15:47:35.775Z",
+              "resolvedAt": "2002-08-06T13:49:50.150Z",
+              "closedAt": "1962-11-08T05:24:06.997Z",
+              "resolutionNotes": "string"
+            },
+            {
+              "id": "301",
+              "hotelId": "301",
+              "roomId": "301",
+              "createdAt": "1962-04-20T16:48:56.784Z",
+              "updatedAt": "2023-08-12T06:49:39.836Z",
+              "room": {
+                "id": "301",
+                "roomNumber": "string",
+                "floorNumber": 5116,
+                "roomTypeId": "301",
+                "physicalStatus": "ACTIVE",
+                "housekeepingStatus": "INSPECTION",
+                "isActive": false
+              },
+              "title": "string",
+              "description": "string",
+              "priority": "LOW",
+              "status": "CANCELLED",
+              "reportedBy": "301",
+              "assignedTo": "301",
+              "resolvedBy": "301",
+              "reportedAt": "1969-07-07T20:41:54.359Z",
+              "startedAt": "1957-10-08T23:26:39.700Z",
+              "resolvedAt": "2000-12-28T22:34:26.057Z",
+              "closedAt": "1958-06-29T09:24:17.363Z",
+              "resolutionNotes": "string"
+            }
+          ],
+          "pagination": {
+            "page": 3026,
+            "limit": 9944,
+            "total": 1015,
+            "totalPages": 2578
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "room": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "301",
+                          "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                        },
+                        "roomNumber": {
+                          "type": "string"
+                        },
+                        "floorNumber": {
+                          "type": "integer"
+                        },
+                        "roomTypeId": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "301",
+                          "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                        },
+                        "physicalStatus": {
+                          "type": "string",
+                          "enum": [
+                            "ACTIVE",
+                            "MAINTENANCE",
+                            "OUT_OF_SERVICE"
+                          ]
+                        },
+                        "housekeepingStatus": {
+                          "type": "string",
+                          "enum": [
+                            "DIRTY",
+                            "CLEANING",
+                            "INSPECTION",
+                            "READY"
+                          ]
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "roomNumber",
+                        "floorNumber",
+                        "roomTypeId",
+                        "physicalStatus",
+                        "housekeepingStatus",
+                        "isActive"
+                      ]
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 10000
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "CRITICAL"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ASSIGNED",
+                        "IN_PROGRESS",
+                        "RESOLVED",
+                        "CLOSED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "reportedBy": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "assignedTo": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "resolvedBy": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "reportedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "resolvedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "closedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "resolutionNotes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "roomId",
+                    "createdAt",
+                    "updatedAt",
+                    "room",
+                    "title",
+                    "description",
+                    "priority",
+                    "status",
+                    "reportedBy",
+                    "assignedTo",
+                    "resolvedBy",
+                    "reportedAt",
+                    "startedAt",
+                    "resolvedAt",
+                    "closedAt",
+                    "resolutionNotes"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

@@ -1,0 +1,59 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/export?type=reservations&startDate=2019-09-17&endDate=2019-09-17&groupBy=day&roomTypeId=9916030&paymentMethod=BANK_TRANSFER"
+  method: GET
+  headers:
+    - key: Accept
+      value: text/csv
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: type
+      value: reservations
+      disabled: false
+      description: ""
+    - key: startDate
+      value: 2019-09-17
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 2019-09-17
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+    - key: roomTypeId
+      value: "9916030"
+      disabled: false
+      description: Must belong to authenticated hotel; foreign IDs return 404.
+    - key: paymentMethod
+      value: BANK_TRANSFER
+      disabled: false
+      description: Filters cash activity only. Cumulative balance always includes ALL methods.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: text/csv
+    - key: Content-Disposition
+      value: attachment; filename="innvyra-revenue-2026-10-01-2026-11-01.csv"
+      disabled: false
+      description: ""
+      $type: string
+  body:
+    type: text
+    content: "﻿\"date\",\"netCashCollected\"\r
+
+      \"2026-10-01\",\"100000.00\"\r\n"
+    $type: |-
+      {
+        "type": "string"
+      }
+order: 1000

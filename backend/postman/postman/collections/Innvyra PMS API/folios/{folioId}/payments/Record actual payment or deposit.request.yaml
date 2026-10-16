@@ -1,0 +1,129 @@
+$kind: http-request
+description: "Staff must attest actual receipt; BANK_TRANSFER requires referenceNumber. No gateway transfer is initiated. Amount must not exceed current balance. DEPOSIT only before/during stay, and never creates a duplicate credit entry. Required roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/folios/:folioId/payments"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Idempotency-Key
+    value: billing-receipt-0001
+    disabled: false
+    description: Unique per hotel across payment, refund and adjustment endpoints. Same normalized payload replays original response, even after closing. Different payload/target/operation returns 409. Keys are retained; use a new key only for a new transaction.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$",
+            "example": "billing-receipt-0001"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: folioId
+    value: "101"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "101"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "paymentType": "PAYMENT",
+      "paymentMethod": "CASH",
+      "amount": "1000000.00",
+      "confirmedReceived": true
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "paymentType": {
+          "type": "string",
+          "enum": [
+            "PAYMENT",
+            "DEPOSIT"
+          ]
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": [
+            "CASH",
+            "BANK_TRANSFER"
+          ]
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,15})(\\.0{1,2})?$",
+          "example": "50000.00",
+          "description": "Whole VND Decimal string. Maximum 9999999999999999.00; responses use two decimal places. Positive for receipts/refunds/adjustments."
+        },
+        "referenceNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "confirmedReceived": {
+          "type": "boolean",
+          "enum": [
+            true
+          ],
+          "description": "Authorized staff attests money has actually been received. No gateway transfer is initiated."
+        }
+      },
+      "required": [
+        "paymentType",
+        "paymentMethod",
+        "amount",
+        "confirmedReceived"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Record actual payment or deposit.resources/examples
+order: 2000

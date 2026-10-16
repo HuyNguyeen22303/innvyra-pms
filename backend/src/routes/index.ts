@@ -29,6 +29,9 @@ import { maintenanceRoutes } from '../modules/maintenance/maintenance.routes.js'
 import type { ReportRepository } from '../modules/reports/report.types.js';
 import { ReportService } from '../modules/reports/report.service.js';
 import { reportRoutes } from '../modules/reports/report.routes.js';
+import type { EmployeeRepository } from '../modules/employees/employee.types.js';
+import { EmployeeService } from '../modules/employees/employee.service.js';
+import { employeeRoutes } from '../modules/employees/employee.routes.js';
 
 export function apiRoutes(
   service: AuthService,
@@ -40,9 +43,11 @@ export function apiRoutes(
   billing?: BillingRepository,
   operations?: OperationsRepositories,
   reports?: ReportRepository,
+  employees?: EmployeeRepository,
 ) {
   const router = Router();
   router.use('/auth', authRoutes(service, env));
+  if (employees) router.use('/employees', employeeRoutes(new EmployeeService(employees), service, env));
   if (reports) router.use('/reports', reportRoutes(new ReportService(reports, env), service, env));
   if (operations) {
     router.use(

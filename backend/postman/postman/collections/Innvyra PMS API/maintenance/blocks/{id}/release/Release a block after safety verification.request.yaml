@@ -1,0 +1,79 @@
+$kind: http-request
+description: "Blocks: SCHEDULED → ACTIVE → RELEASED; only future SCHEDULED blocks can be CANCELLED. Hotel-local half-open [startDate,endDate), 1–365 nights. Shared hotel lock protects nightly capacity and assignments. Current occupants must be handled before creating any block. Scheduled blocks do not immediately change physical status. A 30-second worker activates due blocks; date guards also run when the worker is offline. Planned end does not auto-reopen the room; manager release requires a resolved linked ticket and safety notes. Release returns DIRTY and ensures one turnover task, never READY. Repeated release returns 409 without changing inventory. Required roles: ADMIN, MANAGER. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/maintenance/blocks/:id/release"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "notes": "Repair verified safe; room requires cleaning and inspection"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "example": {
+        "notes": "Repair verified safe; room requires cleaning and inspection"
+      },
+      "properties": {
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "notes"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Release a block after safety verification.resources/examples
+order: 1000

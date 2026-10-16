@@ -1,0 +1,90 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Hotel/actor/role come only from server authentication. Requires X-CSRF-Protection: 1. Role hierarchy enforced: cannot create/edit employees with equal or higher role. MANAGER cannot manage ADMIN accounts. Only supplied fields are updated. Username and password cannot be changed. Email uniqueness is checked globally."
+url: "{{baseUrl}}/employees/:id"
+method: PATCH
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "10"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "10"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "fullName": "Nguyễn Minh Anh Updated"
+    }
+  $type: |-
+    {
+      "description": "Only supplied fields change. Username and password cannot be changed through this endpoint.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 191
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 191,
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "ADMIN",
+            "MANAGER",
+            "RECEPTIONIST",
+            "HOUSEKEEPING",
+            "ACCOUNTANT",
+            "TECHNICIAN"
+          ]
+        }
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update employee.resources/examples
+order: 1000

@@ -1,0 +1,106 @@
+$kind: http-request
+description: "Paginated catalog including inactive services unless filtered; search name/code. Required roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/services?page=1&limit=20&search=string&isActive=true&sortBy=name&sortOrder=asc"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      }
+  - key: isActive
+    value: "true"
+    disabled: false
+    description: ""
+    $type: boolean
+  - key: sortBy
+    value: name
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "name",
+            "enum": [
+              "name",
+              "code",
+              "price",
+              "createdAt"
+            ]
+          }
+        }
+      }
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List services.resources/examples
+order: 1000

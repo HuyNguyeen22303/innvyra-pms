@@ -1,0 +1,36 @@
+$kind: http-request
+description: "GET never creates financial records. Missing folio returns 404 FOLIO_NOT_FOUND. Required roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/reservations/:reservationId/folio"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  - key: reservationId
+    value: "101"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "101"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get reservation folio.resources/examples
+order: 2000

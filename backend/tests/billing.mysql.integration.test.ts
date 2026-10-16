@@ -1131,7 +1131,7 @@ describe.skipIf(!testUrl)(
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;
       expect(Object.values(spec.paths).flatMap((path) => Object.keys(path as object))).toHaveLength(
-        79,
+        83,
       );
       expect(spec.paths['/payments/{id}/refunds'].post.parameters).toContainEqual(
         expect.objectContaining({ name: 'Idempotency-Key', required: true }),

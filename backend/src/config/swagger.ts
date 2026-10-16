@@ -5,6 +5,7 @@ import { stayPaths, staySchemas } from './stays.openapi.js';
 import { billingPaths, billingSchemas } from './billing.openapi.js';
 import { operationsPaths, operationsSchemas } from './operations.openapi.js';
 import { reportPaths, reportSchemas } from './reports.openapi.js';
+import { employeePaths, employeeSchemas } from './employees.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -91,6 +92,7 @@ export const openApiDocument = {
     { name: 'Service Orders' },
     { name: 'Folios' },
     { name: 'Payments' },
+    { name: 'Employees' },
   ],
   components: {
     securitySchemes: {
@@ -111,6 +113,7 @@ export const openApiDocument = {
       ...billingSchemas,
       ...operationsSchemas,
       ...reportSchemas,
+      ...employeeSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -159,6 +162,7 @@ export const openApiDocument = {
     ...reportPaths,
     ...roomPaths,
     ...guestPaths,
+    ...employeePaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

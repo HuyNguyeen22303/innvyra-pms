@@ -1,0 +1,119 @@
+$kind: http-request
+description: "All entries before cutoff, including pre-period activity, regardless of folio open/closed state. Only nonzero folios listed, no guest identity. Outstanding Balance = cumulative debits − credits − payments − deposits + refunds. Accounts receivable sums positive balances; customer credits sums absolute negative balances. startDate does not restrict the cumulative ledger. Future cutoffs are capped at generatedAt. Required roles: ADMIN, MANAGER, ACCOUNTANT. Hotel scope comes from the authenticated session; hotelId/role query fields are rejected. Read-only consistent snapshot, no guest PII."
+url: "{{baseUrl}}/reports/outstanding?startDate=2019-09-17&endDate=2019-09-17&page=1&limit=20&sortBy=outstandingBalance&sortOrder=asc"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: startDate
+    value: 2019-09-17
+    disabled: false
+    description: Inclusive hotel business date.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: endDate
+    value: 2019-09-17
+    disabled: false
+    description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: sortBy
+    value: outstandingBalance
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "outstandingBalance",
+            "enum": [
+              "folioId",
+              "outstandingBalance"
+            ]
+          }
+        }
+      }
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Cumulative balances by folio.resources/examples
+order: 1000

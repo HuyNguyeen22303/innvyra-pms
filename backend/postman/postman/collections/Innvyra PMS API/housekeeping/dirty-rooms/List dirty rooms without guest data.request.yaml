@@ -1,0 +1,100 @@
+$kind: http-request
+description: "Turnover MVP: DIRTY → CLEANING → INSPECTION → READY. Failed inspection requires notes, returns PENDING/DIRTY and retains audit history. Only the assignee starts/completes; ADMIN/MANAGER inspect. Occupancy is derived independently from active stays. No stayover cleaning. Required roles: ADMIN, MANAGER, RECEPTIONIST. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=-12691&sortBy=roomNumber"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+  - key: floorNumber
+    value: "-12691"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767
+          }
+        }
+      }
+  - key: sortBy
+    value: roomNumber
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "roomNumber",
+            "enum": [
+              "roomNumber",
+              "floorNumber"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List dirty rooms without guest data.resources/examples
+order: 1000

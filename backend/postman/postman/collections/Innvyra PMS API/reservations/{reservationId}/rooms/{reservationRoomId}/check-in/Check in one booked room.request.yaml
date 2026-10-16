@@ -1,0 +1,101 @@
+$kind: http-request
+description: ADMIN, MANAGER, RECEPTIONIST. Booked hotel-local arrival date only, any time on that day; no early/late arrival override. Requires same-type ACTIVE and READY unoccupied room without conflicting assignment. Partial arrival sets PARTIALLY_CHECKED_IN; all arrived sets CHECKED_IN. Server timestamps and actor only. Atomic stay/occupancy/assignment; inventory and prices unchanged. Repeated arrival returns 409; no Idempotency-Key support.
+url: "{{baseUrl}}/reservations/:reservationId/rooms/:reservationRoomId/check-in"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: reservationId
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: reservationRoomId
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "roomId": "301",
+      "notes": "Guest arrived at reception"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "301",
+          "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "roomId"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Check in one booked room.resources/examples
+order: 1000

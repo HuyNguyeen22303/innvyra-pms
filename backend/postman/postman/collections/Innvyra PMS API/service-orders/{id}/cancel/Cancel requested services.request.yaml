@@ -1,0 +1,76 @@
+$kind: http-request
+description: "Only REQUESTED orders can be cancelled. Completed charges require an authorized adjustment. Required roles: ADMIN, MANAGER, RECEPTIONIST. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/service-orders/:id/cancel"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "101"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "101"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Guest withdrew request"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Cancel requested services.resources/examples
+order: 1000
