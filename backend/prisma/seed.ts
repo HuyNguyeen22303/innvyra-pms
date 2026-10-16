@@ -336,7 +336,7 @@ async function main() {
               update: {},
             })
           : undefined;
-        if (!seedDemo) return { hotel, staff: 0, roomTypes: 0, rooms: 0 };
+        if (!seedDemo) return { hotel, staff: 0, roomTypes: 0, rooms: 0, guests: 0 };
         if (!hotel) {
           const hotels = await tx.hotel.findMany({ take: 2, orderBy: { id: 'asc' } });
           if (hotels.length > 1) {
