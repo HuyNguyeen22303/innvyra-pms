@@ -28,6 +28,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ClockCircleOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -98,6 +99,12 @@ const menuDefinitions: MenuItemDef[] = [
     icon: <ToolOutlined />,
     label: 'Bảo trì kỹ thuật',
     roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN'],
+  },
+  {
+    key: '/services',
+    icon: <CustomerServiceOutlined />,
+    label: 'Dịch vụ',
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
   },
   {
     key: '/folios',
