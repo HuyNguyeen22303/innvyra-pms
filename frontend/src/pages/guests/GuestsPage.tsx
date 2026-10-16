@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -85,22 +85,38 @@ export const GuestsPage: React.FC = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['guests', searchKeyword, selectedNationality, sortBy],
+    queryKey: ['guests', searchKeyword, sortBy],
     queryFn: () =>
       guestsApi.getAll({
         search: searchKeyword.trim() || undefined,
-        nationality: selectedNationality || undefined,
         sortBy,
         sortOrder: 'asc',
       }),
   });
 
   const rawData = guestsRes?.data;
-  const guests: GuestSummary[] = Array.isArray(rawData)
+  const rawGuests: GuestSummary[] = Array.isArray(rawData)
     ? rawData
     : Array.isArray((rawData as any)?.items)
     ? (rawData as any).items
     : [];
+
+  const guests: GuestSummary[] = useMemo(() => {
+    if (!selectedNationality || selectedNationality === 'ALL') {
+      return rawGuests;
+    }
+    if (selectedNationality === 'VIETNAM') {
+      return rawGuests.filter(
+        (g) => !g.nationality || g.nationality === 'Việt Nam' || g.nationality === 'Vietnam'
+      );
+    }
+    if (selectedNationality === 'FOREIGN') {
+      return rawGuests.filter(
+        (g) => g.nationality && g.nationality !== 'Việt Nam' && g.nationality !== 'Vietnam'
+      );
+    }
+    return rawGuests;
+  }, [rawGuests, selectedNationality]);
 
   // Fetch Single Guest Detail for Drawer / Edit
   const {
@@ -440,8 +456,8 @@ export const GuestsPage: React.FC = () => {
   ];
 
   // Quick stats calculation
-  const totalGuests = guests.length;
-  const domesticCount = guests.filter(
+  const totalGuests = rawGuests.length;
+  const domesticCount = rawGuests.filter(
     (g) => !g.nationality || g.nationality === 'Việt Nam' || g.nationality === 'Vietnam'
   ).length;
   const internationalCount = totalGuests - domesticCount;
@@ -614,16 +630,12 @@ export const GuestsPage: React.FC = () => {
               placeholder="Quốc tịch"
               allowClear
               style={{ width: '100%' }}
-              value={selectedNationality}
+              value={selectedNationality || 'ALL'}
               onChange={(val) => setSelectedNationality(val === 'ALL' || !val ? undefined : val)}
               options={[
                 { label: 'Tất cả quốc tịch', value: 'ALL' },
-                { label: 'Việt Nam', value: 'Việt Nam' },
-                { label: 'Hoa Kỳ (USA)', value: 'United States' },
-                { label: 'Hàn Quốc (Korea)', value: 'South Korea' },
-                { label: 'Nhật Bản (Japan)', value: 'Japan' },
-                { label: 'Pháp (France)', value: 'France' },
-                { label: 'Anh (United Kingdom)', value: 'United Kingdom' },
+                { label: 'Việt Nam', value: 'VIETNAM' },
+                { label: 'Ngoại quốc', value: 'FOREIGN' },
               ]}
             />
           </Col>
