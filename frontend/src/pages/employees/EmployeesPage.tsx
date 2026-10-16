@@ -24,6 +24,8 @@ import {
   UserAddOutlined,
   EditOutlined,
   LockOutlined,
+  UnlockOutlined,
+  KeyOutlined,
   CheckCircleOutlined,
   StopOutlined,
   ReloadOutlined,
@@ -43,6 +45,7 @@ import {
 } from '../../types/employees.types.ts';
 import { CreateEmployeeModal } from './components/CreateEmployeeModal.tsx';
 import { EditEmployeeModal } from './components/EditEmployeeModal.tsx';
+import { ResetPasswordModal } from './components/ResetPasswordModal.tsx';
 import { registerStaffMembers } from '../../utils/staffDirectory.ts';
 
 const { Title, Text, Paragraph } = Typography;
@@ -58,6 +61,7 @@ export const EmployeesPage: React.FC = () => {
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeItem | null>(null);
+  const [resetPasswordEmployee, setResetPasswordEmployee] = useState<EmployeeItem | null>(null);
 
   // Filters & Pagination State
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -179,6 +183,29 @@ export const EmployeesPage: React.FC = () => {
     },
   });
 
+  // Activate Mutation
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => employeesApi.activate(id),
+    onSuccess: (res) => {
+      message.success(`Đã mở lại tài khoản cho nhân viên ${res.data.fullName} thành công!`);
+      // Invalidate queries to refresh table and KPIs
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
+    },
+    onError: (err: any) => {
+      const code = err.response?.data?.error?.code || err.response?.data?.code;
+      const msg = err.response?.data?.error?.message || err.response?.data?.message;
+
+      if (code === 'ALREADY_ACTIVE') {
+        message.warning('Tài khoản nhân viên này đang hoạt động.');
+      } else if (code === 'FORBIDDEN') {
+        message.error('Bạn không có quyền mở lại tài khoản cho nhân viên có cấp bậc bằng hoặc cao hơn (Role Hierarchy).');
+      } else {
+        message.error(msg || 'Thao tác mở lại tài khoản thất bại. Vui lòng thử lại.');
+      }
+    },
+  });
+
   // Table Columns
   const columns: ColumnsType<EmployeeItem> = [
     {
@@ -288,7 +315,7 @@ export const EmployeesPage: React.FC = () => {
     {
       title: 'Hành động',
       key: 'actions',
-      width: 130,
+      width: 150,
       fixed: 'right',
       render: (_, record) => {
         const isSelf = String(record.id) === String(user?.id);
@@ -297,14 +324,24 @@ export const EmployeesPage: React.FC = () => {
         // Edit permission: must be able to manage this employee's role
         const canEdit = isAdminOrManager && canManage;
 
+        // Reset password permission:
+        const canResetPassword = isAdminOrManager && canManage;
+
         // Deactivate permission:
         // 1. Must be active (cannot deactivate an already deactivated account)
         // 2. Cannot deactivate self
         // 3. Must be able to manage according to role hierarchy
         const canDeactivate = isAdminOrManager && record.isActive && !isSelf && canManage;
 
+        // Activate permission:
+        // 1. Must be deactivated
+        // 2. Cannot activate self
+        // 3. Must be able to manage according to role hierarchy
+        const canActivate = isAdminOrManager && !record.isActive && !isSelf && canManage;
+
         return (
-          <Space size={6}>
+          <Space size={4}>
+            {/* 1. Edit Employee */}
             <Tooltip
               title={
                 !canManage
@@ -321,6 +358,24 @@ export const EmployeesPage: React.FC = () => {
               />
             </Tooltip>
 
+            {/* 2. Reset Password */}
+            <Tooltip
+              title={
+                !canManage
+                  ? 'Cấp bậc nhân viên này bằng hoặc cao hơn bạn (không thể đặt lại mật khẩu).'
+                  : 'Cấp lại mật khẩu đăng nhập & thu hồi các phiên cũ'
+              }
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={<KeyOutlined style={{ color: canResetPassword ? '#d97706' : '#cbd5e1' }} />}
+                disabled={!canResetPassword}
+                onClick={() => setResetPasswordEmployee(record)}
+              />
+            </Tooltip>
+
+            {/* 3. Lock / Unlock Account */}
             {record.isActive ? (
               <Tooltip
                 title={
@@ -340,9 +395,6 @@ export const EmployeesPage: React.FC = () => {
                           Tài khoản của <strong>{record.fullName}</strong> sẽ bị khóa. Toàn bộ phiên đăng nhập của nhân
                           viên sẽ bị thu hồi ngay lập tức.
                         </Paragraph>
-                        <Text type="danger" style={{ fontSize: 12 }}>
-                          Hệ thống không hỗ trợ tự mở khóa sau khi đã vô hiệu hóa.
-                        </Text>
                       </div>
                     }
                     onConfirm={() => deactivateMutation.mutate(record.id)}
@@ -366,7 +418,47 @@ export const EmployeesPage: React.FC = () => {
                   />
                 )}
               </Tooltip>
-            ) : null}
+            ) : (
+              <Tooltip
+                title={
+                  isSelf
+                    ? 'Không thể tự mở lại tài khoản của chính mình.'
+                    : !canManage
+                    ? 'Không thể mở lại tài khoản cho nhân viên có cấp bậc bằng hoặc cao hơn.'
+                    : 'Mở lại tài khoản nhân viên & cho phép đăng nhập lại'
+                }
+              >
+                {canActivate ? (
+                  <Popconfirm
+                    title="Mở lại tài khoản nhân viên?"
+                    description={
+                      <div style={{ maxWidth: 280 }}>
+                        <Paragraph style={{ margin: 0, fontSize: 13 }}>
+                          Tài khoản của <strong>{record.fullName}</strong> sẽ được kích hoạt trở lại để tiếp tục đăng nhập và làm việc bình thường.
+                        </Paragraph>
+                      </div>
+                    }
+                    onConfirm={() => activateMutation.mutate(record.id)}
+                    okText="Mở lại tài khoản"
+                    cancelText="Hủy"
+                    okButtonProps={{ style: { backgroundColor: '#15803d', borderColor: '#15803d' }, loading: activateMutation.isPending }}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<UnlockOutlined style={{ color: '#15803d' }} />}
+                    />
+                  </Popconfirm>
+                ) : (
+                  <Button
+                    type="text"
+                    disabled
+                    size="small"
+                    icon={<UnlockOutlined style={{ color: '#cbd5e1' }} />}
+                  />
+                )}
+              </Tooltip>
+            )}
           </Space>
         );
       },
@@ -655,6 +747,12 @@ export const EmployeesPage: React.FC = () => {
         open={!!editingEmployee}
         employee={editingEmployee}
         onClose={() => setEditingEmployee(null)}
+      />
+
+      <ResetPasswordModal
+        open={!!resetPasswordEmployee}
+        employee={resetPasswordEmployee}
+        onClose={() => setResetPasswordEmployee(null)}
       />
     </div>
   );

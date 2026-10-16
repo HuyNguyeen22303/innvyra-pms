@@ -64,4 +64,24 @@ export const employeesApi = {
     const res = await apiClient.patch<ApiResponse<EmployeeItem>>(`/employees/${id}/deactivate`);
     return res.data;
   },
+
+  /**
+   * Re-activate a deactivated employee account
+   * Enforces role hierarchy (cannot activate equal or higher role)
+   */
+  activate: async (id: string): Promise<ApiResponse<EmployeeItem>> => {
+    const res = await apiClient.patch<ApiResponse<EmployeeItem>>(`/employees/${id}/activate`);
+    return res.data;
+  },
+
+  /**
+   * Reset an employee password and revoke all active auth sessions
+   * Accepts an optional new secure password
+   */
+  resetPassword: async (id: string, password?: string): Promise<ApiResponse<EmployeeItem>> => {
+    const res = await apiClient.post<ApiResponse<EmployeeItem>>(`/employees/${id}/reset-password`, {
+      password: password || undefined,
+    });
+    return res.data;
+  },
 };
