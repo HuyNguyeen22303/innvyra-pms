@@ -33,14 +33,13 @@ import dayjs from 'dayjs';
 import { billingApi } from '../../../api/billing.api.ts';
 import { reservationsApi } from '../../../api/reservations.api.ts';
 import { staysApi } from '../../../api/stays.api.ts';
-import { employeesApi } from '../../../api/employees.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
 import type {
   ServiceOrderItem,
   CreateServiceOrderDto,
   ServiceOrderStatus,
 } from '../../../types/billing.types.ts';
-import { getStaffDisplay, registerStaffMembers } from '../../../utils/staffDirectory.ts';
+import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 
 const { Text } = Typography;
 
@@ -97,19 +96,8 @@ export const ServiceOrdersTab: React.FC = () => {
     enabled: isCreateModalOpen,
   });
 
-  // Query Employees Directory for Names and Roles
-  const { data: employeesRes } = useQuery({
-    queryKey: ['employees-directory-lookup'],
-    queryFn: () => employeesApi.list({ limit: 100 }),
-    staleTime: 60000,
-  });
-
-  useEffect(() => {
-    const empItems = employeesRes?.data?.items;
-    if (Array.isArray(empItems) && empItems.length > 0) {
-      registerStaffMembers(empItems);
-    }
-  }, [employeesRes]);
+  // Dynamic Staff Directory for instant employee names & roles
+  const { getStaff } = useStaffDirectory();
 
   // Query Stays & Reservations (cached for table lookups & modal)
   const { data: activeStaysRes } = useQuery({
@@ -380,9 +368,9 @@ export const ServiceOrdersTab: React.FC = () => {
       key: 'meta',
       width: 195,
       render: (_, record) => {
-        const creator = getStaffDisplay(record.createdBy);
-        const completer = record.completedBy ? getStaffDisplay(record.completedBy) : null;
-        const canceller = record.cancelledBy ? getStaffDisplay(record.cancelledBy) : null;
+        const creator = getStaff(record.createdBy);
+        const completer = record.completedBy ? getStaff(record.completedBy) : null;
+        const canceller = record.cancelledBy ? getStaff(record.cancelledBy) : null;
 
         return (
           <div style={{ fontSize: 12 }}>

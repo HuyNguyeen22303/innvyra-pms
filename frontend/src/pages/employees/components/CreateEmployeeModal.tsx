@@ -78,6 +78,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
       message.success(`Tạo tài khoản nhân viên ${res.data.fullName} thành công!`);
       // Invalidate all employees queries
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
       handleClose();
     },
     onError: (err: any) => {

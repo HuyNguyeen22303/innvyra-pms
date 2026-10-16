@@ -43,6 +43,7 @@ import {
 } from '../../types/employees.types.ts';
 import { CreateEmployeeModal } from './components/CreateEmployeeModal.tsx';
 import { EditEmployeeModal } from './components/EditEmployeeModal.tsx';
+import { registerStaffMembers } from '../../utils/staffDirectory.ts';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -103,6 +104,13 @@ export const EmployeesPage: React.FC = () => {
   const employeeItems = employeesRes?.data?.items || [];
   const pagination = employeesRes?.data?.pagination;
 
+  // Sync loaded employees with global staff directory cache
+  React.useEffect(() => {
+    if (employeesRes?.data?.items) {
+      registerStaffMembers(employeesRes.data.items);
+    }
+  }, [employeesRes]);
+
   // KPI Queries (Get accurate totals without full list download)
   const { data: totalAllRes } = useQuery({
     queryKey: ['employees', 'kpi', 'total-all'],
@@ -153,6 +161,7 @@ export const EmployeesPage: React.FC = () => {
       message.success(`Đã vô hiệu hóa tài khoản ${res.data.fullName} và thu hồi mọi phiên đăng nhập!`);
       // Invalidate queries to refresh table and KPIs
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
     },
     onError: (err: any) => {
       const code = err.response?.data?.error?.code || err.response?.data?.code;

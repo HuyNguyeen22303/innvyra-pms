@@ -50,7 +50,7 @@ import type {
   CreateRefundDto,
   CreateAdjustmentDto,
 } from '../../../types/billing.types.ts';
-import { getStaffDisplay } from '../../../utils/staffDirectory.ts';
+import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 import { ReceiptModal } from './ReceiptModal.tsx';
 
 const { Text } = Typography;
@@ -115,6 +115,9 @@ export const FolioTab: React.FC = () => {
   const [resTableStatus, setResTableStatus] = useState<ReservationStatus | undefined>(undefined);
   const [resTablePage, setResTablePage] = useState<number>(1);
   const [resTablePageSize, setResTablePageSize] = useState<number>(10);
+
+  // Dynamic staff directory hook for instant name resolution
+  const { getStaff } = useStaffDirectory();
 
   // 1. Reservations list with pagination & filters
   const {
@@ -451,7 +454,7 @@ export const FolioTab: React.FC = () => {
       key: 'createdBy',
       width: 150,
       render: (staffId: string) => {
-        const staff = getStaffDisplay(staffId);
+        const staff = getStaff(staffId);
         return (
           <span style={{ fontSize: 12 }}>
             <Text strong>{staff.fullName}</Text>{' '}
@@ -550,7 +553,7 @@ export const FolioTab: React.FC = () => {
       key: 'processedBy',
       width: 150,
       render: (staffId: string) => {
-        const staff = getStaffDisplay(staffId);
+        const staff = getStaff(staffId);
         return (
           <span style={{ fontSize: 12 }}>
             <Text strong>{staff.fullName}</Text>{' '}
@@ -995,8 +998,8 @@ export const FolioTab: React.FC = () => {
                         <span>
                           {paymentList[0].paymentType} ({formatVND(paymentList[0].amount)}) thực hiện bởi{' '}
                           <strong>
-                            {getStaffDisplay(paymentList[0].processedBy).fullName} (
-                            {getStaffDisplay(paymentList[0].processedBy).roleTitle})
+                            {getStaff(paymentList[0].processedBy).fullName} (
+                            {getStaff(paymentList[0].processedBy).roleTitle})
                           </strong>{' '}
                           lúc {dayjs(paymentList[0].processedAt).format('HH:mm ngày DD/MM/YYYY')}
                         </span>
