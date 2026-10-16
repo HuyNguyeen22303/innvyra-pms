@@ -12,6 +12,7 @@ import {
   createEmployeeSchema,
   updateEmployeeSchema,
   employeeIdSchema,
+  resetPasswordEmployeeSchema,
   listEmployeesSchema,
 } from './employee.schema.js';
 
@@ -49,6 +50,20 @@ export function employeeRoutes(service: EmployeeService, auth: AuthService, env:
     csrfProtection(env),
     validate(employeeIdSchema),
     controller.deactivateEmployee,
+  );
+  router.patch(
+    '/:id/activate',
+    authorizeRoles(...employeePermissions.activate),
+    csrfProtection(env),
+    validate(employeeIdSchema),
+    controller.activateEmployee,
+  );
+  router.post(
+    '/:id/reset-password',
+    authorizeRoles(...employeePermissions.resetPassword),
+    csrfProtection(env),
+    validate(resetPasswordEmployeeSchema),
+    controller.resetPassword,
   );
   return router;
 }

@@ -125,6 +125,20 @@ describe('Employees HTTP: real JWT, RBAC, validation, tenant isolation and lifec
       .set('X-CSRF-Protection', '1')
       .send({});
 
+  const activate = (id: string, token = adminToken) =>
+    request(app)
+      .patch(`/api/v1/employees/${id}/activate`)
+      .auth(token, { type: 'bearer' })
+      .set('X-CSRF-Protection', '1')
+      .send({});
+
+  const resetPassword = (id: string, body?: object, token = adminToken) =>
+    request(app)
+      .post(`/api/v1/employees/${id}/reset-password`)
+      .auth(token, { type: 'bearer' })
+      .set('X-CSRF-Protection', '1')
+      .send(body ?? {});
+
   // -------------------------------------------------------------
   // 1. TẠO NHÂN VIÊN (POST /api/v1/employees)
   // -------------------------------------------------------------
@@ -665,6 +679,370 @@ describe('Employees HTTP: real JWT, RBAC, validation, tenant isolation and lifec
     it('35. Rejects unauthenticated request for employee list (401)', async () => {
       const res = await request(app).get('/api/v1/employees');
       expect(res.status).toBe(401);
+    });
+  });
+
+  // -------------------------------------------------------------
+  // 5. KÍCH HOẠT NHÂN VIÊN (PATCH /api/v1/employees/:id/activate)
+  // -------------------------------------------------------------
+  describe('5. Activate Employee (PATCH /api/v1/employees/:id/activate)', () => {
+    let inactiveStaffId: string;
+    let inactiveStaffUsername: string;
+
+    beforeEach(async () => {
+      const createRes = await post({
+        fullName: 'Nguyễn Văn Kích Hoạt',
+        username: `activate_user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        password: testPassword,
+        role: 'RECEPTIONIST',
+      });
+      inactiveStaffId = createRes.body.data.id;
+      inactiveStaffUsername = createRes.body.data.username;
+      await deactivate(inactiveStaffId);
+    });
+
+    it('36. Activates inactive employee successfully', async () => {
+      const res = await activate(inactiveStaffId);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        success: true,
+        message: 'Employee activated',
+        data: {
+          id: inactiveStaffId,
+          username: inactiveStaffUsername,
+          isActive: true,
+        },
+      });
+      expect(res.body.data).not.toHaveProperty('password');
+      expect(res.body.data).not.toHaveProperty('passwordHash');
+
+      // Verify the activated employee can log in again
+      const authService = new AuthService(auth, testEnv);
+      const loginRes = await authService.login({
+        username: inactiveStaffUsername,
+        password: testPassword,
+      });
+      expect(loginRes.data.user.isActive).toBe(true);
+    });
+
+    it('37. Returns 404 for nonexistent employee ID', async () => {
+      const res = await activate('99999');
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('EMPLOYEE_NOT_FOUND');
+    });
+
+    it('38. Returns 422 for invalid employee ID format', async () => {
+      expect((await activate('abc')).status).toBe(422);
+      expect((await activate('0')).status).toBe(422);
+      expect((await activate('-5')).status).toBe(422);
+    });
+
+    it('39. Returns 409 if employee is already active', async () => {
+      // First activation
+      await activate(inactiveStaffId);
+
+      // Second activation on already active employee
+      const res = await activate(inactiveStaffId);
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('ALREADY_ACTIVE');
+    });
+
+    it('40. Rejects unauthenticated request for activation (401)', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/employees/${inactiveStaffId}/activate`)
+        .set('X-CSRF-Protection', '1')
+        .send({});
+      expect(res.status).toBe(401);
+    });
+
+    it('41. Denies unauthorized roles from activating employee (RECEPTIONIST -> 403)', async () => {
+      const res = await activate(inactiveStaffId, receptionistToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('42. Prevents privilege escalation: MANAGER cannot activate an ADMIN account', async () => {
+      // Create admin and mark inactive
+      const adminStaff = await employeeStore.repository.create({
+        hotelId,
+        roleId: 1n,
+        fullName: 'Inactive Admin Staff',
+        username: 'inactive_admin_staff',
+        email: null,
+        passwordHash,
+      });
+      employeeStore.records.get(adminStaff.id)!.isActive = false;
+
+      const res = await activate(adminStaff.id.toString(), managerToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('43. Prevents privilege escalation: MANAGER cannot activate a peer MANAGER account', async () => {
+      const peerManager = await employeeStore.repository.create({
+        hotelId,
+        roleId: 2n,
+        fullName: 'Inactive Peer Manager',
+        username: 'inactive_peer_manager',
+        email: null,
+        passwordHash,
+      });
+      employeeStore.records.get(peerManager.id)!.isActive = false;
+
+      const res = await activate(peerManager.id.toString(), managerToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('44. Allows MANAGER to activate a subordinate role (e.g. RECEPTIONIST)', async () => {
+      const res = await activate(inactiveStaffId, managerToken);
+      expect(res.status).toBe(200);
+      expect(res.body.data.isActive).toBe(true);
+    });
+
+    it('45. Enforces tenant scope: cannot activate employee of another hotel (404)', async () => {
+      // Staff with id '2' belongs to hotelId 1n
+      const res = await activate('2');
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('EMPLOYEE_NOT_FOUND');
+    });
+
+    it('46. Ensures previously revoked sessions/tokens are not restored upon activation', async () => {
+      const authService = new AuthService(auth, testEnv);
+
+      // Create an employee, log in to obtain access token
+      const newStaffUsername = `active_session_user_${Date.now()}`;
+      const createRes = await post({
+        fullName: 'Session Check Staff',
+        username: newStaffUsername,
+        password: testPassword,
+        role: 'RECEPTIONIST',
+      });
+      const staffId = createRes.body.data.id;
+
+      const login = await authService.login({
+        username: newStaffUsername,
+        password: testPassword,
+      });
+      const staffAccessToken = login.data.accessToken;
+
+      // Token works
+      const initialMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(staffAccessToken, { type: 'bearer' });
+      expect(initialMe.status).toBe(200);
+
+      // Deactivate the employee (revokes all sessions)
+      await deactivate(staffId);
+
+      // Old token is revoked
+      const afterDeactMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(staffAccessToken, { type: 'bearer' });
+      expect(afterDeactMe.status).toBe(401);
+
+      // Reactivate the employee
+      const actRes = await activate(staffId);
+      expect(actRes.status).toBe(200);
+
+      // Old revoked token STILL CANNOT be used (sessions are NOT restored)
+      const afterActMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(staffAccessToken, { type: 'bearer' });
+      expect(afterActMe.status).toBe(401);
+
+      // But employee can perform a fresh login
+      const freshLogin = await authService.login({
+        username: newStaffUsername,
+        password: testPassword,
+      });
+      expect(freshLogin.data.accessToken).toBeDefined();
+
+      const freshMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(freshLogin.data.accessToken, { type: 'bearer' });
+      expect(freshMe.status).toBe(200);
+    });
+  });
+
+  // -------------------------------------------------------------
+  // 6. CẤP LẠI MẬT KHẨU (POST /api/v1/employees/:id/reset-password)
+  // -------------------------------------------------------------
+  describe('6. Reset Password (POST /api/v1/employees/:id/reset-password)', () => {
+    let targetStaffId: string;
+    let targetUsername: string;
+
+    beforeEach(async () => {
+      const createRes = await post({
+        fullName: 'Nguyễn Văn Reset',
+        username: `reset_user_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        password: testPassword,
+        role: 'RECEPTIONIST',
+      });
+      targetStaffId = createRes.body.data.id;
+      targetUsername = createRes.body.data.username;
+    });
+
+    it('47. Resets password successfully without body (generates safe random temporary password)', async () => {
+      const res = await resetPassword(targetStaffId);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        success: true,
+        message: 'Employee password reset',
+        data: {
+          id: targetStaffId,
+          username: targetUsername,
+          role: 'RECEPTIONIST',
+        },
+      });
+
+      // Response NEVER leaks password, temporaryPassword, or passwordHash
+      expect(res.body.data).not.toHaveProperty('password');
+      expect(res.body.data).not.toHaveProperty('temporaryPassword');
+      expect(res.body.data).not.toHaveProperty('passwordHash');
+      expect(res.body.data).not.toHaveProperty('token');
+
+      // Old password no longer works
+      const authService = new AuthService(auth, testEnv);
+      await expect(
+        authService.login({ username: targetUsername, password: testPassword }),
+      ).rejects.toMatchObject({
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+      });
+
+      // Stored hash is Argon2id
+      const record = await employeeStore.repository.findById(hotelId, BigInt(targetStaffId));
+      expect(record?.passwordHash.startsWith('$argon2id$')).toBe(true);
+    });
+
+    it('48. Resets password with an explicitly supplied new password in request body', async () => {
+      const newPassword = 'BrandNewSecurePassword2026!';
+      const res = await resetPassword(targetStaffId, { password: newPassword });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).not.toHaveProperty('password');
+      expect(res.body.data).not.toHaveProperty('passwordHash');
+
+      const authService = new AuthService(auth, testEnv);
+
+      // Old password fails
+      await expect(
+        authService.login({ username: targetUsername, password: testPassword }),
+      ).rejects.toMatchObject({
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+      });
+
+      // New password succeeds
+      const newLogin = await authService.login({ username: targetUsername, password: newPassword });
+      expect(newLogin.data.user.username).toBe(targetUsername);
+    });
+
+    it('49. Revokes all active sessions upon password reset', async () => {
+      const authService = new AuthService(auth, testEnv);
+
+      // Log in as target user to obtain active session
+      const login = await authService.login({ username: targetUsername, password: testPassword });
+      const targetToken = login.data.accessToken;
+
+      const beforeMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(targetToken, { type: 'bearer' });
+      expect(beforeMe.status).toBe(200);
+
+      // Reset password
+      const resetRes = await resetPassword(targetStaffId);
+      expect(resetRes.status).toBe(200);
+
+      // Session revoked: old token cannot authenticate
+      const afterMe = await request(app)
+        .get('/api/v1/auth/me')
+        .auth(targetToken, { type: 'bearer' });
+      expect(afterMe.status).toBe(401);
+    });
+
+    it('50. Returns 404 for nonexistent employee ID', async () => {
+      const res = await resetPassword('99999');
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('EMPLOYEE_NOT_FOUND');
+    });
+
+    it('51. Returns 422 for invalid employee ID format', async () => {
+      expect((await resetPassword('invalid')).status).toBe(422);
+      expect((await resetPassword('0')).status).toBe(422);
+    });
+
+    it('52. Returns 422 when provided password fails complexity/length validation', async () => {
+      // Too short (< 15 chars)
+      const resShort = await resetPassword(targetStaffId, { password: 'Short1!' });
+      expect(resShort.status).toBe(422);
+
+      // Lacks variety (< 8 distinct chars)
+      const resUniform = await resetPassword(targetStaffId, {
+        password: 'AAAAAAAAAAAAAAAA1',
+      });
+      expect(resUniform.status).toBe(422);
+
+      // Disallowed extra fields
+      const resExtra = await resetPassword(targetStaffId, {
+        password: 'ValidPassword123!',
+        extraField: 'not_allowed',
+      });
+      expect(resExtra.status).toBe(422);
+    });
+
+    it('53. Rejects unauthenticated request for password reset (401)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/employees/${targetStaffId}/reset-password`)
+        .set('X-CSRF-Protection', '1')
+        .send({});
+      expect(res.status).toBe(401);
+    });
+
+    it('54. Denies unauthorized roles from resetting password (RECEPTIONIST -> 403)', async () => {
+      const res = await resetPassword(targetStaffId, {}, receptionistToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('55. Prevents MANAGER from resetting an ADMIN password (role hierarchy violation)', async () => {
+      const adminStaff = await employeeStore.repository.create({
+        hotelId,
+        roleId: 1n,
+        fullName: 'Target Admin To Reset',
+        username: 'target_admin_reset',
+        email: null,
+        passwordHash,
+      });
+
+      const res = await resetPassword(adminStaff.id.toString(), {}, managerToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('56. Prevents MANAGER from resetting a peer MANAGER password', async () => {
+      const peerManager = await employeeStore.repository.create({
+        hotelId,
+        roleId: 2n,
+        fullName: 'Peer Manager To Reset',
+        username: 'peer_manager_reset',
+        email: null,
+        passwordHash,
+      });
+
+      const res = await resetPassword(peerManager.id.toString(), {}, managerToken);
+      expect(res.status).toBe(403);
+    });
+
+    it('57. Allows MANAGER to reset password of subordinate role (RECEPTIONIST)', async () => {
+      const res = await resetPassword(targetStaffId, {}, managerToken);
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(targetStaffId);
+    });
+
+    it('58. Enforces tenant scope: cannot reset password of employee in another hotel (404)', async () => {
+      // Staff with id '2' belongs to hotelId 1n
+      const res = await resetPassword('2');
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('EMPLOYEE_NOT_FOUND');
     });
   });
 });

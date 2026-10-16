@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=COMPLETED&priority=URGENT&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=-12691&sortBy=createdAt"
+  url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=CANCELLED&priority=HIGH&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=-23523&sortBy=createdAt"
   method: GET
   headers:
     - key: Accept
@@ -12,12 +12,12 @@ request:
     page: "1"
     limit: "20"
     sortOrder: asc
-    status: COMPLETED
-    priority: URGENT
+    status: CANCELLED
+    priority: HIGH
     roomId: "301"
     assignedTo: "301"
     taskType: TURNOVER_CLEANING
-    floorNumber: "-12691"
+    floorNumber: "-23523"
     sortBy: createdAt
   body:
     type: text
@@ -39,60 +39,60 @@ response:
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1952-04-21T01:58:50.396Z",
-              "updatedAt": "1980-10-18T20:58:20.738Z",
+              "createdAt": "1965-06-11T21:44:41.821Z",
+              "updatedAt": "2025-05-02T14:05:39.072Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 2299,
+                "floorNumber": 4794,
                 "roomTypeId": "301",
                 "physicalStatus": "OUT_OF_SERVICE",
-                "housekeepingStatus": "CLEANING",
+                "housekeepingStatus": "READY",
                 "isActive": false
               },
               "taskType": "TURNOVER_CLEANING",
-              "status": "PENDING",
-              "priority": "LOW",
+              "status": "CANCELLED",
+              "priority": "URGENT",
               "assignedTo": "301",
               "createdBy": "301",
               "notes": "string",
-              "startedAt": "1994-12-06T18:47:36.454Z",
-              "completedAt": "2008-02-27T03:19:59.263Z",
-              "inspectedAt": "1947-09-16T05:35:46.832Z",
+              "startedAt": "1990-12-03T13:07:42.253Z",
+              "completedAt": "1996-10-22T11:56:55.513Z",
+              "inspectedAt": "1994-05-28T20:06:50.792Z",
               "inspectedBy": "301"
             },
             {
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1983-07-03T12:54:13.632Z",
-              "updatedAt": "1977-08-29T22:12:26.753Z",
+              "createdAt": "1965-11-01T23:42:03.008Z",
+              "updatedAt": "2023-09-25T09:39:08.020Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 4586,
+                "floorNumber": 9809,
                 "roomTypeId": "301",
                 "physicalStatus": "ACTIVE",
-                "housekeepingStatus": "DIRTY",
-                "isActive": false
+                "housekeepingStatus": "READY",
+                "isActive": true
               },
               "taskType": "TURNOVER_CLEANING",
-              "status": "IN_PROGRESS",
-              "priority": "URGENT",
+              "status": "AWAITING_INSPECTION",
+              "priority": "HIGH",
               "assignedTo": "301",
               "createdBy": "301",
               "notes": "string",
-              "startedAt": "1951-04-16T22:18:38.411Z",
-              "completedAt": "1958-02-08T17:40:58.080Z",
-              "inspectedAt": "1966-01-03T03:33:48.119Z",
+              "startedAt": "2004-12-07T23:47:31.983Z",
+              "completedAt": "1972-01-29T22:40:54.920Z",
+              "inspectedAt": "1992-07-09T00:32:31.562Z",
               "inspectedBy": "301"
             }
           ],
           "pagination": {
-            "page": 4646,
-            "limit": 1534,
-            "total": 2228,
-            "totalPages": 20
+            "page": 5637,
+            "limit": 9957,
+            "total": 5069,
+            "totalPages": 2831
           }
         }
       }

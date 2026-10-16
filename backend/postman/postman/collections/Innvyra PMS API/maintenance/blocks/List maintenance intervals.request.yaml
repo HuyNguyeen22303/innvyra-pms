@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Blocks: SCHEDULED → ACTIVE → RELEASED; only future SCHEDULED blocks can be CANCELLED. Hotel-local half-open [startDate,endDate), 1–365 nights. Shared hotel lock protects nightly capacity and assignments. Current occupants must be handled before creating any block. Scheduled blocks do not immediately change physical status. A 30-second worker activates due blocks; date guards also run when the worker is offline. Planned end does not auto-reopen the room; manager release requires a resolved linked ticket and safety notes. Release returns DIRTY and ensures one turnover task, never READY. Repeated release returns 409 without changing inventory. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
-url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=ACTIVE&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
+url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=RELEASED&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
 method: GET
 headers:
   Accept: application/json
@@ -56,7 +56,7 @@ queryParams:
         }
       }
   - key: status
-    value: ACTIVE
+    value: RELEASED
     disabled: false
     description: ""
     $type: |-

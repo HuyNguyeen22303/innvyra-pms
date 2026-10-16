@@ -42,9 +42,9 @@ response:
             "fullName": "System Administrator",
             "username": "admin",
             "email": "string",
-            "role": "MANAGER",
+            "role": "ACCOUNTANT",
             "hotelId": "1",
-            "isActive": false
+            "isActive": true
           }
         }
       }
