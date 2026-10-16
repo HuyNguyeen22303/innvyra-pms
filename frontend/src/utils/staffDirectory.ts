@@ -3,7 +3,10 @@
  * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn từ API và fallback an toàn
  */
 
+import { useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ROLE_CONFIG, type Role } from '../types/employees.types.ts';
+import { employeesApi } from '../api/employees.api.ts';
 
 export interface StaffMemberInfo {
   id: string;
@@ -38,51 +41,60 @@ export const registerStaffMembers = (
 };
 
 /**
- * Known baseline staff from initial database seed for backwards compatibility
+ * Known baseline staff - empty by default to prevent displaying disguised / guessed roles
  */
-export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
-  '1': {
-    id: '1',
-    fullName: 'Nguyễn Minh Anh',
-    roleTitle: 'Quản lý KS',
-    roleCode: 'MANAGER',
-    color: 'blue',
-  },
-  '2': {
-    id: '2',
-    fullName: 'Trần Ngọc Linh',
-    roleTitle: 'Lễ tân',
-    roleCode: 'RECEPTIONIST',
-    color: 'cyan',
-  },
-  '3': {
-    id: '3',
-    fullName: 'Lê Thu Hà',
-    roleTitle: 'Kế toán',
-    roleCode: 'ACCOUNTANT',
-    color: 'green',
-  },
-  '4': {
-    id: '4',
-    fullName: 'Phạm Thị Lan',
-    roleTitle: 'Buồng phòng',
-    roleCode: 'HOUSEKEEPING',
-    color: 'orange',
-  },
-  '5': {
-    id: '5',
-    fullName: 'Hoàng Văn Nam',
-    roleTitle: 'Kỹ thuật viên',
-    roleCode: 'TECHNICIAN',
-    color: 'purple',
-  },
-  '6': {
-    id: '6',
-    fullName: 'System Administrator',
-    roleTitle: 'Quản trị viên',
-    roleCode: 'ADMIN',
-    color: 'red',
-  },
+export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {};
+
+/**
+ * React hook to globally load, cache, and subscribe to staff members.
+ * Any consuming component will automatically re-render when staff members are loaded.
+ */
+export const useStaffDirectory = () => {
+  const { data: staffRes, isLoading, refetch } = useQuery({
+    queryKey: ['staff-directory-global'],
+    queryFn: async () => {
+      // Backend validates limit: max 100
+      const res = await employeesApi.list({ limit: 100 });
+      if (res?.data?.items && Array.isArray(res.data.items)) {
+        registerStaffMembers(res.data.items);
+      }
+      return res;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const staffItems = staffRes?.data?.items;
+
+  // Immediately register in memory if served from React Query cache
+  if (staffItems && Array.isArray(staffItems)) {
+    registerStaffMembers(staffItems);
+  }
+
+  useEffect(() => {
+    if (staffItems && Array.isArray(staffItems)) {
+      registerStaffMembers(staffItems);
+    }
+  }, [staffItems]);
+
+  const getStaff = useCallback(
+    (
+      staffId: string | number | null | undefined,
+      currentUser?: { id?: string; fullName?: string; role?: string } | null
+    ): StaffMemberInfo => {
+      return getStaffDisplay(staffId, currentUser);
+    },
+    // Dependency on staffItems ensures re-evaluation when staff items are fetched
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [staffItems]
+  );
+
+  return {
+    getStaff,
+    isLoading,
+    refetch,
+    staffList: staffItems || [],
+  };
 };
 
 /**

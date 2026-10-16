@@ -28,6 +28,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ClockCircleOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -35,6 +36,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore.ts';
 import { RoleBadge } from '../components/RoleBadge.tsx';
 import { roomsApi } from '../api/rooms.api.ts';
+import { useStaffDirectory } from '../utils/staffDirectory.ts';
 import type { Role } from '../types/auth.types.ts';
 
 
@@ -100,6 +102,12 @@ const menuDefinitions: MenuItemDef[] = [
     roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN'],
   },
   {
+    key: '/services',
+    icon: <CustomerServiceOutlined />,
+    label: 'Dịch vụ',
+    roles: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
+  },
+  {
     key: '/folios',
     icon: <DollarOutlined />,
     label: 'Thu ngân / Folio',
@@ -123,6 +131,9 @@ export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+
+  // Globally preload and subscribe to hotel staff directory for all pages
+  useStaffDirectory();
 
   // Dynamic room count from backend API
   const { data: roomsRes } = useQuery({

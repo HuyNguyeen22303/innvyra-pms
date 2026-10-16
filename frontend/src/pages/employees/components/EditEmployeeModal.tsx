@@ -66,6 +66,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
     onSuccess: (res) => {
       message.success(`Cập nhật thông tin nhân viên ${res.data.fullName} thành công!`);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
       handleClose();
     },
     onError: (err: any) => {

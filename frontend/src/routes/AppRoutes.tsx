@@ -12,6 +12,7 @@ import { StaysPage } from '../pages/stays/StaysPage.tsx';
 import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
 import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
 import { BillingPage } from '../pages/billing/BillingPage.tsx';
+import { ServicesPage } from '../pages/services/ServicesPage.tsx';
 import { EmployeesPage } from '../pages/employees/EmployeesPage.tsx';
 import { RoomMatrixPage } from '../pages/calendar/RoomMatrixPage.tsx';
 import { ReportsPage } from '../pages/reports/ReportsPage.tsx';
@@ -92,6 +93,16 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN']}>
               <MaintenancePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Services */}
+        <Route
+          path="services"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']}>
+              <ServicesPage />
             </ProtectedRoute>
           }
         />

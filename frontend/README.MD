@@ -2,7 +2,7 @@
 
 > **Dự án:** Hệ thống Quản lý Khách sạn & Tài sản Lưu trú (Property Management System - PMS)  
 > **Khách sạn quy mô:** Giả định Invyra Hotel (50 phòng, 4 hạng phòng)  
-> **Đồ án môn học:** Phân tích và Thiết kế Hệ thống — Trường ĐH Giao thông Vận tải TP.HCM  
+> **Đồ án môn học:** Phân tích và Thiết kế Hệ thống — Trường ĐH Giao thông Vận tải TP.HCM
 
 ---
 
@@ -11,6 +11,7 @@
 Innvyra PMS Frontend là giao diện điều hành tập trung cho toàn bộ quy trình vận hành khách sạn: từ lễ tân (đặt phòng, check-in, check-out), bộ phận buồng phòng (dọn dẹp, kiểm tra vệ sinh), bảo trì kỹ thuật, kế toán thu ngân cho đến quản lý điều hành.
 
 Giao diện được thiết kế dựa trên:
+
 - **Tài liệu đặc tả:** 14 Use Cases, 8 Wireframes chuẩn nghiệp vụ lưu trú.
 - **Backend API:** Kiến trúc RESTful, bảo mật đa lớp (JWT Bearer Token, HttpOnly Cookie, CSRF Guard, RBAC 6 Roles).
 
@@ -18,17 +19,17 @@ Giao diện được thiết kế dựa trên:
 
 ## 2. ⚡ Tech Stack & Công Nghệ Lựa Chọn
 
-| Thành phần | Công nghệ | Phiên bản | Lý do lựa chọn |
-| :--- | :--- | :--- | :--- |
-| **Framework** | **React** | 19.x | Thư viện UI số 1 thế giới, component hóa linh hoạt, hiệu năng cao |
-| **Build Tool** | **Vite** | 8.x | Tốc độ HMR tức thì, tương thích tối đa với hệ sinh thái TS hiện đại |
-| **Ngôn ngữ** | **TypeScript** | 6.x | Kiểu dữ liệu chặt chẽ, đồng bộ cấu trúc dữ liệu với backend |
-| **UI Library** | **Ant Design** | 5.x / 6.x | Thư viện UI chuẩn doanh nghiệp cho Dashboard, Table, Form, DatePicker |
-| **Router** | **React Router** | 7.x | Điều hướng trang SPA, hỗ trợ Protected Route & Role Checking |
-| **HTTP Client** | **Axios** | 1.x | Hỗ trợ Request/Response Interceptor, tự động gắn CSRF và Refresh Token |
-| **Server State** | **TanStack Query** | 5.x | Quản lý cache dữ liệu từ API, chống spam request, loading/error state chuẩn |
-| **Client State** | **Zustand** | 5.x | Quản lý Auth State gọn nhẹ, không boilerplate phức tạp như Redux |
-| **Date Time** | **Dayjs** | 1.x | Xử lý định dạng ngày nhận/trả phòng, tương thích gốc với Ant Design |
+| Thành phần       | Công nghệ          | Phiên bản | Lý do lựa chọn                                                              |
+| :--------------- | :----------------- | :-------- | :-------------------------------------------------------------------------- |
+| **Framework**    | **React**          | 19.x      | Thư viện UI số 1 thế giới, component hóa linh hoạt, hiệu năng cao           |
+| **Build Tool**   | **Vite**           | 8.x       | Tốc độ HMR tức thì, tương thích tối đa với hệ sinh thái TS hiện đại         |
+| **Ngôn ngữ**     | **TypeScript**     | 6.x       | Kiểu dữ liệu chặt chẽ, đồng bộ cấu trúc dữ liệu với backend                 |
+| **UI Library**   | **Ant Design**     | 5.x / 6.x | Thư viện UI chuẩn doanh nghiệp cho Dashboard, Table, Form, DatePicker       |
+| **Router**       | **React Router**   | 7.x       | Điều hướng trang SPA, hỗ trợ Protected Route & Role Checking                |
+| **HTTP Client**  | **Axios**          | 1.x       | Hỗ trợ Request/Response Interceptor, tự động gắn CSRF và Refresh Token      |
+| **Server State** | **TanStack Query** | 5.x       | Quản lý cache dữ liệu từ API, chống spam request, loading/error state chuẩn |
+| **Client State** | **Zustand**        | 5.x       | Quản lý Auth State gọn nhẹ, không boilerplate phức tạp như Redux            |
+| **Date Time**    | **Dayjs**          | 1.x       | Xử lý định dạng ngày nhận/trả phòng, tương thích gốc với Ant Design         |
 
 ---
 
@@ -113,26 +114,25 @@ develop (origin/develop)
   ├── feature/fe-operations            [Phase 7]  ✅ Buồng phòng (Kanban) & Bảo trì kỹ thuật (Merged)
   ├── feature/fe-billing               [Phase 8]  ✅ Thu ngân & Quản lý Folio công nợ, dịch vụ, hóa đơn (Merged)
   ├── feature/fe-employees             [Phase 9]  ✅ Quản lý Nhân sự, Cấp phát tài khoản & Phân quyền Role Hierarchy
-  ├── feature/fe-matrix-dashboard      [Phase 10] ⏳ Lịch phòng trực quan (Room Matrix) & Dashboard KPI
+  ├── feature/fe-matrix-dashboard      [Phase 10] ✅Lịch phòng trực quan (Room Matrix) & Dashboard KPI
   └── feature/fe-final-polish          [Phase 11] ⏳ Kiểm thử E2E toàn diện, đóng gói đồ án
 ```
 
 ### Bảng theo dõi tiến độ các Phase:
 
-| Phase | Nhánh | Mục tiêu & Chức năng | Trạng thái |
-| :---: | :--- | :--- | :---: |
-| **Phase 1** | `feature/fe-foundation` | Dựng khung Vite + React 19 + TS + AntD + Axios + Layout | ✅ Đã merge `develop` |
-| **Phase 2** | `feature/fe-auth` | Màn hình Login, Demo Account Chip Selector, JWT Refresh, RBAC | ✅ Đã merge `develop` |
-| **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
-| **Phase 4** | `feature/fe-guests` | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
-| **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã merge `develop` |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã merge `develop` |
-| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Đã merge `develop` |
-| **Phase 9** | `feature/fe-employees` | Quản lý Nhân sự, Cấp phát tài khoản, Phân quyền Role Hierarchy & Dynamic Staffing | ✅ Đã hoàn thành |
-| **Phase 10**| `feature/fe-matrix-dashboard` | Lịch phòng trực quan (Room Matrix), Dashboard KPI theo Role & Báo cáo điều hành xuất CSV | ✅ Đã hoàn thành |
-| **Phase 11**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
-
+|    Phase     | Nhánh                         | Mục tiêu & Chức năng                                                                     |             Trạng thái              |
+| :----------: | :---------------------------- | :--------------------------------------------------------------------------------------- | :---------------------------------: |
+| **Phase 1**  | `feature/fe-foundation`       | Dựng khung Vite + React 19 + TS + AntD + Axios + Layout                                  |        ✅ Đã merge `develop`        |
+| **Phase 2**  | `feature/fe-auth`             | Màn hình Login, Demo Account Chip Selector, JWT Refresh, RBAC                            |        ✅ Đã merge `develop`        |
+| **Phase 3**  | `feature/fe-rooms`            | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh                   |        ✅ Đã merge `develop`        |
+| **Phase 4**  | `feature/fe-guests`           | Danh sách khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán                   |        ✅ Đã merge `develop`        |
+| **Phase 5**  | `feature/fe-reservations`     | Tra cứu phòng trống theo khoảng ngày (`/rooms/availability`), tạo đơn & hủy đặt          |        ✅ Đã merge `develop`        |
+| **Phase 6**  | `feature/fe-stays`            | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ              |        ✅ Đã merge `develop`        |
+| **Phase 7**  | `feature/fe-operations`       | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng                       |        ✅ Đã merge `develop`        |
+| **Phase 8**  | `feature/fe-billing`          | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán               |        ✅ Đã merge `develop`        |
+| **Phase 9**  | `feature/fe-employees`        | Quản lý Nhân sự, Cấp phát tài khoản, Phân quyền Role Hierarchy & Dynamic Staffing        | ✅ Đã hoàn thành và merge `develop` |
+| **Phase 10** | `feature/fe-matrix-dashboard` | Lịch phòng trực quan (Room Matrix), Dashboard KPI theo Role & Báo cáo điều hành xuất CSV | ✅ Đã hoàn thành và merge `develop` |
+| **Phase 11** | `feature/fe-final-polish`     | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án              |             ⏳ Kế hoạch             |
 
 ---
 
@@ -146,7 +146,7 @@ Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài li�
    X-CSRF-Protection: 1
    ```
 3. **Cookie Credentials:** Bắt buộc cấu hình `withCredentials: true` trên Axios Client để trình duyệt gửi và nhận `HttpOnly` Refresh Cookie an toàn.
-4. **Cơ chế Silent Refresh Token:** 
+4. **Cơ chế Silent Refresh Token:**
    - Access token có hạn 15 phút.
    - Khi request trả về mã `401 Unauthorized`, Axios Response Interceptor sẽ tạm hoãn các request tiếp theo, tự động gọi `/auth/refresh`.
    - Nếu lấy được token mới thành công: tự động retry lại các request ban đầu một cách trong suốt (người dùng không bị văng ra ngoài).
@@ -157,24 +157,26 @@ Tất cả các API call từ Frontend tuân thủ nghiêm ngặt theo tài li�
 
 ## 6. 🛡️ Ma Trận Phân Quyền (RBAC 6 Roles) Trên Giao Diện
 
-| Vai trò (Role) | Tên hiển thị | Quyền hạn trên giao diện Frontend |
-| :--- | :--- | :--- |
-| `ADMIN` | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì, Dịch vụ & Folio, Thu tiền; **Quản lý toàn bộ Nhân sự & Cấp tài khoản mọi cấp bậc**) |
-| `MANAGER` | Quản lý KS | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì, Dịch vụ & Folio; **Quản lý Nhân sự & Cấp tài khoản theo Role Hierarchy cho Lễ tân, Buồng phòng, Kế toán, Kỹ thuật**) |
-| `RECEPTIONIST` | Lễ tân | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì; Mở Folio, Tạo & Hoàn thành Order dịch vụ, Thu tiền Payment/Deposit, In phiếu thu |
-| `ACCOUNTANT` | Kế toán | Xem Phòng, xem Khách hàng ở chế độ tối thiểu; Tra cứu Folio & Orders, Thu tiền Payment/Deposit, Điều chỉnh Debit/Credit, Ghi nhận Refund hoàn tiền, Quyết toán đóng Folio, In phiếu thu |
-| `HOUSEKEEPING` | Buồng phòng | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc; Không truy cập Thu ngân |
-| `TECHNICIAN` | Kỹ thuật | Xem phiếu sự cố được phân công, Bắt đầu sửa (IN_PROGRESS), Báo hoàn thành sửa chữa (RESOLVED); Không truy cập Thu ngân |
+| Vai trò (Role) | Tên hiển thị  | Quyền hạn trên giao diện Frontend                                                                                                                                                                                                              |
+| :------------- | :------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADMIN`        | Quản trị viên | Toàn quyền xem & thao tác tất cả các module (Phòng, Khách, Đặt phòng, Lưu trú, Buồng phòng, Bảo trì, Dịch vụ & Folio, Thu tiền; **Quản lý toàn bộ Nhân sự & Cấp tài khoản mọi cấp bậc**)                                                       |
+| `MANAGER`      | Quản lý KS    | Toàn quyền vận hành (CRUD Loại phòng/Phòng, Khách hàng, Đặt phòng, Check-in/out, Nghiệm thu Buồng phòng, Khóa/Mở bảo trì, Dịch vụ & Folio; **Quản lý Nhân sự & Cấp tài khoản theo Role Hierarchy cho Lễ tân, Buồng phòng, Kế toán, Kỹ thuật**) |
+| `RECEPTIONIST` | Lễ tân        | CRUD Khách hàng, Đặt phòng, Check-in, Check-out, Đổi phòng; Tạo việc dọn buồng phòng, Báo cáo sự cố bảo trì; Mở Folio, Tạo & Hoàn thành Order dịch vụ, Thu tiền Payment/Deposit, In phiếu thu                                                  |
+| `ACCOUNTANT`   | Kế toán       | Xem Phòng, xem Khách hàng ở chế độ tối thiểu; Tra cứu Folio & Orders, Thu tiền Payment/Deposit, Điều chỉnh Debit/Credit, Ghi nhận Refund hoàn tiền, Quyết toán đóng Folio, In phiếu thu                                                        |
+| `HOUSEKEEPING` | Buồng phòng   | Xem nhiệm vụ dọn phòng của mình, Bắt đầu dọn (CLEANING), Báo hoàn thành (INSPECTION); Báo sự cố hỏng hóc; Không truy cập Thu ngân                                                                                                              |
+| `TECHNICIAN`   | Kỹ thuật      | Xem phiếu sự cố được phân công, Bắt đầu sửa (IN_PROGRESS), Báo hoàn thành sửa chữa (RESOLVED); Không truy cập Thu ngân                                                                                                                         |
 
 ---
 
 ## 7. 🚀 Hướng Dẫn Chạy & Phát Triển Cục Bộ
 
 ### Yêu cầu môi trường:
+
 - Node.js >= 20.x (khuyến nghị v24.x)
 - npm >= 10.x
 
 ### Các lệnh cơ bản:
+
 ```bash
 # 1. Di chuyển vào thư mục frontend
 cd frontend
