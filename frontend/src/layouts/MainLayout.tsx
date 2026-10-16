@@ -115,7 +115,6 @@ const menuDefinitions: MenuItemDef[] = [
     key: '/reports',
     icon: <BarChartOutlined />,
     label: 'Báo cáo điều hành',
-    roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'],
   },
 ];
 

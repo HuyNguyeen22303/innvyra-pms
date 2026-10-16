@@ -130,7 +130,7 @@ develop (origin/develop)
 | **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã merge `develop` |
 | **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Đã merge `develop` |
 | **Phase 9** | `feature/fe-employees` | Quản lý Nhân sự, Cấp phát tài khoản, Phân quyền Role Hierarchy & Dynamic Staffing | ✅ Đã hoàn thành |
-| **Phase 10**| `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
+| **Phase 10**| `feature/fe-matrix-dashboard` | Lịch phòng trực quan (Room Matrix), Dashboard KPI theo Role & Báo cáo điều hành xuất CSV | ✅ Đã hoàn thành |
 | **Phase 11**| `feature/fe-final-polish` | Kiểm thử luồng E2E từ Đặt ➔ Check-in ➔ Check-out ➔ Thu tiền, đóng gói đồ án | ⏳ Kế hoạch |
 
 

@@ -13,10 +13,10 @@ import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
 import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
 import { BillingPage } from '../pages/billing/BillingPage.tsx';
 import { EmployeesPage } from '../pages/employees/EmployeesPage.tsx';
+import { RoomMatrixPage } from '../pages/calendar/RoomMatrixPage.tsx';
+import { ReportsPage } from '../pages/reports/ReportsPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
-
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
-import { PhasePlaceholderPage } from '../pages/common/PhasePlaceholderPage.tsx';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -36,17 +36,8 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
 
-        {/* Calendar */}
-        <Route
-          path="calendar"
-          element={
-            <PhasePlaceholderPage
-              title="Lịch phòng & Timeline trạng thái"
-              phase="Phase 7: feature/fe-dashboard-and-mock"
-              description="Bảng ma trận trực quan trạng thái từng phòng theo ngày."
-            />
-          }
-        />
+        {/* Calendar / Room Matrix */}
+        <Route path="calendar" element={<RoomMatrixPage />} />
 
         {/* Reservations */}
         <Route
@@ -125,16 +116,12 @@ export const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Reports */}
+        {/* Reports & Analytics */}
         <Route
           path="reports"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'ACCOUNTANT']}>
-              <PhasePlaceholderPage
-                title="Báo cáo Hoạt động kinh doanh"
-                phase="Phase 7: feature/fe-dashboard-and-mock"
-                description="Thống kê doanh thu, công suất phòng, phòng-đêm bán được."
-              />
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN']}>
+              <ReportsPage />
             </ProtectedRoute>
           }
         />
