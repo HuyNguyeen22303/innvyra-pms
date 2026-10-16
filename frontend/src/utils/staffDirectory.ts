@@ -41,124 +41,9 @@ export const registerStaffMembers = (
 };
 
 /**
- * Known baseline staff from initial database seed for backwards compatibility
+ * Known baseline staff - empty by default to prevent displaying disguised / guessed roles
  */
-export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
-  // Legacy / 1-digit seed IDs
-  '1': {
-    id: '1',
-    fullName: 'Nguyễn Minh Anh',
-    roleTitle: 'Quản lý KS',
-    roleCode: 'MANAGER',
-    color: 'blue',
-  },
-  '2': {
-    id: '2',
-    fullName: 'Trần Ngọc Linh',
-    roleTitle: 'Lễ tân',
-    roleCode: 'RECEPTIONIST',
-    color: 'cyan',
-  },
-  '3': {
-    id: '3',
-    fullName: 'Lê Thu Hà',
-    roleTitle: 'Kế toán',
-    roleCode: 'ACCOUNTANT',
-    color: 'green',
-  },
-  '4': {
-    id: '4',
-    fullName: 'Phạm Thị Lan',
-    roleTitle: 'Buồng phòng',
-    roleCode: 'HOUSEKEEPING',
-    color: 'orange',
-  },
-  '5': {
-    id: '5',
-    fullName: 'Hoàng Văn Nam',
-    roleTitle: 'Kỹ thuật viên',
-    roleCode: 'TECHNICIAN',
-    color: 'purple',
-  },
-  '6': {
-    id: '6',
-    fullName: 'System Administrator',
-    roleTitle: 'Quản trị viên',
-    roleCode: 'ADMIN',
-    color: 'red',
-  },
-  // MariaDB autoincrement baseline seed IDs (101 - 117)
-  '101': {
-    id: '101',
-    fullName: 'System Administrator',
-    roleTitle: 'Quản trị viên',
-    roleCode: 'ADMIN',
-    color: 'red',
-  },
-  '102': {
-    id: '102',
-    fullName: 'Nguyễn Minh Anh',
-    roleTitle: 'Quản lý KS',
-    roleCode: 'MANAGER',
-    color: 'blue',
-  },
-  '103': {
-    id: '103',
-    fullName: 'Hoàng Tiến Dũng',
-    roleTitle: 'Phó QL Ca Tối',
-    roleCode: 'MANAGER',
-    color: 'blue',
-  },
-  '104': {
-    id: '104',
-    fullName: 'Trần Ngọc Linh',
-    roleTitle: 'Lễ tân Ca Sáng',
-    roleCode: 'RECEPTIONIST',
-    color: 'cyan',
-  },
-  '105': {
-    id: '105',
-    fullName: 'Phạm Thị Lan',
-    roleTitle: 'Buồng phòng',
-    roleCode: 'HOUSEKEEPING',
-    color: 'orange',
-  },
-  '106': {
-    id: '106',
-    fullName: 'Lê Thu Hà',
-    roleTitle: 'Kế toán Tổng hợp',
-    roleCode: 'ACCOUNTANT',
-    color: 'green',
-  },
-  '107': {
-    id: '107',
-    fullName: 'Hoàng Văn Nam',
-    roleTitle: 'Kỹ thuật Điện lạnh',
-    roleCode: 'TECHNICIAN',
-    color: 'purple',
-  },
-  '108': {
-    id: '108',
-    fullName: 'Lê Hải Nam',
-    roleTitle: 'Lễ tân Ca Chiều',
-    roleCode: 'RECEPTIONIST',
-    color: 'cyan',
-  },
-  '109': {
-    id: '109',
-    fullName: 'Nguyễn Tuyết Mai',
-    roleTitle: 'Buồng phòng Ca Sáng',
-    roleCode: 'HOUSEKEEPING',
-    color: 'orange',
-  },
-  '110': {
-    id: '110',
-    fullName: 'Nguyễn Việt Dũng',
-    roleTitle: 'Kế toán Thu ngân',
-    roleCode: 'ACCOUNTANT',
-    color: 'green',
-  },
-};
+export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {};
 
 /**
  * React hook to globally load, cache, and subscribe to staff members.
@@ -167,12 +52,24 @@ export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
 export const useStaffDirectory = () => {
   const { data: staffRes, isLoading, refetch } = useQuery({
     queryKey: ['staff-directory-global'],
-    queryFn: () => employeesApi.list({ limit: 200 }),
+    queryFn: async () => {
+      // Backend validates limit: max 100
+      const res = await employeesApi.list({ limit: 100 });
+      if (res?.data?.items && Array.isArray(res.data.items)) {
+        registerStaffMembers(res.data.items);
+      }
+      return res;
+    },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
   const staffItems = staffRes?.data?.items;
+
+  // Immediately register in memory if served from React Query cache
+  if (staffItems && Array.isArray(staffItems)) {
+    registerStaffMembers(staffItems);
+  }
 
   useEffect(() => {
     if (staffItems && Array.isArray(staffItems)) {
