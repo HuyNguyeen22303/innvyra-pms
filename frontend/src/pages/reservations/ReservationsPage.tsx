@@ -45,7 +45,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { guestsApi } from '../../api/guests.api.ts';
-import { roomTypesApi } from '../../api/rooms.api.ts';
+import { roomTypesApi, roomsApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import type {
   ReservationSummaryItem,
@@ -56,7 +56,7 @@ import type {
   CreateReservationDto,
 } from '../../types/reservations.types.ts';
 import type { GuestSummary } from '../../types/guests.types.ts';
-import type { RoomTypeItem } from '../../types/rooms.types.ts';
+import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -250,6 +250,25 @@ export const ReservationsPage: React.FC = () => {
   const roomTypesList: RoomTypeItem[] = Array.isArray(roomTypesRes?.data)
     ? roomTypesRes.data
     : roomTypesRes?.data?.items || [];
+
+  // Fetch physical rooms to map roomId to real physical roomNumber (e.g. 101, 102, 201...)
+  const { data: allRoomsRes } = useQuery({
+    queryKey: ['allRoomsForLookup'],
+    queryFn: () => roomsApi.getAll({ limit: 100 }),
+    staleTime: 60000,
+  });
+  const allRoomsList: RoomItem[] = useMemo(() => {
+    const raw = allRoomsRes?.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
+    return [];
+  }, [allRoomsRes]);
+
+  const getPhysicalRoomNumber = (roomId: string | null | undefined): string => {
+    if (!roomId) return '';
+    const found = allRoomsList.find((r) => String(r.id) === String(roomId));
+    return found ? found.roomNumber : roomId;
+  };
 
   // Check Availability Query
   const {
@@ -521,7 +540,7 @@ export const ReservationsPage: React.FC = () => {
                 <Button
                   type="text"
                   icon={<LoginOutlined style={{ color: '#52c41a' }} />}
-                  onClick={() => navigate('/stays')}
+                  onClick={() => navigate(`/stays?tab=arrivals&reservationId=${record.id}`)}
                 />
               </Tooltip>
             )}
@@ -712,10 +731,10 @@ export const ReservationsPage: React.FC = () => {
                         placeholder="Trạng thái"
                         style={{ width: '100%' }}
                         value={statusFilter}
-                        onChange={(val) => setStatusFilter(val)}
+                        onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả trạng thái', value: undefined },
+                          { label: 'Tất cả trạng thái', value: 'ALL' },
                           { label: 'Đã xác nhận (CONFIRMED)', value: 'CONFIRMED' },
                           { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
                           { label: 'Nhận 1 phần (PARTIALLY)', value: 'PARTIALLY_CHECKED_IN' },
@@ -730,10 +749,10 @@ export const ReservationsPage: React.FC = () => {
                         placeholder="Kênh đặt"
                         style={{ width: '100%' }}
                         value={sourceFilter}
-                        onChange={(val) => setSourceFilter(val)}
+                        onChange={(val: any) => setSourceFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả nguồn', value: undefined },
+                          { label: 'Tất cả nguồn', value: 'ALL' },
                           { label: 'Trực tiếp (DIRECT)', value: 'DIRECT' },
                           { label: 'Điện thoại (PHONE)', value: 'PHONE' },
                           { label: 'Email (EMAIL)', value: 'EMAIL' },
@@ -1219,6 +1238,21 @@ export const ReservationsPage: React.FC = () => {
           setIsDrawerOpen(false);
           setSelectedReservationId(null);
         }}
+        extra={
+          canWrite && reservationDetail && (reservationDetail.status === 'CONFIRMED' || reservationDetail.status === 'PARTIALLY_CHECKED_IN') ? (
+            <Button
+              type="primary"
+              icon={<LoginOutlined />}
+              style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
+              onClick={() => {
+                setIsDrawerOpen(false);
+                navigate(`/stays?tab=arrivals&reservationId=${reservationDetail.id}`);
+              }}
+            >
+              Làm thủ tục Check-in
+            </Button>
+          ) : null
+        }
       >
         {isLoadingDetail || !reservationDetail ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -1390,7 +1424,7 @@ export const ReservationsPage: React.FC = () => {
                       <Tag color="blue">{room.adults} Người lớn</Tag>
                       {room.children > 0 && <Tag color="green">{room.children} Trẻ em</Tag>}
                       {room.roomId ? (
-                        <Tag color="purple">Phòng #{room.roomId}</Tag>
+                        <Tag color="purple">Phòng #{getPhysicalRoomNumber(room.roomId)}</Tag>
                       ) : (
                         <Tag color="default">Chưa gán phòng vật lý</Tag>
                       )}

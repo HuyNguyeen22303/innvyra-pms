@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -38,6 +38,7 @@ import {
   RightOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { staysApi } from '../../api/stays.api.ts';
@@ -79,7 +80,22 @@ const STAY_STATUS_CONFIG: Record<
 export const StaysPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'stays' | 'arrivals'>('stays');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const reservationIdParam = searchParams.get('reservationId');
+
+  const [activeTab, setActiveTab] = useState<'stays' | 'arrivals'>(() => {
+    return tabParam === 'arrivals' ? 'arrivals' : 'stays';
+  });
+
+  // Sync activeTab when query param changes
+  useEffect(() => {
+    if (tabParam === 'arrivals' && activeTab !== 'arrivals') {
+      setActiveTab('arrivals');
+    } else if (tabParam === 'stays' && activeTab !== 'stays') {
+      setActiveTab('stays');
+    }
+  }, [tabParam, activeTab]);
 
   // RBAC permissions
   // read: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']
@@ -301,6 +317,16 @@ export const StaysPage: React.FC = () => {
       message.error('Không thể lấy chi tiết đơn đặt phòng!');
     }
   };
+
+  // Auto-open checkin modal if reservationId is passed in URL
+  useEffect(() => {
+    if (reservationIdParam && canWrite) {
+      handleOpenCheckinModal({ id: reservationIdParam } as ReservationSummaryItem);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('reservationId');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [reservationIdParam, canWrite]);
 
   const handleConfirmCheckin = () => {
     if (!checkinReservation || !checkinRoomItem) return;
@@ -707,7 +733,10 @@ export const StaysPage: React.FC = () => {
       {/* Main Tabs */}
       <Tabs
         activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as 'stays' | 'arrivals')}
+        onChange={(key) => {
+          setActiveTab(key as 'stays' | 'arrivals');
+          setSearchParams({ tab: key });
+        }}
         items={[
           {
             key: 'stays',
@@ -785,10 +814,10 @@ export const StaysPage: React.FC = () => {
                         placeholder="Trạng thái lưu trú"
                         style={{ width: '100%' }}
                         value={statusFilter}
-                        onChange={(val) => setStatusFilter(val)}
+                        onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
                         allowClear
                         options={[
-                          { label: 'Tất cả trạng thái', value: undefined },
+                          { label: 'Tất cả trạng thái', value: 'ALL' },
                           { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
                           { label: 'Đã trả phòng (CHECKED_OUT)', value: 'CHECKED_OUT' },
                         ]}

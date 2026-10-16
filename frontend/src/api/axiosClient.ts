@@ -1,12 +1,12 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 // Base API Client
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Protection': '1',
+    "Content-Type": "application/json",
+    "X-CSRF-Protection": "1",
   },
 });
 
@@ -41,24 +41,30 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     // Always enforce CSRF Protection header required by backend
-    config.headers['X-CSRF-Protection'] = '1';
+    config.headers["X-CSRF-Protection"] = "1";
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response Interceptor: Auto-refresh token on 401
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     // Don't retry refresh or login requests
     const isAuthRoute =
-      originalRequest?.url?.includes('/auth/login') ||
-      originalRequest?.url?.includes('/auth/refresh');
+      originalRequest?.url?.includes("/auth/login") ||
+      originalRequest?.url?.includes("/auth/refresh");
 
-    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthRoute) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest?._retry &&
+      !isAuthRoute
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -84,9 +90,9 @@ apiClient.interceptors.response.use(
           {
             withCredentials: true,
             headers: {
-              'X-CSRF-Protection': '1',
+              "X-CSRF-Protection": "1",
             },
-          }
+          },
         );
 
         const newAccessToken = res.data.data.accessToken;
@@ -98,7 +104,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         setAccessToken(null);
-        window.dispatchEvent(new Event('auth:unauthorized'));
+        window.dispatchEvent(new Event("auth:unauthorized"));
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -106,5 +112,5 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
