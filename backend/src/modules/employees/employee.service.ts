@@ -1,6 +1,16 @@
+import { randomBytes } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
 import { hashPassword } from '../../shared/utils/password.js';
 import { pageResult } from '../../shared/validation/room-input.js';
+
+export function generateTemporaryPassword(): string {
+  while (true) {
+    const candidate = randomBytes(18).toString('base64url');
+    if (candidate.length >= 15 && new Set(candidate).size >= 8) {
+      return candidate;
+    }
+  }
+}
 import {
   employeePermissions,
   ROLE_HIERARCHY,
@@ -152,6 +162,46 @@ export class EmployeeService {
       await repository.revokeAllSessions(record.id, now, 'ACCOUNT_DEACTIVATED');
 
       return toResponse(updated);
+    });
+  }
+
+  async activateEmployee(scope: EmployeeScope, id: bigint) {
+    this.authorize(scope, 'activate');
+
+    return this.repository.withHotelLock(scope.hotelId, async (repository) => {
+      const record = await repository.findById(scope.hotelId, id);
+      if (!record) throw missing();
+
+      this.checkRoleHierarchy(scope.role, record.role.code);
+
+      if (record.isActive)
+        throw new AppError(409, 'ALREADY_ACTIVE', 'Employee is already active');
+
+      const updated = await repository.activate(scope.hotelId, id);
+      return toResponse(updated);
+    });
+  }
+
+  async resetPassword(scope: EmployeeScope, id: bigint, newPassword?: string) {
+    this.authorize(scope, 'resetPassword');
+
+    const passwordToSet = newPassword ?? generateTemporaryPassword();
+    const passwordHash = await hashPassword(passwordToSet);
+
+    return this.repository.withHotelLock(scope.hotelId, async (repository) => {
+      const record = await repository.findById(scope.hotelId, id);
+      if (!record) throw missing();
+
+      this.checkRoleHierarchy(scope.role, record.role.code);
+
+      const now = new Date();
+      const updated = await repository.resetPassword(scope.hotelId, id, passwordHash);
+      await repository.revokeAllSessions(record.id, now, 'PASSWORD_RESET');
+
+      return {
+        ...toResponse(updated),
+        temporaryPassword: newPassword ? undefined : passwordToSet,
+      };
     });
   }
 

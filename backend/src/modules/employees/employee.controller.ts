@@ -56,5 +56,44 @@ export function employeeController(service: EmployeeService) {
     });
   };
 
-  return { createEmployee, getEmployees, updateEmployee, deactivateEmployee };
+  const activateEmployee: RequestHandler = async (req, res) => {
+    const { params } = res.locals.validated as { params: { id: string } };
+    const result = await service.activateEmployee(scope(req), BigInt(params.id));
+    res.json({
+      success: true,
+      message: 'Employee activated',
+      data: result,
+    });
+  };
+
+  const resetPassword: RequestHandler = async (req, res) => {
+    const { params, body } = res.locals.validated as {
+      params: { id: string };
+      body?: { password?: string };
+    };
+    const result = await service.resetPassword(scope(req), BigInt(params.id), body?.password);
+    const safeEmployee = {
+      id: result.id,
+      fullName: result.fullName,
+      username: result.username,
+      email: result.email,
+      role: result.role,
+      isActive: result.isActive,
+      createdAt: result.createdAt,
+    };
+    res.json({
+      success: true,
+      message: 'Employee password reset',
+      data: safeEmployee,
+    });
+  };
+
+  return {
+    createEmployee,
+    getEmployees,
+    updateEmployee,
+    deactivateEmployee,
+    activateEmployee,
+    resetPassword,
+  };
 }

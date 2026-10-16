@@ -17,6 +17,8 @@ export const employeePermissions = {
   read: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'ACCOUNTANT', 'TECHNICIAN'],
   write: ['ADMIN', 'MANAGER'],
   deactivate: ['ADMIN', 'MANAGER'],
+  activate: ['ADMIN', 'MANAGER'],
+  resetPassword: ['ADMIN', 'MANAGER'],
 } as const satisfies Record<string, readonly RoleCode[]>;
 
 /** Roles that MANAGER is NOT allowed to create/edit/deactivate */

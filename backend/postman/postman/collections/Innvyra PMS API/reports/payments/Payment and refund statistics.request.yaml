@@ -1,12 +1,12 @@
 $kind: http-request
 description: "CONFIRMED only. Payment count excludes deposits/refunds, which have separate counts. Cash/bank totals include payments + deposits, before refunds. Net Cash Collected = payments + deposits − refunds. Balance is cumulative, unfiltered by paymentMethod. Required roles: ADMIN, MANAGER, ACCOUNTANT. Hotel scope comes from the authenticated session; hotelId/role query fields are rejected. Read-only consistent snapshot, no guest PII."
-url: "{{baseUrl}}/reports/payments?startDate=2019-09-17&endDate=2019-09-17&groupBy=day&paymentMethod=BANK_TRANSFER"
+url: "{{baseUrl}}/reports/payments?startDate=2018-07-12&endDate=2018-07-12&groupBy=day&paymentMethod=CASH"
 method: GET
 headers:
   Accept: application/json
 queryParams:
   - key: startDate
-    value: 2019-09-17
+    value: 2018-07-12
     disabled: false
     description: Inclusive hotel business date.
     $type: |-
@@ -23,7 +23,7 @@ queryParams:
         ]
       }
   - key: endDate
-    value: 2019-09-17
+    value: 2018-07-12
     disabled: false
     description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
     $type: |-
@@ -58,7 +58,7 @@ queryParams:
         }
       }
   - key: paymentMethod
-    value: BANK_TRANSFER
+    value: CASH
     disabled: false
     description: Filters cash activity only. Cumulative balance always includes ALL methods.
     $type: |-

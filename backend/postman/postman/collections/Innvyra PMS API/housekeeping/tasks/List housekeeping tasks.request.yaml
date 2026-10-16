@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Turnover MVP: DIRTY → CLEANING → INSPECTION → READY. Failed inspection requires notes, returns PENDING/DIRTY and retains audit history. Only the assignee starts/completes; ADMIN/MANAGER inspect. Occupancy is derived independently from active stays. No stayover cleaning. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
-url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=COMPLETED&priority=URGENT&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=-12691&sortBy=createdAt"
+url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=CANCELLED&priority=HIGH&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=-23523&sortBy=createdAt"
 method: GET
 headers:
   Accept: application/json
@@ -56,7 +56,7 @@ queryParams:
         }
       }
   - key: status
-    value: COMPLETED
+    value: CANCELLED
     disabled: false
     description: ""
     $type: |-
@@ -76,7 +76,7 @@ queryParams:
         }
       }
   - key: priority
-    value: URGENT
+    value: HIGH
     disabled: false
     description: ""
     $type: |-
@@ -143,7 +143,7 @@ queryParams:
         }
       }
   - key: floorNumber
-    value: "-12691"
+    value: "-23523"
     disabled: false
     description: ""
     $type: |-

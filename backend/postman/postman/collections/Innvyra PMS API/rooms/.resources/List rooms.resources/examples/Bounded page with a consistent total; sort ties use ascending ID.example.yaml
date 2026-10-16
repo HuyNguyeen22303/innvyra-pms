@@ -1,7 +1,7 @@
 $kind: http-example
 name: Bounded page with a consistent total; sort ties use ascending ID.
 request:
-  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=false&sortOrder=asc&roomTypeId=637531104767522725&floorNumber=-12691&physicalStatus=MAINTENANCE&housekeepingStatus=CLEANING&sortBy=roomNumber"
+  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=553249&floorNumber=-23523&physicalStatus=ACTIVE&housekeepingStatus=INSPECTION&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -23,7 +23,7 @@ request:
       disabled: false
       description: ""
     - key: isActive
-      value: "false"
+      value: "true"
       disabled: false
       description: Literal true or false. Omitted includes active and inactive records.
     - key: sortOrder
@@ -31,19 +31,19 @@ request:
       disabled: false
       description: ""
     - key: roomTypeId
-      value: "637531104767522725"
+      value: "553249"
       disabled: false
       description: ""
     - key: floorNumber
-      value: "-12691"
+      value: "-23523"
       disabled: false
       description: Signed SMALLINT, -32768–32767; includes basement floors.
     - key: physicalStatus
-      value: MAINTENANCE
+      value: ACTIVE
       disabled: false
       description: ""
     - key: housekeepingStatus
-      value: CLEANING
+      value: INSPECTION
       disabled: false
       description: ""
     - key: sortBy

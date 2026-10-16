@@ -202,6 +202,36 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
       return row;
     },
 
+    async activate(hotelId: bigint, id: bigint) {
+      const row = records.get(id);
+      if (!row || row.hotelId !== hotelId)
+        throw new AppError(404, 'EMPLOYEE_NOT_FOUND', 'Employee not found');
+      row.isActive = true;
+
+      // Sync with authRepo
+      if (authRepo) {
+        const authUser = authRepo.users.get(row.username);
+        if (authUser) authUser.isActive = true;
+      }
+
+      return row;
+    },
+
+    async resetPassword(hotelId: bigint, id: bigint, passwordHash: string) {
+      const row = records.get(id);
+      if (!row || row.hotelId !== hotelId)
+        throw new AppError(404, 'EMPLOYEE_NOT_FOUND', 'Employee not found');
+      row.passwordHash = passwordHash;
+
+      // Sync with authRepo
+      if (authRepo) {
+        const authUser = authRepo.users.get(row.username);
+        if (authUser) authUser.passwordHash = passwordHash;
+      }
+
+      return row;
+    },
+
     async revokeAllSessions(staffUserId: bigint, now: Date) {
       if (authRepo) {
         for (const session of authRepo.sessions.values()) {
