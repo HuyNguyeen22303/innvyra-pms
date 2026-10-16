@@ -385,21 +385,6 @@ export const ReportsPage: React.FC = () => {
           />
         )}
 
-        {rev?.dataQuality?.limitations && rev.dataQuality.limitations.length > 0 && (
-          <Alert
-            type="info"
-            showIcon
-            message="Ghi chú chất lượng số liệu kế toán"
-            description={
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {rev.dataQuality.limitations.map((lim, i) => (
-                  <li key={i}>{lim}</li>
-                ))}
-              </ul>
-            }
-            style={{ marginBottom: 16 }}
-          />
-        )}
 
         {/* Financial KPI Summary Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
