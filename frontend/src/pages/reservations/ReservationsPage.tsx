@@ -540,7 +540,7 @@ export const ReservationsPage: React.FC = () => {
                 <Button
                   type="text"
                   icon={<LoginOutlined style={{ color: '#52c41a' }} />}
-                  onClick={() => navigate('/stays')}
+                  onClick={() => navigate(`/stays?tab=arrivals&reservationId=${record.id}`)}
                 />
               </Tooltip>
             )}
@@ -1238,6 +1238,21 @@ export const ReservationsPage: React.FC = () => {
           setIsDrawerOpen(false);
           setSelectedReservationId(null);
         }}
+        extra={
+          canWrite && reservationDetail && (reservationDetail.status === 'CONFIRMED' || reservationDetail.status === 'PARTIALLY_CHECKED_IN') ? (
+            <Button
+              type="primary"
+              icon={<LoginOutlined />}
+              style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
+              onClick={() => {
+                setIsDrawerOpen(false);
+                navigate(`/stays?tab=arrivals&reservationId=${reservationDetail.id}`);
+              }}
+            >
+              Làm thủ tục Check-in
+            </Button>
+          ) : null
+        }
       >
         {isLoadingDetail || !reservationDetail ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
