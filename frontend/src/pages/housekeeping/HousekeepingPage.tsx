@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography,
@@ -43,11 +43,13 @@ import {
 import dayjs from 'dayjs';
 import { housekeepingApi } from '../../api/housekeeping.api.ts';
 import { roomTypesApi } from '../../api/rooms.api.ts';
+import { employeesApi } from '../../api/employees.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import {
   getStaffDisplay,
   getHousekeepingActionDisplay,
   formatAuditNote,
+  registerStaffMembers,
 } from '../../utils/staffDirectory.ts';
 import type {
   HousekeepingTaskItem,
@@ -60,12 +62,7 @@ import type {
 
 const { Title, Text, Paragraph } = Typography;
 
-// Preset Active Staff accounts for Housekeeping assignments
-const HOUSEKEEPING_STAFF_OPTIONS = [
-  { value: '4', label: 'Phạm Thị Lan (Buồng phòng - ID: 4)', role: 'HOUSEKEEPING' },
-  { value: '1', label: 'Nguyễn Minh Anh (Quản lý KS - ID: 1)', role: 'MANAGER' },
-  { value: '6', label: 'System Administrator (Quản trị viên - ID: 6)', role: 'ADMIN' },
-];
+// Dynamic Housekeeping Staff Options loaded from employeesApi
 
 export const HousekeepingPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -90,7 +87,32 @@ export const HousekeepingPage: React.FC = () => {
 
   // Forms
   const [createForm] = Form.useForm();
-  const [assignStaffId, setAssignStaffId] = useState<string>('4');
+  // Dynamic Housekeeping Staff Query (GET /employees?role=HOUSEKEEPING&isActive=true)
+  const { data: housekeepingStaffRes } = useQuery({
+    queryKey: ['employees', { role: 'HOUSEKEEPING', isActive: true }],
+    queryFn: () => employeesApi.list({ role: 'HOUSEKEEPING', isActive: true, limit: 100 }),
+    staleTime: 60000,
+  });
+
+  useEffect(() => {
+    if (housekeepingStaffRes?.data?.items) {
+      registerStaffMembers(housekeepingStaffRes.data.items);
+    }
+  }, [housekeepingStaffRes]);
+
+  const housekeepingOptions = useMemo(() => {
+    const items = housekeepingStaffRes?.data?.items || [];
+    if (items.length === 0) {
+      return [{ value: '', label: 'Chưa có nhân viên buồng phòng đang hoạt động' }];
+    }
+    return items.map((staff) => ({
+      value: String(staff.id),
+      label: `${staff.fullName} (Buồng phòng - ID: ${staff.id})`,
+      role: staff.role,
+    }));
+  }, [housekeepingStaffRes]);
+
+  const [assignStaffId, setAssignStaffId] = useState<string>('');
   const [inspectPassed, setInspectPassed] = useState<boolean>(true);
   const [inspectNotes, setInspectNotes] = useState<string>('');
   const [cancelReason, setCancelReason] = useState<string>('');
@@ -559,7 +581,7 @@ export const HousekeepingPage: React.FC = () => {
                     icon={<UserSwitchOutlined />}
                     onClick={() => {
                       setActionTask(task);
-                      setAssignStaffId(task.assignedTo ? String(task.assignedTo) : '4');
+                      setAssignStaffId(task.assignedTo ? String(task.assignedTo) : (housekeepingOptions[0]?.value || ''));
                       setIsAssignModalOpen(true);
                     }}
                   >
@@ -1040,7 +1062,7 @@ export const HousekeepingPage: React.FC = () => {
               value={assignStaffId}
               onChange={(val) => setAssignStaffId(val)}
               style={{ width: '100%' }}
-              options={HOUSEKEEPING_STAFF_OPTIONS}
+              options={housekeepingOptions}
             />
           </div>
         </Space>

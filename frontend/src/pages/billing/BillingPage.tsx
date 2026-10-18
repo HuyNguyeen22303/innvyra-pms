@@ -1,20 +1,11 @@
-import React, { useState } from 'react';
-import { Tabs, Typography, Space } from 'antd';
-import {
-  DollarOutlined,
-  ShoppingOutlined,
-  AppstoreOutlined,
-  BankOutlined,
-} from '@ant-design/icons';
+import React from 'react';
+import { Typography, Space } from 'antd';
+import { BankOutlined } from '@ant-design/icons';
 import { FolioTab } from './components/FolioTab.tsx';
-import { ServiceOrdersTab } from './components/ServiceOrdersTab.tsx';
-import { ServiceCatalogTab } from './components/ServiceCatalogTab.tsx';
 
 const { Title, Text } = Typography;
 
 export const BillingPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('folio');
-
   return (
     <div style={{ padding: '0 0 24px 0' }}>
       {/* Page Header */}
@@ -32,50 +23,7 @@ export const BillingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Tabs Container */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        type="card"
-        style={{
-          background: '#ffffff',
-          borderRadius: 8,
-          padding: '16px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        }}
-        items={[
-          {
-            key: 'folio',
-            label: (
-              <Space>
-                <DollarOutlined />
-                <span>Sổ công nợ Folio & Thu/Hoàn tiền</span>
-              </Space>
-            ),
-            children: <FolioTab />,
-          },
-          {
-            key: 'orders',
-            label: (
-              <Space>
-                <ShoppingOutlined />
-                <span>Yêu cầu Dịch vụ (Service Orders)</span>
-              </Space>
-            ),
-            children: <ServiceOrdersTab />,
-          },
-          {
-            key: 'catalog',
-            label: (
-              <Space>
-                <AppstoreOutlined />
-                <span>Danh mục Dịch vụ (Catalog)</span>
-              </Space>
-            ),
-            children: <ServiceCatalogTab />,
-          },
-        ]}
-      />
+      <FolioTab />
     </div>
   );
 };

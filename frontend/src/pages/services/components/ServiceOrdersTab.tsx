@@ -39,7 +39,7 @@ import type {
   CreateServiceOrderDto,
   ServiceOrderStatus,
 } from '../../../types/billing.types.ts';
-import { getStaffDisplay } from '../../../utils/staffDirectory.ts';
+import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 
 const { Text } = Typography;
 
@@ -96,24 +96,57 @@ export const ServiceOrdersTab: React.FC = () => {
     enabled: isCreateModalOpen,
   });
 
-  // Query Active Stays / Reservations
+  // Dynamic Staff Directory for instant employee names & roles
+  const { getStaff } = useStaffDirectory();
+
+  // Query Stays & Reservations (cached for table lookups & modal)
   const { data: activeStaysRes } = useQuery({
     queryKey: ['active-stays-lookup'],
-    queryFn: () => staysApi.getAll({ status: 'CHECKED_IN', limit: 100 }),
-    enabled: isCreateModalOpen,
+    queryFn: () => staysApi.getAll({ limit: 100 }),
+    staleTime: 30000,
   });
 
   const { data: activeReservationsRes } = useQuery({
     queryKey: ['active-reservations-lookup'],
     queryFn: () => reservationsApi.getAll({ limit: 100 }),
-    enabled: isCreateModalOpen,
+    staleTime: 30000,
   });
 
   const orderList: ServiceOrderItem[] = ordersRes?.data?.items || [];
   const total = ordersRes?.data?.pagination?.total || 0;
   const activeServices = activeServicesRes?.data?.items || [];
-  const activeStays = activeStaysRes?.data?.items || [];
-  const allReservations = activeReservationsRes?.data?.items || [];
+
+  const rawStays = activeStaysRes?.data;
+  const activeStays: any[] = Array.isArray(rawStays)
+    ? rawStays
+    : Array.isArray((rawStays as any)?.items)
+    ? (rawStays as any).items
+    : [];
+
+  const rawReservations = activeReservationsRes?.data;
+  const allReservations: any[] = Array.isArray(rawReservations)
+    ? rawReservations
+    : Array.isArray((rawReservations as any)?.items)
+    ? (rawReservations as any).items
+    : [];
+
+  // Lookup maps for fast access in table rows
+  const staysMap = useMemo(() => {
+    const map = new Map<string, any>();
+    activeStays.forEach((s: any) => {
+      if (s.stayId) map.set(String(s.stayId), s);
+      if (s.id) map.set(String(s.id), s);
+    });
+    return map;
+  }, [activeStays]);
+
+  const reservationsMap = useMemo(() => {
+    const map = new Map<string, any>();
+    allReservations.forEach((r: any) => {
+      if (r.id) map.set(String(r.id), r);
+    });
+    return map;
+  }, [allReservations]);
 
   // Backend requires active stay (CHECKED_IN or PARTIALLY_CHECKED_IN) for service orders
   const activeReservations = useMemo(() => {
@@ -215,23 +248,50 @@ export const ServiceOrdersTab: React.FC = () => {
       ),
     },
     {
-      title: 'Đơn đặt phòng / Phòng',
+      title: 'Phòng & Khách hàng',
       key: 'resInfo',
-      width: 180,
-      render: (_, record) => (
-        <div>
-          <div>
-            <Text type="secondary" style={{ fontSize: 11 }}>Đơn đặt:</Text>{' '}
-            <Text strong style={{ color: '#1b4d3e' }}>#{record.reservationId}</Text>
-          </div>
-          {record.stayId && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 11 }}>Lượt ở:</Text>{' '}
-              <Tag color="cyan" style={{ fontSize: 11 }}>Lưu trú #{record.stayId}</Tag>
+      width: 220,
+      render: (_, record) => {
+        const stay = record.stayId ? staysMap.get(String(record.stayId)) : undefined;
+        const res = reservationsMap.get(String(record.reservationId));
+        const roomNumber = stay?.room?.roomNumber;
+        const roomTypeName = stay?.roomType?.name;
+        const guestName = stay?.bookerGuest?.fullName || res?.bookerGuest?.fullName;
+        const confirmationCode = stay?.confirmationCode || res?.confirmationCode;
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {roomNumber ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Tag color="geekblue" style={{ fontSize: 13, fontWeight: 700, padding: '1px 8px', margin: 0 }}>
+                  Phòng #{roomNumber}
+                </Tag>
+                {roomTypeName && (
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    ({roomTypeName})
+                  </Text>
+                )}
+              </div>
+            ) : (
+              <Tag color="orange" style={{ width: 'fit-content', margin: 0, fontSize: 11 }}>
+                Đơn #{record.reservationId}
+              </Tag>
+            )}
+
+            {guestName && (
+              <div style={{ fontSize: 12 }}>
+                <Text strong style={{ color: '#0f172a' }}>
+                  {guestName}
+                </Text>
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              Mã đặt: <Text code style={{ fontSize: 10 }}>#{confirmationCode || record.reservationId}</Text>
             </div>
-          )}
-        </div>
-      ),
+          </div>
+        );
+      },
     },
     {
       title: 'Chi tiết dịch vụ & Đơn giá Snapshot',
@@ -306,18 +366,35 @@ export const ServiceOrdersTab: React.FC = () => {
     {
       title: 'Nhân viên & Thời gian',
       key: 'meta',
-      width: 180,
+      width: 195,
       render: (_, record) => {
-        const creator = getStaffDisplay(record.createdBy);
+        const creator = getStaff(record.createdBy);
+        const completer = record.completedBy ? getStaff(record.completedBy) : null;
+        const canceller = record.cancelledBy ? getStaff(record.cancelledBy) : null;
+
         return (
           <div style={{ fontSize: 12 }}>
             <div>
-              <Text strong>{creator.fullName}</Text>{' '}
-              <Tag color={creator.color} style={{ fontSize: 10, margin: 0 }}>{creator.roleTitle}</Tag>
+              <Text strong style={{ color: '#0f172a' }}>{creator.fullName}</Text>{' '}
+              <Tag color={creator.color} style={{ fontSize: 10, margin: 0, padding: '0 4px' }}>
+                {creator.roleTitle}
+              </Tag>
             </div>
-            <div style={{ color: '#8c8c8c', fontSize: 11 }}>
+            <div style={{ color: '#8c8c8c', fontSize: 11, marginTop: 2 }}>
               {dayjs(record.createdAt).format('DD/MM/YYYY HH:mm')}
             </div>
+
+            {record.status === 'COMPLETED' && completer && (
+              <div style={{ fontSize: 11, color: '#389e0d', marginTop: 4 }}>
+                ✓ Đã giao: {completer.fullName} ({completer.roleTitle})
+              </div>
+            )}
+
+            {record.status === 'CANCELLED' && canceller && (
+              <div style={{ fontSize: 11, color: '#cf1322', marginTop: 4 }}>
+                ✕ Hủy bởi: {canceller.fullName}
+              </div>
+            )}
           </div>
         );
       },
@@ -516,13 +593,13 @@ export const ServiceOrdersTab: React.FC = () => {
                   }
                   options={activeReservations.map((r: any) => ({
                     value: String(r.id),
-                    label: `Đơn #${r.id} - ${r.bookerGuest?.fullName || 'Khách'} (${r.status})`,
+                    label: `${r.bookerGuest?.fullName || 'Khách'} - Mã đặt: #${r.confirmationCode || r.id} (${r.status})`,
                   }))}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="stayId" label="Lượt lưu trú / Phòng (tùy chọn)">
+              <Form.Item name="stayId" label="Phòng nhận dịch vụ (tùy chọn)">
                 <Select
                   showSearch
                   allowClear
@@ -538,8 +615,8 @@ export const ServiceOrdersTab: React.FC = () => {
                     String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
                   options={availableStays.map((s: any) => ({
-                    value: String(s.stayId),
-                    label: `Phòng #${s.room?.roomNumber} (Lưu trú #${s.stayId})`,
+                    value: String(s.stayId || s.id),
+                    label: `Phòng #${s.room?.roomNumber} - ${s.roomType?.name || ''} (${s.bookerGuest?.fullName || 'Khách lưu trú'})`,
                   }))}
                 />
               </Form.Item>

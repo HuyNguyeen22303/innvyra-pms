@@ -42,3 +42,14 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Ant Design Menu Group Title on Dark Sidebar */
+.ant-menu-dark .ant-menu-item-group-title {
+  padding: 14px 12px 6px 12px !important;
+  line-height: 1.4 !important;
+}
+
+.ant-menu-dark .ant-menu-item-group:first-child .ant-menu-item-group-title {
+  padding-top: 6px !important;
+}
+

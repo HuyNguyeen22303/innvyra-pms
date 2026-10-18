@@ -151,7 +151,7 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 ---
 
-### 🗺️ Bảng Kế Hoạch 10 Phases Toàn Diện Của Đồ Án Innvyra PMS:
+### 🗺️ Bảng Kế Hoạch 11 Phases Toàn Diện Của Đồ Án Innvyra PMS:
 
 | Phase | Nhánh Git | Nội dung công việc | Trạng thái |
 | :---: | :--- | :--- | :---: |
@@ -160,11 +160,12 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 | **Phase 3** | `feature/fe-rooms` | CRUD Loại phòng, Sơ đồ phòng Lưới/Bảng, bộ lọc đa năng, cập nhật nhanh | ✅ Đã merge `develop` |
 | **Phase 4** | `feature/fe-guests` | Quản lý Khách hàng, CCCD/Passport mã hóa an toàn, phân quyền kế toán | ✅ Đã merge `develop` |
 | **Phase 5** | `feature/fe-reservations` | Tra cứu phòng trống theo ngày (`/rooms/availability`), tạo đơn & hủy đặt | ✅ Đã merge `develop` |
-| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã hoàn thành |
-| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ⏳ Tiếp theo |
-| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ⏳ Kế hoạch |
-| **Phase 9** | `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Thống kê KPI vận hành | ⏳ Kế hoạch |
-| **Phase 10**| `feature/fe-final-polish` | Kiểm thử luồng E2E toàn diện, tài liệu hướng dẫn và đóng gói đồ án | ⏳ Kế hoạch |
+| **Phase 6** | `feature/fe-stays` | Check-in gán phòng READY, danh sách lưu trú, check-out và đổi phòng giữa kỳ | ✅ Đã merge `develop` |
+| **Phase 7** | `feature/fe-operations` | Bảng nhiệm vụ dọn dẹp buồng phòng Kanban & Lệnh khóa bảo trì phòng | ✅ Đã merge `develop` |
+| **Phase 8** | `feature/fe-billing` | Chi tiết hóa đơn Folio, thanh toán dịch vụ/tiền phòng, in phiếu thanh toán | ✅ Đã merge `develop` |
+| **Phase 9** | `feature/fe-employees` | Quản lý Nhân sự, Cấp phát tài khoản, Phân quyền Role Hierarchy & Dynamic Staffing | ✅ Đã hoàn thành |
+| **Phase 10**| `feature/fe-matrix-dashboard` | Bảng ma trận phòng theo ngày (Timeline Grid) & Báo cáo thống kê KPI | ⏳ Kế hoạch |
+| **Phase 11**| `feature/fe-final-polish` | Kiểm thử luồng E2E toàn diện, tài liệu hướng dẫn và đóng gói đồ án | ⏳ Kế hoạch |
 
 ---
 
@@ -537,3 +538,251 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 
 
+
+
+---
+
+## 📅 Ngày: 16/10/2026
+
+### 🎯 Mục tiêu & Sự kiện quan trọng:
+- Đã merge thành công **Phase 8: Billing & Folio Management** vào nhánh `develop`.
+- Đồng bộ mã nguồn từ Backend: Phía Backend vừa hoàn thành và đẩy lên nhánh `develop` toàn bộ module **Quản lý Nhân sự & Phân quyền Tài khoản (`employees`)**.
+- Rà soát mã nguồn Backend, kiểm thử tự động 35 test suites đạt 100% tỷ lệ pass (`vitest run tests/employees.http.test.ts`).
+- Bổ sung và cập nhật lại lộ trình tổng thể: Bổ sung **Phase 9: Quản lý Nhân sự & Phân quyền Tài khoản (`feature/fe-employees`)** trước khi triển khai Ma trận phòng & Báo cáo.
+
+---
+
+### 🔍 Nghiên cứu & Phân tích Kỹ thuật Backend Module `employees`:
+
+#### 1. Các Endpoints RESTful (`/api/v1/employees`):
+- `GET /employees`:
+  - **Mục đích**: Tra cứu danh sách nhân sự của khách sạn.
+  - **Phân quyền**: Tất cả 6 vai trò (`ADMIN`, `MANAGER`, `RECEPTIONIST`, `HOUSEKEEPING`, `ACCOUNTANT`, `TECHNICIAN`) đều có quyền đọc (`employeePermissions.read`).
+  - **Bộ lọc & Phân trang**: Hỗ trợ `page`, `limit` (tối đa 100), `search` (tìm kiếm theo họ tên, username hoặc email), `role` (lọc theo vai trò), `isActive` (lọc trạng thái Đang hoạt động / Đã vô hiệu hóa), `sortBy` (`fullName`, `createdAt`, `username`), `sortOrder` (`asc`, `desc`).
+  - **Bảo mật Tenant**: Luôn khóa phạm vi theo `hotelId` của người dùng đã xác thực, không bao giờ lộ tài khoản khách sạn khác.
+- `POST /employees`:
+  - **Mục đích**: Tạo mới hồ sơ nhân viên kèm tài khoản đăng nhập hệ thống.
+  - **Phân quyền**: Chỉ `ADMIN` và `MANAGER` (`write`).
+  - **Yêu cầu bảo mật**: Bắt buộc header `X-CSRF-Protection: 1`.
+  - **Dữ liệu đầu vào**:
+    - `fullName`: Họ và tên (1 - 191 ký tự, chuẩn hóa khoảng trắng).
+    - `username`: Tên đăng nhập (3 - 64 ký tự, chữ thường, số, dấu `. _ -`, duy nhất toàn hệ thống).
+    - `email`: Địa chỉ email (tùy chọn, duy nhất toàn hệ thống).
+    - `password`: Mật khẩu ban đầu (tối thiểu 15 ký tự, tối đa 128 ký tự, bắt buộc có ít nhất 8 ký tự phân biệt). Được băm bằng thuật toán **Argon2id**.
+    - `role`: Vai trò chức vụ trong khách sạn.
+- `PATCH /employees/:id`:
+  - **Mục đích**: Cập nhật thông tin nhân viên (họ tên, email, thay đổi vai trò).
+  - **Phân quyền**: `ADMIN` và `MANAGER`. Bắt buộc `X-CSRF-Protection: 1`.
+  - **Quy tắc an toàn**: Không cho phép thay đổi `username` hay `password` qua endpoint này (đảm bảo tính toàn vẹn định danh).
+- `PATCH /employees/:id/deactivate`:
+  - **Mục đích**: Vô hiệu hóa tài khoản nhân viên (Soft-deactivate, `isActive = false`).
+  - **Phân quyền**: `ADMIN` và `MANAGER`. Bắt buộc `X-CSRF-Protection: 1`.
+  - **Cơ chế thu hồi phiên tức thì (Session Revocation)**: Ngay khi vô hiệu hóa, hệ thống tự động đánh dấu thu hồi toàn bộ phiên đăng nhập còn hiệu lực của nhân viên đó trong bảng `auth_sessions` (`revokedReason: 'ACCOUNT_DEACTIVATED'`). Nhân viên này sẽ bị đá văng khỏi hệ thống và không thể đăng nhập lại.
+  - **Bảo vệ tài khoản tối cao (Safety Invariants)**:
+    - Không được tự vô hiệu hóa chính mình (`Cannot deactivate your own account`).
+    - Không được vô hiệu hóa Quản trị viên (`ADMIN`) cuối cùng còn lại của khách sạn (`Cannot deactivate the last active administrator`).
+
+#### 2. Cơ chế Phân cấp Vai trò Chặt chẽ (Role Hierarchy):
+- Trọng số cấp bậc:
+  - `ADMIN`: 100
+  - `MANAGER`: 80
+  - `RECEPTIONIST`: 60
+  - `HOUSEKEEPING`, `ACCOUNTANT`, `TECHNICIAN`: 40
+- Quy tắc kiểm soát quyền lực:
+  - `ADMIN` có toàn quyền quản trị tất cả các vai trò.
+  - `MANAGER` chỉ được tạo, chỉnh sửa hoặc vô hiệu hóa các nhân viên có cấp bậc **thấp hơn** mình (Lễ tân, Buồng phòng, Kế toán, Kỹ thuật viên).
+  - `MANAGER` tuyệt đối **không được phép** tạo hoặc can thiệp vào tài khoản `ADMIN` hay một `MANAGER` khác (chống leo thang đặc quyền - Privilege Escalation).
+
+#### 3. Tác động tích cực giải quyết triệt để các tồn đọng trước đây:
+- **Xóa bỏ hoàn toàn Hardcode ID Kỹ thuật viên / Buồng phòng**:
+  - Trước đây ở Phase 7, khi giao việc bảo trì hoặc dọn buồng, giao diện phải dựa vào danh bạ tĩnh `KNOWN_STAFF_DIRECTORY` và gán cứng ID (dẫn đến lỗi khi môi trường database cục bộ của từng thành viên có ID tự tăng khác nhau).
+  - Với API `/employees?role=TECHNICIAN&isActive=true` và `/employees?role=HOUSEKEEPING&isActive=true`, Frontend sẽ lấy danh sách nhân sự thực tế từ cơ sở dữ liệu theo thời gian thực!
+
+---
+
+### 🚀 Kế hoạch Triển khai Chi tiết Phase 9: Quản lý Nhân sự (`feature/fe-employees`):
+
+#### 1. Xây dựng Types & API Client:
+- `src/types/employees.types.ts`: Định nghĩa `EmployeeItem`, `EmployeeQuery`, `CreateEmployeeDto`, `UpdateEmployeeDto`, `RoleCode`, bảng trọng số `ROLE_HIERARCHY`, màu sắc nhận diện vai trò.
+- `src/api/employees.api.ts`: Các hàm gọi API `getEmployees`, `createEmployee`, `updateEmployee`, `deactivateEmployee`.
+
+#### 2. Phát triển Màn hình Quản lý Nhân sự (`EmployeesPage.tsx`):
+- **Thẻ KPI Thống kê Nhân sự**: Tổng nhân viên, Nhân viên đang hoạt động, Đã vô hiệu hóa, Phân bổ theo 6 vai trò.
+- **Thanh công cụ lọc & tìm kiếm**: Tìm kiếm đa năng (Tên, username, email), Lọc theo vai trò (Dropdown Tất cả / Lễ tân / Buồng phòng / Kỹ thuật...), Lọc trạng thái hoạt động.
+- **Bảng Danh sách Nhân sự (Ant Design Table)**:
+  - Họ và tên + Avatar chữ cái đầu.
+  - Tên đăng nhập (username) font monospace nổi bật.
+  - Email liên hệ.
+  - Vai trò kèm Tag màu thương hiệu chuẩn (Admin đỏ/tím, Quản lý xanh dương, Lễ tân xanh ngọc, Buồng phòng cam, Kế toán vàng, Kỹ thuật xanh lá).
+  - Trạng thái Hoạt động (Tag xanh "Đang hoạt động" / Tag xám "Đã khóa").
+  - Ngày tạo tài khoản.
+  - Cột Hành động: Nút Sửa, Nút Khóa/Vô hiệu hóa (với Popconfirm giải thích rõ việc hủy mọi phiên đăng nhập).
+- **Modal Thêm mới Nhân viên (`CreateEmployeeModal`)**:
+  - Form nhập Họ tên, Username, Email, Vai trò.
+  - Chọn vai trò tuân thủ Role Hierarchy (nếu người đang đăng nhập là Manager thì dropdown tự động loại bỏ lựa chọn Admin & Manager).
+  - Ô nhập mật khẩu ban đầu kèm nút "Tự động sinh mật khẩu ngẫu nhiên an toàn" (đáp ứng tiêu chuẩn >= 15 ký tự, >= 8 ký tự phân biệt).
+  - Checkbox / Nút sao chép thông tin tài khoản để gửi cho nhân viên mới.
+- **Modal Chỉnh sửa Nhân viên (`EditEmployeeModal`)**:
+  - Chỉnh sửa Họ tên, Email, Thay đổi vai trò (chặn sửa username & mật khẩu theo đúng thiết kế backend).
+- **Quyền hạn hiển thị & An toàn (RBAC)**:
+  - Chỉ `ADMIN` và `MANAGER` thấy nút "Thêm nhân viên" và các nút chỉnh sửa/khóa tài khoản.
+  - Các nút thao tác trên dòng của chính mình hoặc trên cấp bậc cao hơn sẽ bị disable / ẩn theo đúng phân cấp vai trò.
+
+#### 3. Tích hợp Dynamic Staffing vào các Module Vận hành:
+- Nâng cấp Dropdown phân công kỹ thuật viên trong `MaintenancePage.tsx`: Gọi `useQuery` lấy danh sách kỹ thuật viên thực tế từ `/employees?role=TECHNICIAN&isActive=true`.
+- Nâng cấp Dropdown phân công buồng phòng trong `HousekeepingPage.tsx`: Lấy danh sách nhân viên buồng phòng từ `/employees?role=HOUSEKEEPING&isActive=true`.
+- Cập nhật tiện ích `staffDirectory.ts` để cache và tra cứu tên nhân sự tự động.
+
+#### 4. Cấu hình Định tuyến & Menu Sidebar:
+- Thêm route `/employees` trong `src/routes/AppRoutes.tsx`.
+- Thêm mục "Quản lý Nhân sự" trên thanh điều hướng Sidebar (`MainLayout.tsx`) hiển thị cho `ADMIN` và `MANAGER`.
+
+
+---
+
+### 💻 Triển khai Hoàn tất Phase 9: Quản lý Nhân sự & Dynamic Staffing:
+
+#### 1. Các thành phần đã tạo mới:
+- `src/types/employees.types.ts`:
+  - Định nghĩa chuẩn TypeScript cho `EmployeeItem`, `CreateEmployeeDto`, `UpdateEmployeeDto`, `EmployeeQuery`.
+  - Ma trận trọng số cấp bậc `ROLE_HIERARCHY`: ADMIN (100), MANAGER (80), RECEPTIONIST (60), HOUSEKEEPING/ACCOUNTANT/TECHNICIAN (40).
+  - Trợ năng `canManageRole(actorRole, targetRole)` và `getAssignableRoles(actorRole)`.
+  - Bảng ánh xạ màu sắc và huy hiệu chức vụ `ROLE_CONFIG`.
+- `src/api/employees.api.ts`:
+  - Các hàm gọi API `list`, `create`, `update`, `deactivate`.
+  - Tự động chuẩn hóa dữ liệu đầu vào (trim họ tên, email lowercase hoặc null, username lowercase).
+- `src/pages/employees/components/CreateEmployeeModal.tsx`:
+  - Form tạo tài khoản nhân viên.
+  - Trình sinh mật khẩu an toàn ngẫu nhiên bằng Web Crypto API (`window.crypto.getRandomValues`) cam kết $\ge 16$ ký tự và $\ge 8$ ký tự khác nhau.
+  - Bộ công cụ kiểm tra độ mạnh mật khẩu trực quan và nút 1-click sao chép mật khẩu vào bộ nhớ tạm.
+  - Dropdown vai trò tuân thủ nghiêm ngặt Role Hierarchy: Nếu Quản lý đăng nhập thì chỉ được tạo các vai trò cấp dưới (Lễ tân, Kế toán, Buồng phòng, Kỹ thuật).
+- `src/pages/employees/components/EditEmployeeModal.tsx`:
+  - Form chỉnh sửa họ tên, email và thay đổi vai trò.
+  - Khóa trường username (chỉ đọc) và không cung cấp trường đổi mật khẩu theo đúng hợp đồng thiết kế của Backend.
+- `src/pages/employees/EmployeesPage.tsx`:
+  - **Thẻ KPI Thống kê chuẩn xác**: Tổng số nhân sự, Đang hoạt động, Đã vô hiệu hóa; Phân bổ theo 6 vai trò chức danh. Sử dụng `limit: 1` và `useQueries` để lấy số lượng chính xác mà không tải dữ liệu dư thừa.
+  - **Bộ lọc đa năng**: Tìm kiếm theo họ tên, username hoặc email; Lọc theo vai trò; Lọc theo trạng thái; Sắp xếp theo các trường hợp lệ của backend.
+  - **Bảng dữ liệu Ant Design Table**: Cột Họ tên & Avatar chữ cái đầu, Monospace username, Email, Tag chức vụ màu thương hiệu, Tag trạng thái, Ngày tạo.
+  - **Cột Hành động thông minh**:
+    - Nút Sửa: Tự động vô hiệu hóa nếu nhân viên có cấp bậc bằng hoặc cao hơn người đang đăng nhập.
+    - Nút Khóa / Vô hiệu hóa: Popconfirm cảnh báo rõ ràng việc thu hồi mọi phiên đăng nhập; Ẩn với tài khoản đã khóa; Chặn tự khóa chính mình; Bắt mã lỗi `LAST_ADMIN` từ máy chủ.
+
+#### 2. Tích hợp Dynamic Staffing vào Buồng phòng & Bảo trì:
+- Nâng cấp `src/utils/staffDirectory.ts`:
+  - Bổ sung `dynamicStaffRegistry` (Map lưu trữ thông tin nhân viên tải động từ API).
+  - Hàm `registerStaffMembers` nạp danh sách nhân sự vào bộ nhớ đệm giao diện.
+  - Hàm `getStaffDisplay` kiểm tra dynamic registry trước, giữ fallback trung tính `Nhân viên #ID` (không đoán tên) để lịch sử cũ không bị mất ngay cả khi nhân viên đã bị khóa tài khoản.
+- Nâng cấp `src/pages/maintenance/MaintenancePage.tsx`:
+  - Xóa bỏ hoàn toàn mảng tĩnh `TECHNICIAN_STAFF_OPTIONS`.
+  - Thay bằng hook `useQuery` gọi `GET /employees?role=TECHNICIAN&isActive=true`.
+  - Modal phân công kỹ thuật viên hiển thị danh sách kỹ thuật viên thực tế từ cơ sở dữ liệu.
+- Nâng cấp `src/pages/housekeeping/HousekeepingPage.tsx`:
+  - Xóa bỏ hoàn toàn mảng tĩnh `HOUSEKEEPING_STAFF_OPTIONS`.
+  - Thay bằng hook `useQuery` gọi `GET /employees?role=HOUSEKEEPING&isActive=true`.
+  - Modal phân công buồng phòng hiển thị danh sách nhân sự buồng phòng thực tế từ cơ sở dữ liệu.
+
+#### 3. Phân quyền & Điều hướng:
+- `src/routes/AppRoutes.tsx`: Định tuyến `/employees` được bảo vệ bởi `ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}`. Các vai trò khác truy cập trực tiếp sẽ được chuyển hướng tới trang 403 Forbidden.
+- `src/layouts/MainLayout.tsx`: Bổ sung menu "Quản lý Nhân sự" với biểu tượng `<TeamOutlined />` trên thanh Sidebar dành riêng cho `ADMIN` và `MANAGER`.
+
+#### 4. Kết quả Kiểm thử & Đóng gói:
+- `npm run build` (`tsc -b && vite build`): **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+- `npm run lint` (`oxlint`): **0 lỗi linter**.
+
+
+---
+
+## 📅 Ngày: 16/10/2026 (Buổi chiều)
+
+### 🎯 Mục tiêu trong buổi:
+- Triển khai toàn diện **Phase 10 — Room Matrix, Dashboard KPI và Báo cáo Điều hành (Reporting & Analytics)** trên nhánh `feature/fe-matrix-dashboard`.
+- Xóa bỏ 100% dữ liệu giả lập (mock data) trên Dashboard.
+- Hiện thực hóa Bảng ma trận phòng theo ngày (Room Matrix Grid) tại route `/calendar`.
+- Hiện thực hóa Trung tâm Báo cáo Điều hành 6 phân hệ tại route `/reports` kèm trích xuất CSV trực tiếp từ máy chủ.
+- Tuân thủ nghiêm ngặt bảo mật phân quyền Role-Based Access Control (RBAC), cấp bậc dữ liệu và chuẩn kế toán số học thập phân (Decimal precision).
+
+---
+
+### 💻 Công việc kỹ thuật đã hoàn thành:
+
+#### 1. Khởi tạo Nhánh Git & Khung Kiểu Dữ Liệu:
+- Tạo và checkout nhánh mới: `feature/fe-matrix-dashboard`.
+- Tạo `src/types/reports.types.ts`:
+  - Định nghĩa chuẩn toàn bộ DTOs và Metrics theo tài liệu `backend/REPORTS.md` và `backend/src/config/reports.openapi.ts`.
+  - Bao gồm: `ReportPeriod`, `DataQuality`, `BalanceAt`, `FinanceBasis`, `RevenueReport`, `PaymentReport`, `OccupancyReport`, `ReservationReport`, `OperationsReport`, `OutstandingReport`, `DashboardReport`.
+  - Các interface tham số truy vấn: `ReportPeriodQuery`, `ReportPaymentQuery`, `ReportOccupancyQuery`, `ReportOutstandingQuery`, `ReportExportQuery`.
+- Tạo `src/api/reports.api.ts`:
+  - Đóng gói 7 endpoint báo cáo: `getDashboard`, `getRevenue`, `getPayments`, `getOccupancy`, `getReservations`, `getOperations`, `getOutstanding`.
+  - Phương thức `exportCsv`: Gửi request với `responseType: 'blob'`, phân tích tiêu đề `Content-Disposition` để nhận tên file CSV chính xác từ máy chủ.
+
+#### 2. Xóa bỏ Mock Data & Nâng cấp Dashboard Đa Vai Trò (`/dashboard`):
+- Xóa sạch toàn bộ mảng dữ liệu mẫu `sampleArrivals`, `sampleDepartures`.
+- Phân luồng giao diện thông minh theo vai trò người dùng (Dynamic Role View):
+  - **Lễ tân & Cấp Quản lý (`ADMIN`, `MANAGER`, `RECEPTIONIST`)**:
+    - Gọi API `/reports/dashboard` theo ngày (mặc định hôm nay, có bộ chọn ngày).
+    - Thẻ thống kê 8 trạng thái phòng thời gian thực: Đang có khách, Sẵn sàng, Phòng trống, Bẩn, Đang dọn, Chờ nghiệm thu, Đang bảo trì, Tạm ngừng phục vụ.
+    - Dự kiến đến (Expected Arrivals) và Dự kiến đi (Expected Departures).
+    - Phân hệ Tài chính nhanh (Financial Snapshot): Chỉ hiển thị cho Quản lý / Admin; tự động ẩn cho Lễ tân theo chính sách bảo mật nội bộ.
+    - Hai bảng nghiệp vụ trực tiếp từ database: Danh sách khách dự kiến đến (`reservationsApi.getAll({ status: 'CONFIRMED' })`) kèm nút Check-in nhanh; Danh sách khách đang lưu trú (`staysApi.getAll({ status: 'CHECKED_IN' })`) kèm nút mở Folio thanh toán.
+  - **Kế toán (`ACCOUNTANT`)**:
+    - Gọi API `/reports/revenue` và `/reports/outstanding` trong 30 ngày gần nhất.
+    - Hiển thị Doanh số phòng ghi nợ, Thực thu ròng tiền mặt & chuyển khoản, Tổng dư nợ chưa quyết toán.
+    - Bảng danh sách Folio còn dư nợ kèm nút điều hướng nhanh sang quầy Thu ngân.
+  - **Buồng phòng (`HOUSEKEEPING`)**:
+    - Gọi API `/reports/operations`.
+    - Thẻ đếm: Phòng bẩn (Dirty), Đang làm vệ sinh (Cleaning), Chờ kiểm tra (Inspection), Phòng sạch đạt chuẩn (Ready).
+    - Nút chuyển nhanh đến Bảng Kanban Buồng phòng.
+  - **Kỹ thuật viên (`TECHNICIAN`)**:
+    - Gọi API `/reports/operations`.
+    - Thẻ đếm: Phòng đang bảo trì, Phòng ngừng phục vụ (OOS), Sự cố mới (Open), Đang xử lý (In-progress), Lệnh khóa phòng (Blocks).
+    - Nút chuyển nhanh đến Bảng Bảo trì Kỹ thuật.
+
+#### 3. Xây dựng Bảng Ma Trận Phòng Vật Lý Trực Quan (`/calendar`):
+- Tạo `src/pages/calendar/RoomMatrixPage.tsx`:
+  - Khung nhìn 7 ngày linh hoạt: Nút Tuần trước, Hôm nay, Tuần sau, và DatePicker chọn ngày chính xác.
+  - Bộ lọc đa tiêu chí: Lọc theo Tầng (Floors), Hạng phòng (Room Types), Trạng thái phòng (Status).
+  - Cột đầu tiên cố định (Sticky Room Column): Hiển thị Số phòng vật lý, Tầng lầu, Mã hạng phòng và Tag trạng thái vận hành hiện tại.
+  - Thanh cuộn ngang mượt mà cho 7 ngày:
+    - Ô có khách lưu trú: Huy hiệu màu xanh lá, tên khách hàng và thời hạn lưu trú (Check-in ➔ Check-out).
+    - Ô phòng bị khóa bảo trì: Huy hiệu màu đỏ, lý do sự cố và mã lệnh khóa.
+    - Ô ngày hiện tại: Hiển thị trạng thái buồng phòng tức thời (Sạch / Bẩn / Đang dọn / Nghiệm thu).
+    - Ô tương lai trống: Huy hiệu xám "Trống / Sẵn sàng".
+  - **Khu vực chuyên biệt "Đặt phòng chưa gán phòng (Unassigned Reservations)"**:
+    - Thu gom toàn bộ các đơn đặt phòng chưa có `roomId` cụ thể.
+    - Hiển thị theo thẻ gọn gàng kèm nút 1-click "Gán phòng & Check-in" điều hướng sang `/stays`.
+  - **Drawer Chi tiết Tương tác (Cell Click Drawer)**:
+    - Nhấp vào bất kỳ ô nào để xem toàn diện thông tin: Phòng vật lý, thông tin khách lưu trú, thời gian nhận/trả phòng, chi tiết phiếu bảo trì.
+    - Nút điều hướng ngữ cảnh: "Xem đặt phòng", "Mở quầy lưu trú", "Mở quản lý bảo trì".
+
+#### 4. Trung Tâm Báo Cáo Điều Hành & Xuất CSV (`/reports`):
+- Tạo `src/pages/reports/ReportsPage.tsx`:
+  - **6 Phân hệ Báo cáo Chuyên sâu**:
+    1. *Doanh thu & Bán phòng (`RevenueReport`)*: Tiền phòng billed, Tiền dịch vụ, Điều chỉnh nợ/có, Ghi nhận ròng, Thực thu ròng, Biến động công nợ, Số lượng giao dịch.
+    2. *Dòng tiền & Thu chi (`PaymentReport`)*: Lọc theo Tiền mặt (CASH) hoặc Chuyển khoản (BANK_TRANSFER); Thống kê Thanh toán, Đặt cọc, Hoàn trả và Thực thu ròng.
+    3. *Công suất phòng & Chỉ số (`OccupancyReport`)*: Lọc theo Hạng phòng; Tỷ lệ lấp đầy (Occupancy Rate), Giá bán bình quân phòng (ADR), Doanh thu trên phòng sẵn có (RevPAR), Phòng-đêm bảo trì. Ẩn các chỉ số tài chính đối với Lễ tân.
+    4. *Đặt phòng & Nguồn khách (`ReservationReport`)*: Thống kê số lượng tạo mới, xác nhận, đã hủy, no-show, check-in/out; Biểu đồ phân bổ kênh đặt phòng (DIRECT, WEBSITE, OTA, WALK_IN, PHONE, OTHER).
+    5. *Vận hành Buồng phòng & Bảo trì (`OperationsReport`)*: Dữ liệu tức thời và hiệu suất kỳ cho Housekeeping & Maintenance.
+    6. *Sổ theo dõi Công nợ (`OutstandingReport`)*: Phải thu khách hàng (Debit), Khách trả thừa (Credit), Bảng phân trang và sắp xếp danh sách Folio chưa tất toán.
+  - **Xử lý số liệu kế toán chuẩn mực**:
+    - Không tính toán lại ADR/RevPAR bằng số thực JavaScript (floating point) mà hiển thị giá trị chuỗi Decimal chính xác từ backend.
+    - Hiển thị rõ ràng "Chưa đủ dữ liệu đêm đã chốt" hoặc "-" khi số liệu là null; không tự ép về 0 hoặc 0%.
+    - Cảnh báo trực quan ghi chú chất lượng dữ liệu (`dataQuality.limitations`) khi có ngày chưa chốt đêm (unclosed days).
+  - **Trích xuất dữ liệu CSV (Export Engine)**:
+    - Nút "Xuất báo cáo CSV" tích hợp cơ chế tải file Blob mượt mà.
+    - Phân quyền chuẩn xác: `ADMIN` và `MANAGER` được xuất cả 4 loại báo cáo; `ACCOUNTANT` được xuất Doanh thu và Dòng tiền; các vai trò khác không hiển thị nút xuất.
+  - **Bộ lọc thời gian toàn cục**:
+    - Khoảng thời gian nửa mở `[startDate, endDate)` có kiểm tra chặn giới hạn tối đa 366 ngày và $startDate < endDate$.
+    - Các nút gán sẵn: 7 ngày qua, 30 ngày qua, Tháng này, Quý này.
+    - Công tắc chuyển đổi gộp nhóm: `Theo ngày` hoặc `Theo tháng`.
+
+#### 5. Cập nhật Định tuyến & Menu:
+- Cập nhật `src/routes/AppRoutes.tsx`:
+  - Thay thế `PhasePlaceholderPage` tại route `/calendar` bằng `<RoomMatrixPage />`.
+  - Thay thế `PhasePlaceholderPage` tại route `/reports` bằng `<ReportsPage />`.
+  - Mở quyền truy cập `/reports` cho tất cả 6 vai trò đã xác thực.
+- Cập nhật `src/layouts/MainLayout.tsx`:
+  - Mở quyền hiển thị menu "Báo cáo điều hành" trên Sidebar cho toàn bộ người dùng đăng nhập.
+
+#### 6. Kết quả Kiểm thử & Đóng gói:
+- `npm run build` (`tsc -b && vite build`): **Biên dịch thành công 100%, 0 lỗi TypeScript**.
+- `npm run lint` (`oxlint`): **0 lỗi linter**.

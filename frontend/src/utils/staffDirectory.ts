@@ -1,7 +1,12 @@
 /**
- * Innvyra PMS - Staff Directory & Formatter
- * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn
+ * Innvyra PMS - Dynamic Staff Directory & Formatter
+ * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn từ API và fallback an toàn
  */
+
+import { useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ROLE_CONFIG, type Role } from '../types/employees.types.ts';
+import { employeesApi } from '../api/employees.api.ts';
 
 export interface StaffMemberInfo {
   id: string;
@@ -11,53 +16,90 @@ export interface StaffMemberInfo {
   color: string;
 }
 
-export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {
-  '1': {
-    id: '1',
-    fullName: 'Nguyễn Minh Anh',
-    roleTitle: 'Quản lý KS',
-    roleCode: 'MANAGER',
-    color: 'blue',
-  },
-  '2': {
-    id: '2',
-    fullName: 'Trần Ngọc Linh',
-    roleTitle: 'Lễ tân',
-    roleCode: 'RECEPTIONIST',
-    color: 'cyan',
-  },
-  '3': {
-    id: '3',
-    fullName: 'Lê Thu Hà',
-    roleTitle: 'Kế toán',
-    roleCode: 'ACCOUNTANT',
-    color: 'green',
-  },
-  '4': {
-    id: '4',
-    fullName: 'Phạm Thị Lan',
-    roleTitle: 'Buồng phòng',
-    roleCode: 'HOUSEKEEPING',
-    color: 'orange',
-  },
-  '5': {
-    id: '5',
-    fullName: 'Hoàng Văn Nam',
-    roleTitle: 'Kỹ thuật viên',
-    roleCode: 'TECHNICIAN',
-    color: 'purple',
-  },
-  '6': {
-    id: '6',
-    fullName: 'System Administrator',
-    roleTitle: 'Quản trị viên',
-    roleCode: 'ADMIN',
-    color: 'red',
-  },
+// In-memory dynamic registry of loaded staff members from API queries
+const dynamicStaffRegistry = new Map<string, StaffMemberInfo>();
+
+/**
+ * Register employee records into the dynamic directory cache
+ */
+export const registerStaffMembers = (
+  employees: Array<{ id: string | bigint | number; fullName: string; role: Role | string }>
+) => {
+  if (!Array.isArray(employees)) return;
+  employees.forEach((emp) => {
+    const idStr = String(emp.id);
+    const roleCode = (emp.role as Role) || 'STAFF';
+    const meta = ROLE_CONFIG[roleCode as Role];
+    dynamicStaffRegistry.set(idStr, {
+      id: idStr,
+      fullName: emp.fullName,
+      roleTitle: meta ? meta.label : roleCode,
+      roleCode,
+      color: meta ? meta.color : 'default',
+    });
+  });
+};
+
+/**
+ * Known baseline staff - empty by default to prevent displaying disguised / guessed roles
+ */
+export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {};
+
+/**
+ * React hook to globally load, cache, and subscribe to staff members.
+ * Any consuming component will automatically re-render when staff members are loaded.
+ */
+export const useStaffDirectory = () => {
+  const { data: staffRes, isLoading, refetch } = useQuery({
+    queryKey: ['staff-directory-global'],
+    queryFn: async () => {
+      // Backend validates limit: max 100
+      const res = await employeesApi.list({ limit: 100 });
+      if (res?.data?.items && Array.isArray(res.data.items)) {
+        registerStaffMembers(res.data.items);
+      }
+      return res;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const staffItems = staffRes?.data?.items;
+
+  // Immediately register in memory if served from React Query cache
+  if (staffItems && Array.isArray(staffItems)) {
+    registerStaffMembers(staffItems);
+  }
+
+  useEffect(() => {
+    if (staffItems && Array.isArray(staffItems)) {
+      registerStaffMembers(staffItems);
+    }
+  }, [staffItems]);
+
+  const getStaff = useCallback(
+    (
+      staffId: string | number | null | undefined,
+      currentUser?: { id?: string; fullName?: string; role?: string } | null
+    ): StaffMemberInfo => {
+      return getStaffDisplay(staffId, currentUser);
+    },
+    // Dependency on staffItems ensures re-evaluation when staff items are fetched
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [staffItems]
+  );
+
+  return {
+    getStaff,
+    isLoading,
+    refetch,
+    staffList: staffItems || [],
+  };
 };
 
 /**
  * Trả về thông tin hiển thị gồm Họ tên, Chức vụ và Màu sắc Tag
+ * Kiểm tra dynamicStaffRegistry -> KNOWN_STAFF_DIRECTORY -> currentUser -> fallback trung tính
  */
 export const getStaffDisplay = (
   staffId: string | number | null | undefined,
@@ -74,41 +116,37 @@ export const getStaffDisplay = (
   }
 
   const idStr = String(staffId);
+
+  // 1. Check dynamic registry first (loaded from API)
+  if (dynamicStaffRegistry.has(idStr)) {
+    return dynamicStaffRegistry.get(idStr)!;
+  }
+
+  // 2. Check baseline directory
   const found = KNOWN_STAFF_DIRECTORY[idStr];
   if (found) {
     return found;
   }
 
+  // 3. Check current user
   if (currentUser && String(currentUser.id) === idStr) {
-    const roleCode = currentUser.role || 'STAFF';
-    const roleTitle =
-      roleCode === 'MANAGER'
-        ? 'Quản lý KS'
-        : roleCode === 'RECEPTIONIST'
-        ? 'Lễ tân'
-        : roleCode === 'ACCOUNTANT'
-        ? 'Kế toán'
-        : roleCode === 'HOUSEKEEPING'
-        ? 'Buồng phòng'
-        : roleCode === 'TECHNICIAN'
-        ? 'Kỹ thuật viên'
-        : roleCode === 'ADMIN'
-        ? 'Quản trị viên'
-        : 'Nhân viên';
+    const roleCode = (currentUser.role as Role) || 'STAFF';
+    const meta = ROLE_CONFIG[roleCode as Role];
 
     return {
       id: idStr,
       fullName: currentUser.fullName || `Nhân viên #${idStr}`,
-      roleTitle,
+      roleTitle: meta ? meta.label : roleCode,
       roleCode,
-      color: 'blue',
+      color: meta ? meta.color : 'blue',
     };
   }
 
+  // 4. Safe neutral fallback for historical or deactivated staff without guessing names
   return {
     id: idStr,
     fullName: `Nhân viên #${idStr}`,
-    roleTitle: 'Nhân sự KS',
+    roleTitle: 'Nhân viên',
     roleCode: 'STAFF',
     color: 'default',
   };
