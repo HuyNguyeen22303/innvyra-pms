@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=553249&floorNumber=-23523&physicalStatus=ACTIVE&housekeepingStatus=INSPECTION&sortBy=roomNumber"
+  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=43638765395&floorNumber=3201&physicalStatus=OUT_OF_SERVICE&housekeepingStatus=CLEANING&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -30,19 +30,19 @@ request:
       disabled: false
       description: ""
     - key: roomTypeId
-      value: "553249"
+      value: "43638765395"
       disabled: false
       description: ""
     - key: floorNumber
-      value: "-23523"
+      value: "3201"
       disabled: false
       description: Signed SMALLINT, -32768–32767; includes basement floors.
     - key: physicalStatus
-      value: ACTIVE
+      value: OUT_OF_SERVICE
       disabled: false
       description: ""
     - key: housekeepingStatus
-      value: INSPECTION
+      value: CLEANING
       disabled: false
       description: ""
     - key: sortBy

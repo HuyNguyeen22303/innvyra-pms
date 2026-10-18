@@ -1,0 +1,70 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Requires X-CSRF-Protection: 1."
+url: "{{baseUrl}}/inventory/categories"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "HOUSEKEEPING",
+      "name": "Housekeeping Supplies",
+      "description": "string"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "example": "HOUSEKEEPING"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "example": "Housekeeping Supplies"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create inventory category.resources/examples
+order: 1000

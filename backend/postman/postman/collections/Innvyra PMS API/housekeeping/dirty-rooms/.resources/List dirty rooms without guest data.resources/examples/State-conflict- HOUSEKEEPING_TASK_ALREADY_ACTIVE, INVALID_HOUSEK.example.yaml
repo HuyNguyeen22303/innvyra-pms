@@ -1,7 +1,7 @@
 $kind: http-example
 name: "State/conflict: HOUSEKEEPING_TASK_ALREADY_ACTIVE, INVALID_HOUSEKEEPING_TRANSITION, HOUSEKEEPING_TASK_CONFLICT, ROOM_NOT_DIRTY, ROOM_UNDER_MAINTENANCE, ROOM_CURRENTLY_OCCUPIED, INVALID_MAINTENANCE_TRANSITION, MAINTENANCE_BLOCK_CONFLICT, MAINTENANCE_AFFECTS_RESERVATIONS, MAINTENANCE_ALREADY_RELEASED, OPERATIONS_CONFLICT"
 request:
-  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=-23523&sortBy=roomNumber"
+  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=3201&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -13,7 +13,7 @@ request:
     page: "1"
     limit: "20"
     sortOrder: asc
-    floorNumber: "-23523"
+    floorNumber: "3201"
     sortBy: roomNumber
   body:
     type: text

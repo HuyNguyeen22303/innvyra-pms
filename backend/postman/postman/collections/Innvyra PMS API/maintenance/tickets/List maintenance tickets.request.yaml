@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Tickets: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED. OPEN/ASSIGNED can be CANCELLED after all linked blocks are ended. Reporting/resolving a ticket never releases inventory. Only the assignee starts/resolves. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
-url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=OPEN&priority=HIGH&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=ASSIGNED&priority=NORMAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
 method: GET
 headers:
   Accept: application/json
@@ -70,7 +70,7 @@ queryParams:
         }
       }
   - key: status
-    value: OPEN
+    value: ASSIGNED
     disabled: false
     description: ""
     $type: |-
@@ -91,7 +91,7 @@ queryParams:
         }
       }
   - key: priority
-    value: HIGH
+    value: NORMAL
     disabled: false
     description: ""
     $type: |-

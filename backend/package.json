@@ -22,6 +22,7 @@
     "db:inspect": "tsx scripts/inspect-database.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx prisma/seed.ts",
+    "seed:inventory": "tsx scripts/seed-inventory.ts",
     "create:admin": "tsx scripts/create-admin.ts"
   },
   "dependencies": {

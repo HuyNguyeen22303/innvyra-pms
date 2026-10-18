@@ -1,0 +1,184 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/adjustments"
+  method: POST
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: Required custom header for CSRF protection on mutating requests.
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "itemId": "1",
+        "actualQuantity": "95.00",
+        "reason": "Stock discrepancy found during monthly count",
+        "adjustmentNumber": "ADJ-20261018-001"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "id": "1",
+          "hotelId": "1",
+          "adjustmentNumber": "ADJ-20261018-001",
+          "itemId": "1",
+          "item": {
+            "id": "1",
+            "code": "string",
+            "name": "string",
+            "unit": "string"
+          },
+          "systemQuantity": "100.00",
+          "actualQuantity": "95.00",
+          "difference": "-5.00",
+          "reason": "Damaged bottles during transport",
+          "createdBy": "1",
+          "createdAt": "1973-03-22T08:54:36.937Z",
+          "creator": {
+            "id": "1",
+            "fullName": "string",
+            "username": "string"
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "hotelId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "adjustmentNumber": {
+                "type": "string",
+                "example": "ADJ-20261018-001"
+              },
+              "itemId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "item": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "1",
+                    "description": "Unsigned BIGINT decimal string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                }
+              },
+              "systemQuantity": {
+                "type": "string",
+                "example": "100.00"
+              },
+              "actualQuantity": {
+                "type": "string",
+                "example": "95.00"
+              },
+              "difference": {
+                "type": "string",
+                "example": "-5.00"
+              },
+              "reason": {
+                "type": "string",
+                "example": "Damaged bottles during transport"
+              },
+              "createdBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "creator": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "1",
+                    "description": "Unsigned BIGINT decimal string"
+                  },
+                  "fullName": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "hotelId",
+              "adjustmentNumber",
+              "itemId",
+              "item",
+              "systemQuantity",
+              "actualQuantity",
+              "difference",
+              "reason",
+              "createdBy",
+              "createdAt"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

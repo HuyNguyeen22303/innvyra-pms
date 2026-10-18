@@ -20,6 +20,7 @@ import type { HousekeepingRepository } from './modules/housekeeping/housekeeping
 import type { MaintenanceRepository } from './modules/maintenance/maintenance.types.js';
 import type { ReportRepository } from './modules/reports/report.types.js';
 import type { EmployeeRepository } from './modules/employees/employee.types.js';
+import type { InventoryRepository } from './modules/inventory/inventory.types.js';
 export type OperationsRepositories = {
   housekeeping: HousekeepingRepository;
   maintenance: MaintenanceRepository;
@@ -38,6 +39,7 @@ export function createApp(
   operations?: OperationsRepositories,
   reports?: ReportRepository,
   employees?: EmployeeRepository,
+  inventory?: InventoryRepository,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -79,6 +81,7 @@ export function createApp(
       operations,
       reports,
       employees,
+      inventory,
     ),
   );
   app.use(notFound);

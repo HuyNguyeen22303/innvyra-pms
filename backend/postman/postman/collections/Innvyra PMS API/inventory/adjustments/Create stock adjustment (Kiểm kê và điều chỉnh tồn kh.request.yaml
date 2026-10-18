@@ -1,0 +1,76 @@
+$kind: http-request
+name: Create stock adjustment (Kiểm kê và điều chỉnh tồn kho)
+description: "Roles: ADMIN, MANAGER. Records physical inventory count, calculates discrepancy, updates stock and creates movement history."
+url: "{{baseUrl}}/inventory/adjustments"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "itemId": "1",
+      "actualQuantity": "95.00",
+      "reason": "Stock discrepancy found during monthly count",
+      "adjustmentNumber": "ADJ-20261018-001"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "adjustmentNumber": {
+          "type": "string",
+          "maxLength": 50,
+          "example": "ADJ-20261018-001"
+        },
+        "itemId": {
+          "type": "string",
+          "example": "1"
+        },
+        "actualQuantity": {
+          "type": "string",
+          "example": "95.00"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "example": "Stock discrepancy found during monthly count"
+        }
+      },
+      "required": [
+        "itemId",
+        "actualQuantity",
+        "reason"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create stock adjustment (Kiểm kê và điều chỉnh tồn kh.resources/examples
+order: 1000

@@ -1,0 +1,58 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, ACCOUNTANT."
+url: "{{baseUrl}}/inventory/suppliers?page=1&limit=20&search=string&isActive=true"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: ""
+    $type: string
+  - key: isActive
+    value: "true"
+    disabled: false
+    description: ""
+    $type: boolean
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List suppliers.resources/examples
+order: 2000

@@ -1,0 +1,111 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, HOUSEKEEPING, TECHNICIAN. Decreases stock and logs movements in an atomic transaction with row locking. Rollbacks entirely if any item has insufficient stock."
+url: "{{baseUrl}}/inventory/issues"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "department": "HOUSEKEEPING",
+      "items": [
+        {
+          "itemId": "1",
+          "quantity": "20.00",
+          "notes": "string"
+        }
+      ],
+      "issueNumber": "ISS-20261018-001",
+      "issueDate": "1950-09-14T02:36:44.447Z",
+      "purpose": "Daily turnover replenishment",
+      "notes": "string"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "issueNumber": {
+          "type": "string",
+          "maxLength": 50,
+          "example": "ISS-20261018-001"
+        },
+        "issueDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "department": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "example": "HOUSEKEEPING"
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 500,
+          "example": "Daily turnover replenishment"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string",
+                "example": "1"
+              },
+              "quantity": {
+                "type": "string",
+                "example": "20.00"
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "itemId",
+              "quantity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "department",
+        "items"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create stock issue (Xuất kho).resources/examples
+order: 1000

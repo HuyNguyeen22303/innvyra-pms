@@ -1,7 +1,7 @@
 $kind: http-example
 name: "FORBIDDEN: current role or CSRF/origin check denied"
 request:
-  url: "{{baseUrl}}/service-orders?page=1&limit=20&reservationId=101&stayId=101&status=COMPLETED&sortBy=createdAt&sortOrder=asc"
+  url: "{{baseUrl}}/service-orders?page=1&limit=20&reservationId=101&stayId=101&status=CANCELLED&sortBy=createdAt&sortOrder=asc"
   method: GET
   headers:
     - key: Accept
@@ -14,7 +14,7 @@ request:
     limit: "20"
     reservationId: "101"
     stayId: "101"
-    status: COMPLETED
+    status: CANCELLED
     sortBy: createdAt
     sortOrder: asc
   body:

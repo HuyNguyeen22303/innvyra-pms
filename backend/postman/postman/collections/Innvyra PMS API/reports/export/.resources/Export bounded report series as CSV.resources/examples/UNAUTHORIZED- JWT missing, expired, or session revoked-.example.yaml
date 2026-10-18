@@ -1,7 +1,7 @@
 $kind: http-example
 name: "UNAUTHORIZED: JWT missing, expired, or session revoked."
 request:
-  url: "{{baseUrl}}/reports/export?type=revenue&startDate=2018-07-12&endDate=2018-07-12&groupBy=day&roomTypeId=796483838290050180&paymentMethod=CASH"
+  url: "{{baseUrl}}/reports/export?type=payments&startDate=1965-07-06&endDate=1965-07-06&groupBy=day&roomTypeId=10646658400037829&paymentMethod=BANK_TRANSFER"
   method: GET
   headers:
     - key: Accept
@@ -11,15 +11,15 @@ request:
       description: "Added as a part of security scheme: bearer"
   queryParams:
     - key: type
-      value: revenue
+      value: payments
       disabled: false
       description: ""
     - key: startDate
-      value: 2018-07-12
+      value: 1965-07-06
       disabled: false
       description: Inclusive hotel business date.
     - key: endDate
-      value: 2018-07-12
+      value: 1965-07-06
       disabled: false
       description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
     - key: groupBy
@@ -27,11 +27,11 @@ request:
       disabled: false
       description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
     - key: roomTypeId
-      value: "796483838290050180"
+      value: "10646658400037829"
       disabled: false
       description: Must belong to authenticated hotel; foreign IDs return 404.
     - key: paymentMethod
-      value: CASH
+      value: BANK_TRANSFER
       disabled: false
       description: Filters cash activity only. Cumulative balance always includes ALL methods.
   body:

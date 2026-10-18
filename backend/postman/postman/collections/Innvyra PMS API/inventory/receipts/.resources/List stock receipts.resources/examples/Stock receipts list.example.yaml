@@ -1,0 +1,366 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/receipts?page=1&limit=20&supplierId=1&startDate=1965-07-06&endDate=1965-07-06"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    page: "1"
+    limit: "20"
+    supplierId: "1"
+    startDate: 1965-07-06
+    endDate: 1965-07-06
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "items": [
+            {
+              "id": "1",
+              "hotelId": "1",
+              "receiptNumber": "REC-20261018-001",
+              "receiptDate": "1957-04-17T22:41:28.643Z",
+              "totalAmount": "1500000.00",
+              "createdBy": "1",
+              "items": [
+                {
+                  "id": "1",
+                  "itemId": "1",
+                  "item": {
+                    "id": "1",
+                    "code": "string",
+                    "name": "string",
+                    "unit": "string"
+                  },
+                  "quantity": "100.00",
+                  "unitPrice": "15000.00",
+                  "lineTotal": "1500000.00",
+                  "createdAt": "2007-04-04T13:10:25.449Z",
+                  "notes": "string"
+                },
+                {
+                  "id": "1",
+                  "itemId": "1",
+                  "item": {
+                    "id": "1",
+                    "code": "string",
+                    "name": "string",
+                    "unit": "string"
+                  },
+                  "quantity": "100.00",
+                  "unitPrice": "15000.00",
+                  "lineTotal": "1500000.00",
+                  "createdAt": "2002-07-22T08:30:13.858Z",
+                  "notes": "string"
+                }
+              ],
+              "createdAt": "2012-02-07T02:05:28.512Z",
+              "supplierId": "string",
+              "supplier": {
+                "id": "1",
+                "code": "string",
+                "name": "string"
+              },
+              "notes": "string",
+              "creator": {
+                "id": "1",
+                "fullName": "string",
+                "username": "string"
+              },
+              "updatedAt": "1979-10-31T02:21:20.346Z"
+            },
+            {
+              "id": "1",
+              "hotelId": "1",
+              "receiptNumber": "REC-20261018-001",
+              "receiptDate": "2005-12-30T22:01:25.230Z",
+              "totalAmount": "1500000.00",
+              "createdBy": "1",
+              "items": [
+                {
+                  "id": "1",
+                  "itemId": "1",
+                  "item": {
+                    "id": "1",
+                    "code": "string",
+                    "name": "string",
+                    "unit": "string"
+                  },
+                  "quantity": "100.00",
+                  "unitPrice": "15000.00",
+                  "lineTotal": "1500000.00",
+                  "createdAt": "1970-02-20T16:41:29.635Z",
+                  "notes": "string"
+                },
+                {
+                  "id": "1",
+                  "itemId": "1",
+                  "item": {
+                    "id": "1",
+                    "code": "string",
+                    "name": "string",
+                    "unit": "string"
+                  },
+                  "quantity": "100.00",
+                  "unitPrice": "15000.00",
+                  "lineTotal": "1500000.00",
+                  "createdAt": "2020-10-09T13:28:58.310Z",
+                  "notes": "string"
+                }
+              ],
+              "createdAt": "1998-11-23T01:49:25.892Z",
+              "supplierId": "string",
+              "supplier": {
+                "id": "1",
+                "code": "string",
+                "name": "string"
+              },
+              "notes": "string",
+              "creator": {
+                "id": "1",
+                "fullName": "string",
+                "username": "string"
+              },
+              "updatedAt": "2014-03-11T02:10:07.289Z"
+            }
+          ],
+          "pagination": {
+            "page": 4508,
+            "limit": 2828,
+            "total": 2608,
+            "totalPages": 9679
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "receiptNumber": {
+                      "type": "string",
+                      "example": "REC-20261018-001"
+                    },
+                    "receiptDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "supplierId": {
+                      "type": "string"
+                    },
+                    "supplier": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "1",
+                          "description": "Unsigned BIGINT decimal string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "totalAmount": {
+                      "type": "string",
+                      "example": "1500000.00"
+                    },
+                    "notes": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "creator": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "1",
+                          "description": "Unsigned BIGINT decimal string"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "example": "1",
+                            "description": "Unsigned BIGINT decimal string"
+                          },
+                          "itemId": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "example": "1",
+                            "description": "Unsigned BIGINT decimal string"
+                          },
+                          "item": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "example": "1",
+                                "description": "Unsigned BIGINT decimal string"
+                              },
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "unit": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "example": "100.00"
+                          },
+                          "unitPrice": {
+                            "type": "string",
+                            "example": "15000.00"
+                          },
+                          "lineTotal": {
+                            "type": "string",
+                            "example": "1500000.00"
+                          },
+                          "notes": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "itemId",
+                          "item",
+                          "quantity",
+                          "unitPrice",
+                          "lineTotal",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "receiptNumber",
+                    "receiptDate",
+                    "totalAmount",
+                    "createdBy",
+                    "items",
+                    "createdAt"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

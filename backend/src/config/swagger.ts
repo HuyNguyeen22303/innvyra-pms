@@ -6,6 +6,7 @@ import { billingPaths, billingSchemas } from './billing.openapi.js';
 import { operationsPaths, operationsSchemas } from './operations.openapi.js';
 import { reportPaths, reportSchemas } from './reports.openapi.js';
 import { employeePaths, employeeSchemas } from './employees.openapi.js';
+import { inventoryPaths, inventorySchemas } from './inventory.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -93,6 +94,11 @@ export const openApiDocument = {
     { name: 'Folios' },
     { name: 'Payments' },
     { name: 'Employees' },
+    {
+      name: 'Inventory',
+      description:
+        'Inventory management: items, categories, suppliers, receipts, issues, adjustments, movements and low-stock alerts.',
+    },
   ],
   components: {
     securitySchemes: {
@@ -114,6 +120,7 @@ export const openApiDocument = {
       ...operationsSchemas,
       ...reportSchemas,
       ...employeeSchemas,
+      ...inventorySchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -163,6 +170,7 @@ export const openApiDocument = {
     ...roomPaths,
     ...guestPaths,
     ...employeePaths,
+    ...inventoryPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

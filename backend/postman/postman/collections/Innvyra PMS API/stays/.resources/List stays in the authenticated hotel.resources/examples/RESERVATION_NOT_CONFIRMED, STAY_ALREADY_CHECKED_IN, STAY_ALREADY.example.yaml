@@ -1,7 +1,7 @@
 $kind: http-example
 name: RESERVATION_NOT_CONFIRMED, STAY_ALREADY_CHECKED_IN, STAY_ALREADY_CHECKED_OUT, ROOM_ALREADY_OCCUPIED, ROOM_NOT_READY, ROOM_UNAVAILABLE, ROOM_TYPE_MISMATCH, INVALID_CHECKIN_DATE, INVALID_CHECKOUT_OPERATION, INVALID_ROOM_TRANSFER, CROSS_ROOM_TYPE_TRANSFER_NOT_SUPPORTED, STAY_CONFLICT
 request:
-  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=2018-07-12&checkOutDate=2018-07-12&search=st&sortBy=actualCheckinAt&sortOrder=desc"
+  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1965-07-06&checkOutDate=1965-07-06&search=string&sortBy=actualCheckinAt&sortOrder=desc"
   method: GET
   headers:
     - key: Accept
@@ -31,15 +31,15 @@ request:
       disabled: false
       description: Exact current or last room number
     - key: checkInDate
-      value: 2018-07-12
+      value: 1965-07-06
       disabled: false
       description: Actual check-in hotel-local date
     - key: checkOutDate
-      value: 2018-07-12
+      value: 1965-07-06
       disabled: false
       description: Actual checkout hotel-local date
     - key: search
-      value: st
+      value: string
       disabled: false
       description: Confirmation code substring
     - key: sortBy

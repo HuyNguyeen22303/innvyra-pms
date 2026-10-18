@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=RELEASED&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
+  url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=ACTIVE&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
   method: GET
   headers:
     - key: Accept
@@ -22,7 +22,7 @@ request:
       disabled: false
       description: ""
     - key: status
-      value: RELEASED
+      value: ACTIVE
       disabled: false
       description: ""
     - key: roomId
@@ -65,14 +65,14 @@ response:
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "2001-11-21T07:08:13.378Z",
-              "updatedAt": "1956-02-04T07:25:33.046Z",
+              "createdAt": "1959-11-17T09:07:17.389Z",
+              "updatedAt": "2023-12-22T03:43:23.695Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 8616,
+                "floorNumber": 1615,
                 "roomTypeId": "301",
-                "physicalStatus": "MAINTENANCE",
+                "physicalStatus": "ACTIVE",
                 "housekeepingStatus": "READY",
                 "isActive": false
               },
@@ -83,38 +83,38 @@ response:
               "reason": "string",
               "createdBy": "301",
               "releasedBy": "301",
-              "releasedAt": "1958-03-30T01:18:13.206Z"
+              "releasedAt": "2026-03-03T23:08:28.527Z"
             },
             {
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "2001-11-09T18:41:55.280Z",
-              "updatedAt": "1995-02-16T11:50:33.968Z",
+              "createdAt": "1977-08-29T23:02:03.583Z",
+              "updatedAt": "1972-09-06T21:51:00.338Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 3357,
+                "floorNumber": 1452,
                 "roomTypeId": "301",
                 "physicalStatus": "MAINTENANCE",
-                "housekeepingStatus": "INSPECTION",
-                "isActive": false
+                "housekeepingStatus": "READY",
+                "isActive": true
               },
               "maintenanceTicketId": "301",
               "startDate": "2026-11-01",
               "endDate": "2026-11-01",
-              "status": "RELEASED",
+              "status": "CANCELLED",
               "reason": "string",
               "createdBy": "301",
               "releasedBy": "301",
-              "releasedAt": "1977-11-27T05:59:30.708Z"
+              "releasedAt": "1958-07-31T19:40:38.377Z"
             }
           ],
           "pagination": {
-            "page": 5466,
-            "limit": 4667,
-            "total": 9025,
-            "totalPages": 7441
+            "page": 8286,
+            "limit": 3882,
+            "total": 7611,
+            "totalPages": 226
           }
         }
       }
