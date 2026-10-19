@@ -239,14 +239,16 @@ export const ServiceOrdersTab: React.FC = () => {
 
   const columns: ColumnsType<ServiceOrderItem> = [
     {
-      title: 'Mã yêu cầu',
+      title: <span style={{ whiteSpace: 'nowrap' }}>Mã yêu cầu</span>,
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 120,
       render: (id: string) => (
-        <Text strong style={{ color: '#1b4d3e', fontFamily: 'monospace' }}>
-          #{id}
-        </Text>
+        <span style={{ whiteSpace: 'nowrap' }}>
+          <Text strong style={{ color: '#1b4d3e', fontFamily: 'monospace' }}>
+            #{id}
+          </Text>
+        </span>
       ),
     },
     {

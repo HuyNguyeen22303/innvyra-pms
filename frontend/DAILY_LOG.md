@@ -1032,3 +1032,30 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript**.
   - `npm run lint` (`oxlint`): **0 cảnh báo / 0 lỗi linter**.
 
+---
+
+#### Phase 2.2: Tinh chỉnh Chi Tiết Theo Phản Hồi Trực Quan (Services, Maintenance, Inventory Overview & Reports):
+
+- **Phát hiện & Khắc phục 4 vấn đề giao diện thực tế**:
+  1. **Quản lý Dịch vụ (`ServiceOrdersTab.tsx`)**:
+     - *Hiện tượng*: Cột Mã yêu cầu hiển thị rớt dòng thành 2 hàng (`#2\n2`) và tiêu đề cột bị bẻ gãy (`Mã\nyêu\ncầu`).
+     - *Khắc phục*: Tăng `width: 120`, bọc `title` và `render` trong container `whiteSpace: 'nowrap'` giúp mã và tiêu đề luôn thẳng hàng, không bao giờ bị bẻ gãy.
+  2. **Bảo trì Kỹ thuật (`MaintenancePage.tsx`)**:
+     - *Hiện tượng*: Nút `[Khóa phòng bảo trì]` ở header bị đẩy lệch tràn mép phải màn hình mobile do bọc trong `<Space>` không có wrap.
+     - *Khắc phục*: Cấu hình `<Space wrap size={[8, 8]} style={{ width: screens.xs ? '100%' : 'auto' }}>`, cho phép các nút tự động xuống hàng gọn gàng khi bề ngang hẹp, không còn hiện tượng tràn viền.
+  3. **Quản lý Vật tư & Kho (`InventoryOverviewTab.tsx`)**:
+     - *Hiện tượng*: Tiêu đề "Cảnh báo vật tư" bị đè dính vào nút "Tạo phiếu nhập kho ->"; "Thống kê theo Nhóm" bị đè vào "Xem bảng vật tư ->" do thuộc tính `extra` của Ant Design Card head không tự ngắt dòng.
+     - *Khắc phục*: Chuyển nút hành động vào chung container flex của `title` với `justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8`, lược bỏ prop `extra`. Khi màn hình hẹp, nút hành động tự động rớt xuống dòng thứ 2 với khoảng cách thoáng đãng, loại bỏ 100% tình trạng chồng chữ.
+  4. **Báo cáo & Phân tích (`ReportsPage.tsx` & `BarComparisonChart.tsx` & `index.css`)**:
+     - *Hiện tượng*: Tiêu đề các thẻ biểu đồ và số dư công nợ bị cắt cụt bằng dấu ba chấm (`...`); ký hiệu tiền tệ `₫` bị rớt dòng đơn lẻ (`5.270.000\nđ`); Y-axis và Legend của biểu đồ bị tràn hẹp mép trái.
+     - *Khắc phục*:
+       - Bổ sung CSS toàn cục trong `@media (max-width: 767px)` cho `.ant-card-head-title` với `white-space: normal !important; text-overflow: unset !important; overflow: visible !important;` và `.ant-card-head-wrapper { flex-wrap: wrap !important; }`.
+       - Cập nhật hàm `formatVnd`: Sử dụng non-breaking space `\u00A0₫` giúp số tiền và ký hiệu `₫` luôn gắn liền không thể tách rời.
+       - Tích hợp `Grid.useBreakpoint()` trong `ReportsPage.tsx`, rút gọn linh hoạt các tiêu đề dài trên màn hình mobile hẹp.
+       - Tăng `padding.left` từ 65px lên 85px trong `BarComparisonChart.tsx` để nhãn trục Y chứa số tiền lớn không bị che khuất; cho phép Legend tự động wrap và căn lề tự nhiên.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% thành công, 0 lỗi TypeScript**.
+  - `npm run lint`: **0 lỗi linter**.
+
+

@@ -40,7 +40,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
   height = 280,
 }) => {
   const chartHeight = height;
-  const padding = { top: 30, right: 24, bottom: 45, left: 65 };
+  const padding = { top: 30, right: 24, bottom: 45, left: 85 };
   const innerHeight = chartHeight - padding.top - padding.bottom;
 
   // Calculate scales
@@ -82,12 +82,14 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
       <div
         style={{
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           alignItems: 'center',
-          gap: 20,
+          flexWrap: 'wrap',
+          gap: 16,
           marginBottom: 12,
+          paddingLeft: 4,
           paddingRight: 8,
-          fontSize: 13,
+          fontSize: 12,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -100,7 +102,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
               display: 'inline-block',
             }}
           />
-          <Text strong style={{ color: '#475569' }}>
+          <Text strong style={{ color: '#475569', whiteSpace: 'nowrap' }}>
             {series1Label}
           </Text>
         </div>
@@ -114,7 +116,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
               display: 'inline-block',
             }}
           />
-          <Text strong style={{ color: '#475569' }}>
+          <Text strong style={{ color: '#475569', whiteSpace: 'nowrap' }}>
             {series2Label}
           </Text>
         </div>

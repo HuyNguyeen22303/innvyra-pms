@@ -387,22 +387,33 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
         <Col xs={24} lg={14}>
           <Card
             title={
-              <Space>
-                <AlertOutlined style={{ color: '#d97706' }} />
-                <span>Cảnh báo vật tư dưới ngưỡng tối thiểu ({lowStockTotal})</span>
-              </Space>
-            }
-            extra={
-              onNavigateTab && (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => onNavigateTab('receipts')}
-                  style={{ color: '#1b4d3e', padding: 0 }}
-                >
-                  Tạo phiếu nhập kho &rarr;
-                </Button>
-              )
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  width: '100%',
+                }}
+              >
+                <Space size={6}>
+                  <AlertOutlined style={{ color: '#d97706' }} />
+                  <span style={{ fontSize: screens.xs ? 13 : 14 }}>
+                    Cảnh báo vật tư dưới ngưỡng tối thiểu ({lowStockTotal})
+                  </span>
+                </Space>
+                {onNavigateTab && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => onNavigateTab('receipts')}
+                    style={{ color: '#1b4d3e', padding: 0, fontSize: 12, whiteSpace: 'nowrap' }}
+                  >
+                    Tạo phiếu nhập kho &rarr;
+                  </Button>
+                )}
+              </div>
             }
             style={{ borderRadius: 8, height: '100%' }}
           >
@@ -429,22 +440,33 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
         <Col xs={24} lg={10}>
           <Card
             title={
-              <Space>
-                <AppstoreOutlined style={{ color: '#1b4d3e' }} />
-                <span>Thống kê theo Nhóm Danh mục ({summary?.totalCategories ?? 0})</span>
-              </Space>
-            }
-            extra={
-              onNavigateTab && (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => onNavigateTab('items')}
-                  style={{ color: '#1b4d3e', padding: 0 }}
-                >
-                  Xem bảng vật tư &rarr;
-                </Button>
-              )
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  width: '100%',
+                }}
+              >
+                <Space size={6}>
+                  <AppstoreOutlined style={{ color: '#1b4d3e' }} />
+                  <span style={{ fontSize: screens.xs ? 13 : 14 }}>
+                    Thống kê theo Nhóm Danh mục ({summary?.totalCategories ?? 0})
+                  </span>
+                </Space>
+                {onNavigateTab && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => onNavigateTab('items')}
+                    style={{ color: '#1b4d3e', padding: 0, fontSize: 12, whiteSpace: 'nowrap' }}
+                  >
+                    Xem bảng vật tư &rarr;
+                  </Button>
+                )}
+              </div>
             }
             style={{ borderRadius: 8, height: '100%' }}
           >

@@ -16,6 +16,7 @@ import {
   Radio,
   Statistic,
   message,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -52,6 +53,7 @@ const { RangePicker } = DatePicker;
 export const ReportsPage: React.FC = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const screens = Grid.useBreakpoint();
   const userRole = user?.role || '';
 
   // Role permissions
@@ -122,7 +124,7 @@ export const ReportsPage: React.FC = () => {
     if (value === undefined || value === null) return '-';
     const num = typeof value === 'number' ? value : parseFloat(value);
     if (isNaN(num)) return '-';
-    return `${num.toLocaleString('vi-VN')} ₫`;
+    return `${num.toLocaleString('vi-VN')}\u00A0₫`;
   };
 
   // ----------------------------------------------------
@@ -484,10 +486,12 @@ export const ReportsPage: React.FC = () => {
         {balance && (
           <Card
             title={
-              <Space>
+              <Space wrap size={6}>
                 <DollarOutlined style={{ color: '#1b4d3e' }} />
-                <Text strong>Tình trạng số dư công nợ toàn hệ thống (Cumulative Balance)</Text>
-                <Tag color="geekblue">{balance.folioCount} folios có số dư</Tag>
+                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                  {screens.xs ? 'Số dư công nợ toàn hệ thống' : 'Tình trạng số dư công nợ toàn hệ thống (Cumulative Balance)'}
+                </Text>
+                <Tag color="geekblue" style={{ margin: 0 }}>{balance.folioCount} folios có số dư</Tag>
               </Space>
             }
             size="small"
@@ -495,26 +499,32 @@ export const ReportsPage: React.FC = () => {
           >
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={8}>
-                <Text type="secondary">Tổng số dư công nợ tích lũy:</Text>{' '}
-                <Text strong style={{ fontSize: 16 }}>
-                  {formatVnd(balance.outstandingBalance)}
-                </Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                  <Text type="secondary">Tổng số dư công nợ tích lũy:</Text>
+                  <Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>
+                    {formatVnd(balance.outstandingBalance)}
+                  </Text>
+                </div>
               </Col>
               <Col xs={24} sm={8}>
-                <Text type="secondary">Phải thu từ khách (Nợ):</Text>{' '}
-                <Text strong style={{ color: '#cf1322', fontSize: 16 }}>
-                  {formatVnd(balance.accountsReceivable)}
-                </Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                  <Text type="secondary">Phải thu từ khách (Nợ):</Text>
+                  <Text strong style={{ color: '#cf1322', fontSize: 16, whiteSpace: 'nowrap' }}>
+                    {formatVnd(balance.accountsReceivable)}
+                  </Text>
+                </div>
               </Col>
               <Col xs={24} sm={8}>
-                <Text type="secondary">Khách trả thừa / Credit:</Text>{' '}
-                <Text strong style={{ color: '#389e0d', fontSize: 16 }}>
-                  {formatVnd(balance.customerCredits)}
-                </Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                  <Text type="secondary">Khách trả thừa / Credit:</Text>
+                  <Text strong style={{ color: '#389e0d', fontSize: 16, whiteSpace: 'nowrap' }}>
+                    {formatVnd(balance.customerCredits)}
+                  </Text>
+                </div>
               </Col>
               <Col span={24}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  * Thời điểm chốt số dư: <Text code>{dayjs(balance.cutoffExclusive).format('DD/MM/YYYY HH:mm:ss')}</Text> (Gồm tất cả bút toán phát sinh trước thời điểm này).
+                  * Thời điểm chốt số dư: <Text code style={{ whiteSpace: 'nowrap' }}>{dayjs(balance.cutoffExclusive).format('DD/MM/YYYY HH:mm:ss')}</Text> (Gồm tất cả bút toán phát sinh trước thời điểm này).
                 </Text>
               </Col>
             </Row>
@@ -526,9 +536,11 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={15}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <BarChartOutlined style={{ color: '#1b4d3e' }} />
-                  <Text strong>So sánh Doanh thu ghi nhận vs Dòng tiền thực thu ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                    {screens.xs ? 'Doanh thu vs Thực thu' : `So sánh Doanh thu ghi nhận vs Dòng tiền thực thu (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+                  </Text>
                 </Space>
               }
               size="small"
@@ -548,9 +560,9 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={9}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <PieChartOutlined style={{ color: '#1890ff' }} />
-                  <Text strong>Cơ cấu doanh thu kỳ này</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Cơ cấu doanh thu kỳ này</Text>
                 </Space>
               }
               size="small"
@@ -749,9 +761,11 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={15}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <BarChartOutlined style={{ color: '#1b4d3e' }} />
-                  <Text strong>So sánh Tiền mặt vs Chuyển khoản ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                    {screens.xs ? 'Tiền mặt vs Chuyển khoản' : `So sánh Tiền mặt vs Chuyển khoản (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+                  </Text>
                 </Space>
               }
               size="small"
@@ -771,9 +785,9 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={9}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <PieChartOutlined style={{ color: '#096dd9' }} />
-                  <Text strong>Tỷ trọng phương thức thanh toán</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Tỷ trọng phương thức thanh toán</Text>
                 </Space>
               }
               size="small"
@@ -1039,9 +1053,11 @@ export const ReportsPage: React.FC = () => {
         {/* Occupancy Chart */}
         <Card
           title={
-            <Space>
+            <Space wrap size={6}>
               <BarChartOutlined style={{ color: '#1b4d3e' }} />
-              <Text strong>Biểu đồ so sánh Phòng có khách vs Phòng sẵn sàng bán ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+              <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                {screens.xs ? 'Phòng có khách vs Sẵn bán' : `Biểu đồ so sánh Phòng có khách vs Phòng sẵn sàng bán (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+              </Text>
             </Space>
           }
           size="small"
@@ -1237,9 +1253,11 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={15}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <BarChartOutlined style={{ color: '#1b4d3e' }} />
-                  <Text strong>So sánh Lượt đặt tạo mới vs Check-in thực tế ({groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                    {screens.xs ? 'Đặt mới vs Check-in' : `So sánh Lượt đặt tạo mới vs Check-in thực tế (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+                  </Text>
                 </Space>
               }
               size="small"
@@ -1259,9 +1277,9 @@ export const ReportsPage: React.FC = () => {
           <Col xs={24} lg={9}>
             <Card
               title={
-                <Space>
+                <Space wrap size={6}>
                   <PieChartOutlined style={{ color: '#1890ff' }} />
-                  <Text strong>Cơ cấu nguồn đặt phòng (Booking Channels)</Text>
+                  <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Cơ cấu nguồn đặt phòng</Text>
                 </Space>
               }
               size="small"
@@ -1349,9 +1367,11 @@ export const ReportsPage: React.FC = () => {
         {hk && (
           <Card
             title={
-              <Space>
+              <Space wrap size={6}>
                 <SyncOutlined style={{ color: '#1b4d3e' }} />
-                <Text strong>Vận hành Buồng phòng (Housekeeping Performance)</Text>
+                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                  {screens.xs ? 'Vận hành Buồng phòng' : 'Vận hành Buồng phòng (Housekeeping Performance)'}
+                </Text>
               </Space>
             }
             style={{ marginBottom: 20, borderRadius: 8 }}
@@ -1422,9 +1442,11 @@ export const ReportsPage: React.FC = () => {
         {maint && (
           <Card
             title={
-              <Space>
+              <Space wrap size={6}>
                 <ToolOutlined style={{ color: '#d46b08' }} />
-                <Text strong>Bảo trì & Kỹ thuật phòng (Maintenance Performance)</Text>
+                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                  {screens.xs ? 'Bảo trì & Kỹ thuật' : 'Bảo trì & Kỹ thuật phòng (Maintenance Performance)'}
+                </Text>
               </Space>
             }
             style={{ borderRadius: 8 }}
@@ -1607,11 +1629,11 @@ export const ReportsPage: React.FC = () => {
 
         <Card
           title={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Space>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <Space wrap size={6}>
                 <FileTextOutlined style={{ color: '#1b4d3e' }} />
-                <Text strong>Danh sách Folio còn số dư công nợ</Text>
-                <Tag color="geekblue">{pagination.total} folios</Tag>
+                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Danh sách Folio còn số dư công nợ</Text>
+                <Tag color="geekblue" style={{ margin: 0 }}>{pagination.total} folios</Tag>
               </Space>
             </div>
           }
@@ -1726,7 +1748,7 @@ export const ReportsPage: React.FC = () => {
             </Space>
           </Col>
 
-          <Col xs={24} lg={10} style={{ textAlign: 'right' }}>
+          <Col xs={24} lg={10} style={{ textAlign: screens.xs ? 'left' : 'right' }}>
             {['revenue', 'payments', 'occupancy', 'reservations'].includes(activeTab) && (
               <Space wrap>
                 <Text strong>Gộp nhóm chuỗi dữ liệu:</Text>

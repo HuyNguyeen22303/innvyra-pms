@@ -822,7 +822,7 @@ export const MaintenancePage: React.FC = () => {
           </Text>
         </div>
 
-        <Space>
+        <Space wrap size={[8, 8]} style={{ width: screens.xs ? '100%' : 'auto' }}>
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {

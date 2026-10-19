@@ -108,4 +108,24 @@ body {
     justify-content: center !important;
     gap: 6px;
   }
+
+  /* Prevent Card head from clipping title on mobile */
+  .ant-card-head-wrapper {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .ant-card-head-title {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    padding-top: 8px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .ant-card-extra {
+    margin-inline-start: 0 !important;
+    padding-bottom: 8px !important;
+  }
 }
