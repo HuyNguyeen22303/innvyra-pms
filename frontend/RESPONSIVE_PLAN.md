@@ -50,8 +50,9 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 ### Điều hướng và khung trang
 
-- Desktop: giữ sidebar và header theo thiết kế hiện có; bảo đảm vùng nội dung không bị co hoặc tràn khi sidebar thay đổi.
-- Mobile: chuyển sidebar thành drawer/menu có thể mở và đóng; menu phải đóng sau khi chọn route.
+- Desktop rộng (từ 1200px): giữ sidebar và header theo thiết kế hiện có; bảo đảm vùng nội dung không bị co hoặc tràn khi sidebar thay đổi.
+- Tablet và laptop nhỏ (dưới 1200px): dùng drawer để điều hướng, dành toàn bộ chiều rộng cho trang nghiệp vụ; rút gọn ngày vận hành và thông tin người dùng trên header.
+- Mobile: tiếp tục dùng drawer/menu có thể mở và đóng; menu phải đóng sau khi chọn route.
 - Tiêu đề trang, mô tả, nút chính và breadcrumb phải xếp lại gọn trên màn nhỏ.
 - Các vùng flex/grid phải cho phép co đúng cách; tránh phần tử con có chiều rộng tối thiểu làm tràn viewport.
 - Giữ trạng thái route và quyền truy cập hiện hành khi đổi cách hiển thị menu.
@@ -234,6 +235,13 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 - Bảng và ma trận cuộn ngang nội bộ chuẩn xác, nội dung không bao giờ bị bẻ gãy ký tự dọc.
 - `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript**.
 - `npm run lint` (`oxlint`): **0 lỗi linter**.
+
+**Rà soát bổ sung tablet/laptop — 2026-10-19**
+
+- Rà source thấy stylesheet mới chỉ có media query riêng cho màn hình dưới 768px; ở tablet và laptop nhỏ, sidebar desktop vẫn chiếm 250px nên vùng nghiệp vụ bị hẹp.
+- Đã chuyển menu sang drawer dưới 1200px, trả lại sidebar cố định từ 1200px; thu gọn header/khoảng cách theo viewport và thêm quy tắc co giãn chung cho nội dung, card, form, tab, bảng, modal và drawer.
+- `npm run build` thành công; `npm run lint` kết thúc với exit code 0 nhưng còn các cảnh báo hiện có ở một số module.
+- Chưa xác nhận hình ảnh trực tiếp ở 360/390/768/1024/1440 trong lượt này: trình duyệt tích hợp không kết nối được tới Vite local do môi trường chặn socket localhost.
 
 ## 7. Checklist kiểm tra theo module
 

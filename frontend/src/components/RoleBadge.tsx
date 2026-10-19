@@ -29,6 +29,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role }) => {
 
   return (
     <Tag
+      className="pms-role-badge"
       style={{
         backgroundColor: meta.bg,
         color: meta.color,

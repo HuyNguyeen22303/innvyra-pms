@@ -26,6 +26,44 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Shared containment rules keep wide forms, charts and tables inside the page. */
+.pms-shell,
+.pms-shell .ant-layout,
+.pms-content,
+.pms-content > *,
+.pms-content .ant-row,
+.pms-content .ant-col,
+.pms-content .ant-card,
+.pms-content .ant-card-body,
+.pms-content .ant-tabs,
+.pms-content .ant-tabs-content-holder,
+.pms-content .ant-form,
+.pms-content .ant-table-wrapper {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pms-content .ant-table-wrapper {
+  width: 100%;
+}
+
+.pms-content .ant-table-cell {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.pms-header-actions {
+  flex-shrink: 0;
+}
+
+.pms-header-actions .ant-space-item {
+  min-width: 0;
+}
+
+.ant-drawer-content-wrapper {
+  max-width: calc(100vw - 12px);
+}
+
 /* Custom crisp scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -70,6 +108,42 @@ body {
   justify-content: space-between;
 }
 
+/* Tablet and compact laptop: give cards, filters and tabs room to wrap. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ant-card-head-title {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .ant-card-extra {
+    max-width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .ant-tabs-nav {
+    max-width: 100%;
+  }
+
+  .ant-form-item-control-input-content {
+    min-width: 0;
+  }
+
+  .ant-modal {
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 340px) {
+  .pms-header-actions .pms-role-badge {
+    display: none;
+  }
+}
+
 /* Mobile Specific Global Adjustments */
 @media (max-width: 767px) {
   /* Prevent modals from overflowing small viewports */
@@ -81,6 +155,15 @@ body {
 
   .ant-modal .ant-modal-content {
     padding: 16px 14px !important;
+  }
+
+  .ant-modal-wrap {
+    overscroll-behavior: contain;
+  }
+
+  .ant-modal .ant-modal-body {
+    max-height: calc(100dvh - 190px);
+    overflow-y: auto;
   }
 
   /* Make tabs scroll horizontally smoothly without compressing tab labels */
@@ -127,5 +210,20 @@ body {
   .ant-card-extra {
     margin-inline-start: 0 !important;
     padding-bottom: 8px !important;
+    max-width: 100%;
+  }
+
+  .ant-btn {
+    max-width: 100%;
+  }
+
+  .ant-picker,
+  .ant-select,
+  .ant-input-number {
+    max-width: 100%;
+  }
+
+  .ant-drawer-body {
+    overscroll-behavior: contain;
   }
 }

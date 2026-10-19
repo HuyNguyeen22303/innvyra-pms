@@ -15,6 +15,10 @@ interface AuthState {
   clearError: () => void;
 }
 
+// React StrictMode runs mount effects twice in development. Share one refresh
+// operation so both effect calls cannot rotate the same refresh cookie at once.
+let authCheckPromise: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>((set) => {
   // Listen for unauthorized events from axios interceptor
   if (typeof window !== 'undefined') {
@@ -57,19 +61,29 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     checkAuth: async () => {
-      set({ isLoading: true });
-      try {
-        // Try to refresh token using existing HttpOnly cookie
-        const refreshRes = await authApi.refreshToken();
-        const { accessToken } = refreshRes.data;
-        setAccessToken(accessToken);
+      if (authCheckPromise) return authCheckPromise;
 
-        // Fetch current user details
-        const meRes = await authApi.getMe();
-        set({ user: meRes.data, isAuthenticated: true, isLoading: false });
-      } catch {
-        setAccessToken(null);
-        set({ user: null, isAuthenticated: false, isLoading: false });
+      authCheckPromise = (async () => {
+        set({ isLoading: true });
+        try {
+          // Try to refresh token using existing HttpOnly cookie
+          const refreshRes = await authApi.refreshToken();
+          const { accessToken } = refreshRes.data;
+          setAccessToken(accessToken);
+
+          // Fetch current user details
+          const meRes = await authApi.getMe();
+          set({ user: meRes.data, isAuthenticated: true, isLoading: false });
+        } catch {
+          setAccessToken(null);
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        }
+      })();
+
+      try {
+        await authCheckPromise;
+      } finally {
+        authCheckPromise = null;
       }
     },
 

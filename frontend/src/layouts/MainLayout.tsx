@@ -192,8 +192,11 @@ export const MainLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 
-  // Determine screen category: mobile (< 768px), tablet (768 - 991px), desktop (>= 992px)
+  // Keep the full workspace available on tablets and smaller laptops. The
+  // persistent sidebar returns once there is room for both navigation and content.
   const isMobile = !screens.md;
+  const useDrawerNavigation = !screens.xl;
+  const isTablet = screens.md && !screens.lg;
 
   // Automatically close mobile drawer whenever route changes
   useEffect(() => {
@@ -258,7 +261,7 @@ export const MainLayout: React.FC = () => {
     },
   ];
 
-  const filteredMenuItems: MenuProps["items"] = (collapsed && !isMobile)
+  const filteredMenuItems: MenuProps["items"] = (collapsed && !useDrawerNavigation)
     ? menuGroups
         .flatMap((group) =>
           group.items.filter(
@@ -329,13 +332,13 @@ export const MainLayout: React.FC = () => {
           alignItems: "center",
           justifyContent: "center",
           fontSize: 20,
-          marginRight: (collapsed && !isMobile) ? 0 : 12,
+          marginRight: (collapsed && !useDrawerNavigation) ? 0 : 12,
           flexShrink: 0,
         }}
       >
         🏨
       </div>
-      {(!collapsed || isMobile) && (
+      {(!collapsed || useDrawerNavigation) && (
         <div style={{ overflow: "hidden" }}>
           <div
             style={{
@@ -364,7 +367,7 @@ export const MainLayout: React.FC = () => {
     </div>
   );
 
-  const propertyStrip = (!collapsed || isMobile) && (
+  const propertyStrip = (!collapsed || useDrawerNavigation) && (
     <div
       style={{
         margin: "14px 16px",
@@ -393,9 +396,9 @@ export const MainLayout: React.FC = () => {
   );
 
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100vw", overflowX: "hidden" }}>
-      {/* Desktop Sider (Hidden on Mobile) */}
-      {!isMobile && (
+    <Layout className="pms-shell" style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100vw", overflowX: "hidden" }}>
+      {/* Persistent navigation is reserved for wide workspaces. */}
+      {!useDrawerNavigation && (
         <Sider
           trigger={null}
           collapsible
@@ -433,8 +436,8 @@ export const MainLayout: React.FC = () => {
         </Sider>
       )}
 
-      {/* Mobile Navigation Drawer */}
-      {isMobile && (
+      {/* Tablet and mobile navigation drawer */}
+      {useDrawerNavigation && (
         <Drawer
           placement="left"
           open={mobileDrawerOpen}
@@ -473,7 +476,7 @@ export const MainLayout: React.FC = () => {
       {/* Main Content Layout Container */}
       <Layout
         style={{
-          marginLeft: isMobile ? 0 : collapsed ? 80 : 250,
+          marginLeft: useDrawerNavigation ? 0 : collapsed ? 80 : 250,
           transition: "all 0.2s",
           background: "#f8fafc",
           minWidth: 0,
@@ -481,7 +484,7 @@ export const MainLayout: React.FC = () => {
       >
         <Header
           style={{
-            padding: isMobile ? "0 12px" : "0 24px",
+            padding: isMobile ? "0 10px" : isTablet ? "0 16px" : useDrawerNavigation ? "0 20px" : "0 24px",
             background: "#ffffff",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
@@ -494,8 +497,8 @@ export const MainLayout: React.FC = () => {
           }}
         >
           {/* Left Action / Brand breadcrumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 14, minWidth: 0 }}>
-            {isMobile ? (
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12, minWidth: 0 }}>
+            {useDrawerNavigation ? (
               <Button
                 type="text"
                 icon={<MenuOutlined />}
@@ -524,15 +527,15 @@ export const MainLayout: React.FC = () => {
                 textOverflow: "ellipsis",
               }}
             >
-              {!isMobile && <span>Không gian làm việc /</span>}
+              {!useDrawerNavigation && <span>Không gian làm việc /</span>}
               <strong style={{ color: "#0f172a", fontWeight: 600 }}>
-                {isMobile ? "INNVYRA PMS" : "Hệ thống quản lý PMS"}
+                {useDrawerNavigation ? "INNVYRA PMS" : "Hệ thống quản lý PMS"}
               </strong>
             </div>
           </div>
 
           {/* Right User & Operational Status */}
-          <Space size={isMobile ? "small" : "middle"} align="center">
+          <Space size={isMobile ? 6 : isTablet ? 8 : "middle"} align="center" className="pms-header-actions">
             {/* Operational Date Tag */}
             <Tag
               icon={<ClockCircleOutlined />}
@@ -541,13 +544,13 @@ export const MainLayout: React.FC = () => {
                 borderColor: "#cbd5e1",
                 color: "#334155",
                 fontSize: 11,
-                padding: isMobile ? "2px 6px" : "3px 8px",
+                padding: useDrawerNavigation ? "2px 6px" : "3px 8px",
                 borderRadius: 6,
                 fontWeight: 500,
                 marginRight: 0,
               }}
             >
-              {isMobile ? currentShortDate : `Ngày vận hành: ${currentDate}`}
+              {useDrawerNavigation ? currentShortDate : `Ngày vận hành: ${currentDate}`}
             </Tag>
 
             {user && <RoleBadge role={user.role} />}
@@ -570,10 +573,10 @@ export const MainLayout: React.FC = () => {
                     color: "#ffffff",
                     fontWeight: 600,
                   }}
-                  size={isMobile ? 32 : 36}
+                  size={useDrawerNavigation ? 32 : 36}
                   icon={<UserOutlined />}
                 />
-                {!isMobile && (
+                {!useDrawerNavigation && (
                   <div style={{ lineHeight: 1.2, textAlign: "left" }}>
                     <div
                       style={{ fontWeight: 600, color: "#0f172a", fontSize: 13 }}
@@ -592,9 +595,10 @@ export const MainLayout: React.FC = () => {
 
         {/* Content Area */}
         <Content
+          className="pms-content"
           style={{
-            margin: isMobile ? "12px 8px" : "20px 24px",
-            padding: isMobile ? "14px 10px" : "20px 24px",
+            margin: isMobile ? "10px 6px" : isTablet ? "12px" : useDrawerNavigation ? "16px" : "20px 24px",
+            padding: isMobile ? "12px 8px" : isTablet ? "16px 14px" : useDrawerNavigation ? "18px" : "20px 24px",
             background: "#ffffff",
             borderRadius: isMobile ? 8 : 12,
             minHeight: "calc(100vh - 84px)",

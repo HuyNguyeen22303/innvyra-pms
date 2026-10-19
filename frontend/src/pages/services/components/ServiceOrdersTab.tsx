@@ -17,7 +17,6 @@ import {
   Col,
   Alert,
   Tooltip,
-  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -54,7 +53,6 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
 };
 
 export const ServiceOrdersTab: React.FC = () => {
-  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManageOrders = ['ADMIN', 'MANAGER', 'RECEPTIONIST'].includes(user?.role || '');
@@ -227,11 +225,11 @@ export const ServiceOrdersTab: React.FC = () => {
   const renderStatusTag = (status: ServiceOrderStatus) => {
     switch (status) {
       case 'REQUESTED':
-        return <Tag color="warning">Chờ cung cấp (REQUESTED)</Tag>;
+        return <Tooltip title="Yêu cầu đang chờ nhân viên cung cấp dịch vụ"><Tag color="warning">Chờ cung cấp</Tag></Tooltip>;
       case 'COMPLETED':
-        return <Tag color="success">Đã hoàn thành (COMPLETED)</Tag>;
+        return <Tooltip title="Dịch vụ đã hoàn thành"><Tag color="success">Đã hoàn thành</Tag></Tooltip>;
       case 'CANCELLED':
-        return <Tag color="default">Đã hủy (CANCELLED)</Tag>;
+        return <Tooltip title="Yêu cầu dịch vụ đã bị hủy"><Tag color="default">Đã hủy</Tag></Tooltip>;
       default:
         return <Tag>{status}</Tag>;
     }
@@ -242,7 +240,7 @@ export const ServiceOrdersTab: React.FC = () => {
       title: <span style={{ whiteSpace: 'nowrap' }}>Mã yêu cầu</span>,
       dataIndex: 'id',
       key: 'id',
-      width: 120,
+      width: 100,
       render: (id: string) => (
         <span style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ color: '#1b4d3e', fontFamily: 'monospace' }}>
@@ -254,7 +252,7 @@ export const ServiceOrdersTab: React.FC = () => {
     {
       title: 'Phòng & Khách hàng',
       key: 'resInfo',
-      width: 220,
+      width: 200,
       render: (_, record) => {
         const stay = record.stayId ? staysMap.get(String(record.stayId)) : undefined;
         const res = reservationsMap.get(String(record.reservationId));
@@ -264,14 +262,14 @@ export const ServiceOrdersTab: React.FC = () => {
         const confirmationCode = stay?.confirmationCode || res?.confirmationCode;
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, whiteSpace: 'nowrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
             {roomNumber ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
                 <Tag color="geekblue" style={{ fontSize: 13, fontWeight: 700, padding: '1px 8px', margin: 0 }}>
                   Phòng #{roomNumber}
                 </Tag>
                 {roomTypeName && (
-                  <Text type="secondary" style={{ fontSize: 11 }}>
+                  <Text type="secondary" style={{ fontSize: 11, overflowWrap: 'anywhere' }}>
                     ({roomTypeName})
                   </Text>
                 )}
@@ -284,56 +282,54 @@ export const ServiceOrdersTab: React.FC = () => {
 
             {guestName && (
               <div style={{ fontSize: 12 }}>
-                <Text strong style={{ color: '#0f172a' }}>
+                <Text strong style={{ color: '#0f172a', overflowWrap: 'anywhere' }}>
                   {guestName}
                 </Text>
               </div>
             )}
 
             <div style={{ fontSize: 11, color: '#64748b' }}>
-              Mã đặt: <Text code style={{ fontSize: 10 }}>#{confirmationCode || record.reservationId}</Text>
+              Mã đặt: <Text code style={{ fontSize: 10, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>#{confirmationCode || record.reservationId}</Text>
             </div>
           </div>
         );
       },
     },
     {
-      title: 'Chi tiết dịch vụ & Đơn giá Snapshot',
+      title: 'Chi tiết dịch vụ',
       key: 'items',
       width: 320,
       render: (_, record) => (
-        <Space orientation="vertical" size={4} style={{ width: '100%', whiteSpace: 'nowrap' }}>
+        <Space orientation="vertical" size={6} style={{ width: '100%', minWidth: 0 }}>
           {record.items.map((item) => (
             <div
               key={item.id}
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                padding: '4px 8px',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                padding: '6px 8px',
                 background: '#fafafa',
                 borderRadius: 4,
                 border: '1px solid #f0f0f0',
-                gap: 12,
+                gap: 2,
+                width: '100%',
+                minWidth: 0,
               }}
             >
-              <div>
-                <Text strong>{item.nameSnapshot}</Text>
-                <span style={{ fontSize: 12, color: '#8c8c8c', marginLeft: 8 }}>
+              <Text strong style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{item.nameSnapshot}</Text>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px', fontSize: 11 }}>
+                <span style={{ color: '#64748b' }}>
                   x{item.quantity} {item.unitSnapshot}
                 </span>
-                <span style={{ fontSize: 11, color: '#595959', marginLeft: 8 }}>
-                  (@ {formatVND(item.unitPriceSnapshot)})
+                <span style={{ color: '#595959' }}>
+                  Đơn giá: {formatVND(item.unitPriceSnapshot)}
                 </span>
-              </div>
-              <div>
-                <Text strong style={{ color: '#1b4d3e' }}>
-                  {formatVND(item.lineTotal)}
-                </Text>
               </div>
             </div>
           ))}
           {record.notes && (
-            <div style={{ fontSize: 11, color: '#8c8c8c', fontStyle: 'italic', marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: '#8c8c8c', fontStyle: 'italic', marginTop: 2, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
               💬 Ghi chú: {record.notes}
             </div>
           )}
@@ -343,7 +339,7 @@ export const ServiceOrdersTab: React.FC = () => {
     {
       title: 'Tổng tiền',
       key: 'totalOrder',
-      width: 140,
+      width: 120,
       render: (_, record) => {
         const orderTotal = record.items.reduce((sum, item) => sum + parseFloat(item.lineTotal || '0'), 0);
         return (
@@ -357,12 +353,12 @@ export const ServiceOrdersTab: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 180,
+      width: 155,
       render: (status: ServiceOrderStatus, record) => (
-        <div style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ minWidth: 0 }}>
           {renderStatusTag(status)}
           {record.cancellationReason && (
-            <div style={{ fontSize: 11, color: '#ff4d4f', marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: '#ff4d4f', marginTop: 4, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
               Lý do: {record.cancellationReason}
             </div>
           )}
@@ -372,32 +368,32 @@ export const ServiceOrdersTab: React.FC = () => {
     {
       title: 'Nhân viên & Thời gian',
       key: 'meta',
-      width: 195,
+      width: 185,
       render: (_, record) => {
         const creator = getStaff(record.createdBy);
         const completer = record.completedBy ? getStaff(record.completedBy) : null;
         const canceller = record.cancelledBy ? getStaff(record.cancelledBy) : null;
 
         return (
-          <div style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-            <div>
-              <Text strong style={{ color: '#0f172a' }}>{creator.fullName}</Text>{' '}
+          <div style={{ fontSize: 12, minWidth: 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
+              <Text strong style={{ color: '#0f172a', overflowWrap: 'anywhere' }}>{creator.fullName}</Text>
               <Tag color={creator.color} style={{ fontSize: 10, margin: 0, padding: '0 4px' }}>
                 {creator.roleTitle}
               </Tag>
             </div>
-            <div style={{ color: '#8c8c8c', fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: '#8c8c8c', fontSize: 11, marginTop: 2, whiteSpace: 'nowrap' }}>
               {dayjs(record.createdAt).format('DD/MM/YYYY HH:mm')}
             </div>
 
             {record.status === 'COMPLETED' && completer && (
-              <div style={{ fontSize: 11, color: '#389e0d', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: '#389e0d', marginTop: 4, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
                 ✓ Đã giao: {completer.fullName} ({completer.roleTitle})
               </div>
             )}
 
             {record.status === 'CANCELLED' && canceller && (
-              <div style={{ fontSize: 11, color: '#cf1322', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: '#cf1322', marginTop: 4, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
                 ✕ Hủy bởi: {canceller.fullName}
               </div>
             )}
@@ -410,12 +406,11 @@ export const ServiceOrdersTab: React.FC = () => {
           {
             title: 'Thao tác',
             key: 'actions',
-            width: 140,
-            fixed: (screens.xs ? false : 'right') as 'right' | false,
+            width: 165,
             render: (_: any, record: ServiceOrderItem) => {
               if (record.status !== 'REQUESTED') return null;
               return (
-                <Space size={6} style={{ whiteSpace: 'nowrap' }}>
+                <Space size={4} style={{ whiteSpace: 'nowrap' }}>
                   <Tooltip title="Hoàn thành order (tự động ghi nợ vào Folio)">
                     <Button
                       size="small"
@@ -513,7 +508,7 @@ export const ServiceOrdersTab: React.FC = () => {
         dataSource={orderList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1250 }}
+        scroll={{ x: canManageOrders ? 1250 : 1080 }}
         pagination={{
           current: page,
           pageSize,
@@ -587,7 +582,7 @@ export const ServiceOrdersTab: React.FC = () => {
           }}
         >
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="reservationId"
                 label="Đơn đặt phòng"
@@ -606,7 +601,7 @@ export const ServiceOrdersTab: React.FC = () => {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="stayId" label="Phòng nhận dịch vụ (tùy chọn)">
                 <Select
                   showSearch
@@ -640,7 +635,7 @@ export const ServiceOrdersTab: React.FC = () => {
               <>
                 {fields.map(({ key, name, ...restField }) => (
                   <Row key={key} gutter={12} align="middle" style={{ marginBottom: 8 }}>
-                    <Col span={14}>
+                    <Col xs={20} sm={14}>
                       <Form.Item
                         {...restField}
                         name={[name, 'serviceId']}
@@ -660,7 +655,7 @@ export const ServiceOrdersTab: React.FC = () => {
                         />
                       </Form.Item>
                     </Col>
-                    <Col span={7}>
+                    <Col xs={20} sm={7}>
                       <Form.Item
                         {...restField}
                         name={[name, 'quantity']}
@@ -670,7 +665,7 @@ export const ServiceOrdersTab: React.FC = () => {
                         <InputNumber min={1} max={1000} placeholder="Số lượng" style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                    <Col span={3}>
+                    <Col xs={4} sm={3}>
                       {fields.length > 1 && (
                         <Button
                           type="text"
