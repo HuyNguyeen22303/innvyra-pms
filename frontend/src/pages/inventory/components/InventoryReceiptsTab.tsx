@@ -441,7 +441,7 @@ export const InventoryReceiptsTab: React.FC = () => {
         okText="Hoàn tất nhập kho"
         cancelText="Hủy bỏ"
         confirmLoading={createMutation.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={860}
       >
         <Form

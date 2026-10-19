@@ -67,7 +67,7 @@ export const LoginPage: React.FC = () => {
           padding: '4px 6px',
         }}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
           {/* Logo Badge */}
           <div
             style={{
@@ -97,7 +97,7 @@ export const LoginPage: React.FC = () => {
 
           {(error || customError) && (
             <Alert
-              message={customError || error}
+              title={customError || error}
               type="error"
               showIcon
               closable

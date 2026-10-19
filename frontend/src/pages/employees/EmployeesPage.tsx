@@ -709,7 +709,7 @@ export const EmployeesPage: React.FC = () => {
       </Card>
 
       {/* Main Table */}
-      <Card bodyStyle={{ padding: 0 }} style={{ borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <Card styles={{ body: { padding: 0 } }} style={{ borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <Table<EmployeeItem>
           columns={columns}
           dataSource={employeeItems}

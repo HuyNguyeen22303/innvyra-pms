@@ -160,7 +160,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
         )
       }
       width={520}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Employee Identity Card */}
       <div
@@ -206,7 +206,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
             type="success"
             showIcon
             icon={<CheckCircleOutlined style={{ fontSize: 20 }} />}
-            message={<Text strong style={{ fontSize: 14 }}>Cấp lại mật khẩu thành công!</Text>}
+            title={<Text strong style={{ fontSize: 14 }}>Cấp lại mật khẩu thành công!</Text>}
             description={
               <div style={{ marginTop: 8 }}>
                 <Paragraph style={{ margin: 0, fontSize: 13, color: '#334155' }}>
@@ -249,7 +249,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
             type="warning"
             showIcon
             icon={<ExclamationCircleOutlined />}
-            message="Chính sách bảo mật tài khoản"
+            title="Chính sách bảo mật tài khoản"
             description="Sau khi mật khẩu mới được cấp, mọi thiết bị đang đăng nhập bằng tài khoản này sẽ bị đăng xuất ngay lập tức để bảo vệ hệ thống."
             style={{ marginBottom: 16, fontSize: 12 }}
           />
@@ -257,7 +257,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
           {errorMessage && (
             <Alert
               type="error"
-              message={errorMessage}
+              title={errorMessage}
               showIcon
               style={{ marginBottom: 16 }}
               closable
@@ -314,7 +314,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
                 </Space>
               </div>
 
-              <Space direction="vertical" size={2} style={{ fontSize: 12 }}>
+              <Space orientation="vertical" size={2} style={{ fontSize: 12 }}>
                 <div>
                   {isPasswordLengthValid ? (
                     <Text type="success">

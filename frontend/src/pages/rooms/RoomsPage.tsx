@@ -737,7 +737,7 @@ export const RoomsPage: React.FC = () => {
           setEditingRoom(null);
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}
@@ -863,7 +863,7 @@ export const RoomsPage: React.FC = () => {
           setStatusTargetRoom(null);
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={statusForm}

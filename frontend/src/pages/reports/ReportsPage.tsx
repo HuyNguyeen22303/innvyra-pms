@@ -422,7 +422,7 @@ export const ReportsPage: React.FC = () => {
         {revenueError && (
           <Alert
             type="error"
-            message="Không thể tải báo cáo doanh thu"
+            title="Không thể tải báo cáo doanh thu"
             description="Vui lòng kiểm tra lại quyền hạn hoặc kết nối mạng."
             showIcon
             style={{ marginBottom: 16 }}
@@ -684,7 +684,7 @@ export const ReportsPage: React.FC = () => {
         {paymentsError && (
           <Alert
             type="error"
-            message="Không thể tải báo cáo thanh toán"
+            title="Không thể tải báo cáo thanh toán"
             showIcon
             style={{ marginBottom: 16 }}
           />
@@ -932,7 +932,7 @@ export const ReportsPage: React.FC = () => {
         {occupancyError && (
           <Alert
             type="error"
-            message="Không thể tải báo cáo công suất phòng"
+            title="Không thể tải báo cáo công suất phòng"
             showIcon
             style={{ marginBottom: 16 }}
           />
@@ -941,7 +941,7 @@ export const ReportsPage: React.FC = () => {
         {isReceptionist && (
           <Alert
             type="info"
-            message="Lưu ý quyền hạn"
+            title="Lưu ý quyền hạn"
             description="Tài khoản Lễ tân được xem công suất phòng và các chỉ số buồng phòng, nhưng các chỉ số tài chính (ADR, RevPAR, Doanh số bán phòng) được ẩn theo chính sách bảo mật nội bộ."
             showIcon
             style={{ marginBottom: 16 }}
@@ -951,9 +951,9 @@ export const ReportsPage: React.FC = () => {
         {summary?.unclosedDays && summary.unclosedDays > 0 ? (
           <Alert
             type="warning"
-            message={`Có ${summary.unclosedDays} ngày trong kỳ chưa hoàn tất chốt đêm (Night Audit - ngày hôm nay đang diễn ra)`}
+            title={`Có ${summary.unclosedDays} ngày trong kỳ chưa hoàn tất chốt đêm (Night Audit - ngày hôm nay đang diễn ra)`}
             description={
-              <Space direction="vertical" style={{ width: '100%', marginTop: 4 }}>
+              <Space orientation="vertical" style={{ width: '100%', marginTop: 4 }}>
                 <Text>
                   Theo chuẩn kiểm toán khách sạn, ngày hôm nay đang mở và chỉ chốt đêm khi chạy Night Audit vào rạng sáng hôm sau. Thẻ tổng quan bên dưới phản ánh số liệu từ {closedSeries.length} ngày đã chốt xong đêm.
                 </Text>
@@ -1191,7 +1191,7 @@ export const ReportsPage: React.FC = () => {
         {reservationsError && (
           <Alert
             type="error"
-            message="Không thể tải báo cáo đặt phòng"
+            title="Không thể tải báo cáo đặt phòng"
             showIcon
             style={{ marginBottom: 16 }}
           />
@@ -1329,7 +1329,7 @@ export const ReportsPage: React.FC = () => {
         {operationsError && (
           <Alert
             type="error"
-            message="Không thể tải báo cáo vận hành"
+            title="Không thể tải báo cáo vận hành"
             showIcon
             style={{ marginBottom: 16 }}
           />
@@ -1522,7 +1522,7 @@ export const ReportsPage: React.FC = () => {
         width: 220,
         sorter: true,
         render: (id) => (
-          <Space direction="vertical" size={2}>
+          <Space orientation="vertical" size={2}>
             <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>#{id}</Text>
             <Button
               type="link"
@@ -1570,7 +1570,7 @@ export const ReportsPage: React.FC = () => {
         {outstandingError && (
           <Alert
             type="error"
-            message="Không thể tải sổ theo dõi công nợ"
+            title="Không thể tải sổ theo dõi công nợ"
             showIcon
             style={{ marginBottom: 16 }}
           />

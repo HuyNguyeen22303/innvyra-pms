@@ -434,12 +434,12 @@ export const InventoryIssuesTab: React.FC = () => {
         okText="Hoàn tất xuất kho"
         cancelText="Hủy bỏ"
         confirmLoading={createMutation.isPending}
-        destroyOnClose={false}
+        destroyOnHidden={false}
         width={820}
       >
         {errorMessage && (
           <Alert
-            message="Không thể thực hiện xuất kho"
+            title="Không thể thực hiện xuất kho"
             description={errorMessage}
             type="error"
             showIcon

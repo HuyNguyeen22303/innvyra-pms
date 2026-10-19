@@ -20,7 +20,7 @@ export const PhasePlaceholderPage: React.FC<PhasePlaceholderProps> = ({
     <Result
       icon={<RocketOutlined style={{ color: '#0f4c81', fontSize: 64 }} />}
       title={
-        <Space direction="vertical" align="center">
+        <Space orientation="vertical" align="center">
           <span>{title}</span>
           <Tag color="blue">{phase}</Tag>
         </Space>

@@ -21,8 +21,12 @@ export const App: React.FC = () => {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Attempt automatic session restoration on app boot
-    checkAuth();
+    // Attempt automatic session restoration on app boot, except when on login page
+    if (window.location.pathname !== '/login') {
+      checkAuth();
+    } else {
+      useAuthStore.setState({ isLoading: false });
+    }
   }, [checkAuth]);
 
   return (

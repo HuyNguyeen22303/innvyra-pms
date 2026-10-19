@@ -302,7 +302,7 @@ export const ServiceOrdersTab: React.FC = () => {
       key: 'items',
       width: 320,
       render: (_, record) => (
-        <Space direction="vertical" size={4} style={{ width: '100%', whiteSpace: 'nowrap' }}>
+        <Space orientation="vertical" size={4} style={{ width: '100%', whiteSpace: 'nowrap' }}>
           {record.items.map((item) => (
             <div
               key={item.id}
@@ -551,7 +551,7 @@ export const ServiceOrdersTab: React.FC = () => {
           type="info"
           showIcon
           icon={<InfoCircleOutlined />}
-          message="Chính sách giá dịch vụ (Snapshot Pricing)"
+          title="Chính sách giá dịch vụ (Snapshot Pricing)"
           description="Đơn giá của từng dịch vụ được chụp (snapshot) cố định tại thời điểm tạo đơn. Khi bấm Hoàn thành, tiền dịch vụ sẽ tự động ghi nợ vào Sổ công nợ Folio."
           style={{ marginBottom: 16 }}
         />
@@ -560,7 +560,7 @@ export const ServiceOrdersTab: React.FC = () => {
           <Alert
             type="warning"
             showIcon
-            message="Chưa có khách đang lưu trú (CHECKED_IN)"
+            title="Chưa có khách đang lưu trú (CHECKED_IN)"
             description="Dịch vụ chỉ có thể ghi nhận cho các đơn đặt phòng đang có khách lưu trú tại khách sạn."
             style={{ marginBottom: 16 }}
           />
@@ -728,7 +728,7 @@ export const ServiceOrdersTab: React.FC = () => {
         okButtonProps={{ danger: true }}
         confirmLoading={cancelMutation.isPending}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        <Space orientation="vertical" style={{ width: '100%' }} size={12}>
           <Text>
             Bạn có chắc chắn muốn hủy yêu cầu dịch vụ này? Hành động này không thể hoàn tác.
           </Text>

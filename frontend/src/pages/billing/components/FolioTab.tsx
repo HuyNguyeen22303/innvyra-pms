@@ -921,7 +921,7 @@ export const FolioTab: React.FC = () => {
           <Alert
             type="error"
             showIcon
-            message={`Không tìm thấy Sổ công nợ Folio #${folioIdParam}`}
+            title={`Không tìm thấy Sổ công nợ Folio #${folioIdParam}`}
             description="Mã hóa đơn / Folio không tồn tại trên hệ thống hoặc đã bị hủy. Vui lòng kiểm tra lại danh sách hoặc chọn đơn đặt phòng bên dưới."
             style={{ maxWidth: 650, margin: '0 auto 20px auto', textAlign: 'left' }}
           />
@@ -979,7 +979,7 @@ export const FolioTab: React.FC = () => {
           <Alert
             type="info"
             showIcon
-            message="Quản lý Sổ công nợ Folio theo từng Đơn đặt phòng"
+            title="Quản lý Sổ công nợ Folio theo từng Đơn đặt phòng"
             description="Trong hệ thống khách sạn, mỗi đơn đặt phòng được liên kết trực tiếp với một Sổ công nợ Folio để theo dõi tiền phòng, phí dịch vụ, đặt cọc và thanh toán. Bấm nút 'Xem Folio' ở cột Thao tác trên từng dòng để kiểm tra chi tiết hoặc mở Folio mới."
             style={{ marginBottom: 16 }}
           />
@@ -1014,7 +1014,7 @@ export const FolioTab: React.FC = () => {
           <Alert
             type="warning"
             showIcon
-            message="Chưa mở Sổ công nợ Folio cho Đơn đặt phòng này"
+            title="Chưa mở Sổ công nợ Folio cho Đơn đặt phòng này"
             description="Theo quy trình khách sạn, khi mở Folio, toàn bộ tiền phòng theo hợp đồng của các đêm lưu trú sẽ được tính toán và ghi nhận thành công nợ hợp đồng. Sau khi mở, bạn có thể nhận tiền đặt cọc, thanh toán và ghi nhận chi phí dịch vụ."
             style={{ maxWidth: 700, margin: '0 auto 24px auto', textAlign: 'left' }}
           />
@@ -1081,7 +1081,7 @@ export const FolioTab: React.FC = () => {
                   border: '1px solid #b7eb8f',
                   background: '#f6ffed',
                 }}
-                message={
+                title={
                   <Text strong style={{ color: '#237804', fontSize: 14 }}>
                     SỔ CÔNG NỢ ĐÃ ĐƯỢC QUYẾT TOÁN & KHÓA SỔ HOÀN TẤT
                   </Text>
@@ -1463,7 +1463,7 @@ export const FolioTab: React.FC = () => {
         <Alert
           type="info"
           showIcon
-          message="Chính sách điều chỉnh công nợ"
+          title="Chính sách điều chỉnh công nợ"
           description="Ghi nợ (DEBIT) làm tăng số tiền khách phải trả (phụ thu, đền bù đồ vỡ). Ghi có (CREDIT) làm giảm số tiền phải trả (chiết khấu, bồi thường dịch vụ). Lưu ý: Không cho phép tạo CREDIT làm số dư âm."
           style={{ marginBottom: 16 }}
         />
@@ -1571,7 +1571,7 @@ export const FolioTab: React.FC = () => {
         <Alert
           type="warning"
           showIcon
-          message="Quy tắc hoàn tiền"
+          title="Quy tắc hoàn tiền"
           description="Hoàn tiền là thao tác trả lại tiền cho khách và làm TĂNG số dư nợ trên Folio. Số tiền hoàn không được vượt quá số tiền của giao dịch gốc."
           style={{ marginBottom: 16 }}
         />
@@ -1674,11 +1674,11 @@ export const FolioTab: React.FC = () => {
         okButtonProps={{ danger: true }}
         confirmLoading={closeFolioMutation.isPending}
       >
-        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+        <Space orientation="vertical" size={14} style={{ width: '100%' }}>
           <Alert
             type="info"
             showIcon
-            message="Điều kiện bắt buộc để đóng Folio"
+            title="Điều kiện bắt buộc để đóng Folio"
             description={
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 <li>Số dư còn lại phải đúng bằng 0 ₫ (đã thanh toán hết).</li>

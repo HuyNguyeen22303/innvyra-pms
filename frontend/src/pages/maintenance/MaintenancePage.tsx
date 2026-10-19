@@ -883,7 +883,7 @@ export const MaintenancePage: React.FC = () => {
                 {/* KPI Cards */}
                 <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                   <Col xs={12} sm={6}>
-                    <Card bordered={false} style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Mới báo cáo (OPEN)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#cf1322' }}>
                         {openTickets}
@@ -891,7 +891,7 @@ export const MaintenancePage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <Card bordered={false} style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đang xử lý (IN_PROGRESS)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#096dd9' }}>
                         {inProgressTickets}
@@ -899,7 +899,7 @@ export const MaintenancePage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <Card bordered={false} style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đã sửa xong (RESOLVED)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#722ed1' }}>
                         {resolvedTickets}
@@ -907,7 +907,7 @@ export const MaintenancePage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <Card bordered={false} style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đã nghiệm thu (CLOSED)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#389e0d' }}>
                         {closedTickets}
@@ -993,7 +993,7 @@ export const MaintenancePage: React.FC = () => {
                 {/* KPI Cards */}
                 <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                   <Col xs={24} sm={8}>
-                    <Card bordered={false} style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đang khóa kỹ thuật (ACTIVE)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#cf1322' }}>
                         {activeBlocks}
@@ -1001,7 +1001,7 @@ export const MaintenancePage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Card bordered={false} style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đã lên lịch tương lai (SCHEDULED)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#d48806' }}>
                         {scheduledBlocks}
@@ -1009,7 +1009,7 @@ export const MaintenancePage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Card bordered={false} style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
+                    <Card variant="borderless" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>Đã mở khóa an toàn (RELEASED)</Text>
                       <Title level={2} style={{ margin: '4px 0 0', color: '#389e0d' }}>
                         {releasedBlocks}
@@ -1172,11 +1172,11 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={assignTicketMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
-            message="Chính sách phân công kỹ thuật"
+            title="Chính sách phân công kỹ thuật"
             description="Chỉ nhân viên thuộc vai trò Kỹ thuật (TECHNICIAN), Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) mới hợp lệ để tiếp nhận sửa chữa."
           />
 
@@ -1222,11 +1222,11 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={resolveTicketMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
-            message="Báo cáo kỹ thuật"
+            title="Báo cáo kỹ thuật"
             description="Sau khi gửi, phiếu sẽ chuyển sang RESOLVED (Đã sửa xong). Quản lý hoặc Giám sát sẽ kiểm tra nghiệm thu trước khi đóng phiếu."
           />
 
@@ -1270,11 +1270,11 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Hủy"
         confirmLoading={closeTicketMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="success"
             showIcon
-            message="Nghiệm thu kỹ thuật"
+            title="Nghiệm thu kỹ thuật"
             description="Xác nhận chất lượng sửa chữa đạt tiêu chuẩn vận hành an toàn. Phiếu sự cố sẽ được đóng chính thức (CLOSED)."
           />
 
@@ -1334,7 +1334,7 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={cancelTicketMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <div style={{ paddingBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
               Lý do hủy phiếu: <span style={{ color: '#ff4d4f' }}>*</span>
@@ -1374,7 +1374,7 @@ export const MaintenancePage: React.FC = () => {
         <Alert
           type="warning"
           showIcon
-          message="Chính sách khóa phòng kỹ thuật"
+          title="Chính sách khóa phòng kỹ thuật"
           description="Khoảng ngày khóa sẽ loại trừ số lượng phòng này khỏi kho tồn bán phòng (Availability). Phòng không được có khách đang lưu trú."
           style={{ marginBottom: 16 }}
         />
@@ -1498,11 +1498,11 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={releaseBlockMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
-            message="Nghiệp vụ giải phóng bảo trì"
+            title="Nghiệp vụ giải phóng bảo trì"
             description="Khi xác nhận mở khóa: Hệ thống sẽ khôi phục trạng thái vật lý ACTIVE cho phòng. Đồng thời phòng sẽ tự động chuyển sang trạng thái DIRTY và kích hoạt một nhiệm vụ Buồng phòng để nhân viên làm vệ sinh sạch sẽ trước khi đón khách."
           />
 
@@ -1551,7 +1551,7 @@ export const MaintenancePage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={cancelBlockMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <div style={{ paddingBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
               Lý do hủy lệnh bảo trì: <span style={{ color: '#ff4d4f' }}>*</span>
@@ -1579,7 +1579,7 @@ export const MaintenancePage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={560}
+        size={560}
         open={isTicketDrawerOpen}
         onClose={() => {
           setIsTicketDrawerOpen(false);
@@ -1694,7 +1694,7 @@ export const MaintenancePage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={560}
+        size={560}
         open={isBlockDrawerOpen}
         onClose={() => {
           setIsBlockDrawerOpen(false);

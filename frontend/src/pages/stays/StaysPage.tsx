@@ -796,7 +796,7 @@ export const StaysPage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={24} sm={8} md={8}>
-                    <Card size="small" bordered style={{ borderRadius: 8, background: '#fafafa' }}>
+                    <Card size="small" variant="outlined" style={{ borderRadius: 8, background: '#fafafa' }}>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         Tổng lượt lưu trú ghi nhận
                       </Text>
@@ -841,13 +841,13 @@ export const StaysPage: React.FC = () => {
                     type="info"
                     showIcon
                     style={{ marginBottom: 16 }}
-                    message="Quyền Kế toán (ACCOUNTANT)"
+                    title="Quyền Kế toán (ACCOUNTANT)"
                     description="Bạn đang xem danh sách lượt lưu trú phục vụ đối soát công nợ & tài chính. Quyền check-in nhận phòng, đổi phòng và trả phòng được giới hạn cho bộ phận Lễ tân và Quản lý."
                   />
                 )}
 
                 {/* Stays Table */}
-                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
                   <Table
                     columns={stayColumns}
                     dataSource={stays}
@@ -884,11 +884,11 @@ export const StaysPage: React.FC = () => {
                   showIcon
                   icon={<ClockCircleOutlined />}
                   style={{ marginBottom: 16 }}
-                  message="Quy trình Nhận phòng (Check-in Arrival SOP)"
+                  title="Quy trình Nhận phòng (Check-in Arrival SOP)"
                   description="Khi khách đến nhận phòng, chọn 'Làm thủ tục' để gán phòng vật lý đang ở trạng thái READY (Đã vệ sinh sạch sẽ). Hệ thống chỉ kích hoạt check-in vào đúng ngày nhận phòng đã đăng ký theo chính sách của khách sạn."
                 />
 
-                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
                   <Table
                     columns={arrivalColumns}
                     dataSource={arrivalReservations}
@@ -937,7 +937,7 @@ export const StaysPage: React.FC = () => {
         width={650}
       >
         {checkinReservation && checkinRoomItem && (
-          <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
             {/* Reservation Summary */}
             <Card size="small" style={{ borderRadius: 8, background: '#f8fafc' }}>
               <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered={false}>
@@ -1012,7 +1012,7 @@ export const StaysPage: React.FC = () => {
                   type="warning"
                   showIcon
                   icon={<WarningOutlined />}
-                  message="Không có phòng nào sẵn sàng!"
+                  title="Không có phòng nào sẵn sàng!"
                   description={`Hiện không có phòng vật lý nào thuộc hạng "${checkinRoomItem.roomType.name}" đang ở trạng thái Sẵn sàng (READY). Vui lòng thông báo cho bộ phận Buồng phòng kiểm tra và dọn phòng trước khi làm thủ tục.`}
                 />
               ) : (
@@ -1035,7 +1035,7 @@ export const StaysPage: React.FC = () => {
               <Alert
                 type="warning"
                 showIcon
-                message="Lưu ý ngày nhận phòng"
+                title="Lưu ý ngày nhận phòng"
                 description={`Đơn đặt phòng này có ngày nhận phòng là ${dayjs(
                   checkinReservation.checkInDate
                 ).format(
@@ -1085,11 +1085,11 @@ export const StaysPage: React.FC = () => {
         okButtonProps={{ danger: true }}
       >
         {checkoutStay && (
-          <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
             <Alert
               type="warning"
               showIcon
-              message="Quy trình dọn buồng phòng"
+              title="Quy trình dọn buồng phòng"
               description={`Khi xác nhận trả phòng, phòng #${checkoutStay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY (Chờ dọn dẹp) để bộ phận Buồng phòng tiến hành vệ sinh và thiết lập lại vật tư cho khách kế tiếp.`}
             />
 
@@ -1147,11 +1147,11 @@ export const StaysPage: React.FC = () => {
         cancelText="Đóng"
       >
         {transferStay && (
-          <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
             <Alert
               type="info"
               showIcon
-              message="Quy định đổi phòng giữa kỳ"
+              title="Quy định đổi phòng giữa kỳ"
               description={`Phòng mới bắt buộc phải cùng hạng phòng (${transferStay.roomType.name}) và đang ở trạng thái READY. Phòng cũ #${transferStay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY để buồng phòng dọn dẹp.`}
             />
 
@@ -1163,7 +1163,7 @@ export const StaysPage: React.FC = () => {
                 <Alert
                   type="warning"
                   showIcon
-                  message="Không có phòng thay thế!"
+                  title="Không có phòng thay thế!"
                   description={`Hiện không có phòng vật lý nào khác cùng hạng "${transferStay.roomType.name}" đang ở trạng thái READY.`}
                 />
               ) : (
@@ -1215,7 +1215,7 @@ export const StaysPage: React.FC = () => {
             )}
           </div>
         }
-        width={screens.xs ? '100%' : screens.sm ? 560 : 720}
+        size={screens.xs ? '100%' : screens.sm ? 560 : 720}
         open={isDetailDrawerOpen}
         onClose={() => {
           setIsDetailDrawerOpen(false);
@@ -1224,10 +1224,10 @@ export const StaysPage: React.FC = () => {
       >
         {isLoadingStayDetail || !stayDetail ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <Spin tip="Đang tải thông tin lưu trú..." />
+            <Spin description="Đang tải thông tin lưu trú..." />
           </div>
         ) : (
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Space orientation="vertical" size="large" style={{ width: '100%' }}>
             {/* Room Banner */}
             <Card
               size="small"

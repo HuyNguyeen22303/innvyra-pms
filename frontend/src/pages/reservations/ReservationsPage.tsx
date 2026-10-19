@@ -416,7 +416,7 @@ export const ReservationsPage: React.FC = () => {
       key: 'confirmationCode',
       width: 170,
       render: (code: string) => (
-        <Space direction="vertical" size={2}>
+        <Space orientation="vertical" size={2}>
           <Text strong style={{ color: '#1677ff', letterSpacing: 0.5 }}>
             {code}
           </Text>
@@ -626,7 +626,7 @@ export const ReservationsPage: React.FC = () => {
                 {/* KPI Stat Cards */}
                 <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                   <Col xs={12} sm={8} md={6} lg={4}>
-                    <Card size="small" bordered style={{ borderRadius: 8, background: '#fafafa' }}>
+                    <Card size="small" variant="outlined" style={{ borderRadius: 8, background: '#fafafa' }}>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         Tổng số đơn
                       </Text>
@@ -638,7 +638,7 @@ export const ReservationsPage: React.FC = () => {
                   <Col xs={12} sm={8} md={6} lg={5}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
                       style={{
                         borderRadius: 8,
                         borderColor: '#91caff',
@@ -656,7 +656,7 @@ export const ReservationsPage: React.FC = () => {
                   <Col xs={12} sm={8} md={6} lg={5}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
                       style={{
                         borderRadius: 8,
                         borderColor: '#b7eb8f',
@@ -674,7 +674,7 @@ export const ReservationsPage: React.FC = () => {
                   <Col xs={12} sm={8} md={6} lg={5}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
                       style={{
                         borderRadius: 8,
                         borderColor: '#d3adf7',
@@ -692,7 +692,7 @@ export const ReservationsPage: React.FC = () => {
                   <Col xs={12} sm={8} md={6} lg={5}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
                       style={{
                         borderRadius: 8,
                         borderColor: '#ffa39e',
@@ -786,13 +786,13 @@ export const ReservationsPage: React.FC = () => {
                     type="info"
                     showIcon
                     style={{ marginBottom: 16 }}
-                    message="Quyền Kế toán (ACCOUNTANT)"
+                    title="Quyền Kế toán (ACCOUNTANT)"
                     description="Bạn đang xem danh sách đơn đặt phòng phục vụ đối soát tài chính. Tính năng tạo mới, hủy đơn và tra cứu định danh khách lưu trú được giới hạn cho bộ phận Lễ tân."
                   />
                 )}
 
                 {/* Reservations Table */}
-                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
                   <Table
                     columns={columns}
                     dataSource={reservations}
@@ -918,7 +918,7 @@ export const ReservationsPage: React.FC = () => {
                         >
                           {isLoadingAvailability ? (
                             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                              <Spin size="large" tip="Đang kiểm tra dữ liệu phòng trống..." />
+                              <Spin size="large" description="Đang kiểm tra dữ liệu phòng trống..." />
                             </div>
                           ) : availableRoomsList.length === 0 ? (
                             <Empty description="Rất tiếc, không còn hạng phòng nào phù hợp trong khoảng thời gian này hoặc đã vượt quá sức chứa!" />
@@ -1071,7 +1071,7 @@ export const ReservationsPage: React.FC = () => {
                                         <Alert
                                           type="warning"
                                           showIcon
-                                          message="Hạng phòng này hiện đã kín chỗ cho các đêm đã chọn."
+                                          title="Hạng phòng này hiện đã kín chỗ cho các đêm đã chọn."
                                         />
                                       )}
                                     </Card>
@@ -1238,7 +1238,7 @@ export const ReservationsPage: React.FC = () => {
             )}
           </div>
         }
-        width={screens.xs ? '100%' : screens.sm ? 560 : 720}
+        size={screens.xs ? '100%' : screens.sm ? 560 : 720}
         open={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);
@@ -1262,10 +1262,10 @@ export const ReservationsPage: React.FC = () => {
       >
         {isLoadingDetail || !reservationDetail ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <Spin tip="Đang tải thông tin chi tiết đơn..." />
+            <Spin description="Đang tải thông tin chi tiết đơn..." />
           </div>
         ) : (
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Space orientation="vertical" size="large" style={{ width: '100%' }}>
             {/* Summary card */}
             <Card size="small" style={{ borderRadius: 8, background: '#f6ffed', borderColor: '#b7eb8f' }}>
               <Row justify="space-between" align="middle">
@@ -1481,7 +1481,7 @@ export const ReservationsPage: React.FC = () => {
                 type="error"
                 showIcon
                 icon={<StopOutlined />}
-                message={`Đơn đặt phòng đã bị hủy vào ${dayjs(
+                title={`Đơn đặt phòng đã bị hủy vào ${dayjs(
                   reservationDetail.cancellation.cancelledAt
                 ).format('DD/MM/YYYY HH:mm:ss')}`}
                 description={
@@ -1527,11 +1527,11 @@ export const ReservationsPage: React.FC = () => {
         cancelText="Đóng"
         okButtonProps={{ danger: true }}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="warning"
             showIcon
-            message="Cảnh báo quy trình khách sạn"
+            title="Cảnh báo quy trình khách sạn"
             description="Khi xác nhận hủy đơn, toàn bộ các đêm phòng đã giữ chỗ cho khách hàng sẽ được giải phóng ngay lập tức trên hệ thống và quay lại trạng thái phòng trống cho khách khác đặt. Thao tác này KHÔNG thể hoàn tác."
           />
 

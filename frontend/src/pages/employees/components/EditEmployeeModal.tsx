@@ -129,7 +129,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
       onCancel={handleClose}
       footer={null}
       width={520}
-      destroyOnClose
+      destroyOnHidden
     >
       <Paragraph type="secondary" style={{ fontSize: 13, marginBottom: 16 }}>
         Cập nhật thông tin định danh và vai trò công tác của nhân viên. Tên đăng nhập và mật khẩu được bảo vệ không thể thay đổi tại đây.
@@ -138,7 +138,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
       {errorMessage && (
         <Alert
           type="error"
-          message={errorMessage}
+          title={errorMessage}
           showIcon
           closable
           onClose={() => setErrorMessage(null)}

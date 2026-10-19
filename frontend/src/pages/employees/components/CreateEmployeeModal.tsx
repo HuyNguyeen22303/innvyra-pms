@@ -146,7 +146,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
       onCancel={handleClose}
       footer={null}
       width={560}
-      destroyOnClose
+      destroyOnHidden
     >
       <Paragraph type="secondary" style={{ fontSize: 13, marginBottom: 16 }}>
         Tạo hồ sơ nhân viên và cấp phát tài khoản truy cập hệ thống Innvyra PMS theo cấp bậc phân quyền.
@@ -155,7 +155,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
       {errorMessage && (
         <Alert
           type="error"
-          message={errorMessage}
+          title={errorMessage}
           showIcon
           closable
           onClose={() => setErrorMessage(null)}
@@ -277,7 +277,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
             </Space>
           </div>
 
-          <Space direction="vertical" size={2} style={{ fontSize: 12 }}>
+          <Space orientation="vertical" size={2} style={{ fontSize: 12 }}>
             <Space size={6}>
               {isPasswordLengthValid ? (
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />

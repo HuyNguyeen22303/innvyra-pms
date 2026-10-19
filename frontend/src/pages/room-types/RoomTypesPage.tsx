@@ -395,7 +395,7 @@ export const RoomTypesPage: React.FC = () => {
           setEditingItem(null);
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

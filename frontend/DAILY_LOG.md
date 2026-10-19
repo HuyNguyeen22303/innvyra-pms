@@ -1091,3 +1091,38 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 
 
+---
+
+#### Phase 2.4: Khắc phục Triệt để Lỗi F5 Mất Phiên & Chuẩn hóa Toàn diện Ant Design v6 Deprecations:
+
+- **Bối cảnh & Yêu cầu từ Người dùng**:
+  1. Khi người dùng bấm F5 (Reload) ở bất kỳ trang quản trị nào (`/dashboard`, `/reservations`, `/folios`, `/rooms`...), hệ thống phải giữ nguyên phiên làm việc và ở nguyên trang hiện tại, tuyệt đối không bị chuyển hướng về `/login`.
+  2. Xóa bỏ hoàn toàn 2 dòng lỗi đỏ `POST /api/v1/auth/refresh 401 (Unauthorized)` khi người dùng truy cập màn hình `/login`.
+  3. Quét và thay thế toàn bộ các thuộc tính cũ sang chuẩn mới của Ant Design v6 (loại bỏ hoàn toàn các cảnh báo vàng/đỏ trên Console Chrome DevTools).
+
+- **Giải pháp & Triển khai Kỹ thuật**:
+  1. **Khắc phục Lỗi 401 tại `/login` & Giữ nguyên trang khi F5 (`App.tsx` & `ProtectedRoute.tsx`)**:
+     - Trong `App.tsx`, cập nhật `useEffect` gọi `checkAuth()`:
+       ```tsx
+       if (window.location.pathname !== '/login') {
+         checkAuth();
+       } else {
+         useAuthStore.setState({ isLoading: false });
+       }
+       ```
+     - Khi người dùng ở trang `/login`, `checkAuth()` không được gọi vô cớ, triệt tiêu hoàn toàn 2 dòng lỗi đỏ HTTP 401 trên Console DevTools.
+     - Khi người dùng đang ở bất kỳ trang quản trị nào và bấm F5, `ProtectedRoute.tsx` hiển thị trạng thái chờ kiểm tra phiên (`<Spin description="..." />`), sau khi `checkAuth()` gửi cookie refresh token lên backend và cấp mới access token, người dùng được giữ nguyên 100% tại trang hiện tại.
+  2. **Chuẩn hóa Toàn diện các Thuộc tính Ant Design v6**:
+     - `Space`: Thay thế toàn bộ `direction="vertical"` thành `orientation="vertical"`.
+     - `Drawer`: Thay thế `width={...}` thành `size={...}` trên tất cả 8 Drawer (MainLayout, RoomMatrix, Guests, Housekeeping, Maintenance, Reservations, Stays).
+     - `Spin`: Thay thế `tip="..."` thành `description="..."`.
+     - `Button.Group`: Thay thế bằng `<Space.Compact>`.
+     - `Card`: Thay thế `bordered={false}` thành `variant="borderless"`, thay `bordered` thành `variant="outlined"`, thay `bodyStyle` thành `styles={{ body: ... }}`.
+     - `Modal`: Thay thế `destroyOnClose` thành `destroyOnHidden` trên toàn bộ 15 modal trong hệ thống.
+     - `Statistic`: Thay thế `valueStyle` thành `styles={{ content: ... }}`.
+     - `Alert`: Thay thế toàn bộ `message="..."` thành `title="..."` trên tất cả 35 Alert trong hệ thống.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% thành công, 0 lỗi TypeScript**.
+  - `npm run lint`: **0 lỗi linter**.
+  - Không còn bất kỳ thuộc tính cũ nào còn sót lại trong toàn bộ mã nguồn `frontend/src`.

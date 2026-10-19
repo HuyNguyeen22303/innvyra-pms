@@ -27,7 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           justifyContent: 'center',
         }}
       >
-        <Spin size="large" tip="Đang kiểm tra phiên đăng nhập..." />
+        <Spin size="large" description="Đang kiểm tra phiên đăng nhập..." />
       </div>
     );
   }

@@ -439,7 +439,7 @@ export const MainLayout: React.FC = () => {
           placement="left"
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          width={270}
+          size={270}
           closable={false}
           styles={{
             body: {

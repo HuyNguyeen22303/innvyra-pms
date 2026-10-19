@@ -227,7 +227,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
     return (
       <Card style={{ borderRadius: 8, marginTop: 12 }}>
         <Alert
-          message="Không thể tải dữ liệu tổng quan kho"
+          title="Không thể tải dữ liệu tổng quan kho"
           description="Đã xảy ra lỗi khi kết nối máy chủ hoặc hệ thống đang đồng bộ dữ liệu. Vui lòng thử lại."
           type="error"
           showIcon
@@ -293,7 +293,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 }
                 value={summary?.totalActiveItems ?? 0}
                 suffix="mặt hàng"
-                valueStyle={{ color: '#0f172a', fontWeight: 700 }}
+                styles={{ content: { color: '#0f172a', fontWeight: 700 } }}
               />
             )}
           </Card>
@@ -301,7 +301,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 8,
               borderLeft: '4px solid #d97706',
@@ -320,7 +320,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 }
                 value={summary?.lowStockItemsCount ?? 0}
                 suffix="mặt hàng"
-                valueStyle={{ color: '#d97706', fontWeight: 700 }}
+                styles={{ content: { color: '#d97706', fontWeight: 700 } }}
               />
             )}
           </Card>
@@ -328,7 +328,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 8,
               borderLeft: '4px solid #b91c1c',
@@ -347,7 +347,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 }
                 value={summary?.outOfStockItemsCount ?? 0}
                 suffix="mặt hàng"
-                valueStyle={{ color: '#b91c1c', fontWeight: 700 }}
+                styles={{ content: { color: '#b91c1c', fontWeight: 700 } }}
               />
             )}
           </Card>
@@ -355,7 +355,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 8,
               borderLeft: '4px solid #0284c7',
@@ -374,7 +374,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 }
                 value={Number(summary?.totalInventoryEstimatedValue || 0).toLocaleString('vi-VN')}
                 suffix="VNĐ"
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 20 }}
+                styles={{ content: { color: '#0f172a', fontWeight: 700, fontSize: 20 } }}
               />
             )}
           </Card>

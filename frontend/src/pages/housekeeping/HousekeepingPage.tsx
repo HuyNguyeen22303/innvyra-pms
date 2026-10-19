@@ -415,7 +415,7 @@ export const HousekeepingPage: React.FC = () => {
         );
         if (existingTask) {
           return (
-            <Space direction="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
+            <Space orientation="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
               {renderStatusTag(existingTask.status)}
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {existingTask.assignedTo
@@ -751,7 +751,7 @@ export const HousekeepingPage: React.FC = () => {
       {/* KPI Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
-          <Card bordered={false} style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
+          <Card variant="borderless" style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Chờ dọn dẹp (Pending)
             </Text>
@@ -762,7 +762,7 @@ export const HousekeepingPage: React.FC = () => {
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card bordered={false} style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}>
+          <Card variant="borderless" style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Đang làm vệ sinh (In-Progress)
             </Text>
@@ -773,7 +773,7 @@ export const HousekeepingPage: React.FC = () => {
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card bordered={false} style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}>
+          <Card variant="borderless" style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Chờ nghiệm thu (Inspection)
             </Text>
@@ -784,7 +784,7 @@ export const HousekeepingPage: React.FC = () => {
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card bordered={false} style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
+          <Card variant="borderless" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Đã hoàn thành (Ready)
             </Text>
@@ -932,7 +932,7 @@ export const HousekeepingPage: React.FC = () => {
                 <Alert
                   type="info"
                   showIcon
-                  message="Danh sách các phòng vật lý đang ở trạng thái DIRTY trên hệ thống"
+                  title="Danh sách các phòng vật lý đang ở trạng thái DIRTY trên hệ thống"
                   description="Phòng tự động chuyển sang DIRTY sau khi khách Check-out, Đổi phòng (Transfer), hoặc khi Lệnh bảo trì được giải phóng. Bạn có thể bấm 'Tạo việc dọn' để kích hoạt chu trình dọn dẹp cho phòng."
                   style={{ marginBottom: 16 }}
                 />
@@ -1053,11 +1053,11 @@ export const HousekeepingPage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={assignMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
-            message="Chính sách phân công"
+            title="Chính sách phân công"
             description="Chỉ nhân viên thuộc vai trò Buồng phòng (HOUSEKEEPING), Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) mới hợp lệ để nhận nhiệm vụ."
           />
 
@@ -1102,11 +1102,11 @@ export const HousekeepingPage: React.FC = () => {
         cancelText="Hủy"
         confirmLoading={completeMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
-            message="Xác nhận hoàn tất vệ sinh"
+            title="Xác nhận hoàn tất vệ sinh"
             description="Sau khi gửi, trạng thái phòng sẽ chuyển sang INSPECTION (Chờ kiểm tra). Quản lý hoặc Giám sát buồng phòng sẽ tiến hành nghiệm thu thực tế trước khi phòng chuyển thành READY."
           />
 
@@ -1158,11 +1158,11 @@ export const HousekeepingPage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={inspectMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type={inspectPassed ? 'success' : 'warning'}
             showIcon
-            message="Quy chuẩn nghiệm thu buồng phòng"
+            title="Quy chuẩn nghiệm thu buồng phòng"
             description={
               inspectPassed
                 ? 'Nếu ĐẠT: Phòng sẽ ngay lập tức chuyển sang trạng thái READY (Sạch sẽ) và sẵn sàng đón khách nhận phòng.'
@@ -1237,11 +1237,11 @@ export const HousekeepingPage: React.FC = () => {
         cancelText="Đóng"
         confirmLoading={cancelMutation.isPending}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="warning"
             showIcon
-            message="Hành động hủy nhiệm vụ"
+            title="Hành động hủy nhiệm vụ"
             description="Khi hủy, nhiệm vụ sẽ kết thúc và phòng vẫn duy trì trạng thái DIRTY. Thao tác này giải phóng vị trí nhiệm vụ hoạt động để có thể tạo nhiệm vụ khác sau này."
           />
 
@@ -1272,7 +1272,7 @@ export const HousekeepingPage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={560}
+        size={560}
         open={isDetailDrawerOpen}
         onClose={() => {
           setIsDetailDrawerOpen(false);

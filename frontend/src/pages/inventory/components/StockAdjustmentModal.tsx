@@ -89,7 +89,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
       okText="Xác nhận điều chỉnh"
       cancelText="Hủy bỏ"
       confirmLoading={adjustmentMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
       width={560}
     >
       {item && (
@@ -143,7 +143,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           />
 
           <Alert
-            message="Lưu ý nghiệp vụ kiểm kê"
+            title="Lưu ý nghiệp vụ kiểm kê"
             description="Số lượng thực tế sau khi xác nhận sẽ trở thành số lượng tồn kho mới của vật tư. Hệ thống sẽ tự động ghi nhận một giao dịch biến động kiểm kê (ADJUSTMENT)."
             type="info"
             showIcon

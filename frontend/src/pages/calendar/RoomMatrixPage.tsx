@@ -341,7 +341,7 @@ export const RoomMatrixPage: React.FC = () => {
           >
             Hôm nay
           </Button>
-          <Button.Group>
+          <Space.Compact>
             <Button
               icon={<LeftOutlined />}
               onClick={() => setStartDate((d) => d.subtract(7, "day"))}
@@ -354,7 +354,7 @@ export const RoomMatrixPage: React.FC = () => {
             >
               Tuần sau
             </Button>
-          </Button.Group>
+          </Space.Compact>
           <DatePicker
             value={startDate}
             onChange={(val) => {
@@ -371,7 +371,7 @@ export const RoomMatrixPage: React.FC = () => {
         <Alert
           type="info"
           showIcon
-          message="Chế độ xem sơ đồ phòng vận hành"
+          title="Chế độ xem sơ đồ phòng vận hành"
           description="Tài khoản của bạn hiển thị sơ đồ phòng vật lý và lệnh bảo trì. Chi tiết đơn đặt phòng và hồ sơ khách hàng chỉ dành cho Lễ tân, Quản lý và Kế toán."
           style={{ marginBottom: 16 }}
         />
@@ -457,7 +457,7 @@ export const RoomMatrixPage: React.FC = () => {
       >
         {isRoomsLoading ? (
           <div style={{ padding: 60, textAlign: "center" }}>
-            <Spin size="large" tip="Đang nạp sơ đồ ma trận phòng..." />
+            <Spin size="large" description="Đang nạp sơ đồ ma trận phòng..." />
           </div>
         ) : filteredRooms.length === 0 ? (
           <Empty
@@ -778,7 +778,7 @@ export const RoomMatrixPage: React.FC = () => {
         }
         open={!!selectedCell}
         onClose={() => setSelectedCell(null)}
-        width={screens.xs ? "100%" : 420}
+        size={screens.xs ? "100%" : 420}
       >
         {selectedCell && (
           <div>
@@ -898,7 +898,7 @@ export const RoomMatrixPage: React.FC = () => {
               <Alert
                 type="info"
                 showIcon
-                message="Trống / Chưa có booking"
+                title="Trống / Chưa có booking"
                 description={
                   selectedCell.date.isSame(dayjs(), "day")
                     ? `Hôm nay phòng đang ở trạng thái ${selectedCell.room.housekeepingStatus} và sẵn sàng phục vụ theo quy định vận hành.`

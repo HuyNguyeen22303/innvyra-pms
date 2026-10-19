@@ -294,7 +294,7 @@ export const DashboardPage: React.FC = () => {
         <Alert
           type="warning"
           showIcon
-          message="Xem báo cáo theo ngày quá khứ / tương lai"
+          title="Xem báo cáo theo ngày quá khứ / tương lai"
           description="Ảnh chụp tình trạng buồng phòng (Room Snapshot) chỉ được tính toán cho ngày hiện tại của khách sạn. Các chỉ số về số lượt đến/đi và tài chính vẫn được tổng hợp theo ngày được chọn."
           style={{ marginBottom: 16 }}
         />
@@ -307,7 +307,7 @@ export const DashboardPage: React.FC = () => {
         <>
           {isDashboardLoading ? (
             <div style={{ textAlign: 'center', padding: 60 }}>
-              <Spin size="large" tip="Đang tải dữ liệu vận hành từ máy chủ..." />
+              <Spin size="large" description="Đang tải dữ liệu vận hành từ máy chủ..." />
             </div>
           ) : (
             <>

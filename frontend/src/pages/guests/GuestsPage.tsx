@@ -512,7 +512,7 @@ export const GuestsPage: React.FC = () => {
       {/* Accountant Security Banner Notice */}
       {isAccountant && (
         <Alert
-          message="Chính sách Bảo vệ Dữ liệu Định danh Khách hàng (PII Protection)"
+          title="Chính sách Bảo vệ Dữ liệu Định danh Khách hàng (PII Protection)"
           description="Bạn đang truy cập hệ thống với vai trò Kế toán. Theo chính sách bảo mật khách sạn, các thông tin định danh cá nhân nhạy cảm (Số điện thoại, Email, Số CCCD/Passport) được mã hóa bảo vệ; bạn chỉ có quyền tra cứu Mã và Họ tên khách hàng để phục vụ đối soát hóa đơn / Folio."
           type="info"
           showIcon
@@ -529,7 +529,7 @@ export const GuestsPage: React.FC = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 12,
               borderColor: '#e2e8f0',
@@ -556,7 +556,7 @@ export const GuestsPage: React.FC = () => {
 
         <Col xs={12} sm={8}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 12,
               borderColor: '#e2e8f0',
@@ -583,7 +583,7 @@ export const GuestsPage: React.FC = () => {
 
         <Col xs={12} sm={8}>
           <Card
-            bordered
+            variant="outlined"
             style={{
               borderRadius: 12,
               borderColor: '#e2e8f0',
@@ -611,7 +611,7 @@ export const GuestsPage: React.FC = () => {
 
       {/* Filter & Search Toolbar */}
       <Card
-        bordered
+        variant="outlined"
         style={{
           borderRadius: 12,
           borderColor: '#cbd5e1',
@@ -662,7 +662,7 @@ export const GuestsPage: React.FC = () => {
 
       {/* Guests Main Table */}
       <Card
-        bordered
+        variant="outlined"
         style={{
           borderRadius: 12,
           borderColor: '#cbd5e1',
@@ -691,7 +691,7 @@ export const GuestsPage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={screens.xs ? '100%' : 560}
+        size={screens.xs ? '100%' : 560}
         open={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);
@@ -876,7 +876,7 @@ export const GuestsPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <Alert message="Không tìm thấy hồ sơ khách hàng." type="error" />
+          <Alert title="Không tìm thấy hồ sơ khách hàng." type="error" />
         )}
       </Drawer>
 
@@ -893,7 +893,7 @@ export const GuestsPage: React.FC = () => {
           setEditingGuest(null);
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         width={680}
       >
         <Form

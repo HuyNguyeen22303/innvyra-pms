@@ -198,7 +198,7 @@ export const InventorySuppliersTab: React.FC = () => {
       key: 'contactInfo',
       width: 190,
       render: (_, record) => (
-        <Space direction="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
+        <Space orientation="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
           {record.phone && (
             <Space size={4}>
               <PhoneOutlined style={{ color: '#16a34a', fontSize: 12 }} />
@@ -375,7 +375,7 @@ export const InventorySuppliersTab: React.FC = () => {
         okText="Thêm mới"
         cancelText="Hủy bỏ"
         confirmLoading={createMutation.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={createForm} layout="vertical" style={{ marginTop: 12 }}>
@@ -456,7 +456,7 @@ export const InventorySuppliersTab: React.FC = () => {
         okText="Lưu thay đổi"
         cancelText="Hủy bỏ"
         confirmLoading={updateMutation.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={editForm} layout="vertical" style={{ marginTop: 12 }}>

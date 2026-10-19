@@ -494,7 +494,7 @@ export const InventoryItemsTab: React.FC = () => {
         okText="Tạo vật tư"
         cancelText="Hủy bỏ"
         confirmLoading={createMutation.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={580}
       >
         <Form
@@ -614,7 +614,7 @@ export const InventoryItemsTab: React.FC = () => {
         okText="Lưu thay đổi"
         cancelText="Hủy bỏ"
         confirmLoading={updateMutation.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={580}
       >
         <Form form={editForm} layout="vertical" style={{ marginTop: 12 }}>
