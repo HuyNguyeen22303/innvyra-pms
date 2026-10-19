@@ -13,6 +13,7 @@ import {
   Empty,
   Skeleton,
   Alert,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -42,6 +43,7 @@ interface InventoryOverviewTabProps {
 export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
   onNavigateTab,
 }) => {
+  const screens = Grid.useBreakpoint();
   const { user } = useAuthStore();
   const canManage = ['ADMIN', 'MANAGER'].includes(user?.role || '');
 
@@ -91,30 +93,34 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       dataIndex: 'code',
       key: 'code',
       width: 100,
-      render: (code) => <Text strong>{code}</Text>,
+      render: (code) => <Text strong style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên danh mục vật tư',
       dataIndex: 'name',
       key: 'name',
+      width: 200,
+      render: (name) => <span style={{ whiteSpace: 'nowrap' }}>{name}</span>,
     },
     {
       title: 'Tổng mặt hàng',
       dataIndex: 'totalItems',
       key: 'totalItems',
+      width: 130,
       align: 'right',
-      render: (val) => <Tag color="blue">{val} mặt hàng</Tag>,
+      render: (val) => <Tag color="blue" style={{ whiteSpace: 'nowrap' }}>{val} mặt hàng</Tag>,
     },
     {
       title: 'Dưới định mức',
       dataIndex: 'lowStockItems',
       key: 'lowStockItems',
+      width: 130,
       align: 'right',
       render: (val) =>
         val > 0 ? (
-          <Tag color="error">{val} mặt hàng</Tag>
+          <Tag color="error" style={{ whiteSpace: 'nowrap' }}>{val} mặt hàng</Tag>
         ) : (
-          <Tag color="success">An toàn</Tag>
+          <Tag color="success" style={{ whiteSpace: 'nowrap' }}>An toàn</Tag>
         ),
     },
   ];
@@ -126,14 +132,15 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       dataIndex: 'code',
       key: 'code',
       width: 110,
-      render: (code) => <Text copyable>{code}</Text>,
+      render: (code) => <Text copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên vật tư',
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (name, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong>{name}</Text>
           {record.category && (
             <div>
@@ -151,6 +158,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       key: 'unit',
       width: 80,
       align: 'center',
+      render: (unit) => <span style={{ whiteSpace: 'nowrap' }}>{unit}</span>,
     },
     {
       title: 'Tồn hiện tại',
@@ -164,6 +172,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
           style={{
             color: record.isOutOfStock ? '#b91c1c' : '#d97706',
             fontSize: 14,
+            whiteSpace: 'nowrap',
           }}
         >
           {stock}
@@ -176,6 +185,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       key: 'minStockLevel',
       align: 'right',
       width: 110,
+      render: (minStock) => <span style={{ whiteSpace: 'nowrap' }}>{minStock}</span>,
     },
     {
       title: 'Tình trạng',
@@ -184,11 +194,11 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       width: 130,
       render: (_, record) =>
         record.isOutOfStock ? (
-          <Tag color="error" icon={<CloseCircleOutlined />}>
+          <Tag color="error" icon={<CloseCircleOutlined />} style={{ whiteSpace: 'nowrap' }}>
             Hết hàng
           </Tag>
         ) : (
-          <Tag color="warning" icon={<WarningOutlined />}>
+          <Tag color="warning" icon={<WarningOutlined />} style={{ whiteSpace: 'nowrap' }}>
             Sắp hết hàng
           </Tag>
         ),
@@ -198,11 +208,13 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       key: 'actions',
       align: 'center',
       width: 90,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
         <Button
           type="text"
           size="small"
           icon={<EyeOutlined />}
+          style={{ whiteSpace: 'nowrap' }}
           onClick={() => handleViewItem(record)}
         >
           Xem
@@ -405,6 +417,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 dataSource={lowStockItems}
                 rowKey="id"
                 loading={isLowStockLoading}
+                scroll={{ x: 860 }}
                 pagination={{ pageSize: 5, size: 'small', showTotal: (t) => `Tổng ${t} mặt hàng` }}
                 size="middle"
               />
@@ -446,6 +459,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 dataSource={summary?.categories || []}
                 rowKey="id"
                 loading={isSummaryLoading}
+                scroll={{ x: 560 }}
                 pagination={{ pageSize: 5, size: 'small' }}
                 size="middle"
               />

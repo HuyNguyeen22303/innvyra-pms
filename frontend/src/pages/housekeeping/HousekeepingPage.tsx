@@ -23,6 +23,7 @@ import {
   Empty,
   Spin,
   Table,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -65,6 +66,7 @@ const { Title, Text, Paragraph } = Typography;
 // Dynamic Housekeeping Staff Options loaded from employeesApi
 
 export const HousekeepingPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -356,7 +358,7 @@ export const HousekeepingPage: React.FC = () => {
       key: 'roomNumber',
       width: 140,
       render: (num: string) => (
-        <Space orientation="horizontal" size={6}>
+        <Space size={6} style={{ whiteSpace: 'nowrap' }}>
           <HomeOutlined style={{ color: '#1b4d3e', fontSize: 16 }} />
           <Text strong style={{ fontSize: 16, color: '#1b4d3e' }}>
             #{num}
@@ -369,13 +371,14 @@ export const HousekeepingPage: React.FC = () => {
       dataIndex: 'floorNumber',
       key: 'floorNumber',
       width: 100,
-      render: (floor: number) => <Tag color="blue">Tầng {floor}</Tag>,
+      render: (floor: number) => <Tag color="blue" style={{ whiteSpace: 'nowrap' }}>Tầng {floor}</Tag>,
     },
     {
       title: 'Hạng phòng',
       dataIndex: 'roomTypeId',
       key: 'roomTypeId',
-      render: (rtId: string) => <Text>{getRoomTypeName(rtId)}</Text>,
+      width: 180,
+      render: (rtId: string) => <Text style={{ whiteSpace: 'nowrap' }}>{getRoomTypeName(rtId)}</Text>,
     },
     {
       title: 'Trạng thái Buồng phòng',
@@ -383,10 +386,12 @@ export const HousekeepingPage: React.FC = () => {
       key: 'housekeepingStatus',
       width: 180,
       render: () => (
-        <Badge
-          status="error"
-          text={<Text strong style={{ color: '#cf1322' }}>DIRTY: Cần dọn dẹp</Text>}
-        />
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <Badge
+            status="error"
+            text={<Text strong style={{ color: '#cf1322' }}>DIRTY: Cần dọn dẹp</Text>}
+          />
+        </div>
       ),
     },
     {
@@ -395,7 +400,7 @@ export const HousekeepingPage: React.FC = () => {
       key: 'physicalStatus',
       width: 160,
       render: (status: string) => (
-        <Tag color={status === 'ACTIVE' ? 'success' : 'error'}>
+        <Tag color={status === 'ACTIVE' ? 'success' : 'error'} style={{ whiteSpace: 'nowrap' }}>
           {status === 'ACTIVE' ? 'Vận hành tốt' : 'Bảo trì / Khóa'}
         </Tag>
       ),
@@ -410,7 +415,7 @@ export const HousekeepingPage: React.FC = () => {
         );
         if (existingTask) {
           return (
-            <Space orientation="vertical" size={2}>
+            <Space direction="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
               {renderStatusTag(existingTask.status)}
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {existingTask.assignedTo
@@ -420,13 +425,14 @@ export const HousekeepingPage: React.FC = () => {
             </Space>
           );
         }
-        return <Text type="secondary">Chưa có lệnh dọn</Text>;
+        return <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>Chưa có lệnh dọn</Text>;
       },
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 180,
+      width: 150,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const existingTask = taskList.find(
           (t) => String(t.roomId) === String(record.id) && t.status !== 'COMPLETED' && t.status !== 'CANCELLED'
@@ -935,6 +941,7 @@ export const HousekeepingPage: React.FC = () => {
                   dataSource={dirtyRoomList}
                   rowKey="id"
                   loading={isDirtyLoading}
+                  scroll={{ x: 1100 }}
                   pagination={{ pageSize: 10, showSizeChanger: true }}
                 />
               </Card>

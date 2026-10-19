@@ -459,8 +459,9 @@ export const StaysPage: React.FC = () => {
     {
       title: 'Khách lưu trú',
       key: 'guest',
+      width: 200,
       render: (_, record) => (
-        <Space>
+        <Space style={{ whiteSpace: 'nowrap' }}>
           <div
             style={{
               width: 32,
@@ -472,12 +473,15 @@ export const StaysPage: React.FC = () => {
               justifyContent: 'center',
               color: '#1677ff',
               fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             <UserOutlined />
           </div>
           <div>
-            <Text strong>{record.bookerGuest?.fullName || 'Khách lưu trú'}</Text>
+            <Text strong style={{ whiteSpace: 'nowrap' }}>
+              {record.bookerGuest?.fullName || 'Khách lưu trú'}
+            </Text>
           </div>
         </Space>
       ),
@@ -499,7 +503,7 @@ export const StaysPage: React.FC = () => {
       key: 'actualCheckinAt',
       width: 170,
       render: (time: string) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text>{dayjs(time).format('DD/MM/YYYY HH:mm')}</Text>
           <div style={{ fontSize: 11, color: '#8c8c8c' }}>
             {formatDayOfWeek(time)}
@@ -514,14 +518,14 @@ export const StaysPage: React.FC = () => {
       width: 170,
       render: (time: string | null) =>
         time ? (
-          <div>
+          <div style={{ whiteSpace: 'nowrap' }}>
             <Text>{dayjs(time).format('DD/MM/YYYY HH:mm')}</Text>
             <div style={{ fontSize: 11, color: '#8c8c8c' }}>
               {formatDayOfWeek(time)}
             </div>
           </div>
         ) : (
-          <Text type="secondary" italic>
+          <Text type="secondary" italic style={{ whiteSpace: 'nowrap' }}>
             Đang lưu trú
           </Text>
         ),
@@ -537,14 +541,14 @@ export const StaysPage: React.FC = () => {
           color: 'default',
           badgeStatus: 'default',
         };
-        return <Badge status={conf.badgeStatus} text={<Text strong>{conf.text}</Text>} />;
+        return <Badge status={conf.badgeStatus} text={<Text strong style={{ whiteSpace: 'nowrap' }}>{conf.text}</Text>} />;
       },
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
-      fixed: 'right',
+      width: 150,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const isInHouse = record.status === 'CHECKED_IN';
         return (
@@ -600,8 +604,9 @@ export const StaysPage: React.FC = () => {
     {
       title: 'Khách hàng',
       key: 'guest',
+      width: 200,
       render: (_, record) => (
-        <Space>
+        <Space style={{ whiteSpace: 'nowrap' }}>
           <div
             style={{
               width: 32,
@@ -613,12 +618,15 @@ export const StaysPage: React.FC = () => {
               justifyContent: 'center',
               color: '#1677ff',
               fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             <UserOutlined />
           </div>
           <div>
-            <Text strong>{record.bookerGuest?.fullName}</Text>
+            <Text strong style={{ whiteSpace: 'nowrap' }}>
+              {record.bookerGuest?.fullName}
+            </Text>
           </div>
         </Space>
       ),
@@ -631,7 +639,7 @@ export const StaysPage: React.FC = () => {
         const isTodayArrival =
           dayjs(record.checkInDate).format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
         return (
-          <div>
+          <div style={{ whiteSpace: 'nowrap' }}>
             <Space size={4}>
               <CalendarOutlined style={{ color: '#8c8c8c' }} />
               <Text strong={isTodayArrival}>
@@ -674,16 +682,16 @@ export const StaysPage: React.FC = () => {
       width: 150,
       render: (status: string) =>
         status === 'PARTIALLY_CHECKED_IN' ? (
-          <Badge status="processing" text={<Text strong style={{ color: '#0958d9' }}>Nhận 1 phần</Text>} />
+          <Badge status="processing" text={<Text strong style={{ color: '#0958d9', whiteSpace: 'nowrap' }}>Nhận 1 phần</Text>} />
         ) : (
-          <Badge status="warning" text={<Text strong style={{ color: '#d46b08' }}>Chờ nhận phòng</Text>} />
+          <Badge status="warning" text={<Text strong style={{ color: '#d46b08', whiteSpace: 'nowrap' }}>Chờ nhận phòng</Text>} />
         ),
     },
     {
       title: 'Thao tác Check-in',
       key: 'action',
       width: 160,
-      fixed: 'right',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
         <Button
           type="primary"
@@ -856,7 +864,7 @@ export const StaysPage: React.FC = () => {
                         <Empty description="Chưa có lượt lưu trú nào phù hợp điều kiện lọc." />
                       ),
                     }}
-                    scroll={{ x: 1050 }}
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               </>
@@ -895,7 +903,7 @@ export const StaysPage: React.FC = () => {
                         <Empty description="Hiện không có đơn đặt phòng nào đang chờ check-in." />
                       ),
                     }}
-                    scroll={{ x: 1000 }}
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               </>

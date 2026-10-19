@@ -17,6 +17,7 @@ import {
   message,
   Empty,
   Skeleton,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -53,6 +54,7 @@ const { Title, Text, Paragraph } = Typography;
 const ALL_ROLES: Role[] = ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN'];
 
 export const EmployeesPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -229,7 +231,7 @@ export const EmployeesPage: React.FC = () => {
             >
               {initial}
             </Avatar>
-            <div>
+            <div style={{ whiteSpace: 'nowrap' }}>
               <Space size={4}>
                 <Text strong style={{ color: '#0f172a', fontSize: 14 }}>
                   {record.fullName}
@@ -264,6 +266,7 @@ export const EmployeesPage: React.FC = () => {
               borderRadius: 4,
               fontWeight: 600,
               fontSize: 12,
+              whiteSpace: 'nowrap',
             }}
           >
             {config.label}
@@ -278,9 +281,9 @@ export const EmployeesPage: React.FC = () => {
       width: 200,
       render: (email: string | null) =>
         email ? (
-          <Text style={{ fontSize: 13, color: '#334155' }}>{email}</Text>
+          <Text style={{ fontSize: 13, color: '#334155', whiteSpace: 'nowrap' }}>{email}</Text>
         ) : (
-          <Text type="secondary" italic style={{ fontSize: 12 }}>
+          <Text type="secondary" italic style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             Chưa có email
           </Text>
         ),
@@ -292,11 +295,11 @@ export const EmployeesPage: React.FC = () => {
       width: 170,
       render: (isActive: boolean) =>
         isActive ? (
-          <Tag color="success" icon={<CheckCircleOutlined />} style={{ padding: '2px 8px' }}>
+          <Tag color="success" icon={<CheckCircleOutlined />} style={{ padding: '2px 8px', whiteSpace: 'nowrap' }}>
             Đang hoạt động
           </Tag>
         ) : (
-          <Tag color="default" icon={<StopOutlined />} style={{ padding: '2px 8px' }}>
+          <Tag color="default" icon={<StopOutlined />} style={{ padding: '2px 8px', whiteSpace: 'nowrap' }}>
             Đã vô hiệu hóa
           </Tag>
         ),
@@ -307,7 +310,7 @@ export const EmployeesPage: React.FC = () => {
       key: 'createdAt',
       width: 160,
       render: (createdAt: string) => (
-        <Text style={{ fontSize: 12, color: '#64748b' }}>
+        <Text style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
           {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
         </Text>
       ),
@@ -316,7 +319,7 @@ export const EmployeesPage: React.FC = () => {
       title: 'Hành động',
       key: 'actions',
       width: 150,
-      fixed: 'right',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const isSelf = String(record.id) === String(user?.id);
         const canManage = canManageRole(user?.role, record.role);
@@ -712,7 +715,7 @@ export const EmployeesPage: React.FC = () => {
           dataSource={employeeItems}
           rowKey="id"
           loading={isLoading}
-          scroll={{ x: 900 }}
+          scroll={{ x: 1100 }}
           locale={{
             emptyText: isError ? (
               <div style={{ padding: '30px 0' }}>

@@ -17,6 +17,7 @@ import {
   Col,
   Alert,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -53,6 +54,7 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
 };
 
 export const ServiceOrdersTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManageOrders = ['ADMIN', 'MANAGER', 'RECEPTIONIST'].includes(user?.role || '');
@@ -260,7 +262,7 @@ export const ServiceOrdersTab: React.FC = () => {
         const confirmationCode = stay?.confirmationCode || res?.confirmationCode;
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, whiteSpace: 'nowrap' }}>
             {roomNumber ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Tag color="geekblue" style={{ fontSize: 13, fontWeight: 700, padding: '1px 8px', margin: 0 }}>
@@ -296,8 +298,9 @@ export const ServiceOrdersTab: React.FC = () => {
     {
       title: 'Chi tiết dịch vụ & Đơn giá Snapshot',
       key: 'items',
+      width: 320,
       render: (_, record) => (
-        <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+        <Space direction="vertical" size={4} style={{ width: '100%', whiteSpace: 'nowrap' }}>
           {record.items.map((item) => (
             <div
               key={item.id}
@@ -308,6 +311,7 @@ export const ServiceOrdersTab: React.FC = () => {
                 background: '#fafafa',
                 borderRadius: 4,
                 border: '1px solid #f0f0f0',
+                gap: 12,
               }}
             >
               <div>
@@ -341,7 +345,7 @@ export const ServiceOrdersTab: React.FC = () => {
       render: (_, record) => {
         const orderTotal = record.items.reduce((sum, item) => sum + parseFloat(item.lineTotal || '0'), 0);
         return (
-          <Text strong style={{ fontSize: 14, color: '#1b4d3e' }}>
+          <Text strong style={{ fontSize: 14, color: '#1b4d3e', whiteSpace: 'nowrap' }}>
             {formatVND(orderTotal)}
           </Text>
         );
@@ -353,7 +357,7 @@ export const ServiceOrdersTab: React.FC = () => {
       key: 'status',
       width: 180,
       render: (status: ServiceOrderStatus, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           {renderStatusTag(status)}
           {record.cancellationReason && (
             <div style={{ fontSize: 11, color: '#ff4d4f', marginTop: 2 }}>
@@ -373,7 +377,7 @@ export const ServiceOrdersTab: React.FC = () => {
         const canceller = record.cancelledBy ? getStaff(record.cancelledBy) : null;
 
         return (
-          <div style={{ fontSize: 12 }}>
+          <div style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <div>
               <Text strong style={{ color: '#0f172a' }}>{creator.fullName}</Text>{' '}
               <Tag color={creator.color} style={{ fontSize: 10, margin: 0, padding: '0 4px' }}>
@@ -404,11 +408,12 @@ export const ServiceOrdersTab: React.FC = () => {
           {
             title: 'Thao tác',
             key: 'actions',
-            width: 160,
+            width: 140,
+            fixed: (screens.xs ? false : 'right') as 'right' | false,
             render: (_: any, record: ServiceOrderItem) => {
               if (record.status !== 'REQUESTED') return null;
               return (
-                <Space size={6}>
+                <Space size={6} style={{ whiteSpace: 'nowrap' }}>
                   <Tooltip title="Hoàn thành order (tự động ghi nợ vào Folio)">
                     <Button
                       size="small"
@@ -506,6 +511,7 @@ export const ServiceOrdersTab: React.FC = () => {
         dataSource={orderList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1250 }}
         pagination={{
           current: page,
           pageSize,

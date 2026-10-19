@@ -21,6 +21,7 @@ import {
   Avatar,
   Divider,
   Descriptions,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -54,6 +55,7 @@ import type {
 const { Title, Text, Paragraph } = Typography;
 
 export const GuestsPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [form] = Form.useForm();
@@ -321,19 +323,21 @@ export const GuestsPage: React.FC = () => {
       title: 'Họ và tên khách hàng',
       dataIndex: 'fullName',
       key: 'fullName',
+      width: 200,
       render: (fullName: string) => (
-        <Space orientation="horizontal" align="center">
+        <Space align="center" style={{ whiteSpace: 'nowrap' }}>
           <Avatar
             style={{
               backgroundColor: '#1b4d3e',
               color: '#ffffff',
               fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             {fullName.charAt(0).toUpperCase()}
           </Avatar>
           <div>
-            <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
+            <Text strong style={{ color: '#0f172a', fontSize: 13, whiteSpace: 'nowrap' }}>
               {fullName}
             </Text>
           </div>
@@ -347,11 +351,11 @@ export const GuestsPage: React.FC = () => {
       width: 150,
       render: (phone?: string | null) =>
         isAccountant ? (
-          <Text type="secondary" italic style={{ fontSize: 12 }}>
+          <Text type="secondary" italic style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             🔒 Đã mã hóa
           </Text>
         ) : phone ? (
-          <Space size={4}>
+          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
             <PhoneOutlined style={{ color: '#0284c7', fontSize: 12 }} />
             <span style={{ color: '#334155', fontWeight: 500 }}>{phone}</span>
           </Space>
@@ -365,13 +369,14 @@ export const GuestsPage: React.FC = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      width: 220,
       render: (email?: string | null) =>
         isAccountant ? (
-          <Text type="secondary" italic style={{ fontSize: 12 }}>
+          <Text type="secondary" italic style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             🔒 Đã mã hóa
           </Text>
         ) : email ? (
-          <Space size={4}>
+          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
             <MailOutlined style={{ color: '#64748b', fontSize: 12 }} />
             <a href={`mailto:${email}`} style={{ color: '#0369a1', fontSize: 12 }}>
               {email}
@@ -671,6 +676,7 @@ export const GuestsPage: React.FC = () => {
           loading={isLoading}
           pagination={{ pageSize: 10, showSizeChanger: true }}
           size="middle"
+          scroll={{ x: 1050 }}
         />
       </Card>
 
@@ -685,7 +691,7 @@ export const GuestsPage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={560}
+        width={screens.xs ? '100%' : 560}
         open={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);

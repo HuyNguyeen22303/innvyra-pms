@@ -14,6 +14,7 @@ import {
   Typography,
   Card,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -39,6 +40,7 @@ import type {
 const { Text } = Typography;
 
 export const InventorySuppliersTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManage = ['ADMIN', 'MANAGER'].includes(user?.role || '');
@@ -175,25 +177,28 @@ export const InventorySuppliersTab: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 120,
-      render: (code) => <Text strong copyable>{code}</Text>,
+      render: (code) => <Text strong copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên nhà cung cấp',
       dataIndex: 'name',
       key: 'name',
-      render: (name) => <Text strong>{name}</Text>,
+      width: 220,
+      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
     },
     {
       title: 'Người liên hệ',
       dataIndex: 'contactPerson',
       key: 'contactPerson',
-      render: (contact) => contact || <Text type="secondary">-</Text>,
+      width: 170,
+      render: (contact) => <span style={{ whiteSpace: 'nowrap' }}>{contact || '-'}</span>,
     },
     {
       title: 'Liên lạc',
       key: 'contactInfo',
+      width: 190,
       render: (_, record) => (
-        <Space direction="vertical" size={2}>
+        <Space direction="vertical" size={2} style={{ whiteSpace: 'nowrap' }}>
           {record.phone && (
             <Space size={4}>
               <PhoneOutlined style={{ color: '#16a34a', fontSize: 12 }} />
@@ -214,8 +219,8 @@ export const InventorySuppliersTab: React.FC = () => {
       title: 'Địa chỉ',
       dataIndex: 'address',
       key: 'address',
-      ellipsis: true,
-      render: (addr) => addr || <Text type="secondary">-</Text>,
+      width: 200,
+      render: (addr) => <span style={{ whiteSpace: 'nowrap' }}>{addr || '-'}</span>,
     },
     {
       title: 'Trạng thái',
@@ -225,11 +230,11 @@ export const InventorySuppliersTab: React.FC = () => {
       align: 'center',
       render: (isActive) =>
         isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
+          <Tag icon={<CheckCircleOutlined />} color="success" style={{ whiteSpace: 'nowrap' }}>
             Đang hợp tác
           </Tag>
         ) : (
-          <Tag icon={<CloseCircleOutlined />} color="default">
+          <Tag icon={<CloseCircleOutlined />} color="default" style={{ whiteSpace: 'nowrap' }}>
             Ngừng hoạt động
           </Tag>
         ),
@@ -239,8 +244,9 @@ export const InventorySuppliersTab: React.FC = () => {
       key: 'actions',
       width: 110,
       align: 'center',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
-        <Space size={4}>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           {canManage ? (
             <>
               <Tooltip title="Chỉnh sửa nhà cung cấp">
@@ -339,6 +345,7 @@ export const InventorySuppliersTab: React.FC = () => {
         dataSource={supplierList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1150 }}
         pagination={{
           current: page,
           pageSize,

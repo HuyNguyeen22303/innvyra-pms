@@ -140,9 +140,10 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Khách hàng',
       key: 'guest',
+      width: 170,
       render: (_, r) => (
-        <div>
-          <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <Text strong style={{ color: '#0f172a', fontSize: 13, whiteSpace: 'nowrap' }}>
             {r.bookerGuest?.fullName}
           </Text>
           <div style={{ fontSize: 11, color: '#64748b' }}>#{r.confirmationCode}</div>
@@ -152,8 +153,9 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Khoảng thời gian',
       key: 'dates',
+      width: 170,
       render: (_, r) => (
-        <div style={{ fontSize: 12 }}>
+        <div style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
           {dayjs(r.checkInDate).format('DD/MM')} ➔ {dayjs(r.checkOutDate).format('DD/MM')}
           <span style={{ color: '#64748b', marginLeft: 6 }}>({r.totalNights} đêm)</span>
         </div>
@@ -170,12 +172,13 @@ export const DashboardPage: React.FC = () => {
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (val) => <Text strong style={{ color: '#1b4d3e' }}>{formatVnd(val)}</Text>,
+      width: 130,
+      render: (val) => <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>{formatVnd(val)}</Text>,
     },
     {
       title: 'Hành động',
       key: 'action',
-      width: 130,
+      width: 110,
       render: (_, r) => (
         <Button
           type="primary"
@@ -196,7 +199,7 @@ export const DashboardPage: React.FC = () => {
       key: 'room',
       width: 110,
       render: (_, s) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ color: '#1b4d3e', fontSize: 14 }}>
             #{s.room?.roomNumber}
           </Text>
@@ -207,9 +210,10 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Khách lưu trú',
       key: 'guest',
+      width: 180,
       render: (_, s) => (
-        <div>
-          <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <Text strong style={{ color: '#0f172a', fontSize: 13, whiteSpace: 'nowrap' }}>
             {s.bookerGuest?.fullName || 'Khách lưu trú'}
           </Text>
           <div style={{ fontSize: 11, color: '#64748b' }}>#{s.confirmationCode}</div>
@@ -220,12 +224,13 @@ export const DashboardPage: React.FC = () => {
       title: 'Nhận phòng lúc',
       dataIndex: 'actualCheckinAt',
       key: 'checkinAt',
-      render: (val) => <Text style={{ fontSize: 12 }}>{dayjs(val).format('DD/MM/YYYY HH:mm')}</Text>,
+      width: 160,
+      render: (val) => <Text style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{dayjs(val).format('DD/MM/YYYY HH:mm')}</Text>,
     },
     {
       title: 'Trạng thái',
       key: 'status',
-      width: 130,
+      width: 120,
       render: () => <Tag color="success">Đang lưu trú</Tag>,
     },
     {
@@ -485,7 +490,7 @@ export const DashboardPage: React.FC = () => {
                           loading={isArrivalsLoading}
                           pagination={{ pageSize: 5 }}
                           size="small"
-                          scroll={{ x: 600 }}
+                          scroll={{ x: 680 }}
                         />
                       ),
                     },
@@ -505,7 +510,7 @@ export const DashboardPage: React.FC = () => {
                           loading={isInHouseLoading}
                           pagination={{ pageSize: 5 }}
                           size="small"
-                          scroll={{ x: 600 }}
+                          scroll={{ x: 700 }}
                         />
                       ),
                     },

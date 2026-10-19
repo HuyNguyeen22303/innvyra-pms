@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space } from 'antd';
+import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid } from 'antd';
 import { ExportOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -18,6 +18,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   issue,
   onClose,
 }) => {
+  const screens = Grid.useBreakpoint();
   if (!issue) return null;
 
   const columns: ColumnsType<StockIssueItemView> = [
@@ -26,12 +27,14 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       dataIndex: ['item', 'code'],
       key: 'code',
       width: 120,
-      render: (code) => <Text copyable>{code}</Text>,
+      render: (code) => <Text copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên vật tư',
       dataIndex: ['item', 'name'],
       key: 'name',
+      width: 220,
+      render: (name) => <span style={{ whiteSpace: 'nowrap' }}>{name}</span>,
     },
     {
       title: 'Đơn vị',
@@ -39,6 +42,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       key: 'unit',
       width: 90,
       align: 'center',
+      render: (unit) => <span style={{ whiteSpace: 'nowrap' }}>{unit}</span>,
     },
     {
       title: 'Số lượng xuất',
@@ -47,7 +51,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       width: 140,
       align: 'right',
       render: (qty, record) => (
-        <Text strong style={{ color: '#d97706' }}>
+        <Text strong style={{ color: '#d97706', whiteSpace: 'nowrap' }}>
           {qty} {record.item?.unit}
         </Text>
       ),
@@ -56,7 +60,8 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       title: 'Ghi chú dòng',
       dataIndex: 'notes',
       key: 'notes',
-      render: (notes) => notes || '-',
+      width: 180,
+      render: (notes) => <span style={{ whiteSpace: 'nowrap' }}>{notes || '-'}</span>,
     },
   ];
 
@@ -75,7 +80,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           Đóng
         </Button>,
       ]}
-      width={780}
+      width={screens.xs ? '100%' : 780}
     >
       <Descriptions
         bordered
@@ -135,6 +140,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
         size="small"
         pagination={false}
         bordered
+        scroll={{ x: 750 }}
       />
     </Modal>
   );

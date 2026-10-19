@@ -21,6 +21,7 @@ import {
   Tooltip,
   message,
   Spin,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -65,6 +66,7 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
 };
 
 export const FolioTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -386,22 +388,26 @@ export const FolioTab: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 90,
-      render: (id: string) => <Text style={{ fontFamily: 'monospace' }}>#{id}</Text>,
+      render: (id: string) => <Text style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>#{id}</Text>,
     },
     {
       title: 'Thời gian',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date: string) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+        </span>
+      ),
     },
     {
       title: 'Loại',
       dataIndex: 'entryType',
       key: 'entryType',
-      width: 110,
+      width: 120,
       render: (type: string) => (
-        <Tag color={type === 'DEBIT' ? 'volcano' : 'green'} style={{ fontWeight: 600 }}>
+        <Tag color={type === 'DEBIT' ? 'volcano' : 'green'} style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
           {type === 'DEBIT' ? 'Ghi nợ (+)' : 'Ghi có (-)'}
         </Tag>
       ),
@@ -410,25 +416,31 @@ export const FolioTab: React.FC = () => {
       title: 'Nguồn phát sinh',
       dataIndex: 'sourceType',
       key: 'sourceType',
-      width: 160,
+      width: 180,
       render: (source: string) => {
+        let tag;
         switch (source) {
           case 'ROOM_NIGHT':
-            return <Tag color="blue">Tiền phòng (Room Night)</Tag>;
+            tag = <Tag color="blue" style={{ whiteSpace: 'nowrap' }}>Tiền phòng (Room Night)</Tag>;
+            break;
           case 'SERVICE_ORDER_ITEM':
-            return <Tag color="purple">Dịch vụ (Service)</Tag>;
+            tag = <Tag color="purple" style={{ whiteSpace: 'nowrap' }}>Dịch vụ (Service)</Tag>;
+            break;
           case 'MANUAL_ADJUSTMENT':
-            return <Tag color="orange">Điều chỉnh thủ công</Tag>;
+            tag = <Tag color="orange" style={{ whiteSpace: 'nowrap' }}>Điều chỉnh thủ công</Tag>;
+            break;
           default:
-            return <Tag>{source}</Tag>;
+            tag = <Tag style={{ whiteSpace: 'nowrap' }}>{source}</Tag>;
         }
+        return tag;
       },
     },
     {
       title: 'Diễn giải chi tiết',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => <Text>{desc}</Text>,
+      width: 250,
+      render: (desc: string) => <Text style={{ whiteSpace: 'nowrap' }}>{desc}</Text>,
     },
     {
       title: 'Số tiền',
@@ -441,6 +453,7 @@ export const FolioTab: React.FC = () => {
           strong
           style={{
             fontSize: 14,
+            whiteSpace: 'nowrap',
             color: record.entryType === 'DEBIT' ? '#cf1322' : '#389e0d',
           }}
         >
@@ -452,11 +465,11 @@ export const FolioTab: React.FC = () => {
       title: 'Người ghi',
       dataIndex: 'createdBy',
       key: 'createdBy',
-      width: 150,
+      width: 180,
       render: (staffId: string) => {
         const staff = getStaff(staffId);
         return (
-          <span style={{ fontSize: 12 }}>
+          <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <Text strong>{staff.fullName}</Text>{' '}
             <Tag color={staff.color} style={{ fontSize: 10, margin: 0 }}>{staff.roleTitle}</Tag>
           </span>
@@ -472,30 +485,34 @@ export const FolioTab: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 90,
-      render: (id: string) => <Text style={{ fontFamily: 'monospace' }}>#{id}</Text>,
+      render: (id: string) => <Text style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>#{id}</Text>,
     },
     {
       title: 'Thời gian',
       dataIndex: 'processedAt',
       key: 'processedAt',
       width: 150,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date: string) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+        </span>
+      ),
     },
     {
       title: 'Phân loại',
       dataIndex: 'paymentType',
       key: 'paymentType',
-      width: 140,
+      width: 160,
       render: (type: string) => {
         switch (type) {
           case 'PAYMENT':
-            return <Tag color="success" style={{ fontWeight: 600 }}>Thanh toán (Payment)</Tag>;
+            return <Tag color="success" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>Thanh toán (Payment)</Tag>;
           case 'DEPOSIT':
-            return <Tag color="processing" style={{ fontWeight: 600 }}>Đặt cọc (Deposit)</Tag>;
+            return <Tag color="processing" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>Đặt cọc (Deposit)</Tag>;
           case 'REFUND':
-            return <Tag color="error" style={{ fontWeight: 600 }}>Hoàn tiền (Refund)</Tag>;
+            return <Tag color="error" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>Hoàn tiền (Refund)</Tag>;
           default:
-            return <Tag>{type}</Tag>;
+            return <Tag style={{ whiteSpace: 'nowrap' }}>{type}</Tag>;
         }
       },
     },
@@ -505,7 +522,7 @@ export const FolioTab: React.FC = () => {
       key: 'paymentMethod',
       width: 150,
       render: (method: string) => (
-        <Tag color={method === 'CASH' ? 'green' : 'blue'}>
+        <Tag color={method === 'CASH' ? 'green' : 'blue'} style={{ whiteSpace: 'nowrap' }}>
           {method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}
         </Tag>
       ),
@@ -513,8 +530,9 @@ export const FolioTab: React.FC = () => {
     {
       title: 'Mã tham chiếu / Lý do',
       key: 'refOrReason',
+      width: 220,
       render: (_, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           {record.referenceNumber && (
             <div>
               <Text type="secondary" style={{ fontSize: 11 }}>Mã GD ngân hàng:</Text>{' '}
@@ -540,6 +558,7 @@ export const FolioTab: React.FC = () => {
           strong
           style={{
             fontSize: 14,
+            whiteSpace: 'nowrap',
             color: record.paymentType === 'REFUND' ? '#cf1322' : '#389e0d',
           }}
         >
@@ -551,11 +570,11 @@ export const FolioTab: React.FC = () => {
       title: 'Người thu',
       dataIndex: 'processedBy',
       key: 'processedBy',
-      width: 150,
+      width: 180,
       render: (staffId: string) => {
         const staff = getStaff(staffId);
         return (
-          <span style={{ fontSize: 12 }}>
+          <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <Text strong>{staff.fullName}</Text>{' '}
             <Tag color={staff.color} style={{ fontSize: 10, margin: 0 }}>{staff.roleTitle}</Tag>
           </span>
@@ -565,7 +584,8 @@ export const FolioTab: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
+      width: 120,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const canRefundThis =
           canSettleOrAdjust &&
@@ -574,7 +594,7 @@ export const FolioTab: React.FC = () => {
           folio?.status === 'OPEN';
 
         return (
-          <Space size={6}>
+          <Space size={6} style={{ whiteSpace: 'nowrap' }}>
             <Tooltip title="Xem & In phiếu thu">
               <Button
                 size="small"
@@ -638,7 +658,7 @@ export const FolioTab: React.FC = () => {
       key: 'id',
       width: 110,
       render: (id: string, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ color: '#1b4d3e', fontFamily: 'monospace', fontSize: 13 }}>
             #{id}
           </Text>
@@ -649,8 +669,9 @@ export const FolioTab: React.FC = () => {
     {
       title: 'Khách hàng',
       key: 'bookerGuest',
+      width: 200,
       render: (_, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong>{record.bookerGuest?.fullName || 'Khách đặt'}</Text>
           <div style={{ fontSize: 11, color: '#8c8c8c' }}>Nguồn: {record.bookingSource}</div>
         </div>
@@ -659,8 +680,9 @@ export const FolioTab: React.FC = () => {
     {
       title: 'Thời gian lưu trú',
       key: 'stayDates',
+      width: 220,
       render: (_, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <span>{dayjs(record.checkInDate).format('DD/MM/YYYY')} ➔ {dayjs(record.checkOutDate).format('DD/MM/YYYY')}</span>
           <div style={{ fontSize: 11, color: '#8c8c8c' }}>
             {record.totalNights} đêm • {record.totalRooms} phòng
@@ -672,8 +694,9 @@ export const FolioTab: React.FC = () => {
       title: 'Tổng dự tính',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
+      width: 140,
       render: (amount: string) => (
-        <Text strong style={{ color: '#1b4d3e' }}>
+        <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>
           {formatVND(amount)}
         </Text>
       ),
@@ -682,21 +705,25 @@ export const FolioTab: React.FC = () => {
       title: 'Trạng thái Đặt phòng',
       dataIndex: 'status',
       key: 'status',
-      width: 160,
-      render: (status: ReservationStatus) => renderReservationStatusTag(status),
+      width: 170,
+      render: (status: ReservationStatus) => (
+        <div style={{ whiteSpace: 'nowrap' }}>
+          {renderReservationStatusTag(status)}
+        </div>
+      ),
     },
     {
       title: 'Sổ công nợ Folio',
       key: 'folioStatus',
-      width: 175,
+      width: 180,
       render: (_, record) => {
         const info = folioStatusMap[String(record.id)];
         if (!info || info.status === 'LOADING') {
-          return <Tag>Đang kiểm tra...</Tag>;
+          return <Tag style={{ whiteSpace: 'nowrap' }}>Đang kiểm tra...</Tag>;
         }
         if (info.status === 'CLOSED') {
           return (
-            <div>
+            <div style={{ whiteSpace: 'nowrap' }}>
               <Tag
                 icon={<LockOutlined />}
                 style={{
@@ -704,6 +731,7 @@ export const FolioTab: React.FC = () => {
                   background: '#f5f5f5',
                   color: '#595959',
                   borderColor: '#d9d9d9',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 ĐÃ QUYẾT TOÁN
@@ -718,8 +746,8 @@ export const FolioTab: React.FC = () => {
         }
         if (info.status === 'OPEN') {
           return (
-            <div>
-              <Tag icon={<UnlockOutlined />} color="success" style={{ fontWeight: 600 }}>
+            <div style={{ whiteSpace: 'nowrap' }}>
+              <Tag icon={<UnlockOutlined />} color="success" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                 ĐANG MỞ (OPEN)
               </Tag>
               {info.balanceAmount && (
@@ -739,7 +767,7 @@ export const FolioTab: React.FC = () => {
         }
         if (info.status === 'NOT_OPENED') {
           return (
-            <Tag color="warning" style={{ fontStyle: 'italic' }}>
+            <Tag color="warning" style={{ fontStyle: 'italic', whiteSpace: 'nowrap' }}>
               Chưa mở Folio
             </Tag>
           );
@@ -750,7 +778,8 @@ export const FolioTab: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 140,
+      width: 130,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const info = folioStatusMap[String(record.id)];
         const isClosed = info?.status === 'CLOSED';
@@ -884,6 +913,7 @@ export const FolioTab: React.FC = () => {
             dataSource={reservationList}
             rowKey="id"
             loading={isReservationsLoading}
+            scroll={{ x: 1050 }}
             pagination={{
               current: resTablePage,
               pageSize: resTablePageSize,
@@ -1188,6 +1218,7 @@ export const FolioTab: React.FC = () => {
                       dataSource={folioItems}
                       rowKey="id"
                       loading={isItemsLoading}
+                      scroll={{ x: 1100 }}
                       pagination={{
                         current: itemsPage,
                         pageSize: 20,
@@ -1212,6 +1243,7 @@ export const FolioTab: React.FC = () => {
                       dataSource={paymentList}
                       rowKey="id"
                       loading={isPaymentsLoading}
+                      scroll={{ x: 1220 }}
                       pagination={{
                         current: paymentsPage,
                         pageSize: 20,

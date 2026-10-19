@@ -18,6 +18,7 @@ import {
   Col,
   Divider,
   Alert,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -60,6 +61,7 @@ const COMMON_DEPARTMENTS = [
 ];
 
 export const InventoryIssuesTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canCreate = ['ADMIN', 'MANAGER', 'HOUSEKEEPING', 'TECHNICIAN'].includes(
@@ -261,26 +263,32 @@ export const InventoryIssuesTab: React.FC = () => {
       dataIndex: 'issueNumber',
       key: 'issueNumber',
       width: 160,
-      render: (num) => <Text strong copyable>{num}</Text>,
+      render: (num) => <Text strong copyable style={{ whiteSpace: 'nowrap' }}>{num}</Text>,
     },
     {
       title: 'Ngày xuất kho',
       dataIndex: 'issueDate',
       key: 'issueDate',
       width: 130,
-      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY')}
+        </span>
+      ),
     },
     {
       title: 'Bộ phận nhận',
       dataIndex: 'department',
       key: 'department',
-      render: (dept) => <Tag color="purple">{dept}</Tag>,
+      width: 180,
+      render: (dept) => <Tag color="purple" style={{ whiteSpace: 'nowrap' }}>{dept}</Tag>,
     },
     {
       title: 'Mục đích sử dụng',
       dataIndex: 'purpose',
       key: 'purpose',
-      render: (purpose) => purpose || <Text type="secondary">-</Text>,
+      width: 200,
+      render: (purpose) => <span style={{ whiteSpace: 'nowrap' }}>{purpose || '-'}</span>,
     },
     {
       title: 'Mặt hàng',
@@ -288,26 +296,31 @@ export const InventoryIssuesTab: React.FC = () => {
       width: 110,
       align: 'center',
       render: (_, record) => (
-        <Tag color="orange">{record.items?.length || 0} mặt hàng</Tag>
+        <Tag color="orange" style={{ whiteSpace: 'nowrap' }}>{record.items?.length || 0} mặt hàng</Tag>
       ),
     },
     {
       title: 'Người xuất',
       key: 'creator',
       width: 140,
-      render: (_, record) =>
-        record.creator?.fullName || record.creator?.username || '-',
+      render: (_, record) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {record.creator?.fullName || record.creator?.username || '-'}
+        </span>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 90,
       align: 'center',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
         <Button
           type="text"
           size="small"
           icon={<EyeOutlined />}
+          style={{ whiteSpace: 'nowrap' }}
           onClick={() => {
             setSelectedIssue(record);
             setIsDetailOpen(true);
@@ -378,6 +391,7 @@ export const InventoryIssuesTab: React.FC = () => {
         dataSource={issueList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1010 }}
         pagination={{
           current: page,
           pageSize,

@@ -14,6 +14,7 @@ import {
   Typography,
   Card,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -38,6 +39,7 @@ import type {
 const { Text } = Typography;
 
 export const InventoryCategoriesTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManage = ['ADMIN', 'MANAGER'].includes(user?.role || '');
@@ -165,20 +167,21 @@ export const InventoryCategoriesTab: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 140,
-      render: (code) => <Text strong copyable>{code}</Text>,
+      render: (code) => <Text strong copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên danh mục vật tư',
       dataIndex: 'name',
       key: 'name',
-      render: (name) => <Text strong>{name}</Text>,
+      width: 220,
+      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true,
-      render: (desc) => desc || <Text type="secondary">-</Text>,
+      width: 200,
+      render: (desc) => <span style={{ whiteSpace: 'nowrap' }}>{desc || '-'}</span>,
     },
     {
       title: 'Trạng thái',
@@ -188,11 +191,11 @@ export const InventoryCategoriesTab: React.FC = () => {
       align: 'center',
       render: (isActive) =>
         isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
+          <Tag icon={<CheckCircleOutlined />} color="success" style={{ whiteSpace: 'nowrap' }}>
             Đang hoạt động
           </Tag>
         ) : (
-          <Tag icon={<CloseCircleOutlined />} color="default">
+          <Tag icon={<CloseCircleOutlined />} color="default" style={{ whiteSpace: 'nowrap' }}>
             Ngừng hoạt động
           </Tag>
         ),
@@ -202,15 +205,20 @@ export const InventoryCategoriesTab: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+        </span>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 120,
       align: 'center',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
-        <Space size={4}>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           {canManage ? (
             <>
               <Tooltip title="Chỉnh sửa danh mục">
@@ -309,6 +317,7 @@ export const InventoryCategoriesTab: React.FC = () => {
         dataSource={categoryList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 980 }}
         pagination={{
           current: page,
           pageSize,

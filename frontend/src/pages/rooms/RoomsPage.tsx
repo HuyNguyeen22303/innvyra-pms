@@ -302,8 +302,9 @@ export const RoomsPage: React.FC = () => {
     {
       title: 'Hạng phòng',
       key: 'roomType',
+      width: 180,
       render: (_: unknown, record: RoomItem) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ color: '#0f172a' }}>
             {record.roomType?.name}
           </Text>
@@ -317,14 +318,14 @@ export const RoomsPage: React.FC = () => {
       title: 'Lưu trú',
       dataIndex: 'occupancyStatus',
       key: 'occupancyStatus',
-      width: 140,
+      width: 150,
       render: (status: string) =>
         status === 'OCCUPIED' ? (
-          <Tag color="cyan" style={{ fontWeight: 600 }}>
+          <Tag color="cyan" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
             ĐANG CÓ KHÁCH
           </Tag>
         ) : (
-          <Tag color="default" style={{ fontWeight: 500 }}>
+          <Tag color="default" style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
             Phòng trống
           </Tag>
         ),
@@ -333,14 +334,20 @@ export const RoomsPage: React.FC = () => {
       title: 'Trạng thái vệ sinh',
       dataIndex: 'housekeepingStatus',
       key: 'housekeepingStatus',
-      render: (status: HousekeepingStatus) => renderHKTag(status),
+      width: 160,
+      render: (status: HousekeepingStatus) => (
+        <div style={{ whiteSpace: 'nowrap' }}>
+          {renderHKTag(status)}
+        </div>
+      ),
     },
     {
       title: 'Vận hành / Kỹ thuật',
       dataIndex: 'physicalStatus',
       key: 'physicalStatus',
+      width: 180,
       render: (status: PhysicalStatus, record: RoomItem) => (
-        <Space size={4}>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           {renderPhysicalTag(status)}
           {record.notes && (
             <Tooltip title={record.notes}>
@@ -712,7 +719,7 @@ export const RoomsPage: React.FC = () => {
             loading={isLoading}
             pagination={{ pageSize: 12, showSizeChanger: true }}
             size="middle"
-            scroll={{ x: 800 }}
+            scroll={{ x: 1000 }}
           />
         </Card>
       )}

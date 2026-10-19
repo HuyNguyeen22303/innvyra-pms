@@ -426,8 +426,9 @@ export const ReservationsPage: React.FC = () => {
     {
       title: 'Khách hàng',
       key: 'guest',
+      width: 220,
       render: (_, record) => (
-        <Space>
+        <Space style={{ whiteSpace: 'nowrap' }}>
           <div
             style={{
               width: 32,
@@ -439,12 +440,15 @@ export const ReservationsPage: React.FC = () => {
               justifyContent: 'center',
               color: '#1677ff',
               fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             <UserOutlined />
           </div>
           <div>
-            <Text strong>{record.bookerGuest?.fullName || 'Chưa cập nhật'}</Text>
+            <Text strong style={{ whiteSpace: 'nowrap' }}>
+              {record.bookerGuest?.fullName || 'Chưa cập nhật'}
+            </Text>
           </div>
         </Space>
       ),
@@ -457,7 +461,7 @@ export const ReservationsPage: React.FC = () => {
         const checkIn = dayjs(record.checkInDate).format('DD/MM/YYYY');
         const checkOut = dayjs(record.checkOutDate).format('DD/MM/YYYY');
         return (
-          <div>
+          <div style={{ whiteSpace: 'nowrap' }}>
             <Space size={4}>
               <CalendarOutlined style={{ color: '#8c8c8c' }} />
               <Text>{checkIn}</Text>
@@ -475,7 +479,7 @@ export const ReservationsPage: React.FC = () => {
       title: 'Kênh đặt',
       dataIndex: 'bookingSource',
       key: 'bookingSource',
-      width: 130,
+      width: 140,
       render: (source: BookingSource) => {
         const item = BOOKING_SOURCE_LABELS[source] || { text: source, color: 'default' };
         return <Tag color={item.color}>{item.text}</Tag>;
@@ -488,7 +492,7 @@ export const ReservationsPage: React.FC = () => {
       width: 150,
       align: 'right',
       render: (amount: string) => (
-        <Text strong style={{ color: '#389e0d', fontSize: 14 }}>
+        <Text strong style={{ color: '#389e0d', fontSize: 14, whiteSpace: 'nowrap' }}>
           {formatCurrency(amount)}
         </Text>
       ),
@@ -497,23 +501,23 @@ export const ReservationsPage: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 150,
+      width: 160,
       render: (status: ReservationStatus) => {
         const conf = STATUS_CONFIG[status] || {
           text: status,
           color: 'default',
           badgeStatus: 'default',
         };
-        return <Badge status={conf.badgeStatus} text={<Text strong>{conf.text}</Text>} />;
+        return <Badge status={conf.badgeStatus} text={<Text strong style={{ whiteSpace: 'nowrap' }}>{conf.text}</Text>} />;
       },
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 140,
+      width: 150,
       render: (createdAt: string) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
           {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
         </Text>
       ),
@@ -521,8 +525,8 @@ export const ReservationsPage: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
-      fixed: 'right',
+      width: 140,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const isConfirmed = record.status === 'CONFIRMED';
         return (
@@ -812,7 +816,7 @@ export const ReservationsPage: React.FC = () => {
                         />
                       ),
                     }}
-                    scroll={{ x: 1100 }}
+                    scroll={{ x: 1350 }}
                   />
                 </Card>
               </>

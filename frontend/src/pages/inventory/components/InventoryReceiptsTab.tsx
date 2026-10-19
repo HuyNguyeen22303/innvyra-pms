@@ -17,6 +17,7 @@ import {
   Row,
   Col,
   Divider,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -50,6 +51,7 @@ interface FormLineItem {
 }
 
 export const InventoryReceiptsTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canCreate = ['ADMIN', 'MANAGER'].includes(user?.role || '');
@@ -251,22 +253,27 @@ export const InventoryReceiptsTab: React.FC = () => {
       dataIndex: 'receiptNumber',
       key: 'receiptNumber',
       width: 160,
-      render: (num) => <Text strong copyable>{num}</Text>,
+      render: (num) => <Text strong copyable style={{ whiteSpace: 'nowrap' }}>{num}</Text>,
     },
     {
       title: 'Ngày nhập kho',
       dataIndex: 'receiptDate',
       key: 'receiptDate',
       width: 130,
-      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY')}
+        </span>
+      ),
     },
     {
       title: 'Nhà cung cấp',
       dataIndex: ['supplier', 'name'],
       key: 'supplierName',
+      width: 220,
       render: (name, record) =>
         record.supplier ? (
-          <div>
+          <div style={{ whiteSpace: 'nowrap' }}>
             <Text strong>{name}</Text>
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -275,7 +282,7 @@ export const InventoryReceiptsTab: React.FC = () => {
             </div>
           </div>
         ) : (
-          <Text type="secondary">Nhập trực tiếp / Không NCC</Text>
+          <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>Nhập trực tiếp / Không NCC</Text>
         ),
     },
     {
@@ -285,7 +292,7 @@ export const InventoryReceiptsTab: React.FC = () => {
       width: 150,
       align: 'right',
       render: (amount) => (
-        <Text strong style={{ color: '#1b4d3e' }}>
+        <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>
           {Number(amount).toLocaleString('vi-VN')} VNĐ
         </Text>
       ),
@@ -296,26 +303,31 @@ export const InventoryReceiptsTab: React.FC = () => {
       width: 110,
       align: 'center',
       render: (_, record) => (
-        <Tag color="blue">{record.items?.length || 0} mặt hàng</Tag>
+        <Tag color="blue" style={{ whiteSpace: 'nowrap' }}>{record.items?.length || 0} mặt hàng</Tag>
       ),
     },
     {
       title: 'Người lập',
       key: 'creator',
       width: 140,
-      render: (_, record) =>
-        record.creator?.fullName || record.creator?.username || '-',
+      render: (_, record) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {record.creator?.fullName || record.creator?.username || '-'}
+        </span>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 90,
       align: 'center',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
         <Button
           type="text"
           size="small"
           icon={<EyeOutlined />}
+          style={{ whiteSpace: 'nowrap' }}
           onClick={() => {
             setSelectedReceipt(record);
             setIsDetailOpen(true);
@@ -389,6 +401,7 @@ export const InventoryReceiptsTab: React.FC = () => {
         dataSource={receiptList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1000 }}
         pagination={{
           current: page,
           pageSize,

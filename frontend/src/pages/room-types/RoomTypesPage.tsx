@@ -199,13 +199,14 @@ export const RoomTypesPage: React.FC = () => {
       title: 'Tên hạng phòng',
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (name: string, record: RoomTypeItem) => (
-        <div>
-          <Text strong style={{ color: '#0f172a', fontSize: 13 }}>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <Text strong style={{ color: '#0f172a', fontSize: 13, whiteSpace: 'nowrap' }}>
             {name}
           </Text>
           {record.description && (
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
               {record.description}
             </div>
           )}
@@ -377,7 +378,7 @@ export const RoomTypesPage: React.FC = () => {
             },
           }}
           size="middle"
-          scroll={{ x: 750 }}
+          scroll={{ x: 980 }}
         />
       </Card>
 

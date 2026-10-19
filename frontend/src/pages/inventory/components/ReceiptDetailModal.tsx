@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space } from 'antd';
+import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid } from 'antd';
 import { FileDoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -18,6 +18,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
   receipt,
   onClose,
 }) => {
+  const screens = Grid.useBreakpoint();
   if (!receipt) return null;
 
   const columns: ColumnsType<StockReceiptItemView> = [
@@ -26,12 +27,14 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       dataIndex: ['item', 'code'],
       key: 'code',
       width: 110,
-      render: (code) => <Text copyable>{code}</Text>,
+      render: (code) => <Text copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên vật tư',
       dataIndex: ['item', 'name'],
       key: 'name',
+      width: 200,
+      render: (name) => <span style={{ whiteSpace: 'nowrap' }}>{name}</span>,
     },
     {
       title: 'Đơn vị',
@@ -39,6 +42,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       key: 'unit',
       width: 80,
       align: 'center',
+      render: (unit) => <span style={{ whiteSpace: 'nowrap' }}>{unit}</span>,
     },
     {
       title: 'Số lượng nhập',
@@ -47,7 +51,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       width: 120,
       align: 'right',
       render: (qty, record) => (
-        <Text strong>
+        <Text strong style={{ whiteSpace: 'nowrap' }}>
           {qty} {record.item?.unit}
         </Text>
       ),
@@ -58,7 +62,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       key: 'unitPrice',
       width: 130,
       align: 'right',
-      render: (price) => Number(price).toLocaleString('vi-VN'),
+      render: (price) => <span style={{ whiteSpace: 'nowrap' }}>{Number(price).toLocaleString('vi-VN')}</span>,
     },
     {
       title: 'Thành tiền (VNĐ)',
@@ -67,7 +71,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       width: 140,
       align: 'right',
       render: (total) => (
-        <Text strong style={{ color: '#1b4d3e' }}>
+        <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>
           {Number(total).toLocaleString('vi-VN')}
         </Text>
       ),
@@ -76,7 +80,8 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       title: 'Ghi chú',
       dataIndex: 'notes',
       key: 'notes',
-      render: (notes) => notes || '-',
+      width: 160,
+      render: (notes) => <span style={{ whiteSpace: 'nowrap' }}>{notes || '-'}</span>,
     },
   ];
 
@@ -95,7 +100,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
           Đóng
         </Button>,
       ]}
-      width={850}
+      width={screens.xs ? '100%' : 850}
     >
       <Descriptions
         bordered
@@ -163,6 +168,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
         size="small"
         pagination={false}
         bordered
+        scroll={{ x: 940 }}
       />
     </Modal>
   );

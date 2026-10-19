@@ -75,7 +75,7 @@ export const InventoryMovementsTab: React.FC = () => {
       key: 'createdAt',
       width: 155,
       render: (date) => (
-        <span style={{ fontSize: 13 }}>
+        <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
           {dayjs(date).format('DD/MM/YYYY HH:mm')}
         </span>
       ),
@@ -85,13 +85,14 @@ export const InventoryMovementsTab: React.FC = () => {
       dataIndex: ['item', 'code'],
       key: 'itemCode',
       width: 120,
-      render: (code) => <Text copyable strong>{code}</Text>,
+      render: (code) => <Text copyable strong style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên vật tư',
       dataIndex: ['item', 'name'],
       key: 'itemName',
-      render: (name) => <Text strong>{name}</Text>,
+      width: 220,
+      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
     },
     {
       title: 'Loại biến động',
@@ -103,24 +104,24 @@ export const InventoryMovementsTab: React.FC = () => {
         switch (type) {
           case 'RECEIPT':
             return (
-              <Tag color="success" icon={<ArrowUpOutlined />}>
+              <Tag color="success" icon={<ArrowUpOutlined />} style={{ whiteSpace: 'nowrap' }}>
                 Nhập kho
               </Tag>
             );
           case 'ISSUE':
             return (
-              <Tag color="volcano" icon={<ArrowDownOutlined />}>
+              <Tag color="volcano" icon={<ArrowDownOutlined />} style={{ whiteSpace: 'nowrap' }}>
                 Xuất kho
               </Tag>
             );
           case 'ADJUSTMENT':
             return (
-              <Tag color="purple" icon={<SwapOutlined />}>
+              <Tag color="purple" icon={<SwapOutlined />} style={{ whiteSpace: 'nowrap' }}>
                 Kiểm kê / Đ/chỉnh
               </Tag>
             );
           default:
-            return <Tag>{type}</Tag>;
+            return <Tag style={{ whiteSpace: 'nowrap' }}>{type}</Tag>;
         }
       },
     },
@@ -135,14 +136,14 @@ export const InventoryMovementsTab: React.FC = () => {
         const unit = record.item?.unit || '';
         if (record.type === 'RECEIPT') {
           return (
-            <Text strong style={{ color: '#15803d' }}>
+            <Text strong style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
               +{Math.abs(num).toFixed(2)} {unit}
             </Text>
           );
         }
         if (record.type === 'ISSUE') {
           return (
-            <Text strong style={{ color: '#b91c1c' }}>
+            <Text strong style={{ color: '#b91c1c', whiteSpace: 'nowrap' }}>
               -{Math.abs(num).toFixed(2)} {unit}
             </Text>
           );
@@ -150,20 +151,20 @@ export const InventoryMovementsTab: React.FC = () => {
         // ADJUSTMENT
         if (num > 0) {
           return (
-            <Text strong style={{ color: '#15803d' }}>
+            <Text strong style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
               +{num.toFixed(2)} {unit}
             </Text>
           );
         }
         if (num < 0) {
           return (
-            <Text strong style={{ color: '#b91c1c' }}>
+            <Text strong style={{ color: '#b91c1c', whiteSpace: 'nowrap' }}>
               {num.toFixed(2)} {unit}
             </Text>
           );
         }
         return (
-          <Text strong style={{ color: '#64748b' }}>
+          <Text strong style={{ color: '#64748b', whiteSpace: 'nowrap' }}>
             0.00 {unit}
           </Text>
         );
@@ -175,7 +176,7 @@ export const InventoryMovementsTab: React.FC = () => {
       key: 'previousStock',
       width: 100,
       align: 'right',
-      render: (val, record) => `${val} ${record.item?.unit || ''}`,
+      render: (val, record) => <span style={{ whiteSpace: 'nowrap' }}>{`${val} ${record.item?.unit || ''}`}</span>,
     },
     {
       title: 'Tồn sau',
@@ -184,7 +185,7 @@ export const InventoryMovementsTab: React.FC = () => {
       width: 110,
       align: 'right',
       render: (val, record) => (
-        <Text strong style={{ color: '#0f172a' }}>
+        <Text strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>
           {val} {record.item?.unit || ''}
         </Text>
       ),
@@ -197,27 +198,30 @@ export const InventoryMovementsTab: React.FC = () => {
       render: (refNum, record) =>
         refNum ? (
           <Tooltip title={`Tham chiếu: ${record.referenceType}`}>
-            <Tag color="default" style={{ cursor: 'pointer' }}>
+            <Tag color="default" style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {refNum}
             </Tag>
           </Tooltip>
         ) : (
-          <Text type="secondary">-</Text>
+          <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>-</Text>
         ),
     },
     {
       title: 'Người thực hiện',
       key: 'creator',
       width: 140,
-      render: (_, record) =>
-        record.creator?.fullName || record.creator?.username || '-',
+      render: (_, record) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {record.creator?.fullName || record.creator?.username || '-'}
+        </span>
+      ),
     },
     {
       title: 'Diễn giải / Ghi chú',
       dataIndex: 'notes',
       key: 'notes',
-      ellipsis: true,
-      render: (notes) => notes || <Text type="secondary">-</Text>,
+      width: 200,
+      render: (notes) => <span style={{ whiteSpace: 'nowrap' }}>{notes || '-'}</span>,
     },
   ];
 
@@ -285,6 +289,7 @@ export const InventoryMovementsTab: React.FC = () => {
         dataSource={movementList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1500 }}
         pagination={{
           current: page,
           pageSize,

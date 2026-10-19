@@ -17,6 +17,7 @@ import {
   Card,
   Row,
   Col,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -39,6 +40,7 @@ import type {
 const { Text, Paragraph } = Typography;
 
 export const ServiceCatalogTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManageCatalog = ['ADMIN', 'MANAGER'].includes(user?.role || '');
@@ -135,7 +137,7 @@ export const ServiceCatalogTab: React.FC = () => {
       key: 'code',
       width: 140,
       render: (code: string) => (
-        <Tag color="#1b4d3e" style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+        <Tag color="#1b4d3e" style={{ fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
           {code}
         </Tag>
       ),
@@ -144,8 +146,9 @@ export const ServiceCatalogTab: React.FC = () => {
       title: 'Tên dịch vụ',
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (name: string, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ fontSize: 14 }}>{name}</Text>
           {record.description && (
             <Paragraph
@@ -164,7 +167,7 @@ export const ServiceCatalogTab: React.FC = () => {
       dataIndex: 'unit',
       key: 'unit',
       width: 120,
-      render: (unit: string) => <Tag color="blue">{unit}</Tag>,
+      render: (unit: string) => <Tag color="blue" style={{ whiteSpace: 'nowrap' }}>{unit}</Tag>,
     },
     {
       title: 'Đơn giá niêm yết',
@@ -172,7 +175,7 @@ export const ServiceCatalogTab: React.FC = () => {
       key: 'price',
       width: 160,
       render: (price: string) => (
-        <Text strong style={{ color: '#1b4d3e', fontSize: 14 }}>
+        <Text strong style={{ color: '#1b4d3e', fontSize: 14, whiteSpace: 'nowrap' }}>
           {formatVND(price)}
         </Text>
       ),
@@ -183,7 +186,7 @@ export const ServiceCatalogTab: React.FC = () => {
       key: 'isActive',
       width: 140,
       render: (isActive: boolean) => (
-        <Tag color={isActive ? 'success' : 'default'}>
+        <Tag color={isActive ? 'success' : 'default'} style={{ whiteSpace: 'nowrap' }}>
           {isActive ? 'Đang áp dụng' : 'Đã ngưng'}
         </Tag>
       ),
@@ -192,17 +195,22 @@ export const ServiceCatalogTab: React.FC = () => {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      width: 160,
+      render: (date: string) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+        </span>
+      ),
     },
     ...(canManageCatalog
       ? [
           {
             title: 'Thao tác',
             key: 'actions',
-            width: 150,
+            width: 140,
+            fixed: (screens.xs ? false : 'right') as 'right' | false,
             render: (_: any, record: ServiceItem) => (
-              <Space size={4}>
+              <Space size={4} style={{ whiteSpace: 'nowrap' }}>
                 <Button
                   size="small"
                   icon={<EditOutlined />}
@@ -299,6 +307,7 @@ export const ServiceCatalogTab: React.FC = () => {
         dataSource={serviceList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1080 }}
         pagination={{
           current: page,
           pageSize,

@@ -21,6 +21,7 @@ import {
   Table,
   DatePicker,
   Spin,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -67,6 +68,7 @@ const { RangePicker } = DatePicker;
 // Dynamic Technician Options loaded from employeesApi
 
 export const MaintenancePage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -467,7 +469,7 @@ export const MaintenancePage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 100,
-      render: (id: string) => <Text code>#{id}</Text>,
+      render: (id: string) => <Text code style={{ whiteSpace: 'nowrap' }}>#{id}</Text>,
     },
     {
       title: 'Phòng',
@@ -475,7 +477,7 @@ export const MaintenancePage: React.FC = () => {
       key: 'room',
       width: 140,
       render: (r: any) => (
-        <Space>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           <HomeOutlined style={{ color: '#1b4d3e' }} />
           <Text strong style={{ color: '#1b4d3e', fontSize: 15 }}>
             #{r.roomNumber}
@@ -489,13 +491,14 @@ export const MaintenancePage: React.FC = () => {
     {
       title: 'Tiêu đề sự cố & Mô tả',
       key: 'titleDesc',
+      width: 250,
       render: (_, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ display: 'block', fontSize: 14, color: '#262626' }}>
             {record.title}
           </Text>
           <Paragraph
-            ellipsis={{ rows: 2 }}
+            ellipsis={{ rows: 1 }}
             type="secondary"
             style={{ fontSize: 12, margin: '4px 0 0 0' }}
           >
@@ -509,14 +512,14 @@ export const MaintenancePage: React.FC = () => {
       dataIndex: 'priority',
       key: 'priority',
       width: 130,
-      render: renderPriorityTag,
+      render: (p: any) => <div style={{ whiteSpace: 'nowrap' }}>{renderPriorityTag(p)}</div>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       width: 170,
-      render: renderTicketStatusTag,
+      render: (s: any) => <div style={{ whiteSpace: 'nowrap' }}>{renderTicketStatusTag(s)}</div>,
     },
     {
       title: 'Kỹ thuật viên',
@@ -524,10 +527,10 @@ export const MaintenancePage: React.FC = () => {
       key: 'assignedTo',
       width: 200,
       render: (staffId: string | null) => {
-        if (!staffId) return <Tag color="orange">Chưa phân công</Tag>;
+        if (!staffId) return <Tag color="orange" style={{ whiteSpace: 'nowrap' }}>Chưa phân công</Tag>;
         const staff = getStaffDisplay(staffId, user);
         return (
-          <Space size={4}>
+          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
             <UserOutlined style={{ color: '#1b4d3e' }} />
             <Text strong style={{ color: '#1b4d3e' }}>
               {staff.fullName}
@@ -547,12 +550,17 @@ export const MaintenancePage: React.FC = () => {
       dataIndex: 'reportedAt',
       key: 'reportedAt',
       width: 140,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date: string) => (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+        </span>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 180,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const isAssignedToMe = String(record.assignedTo) === String(user?.id);
 
@@ -663,7 +671,7 @@ export const MaintenancePage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 100,
-      render: (id: string) => <Text code>BLK#{id}</Text>,
+      render: (id: string) => <Text code style={{ whiteSpace: 'nowrap' }}>BLK#{id}</Text>,
     },
     {
       title: 'Phòng',
@@ -671,7 +679,7 @@ export const MaintenancePage: React.FC = () => {
       key: 'room',
       width: 140,
       render: (r: any) => (
-        <Space>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           <HomeOutlined style={{ color: '#1b4d3e' }} />
           <Text strong style={{ color: '#1b4d3e', fontSize: 15 }}>
             #{r.roomNumber}
@@ -691,7 +699,7 @@ export const MaintenancePage: React.FC = () => {
         const end = dayjs(record.endDate);
         const nights = end.diff(start, 'day');
         return (
-          <div>
+          <div style={{ whiteSpace: 'nowrap' }}>
             <Text strong>
               {start.format('DD/MM/YYYY')} ➔ {end.format('DD/MM/YYYY')}
             </Text>
@@ -706,9 +714,10 @@ export const MaintenancePage: React.FC = () => {
       title: 'Lý do khóa bảo trì',
       dataIndex: 'reason',
       key: 'reason',
+      width: 250,
       render: (reason: string, record) => (
-        <div>
-          <Paragraph ellipsis={{ rows: 2 }} style={{ margin: 0 }}>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <Paragraph ellipsis={{ rows: 1 }} style={{ margin: 0 }}>
             {reason}
           </Paragraph>
           {record.maintenanceTicketId && (
@@ -724,14 +733,15 @@ export const MaintenancePage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 200,
-      render: renderBlockStatusTag,
+      render: (s: any) => <div style={{ whiteSpace: 'nowrap' }}>{renderBlockStatusTag(s)}</div>,
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
+      width: 150,
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
-        <Space size={6} wrap>
+        <Space size={6} style={{ whiteSpace: 'nowrap' }}>
           <Tooltip title="Xem chi tiết & lịch sử dòng thời gian">
             <Button
               size="small"
@@ -962,6 +972,7 @@ export const MaintenancePage: React.FC = () => {
                     dataSource={ticketList}
                     rowKey="id"
                     loading={isTicketsLoading}
+                    scroll={{ x: 1250 }}
                     pagination={{ pageSize: 10, showSizeChanger: true }}
                   />
                 </Card>
@@ -1036,6 +1047,7 @@ export const MaintenancePage: React.FC = () => {
                     dataSource={blockList}
                     rowKey="id"
                     loading={isBlocksLoading}
+                    scroll={{ x: 1080 }}
                     pagination={{ pageSize: 10, showSizeChanger: true }}
                   />
                 </Card>

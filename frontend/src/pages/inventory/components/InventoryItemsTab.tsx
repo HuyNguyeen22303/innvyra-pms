@@ -15,6 +15,7 @@ import {
   Typography,
   Card,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -44,6 +45,7 @@ import { StockAdjustmentModal } from './StockAdjustmentModal.tsx';
 const { Text } = Typography;
 
 export const InventoryItemsTab: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManage = ['ADMIN', 'MANAGER'].includes(user?.role || '');
@@ -201,14 +203,15 @@ export const InventoryItemsTab: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 120,
-      render: (code) => <Text strong copyable>{code}</Text>,
+      render: (code) => <Text strong copyable style={{ whiteSpace: 'nowrap' }}>{code}</Text>,
     },
     {
       title: 'Tên vật tư',
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (name, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong>{name}</Text>
           {record.category && (
             <div>
@@ -226,7 +229,7 @@ export const InventoryItemsTab: React.FC = () => {
       key: 'categoryName',
       width: 160,
       render: (catName) => (
-        <Tag color="cyan">{catName || 'Chưa phân loại'}</Tag>
+        <Tag color="cyan" style={{ whiteSpace: 'nowrap' }}>{catName || 'Chưa phân loại'}</Tag>
       ),
     },
     {
@@ -235,7 +238,7 @@ export const InventoryItemsTab: React.FC = () => {
       key: 'unit',
       width: 80,
       align: 'center',
-      render: (unit) => <Tag>{unit}</Tag>,
+      render: (unit) => <Tag style={{ whiteSpace: 'nowrap' }}>{unit}</Tag>,
     },
     {
       title: 'Tồn kho',
@@ -244,7 +247,7 @@ export const InventoryItemsTab: React.FC = () => {
       width: 130,
       align: 'right',
       render: (stock, record) => (
-        <div>
+        <div style={{ whiteSpace: 'nowrap' }}>
           <Text
             strong
             style={{
@@ -269,16 +272,19 @@ export const InventoryItemsTab: React.FC = () => {
       key: 'stockStatus',
       width: 130,
       align: 'center',
-      render: (_, record) =>
-        record.isOutOfStock ? (
-          <Tag color="error">Hết hàng</Tag>
-        ) : record.isLowStock ? (
-          <Tag color="warning" icon={<WarningOutlined />}>
-            Sắp hết hàng
-          </Tag>
-        ) : (
-          <Tag color="success">Còn hàng</Tag>
-        ),
+      render: (_, record) => (
+        <div style={{ whiteSpace: 'nowrap' }}>
+          {record.isOutOfStock ? (
+            <Tag color="error">Hết hàng</Tag>
+          ) : record.isLowStock ? (
+            <Tag color="warning" icon={<WarningOutlined />}>
+              Sắp hết hàng
+            </Tag>
+          ) : (
+            <Tag color="success">Còn hàng</Tag>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Trạng thái',
@@ -286,24 +292,28 @@ export const InventoryItemsTab: React.FC = () => {
       key: 'isActive',
       width: 130,
       align: 'center',
-      render: (isActive) =>
-        isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            Hoạt động
-          </Tag>
-        ) : (
-          <Tag icon={<CloseCircleOutlined />} color="default">
-            Ngừng HĐ
-          </Tag>
-        ),
+      render: (isActive) => (
+        <div style={{ whiteSpace: 'nowrap' }}>
+          {isActive ? (
+            <Tag icon={<CheckCircleOutlined />} color="success">
+              Hoạt động
+            </Tag>
+          ) : (
+            <Tag icon={<CloseCircleOutlined />} color="default">
+              Ngừng HĐ
+            </Tag>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 140,
       align: 'center',
+      fixed: screens.xs ? false : 'right',
       render: (_, record) => (
-        <Space size={4}>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           <Tooltip title="Xem chi tiết">
             <Button
               type="text"
@@ -454,6 +464,7 @@ export const InventoryItemsTab: React.FC = () => {
         dataSource={itemList}
         rowKey="id"
         loading={isLoading}
+        scroll={{ x: 1110 }}
         pagination={{
           current: page,
           pageSize,

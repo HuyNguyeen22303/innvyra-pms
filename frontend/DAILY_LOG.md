@@ -967,3 +967,68 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 - **Kiểm thử chất lượng**:
   - `npm run build` (`tsc -b && vite build`): **100% pass, 0 lỗi TypeScript**.
   - `npm run lint` (`oxlint`): **0 lỗi linter**.
+
+---
+
+#### Phase 2.1: Rà soát & Khắc phục Triệt để Lỗi Ép Cột Bảng, Rớt Ký Tự Dọc & Đè Cột Thao Tác Mobile (Toàn Bộ Modules):
+
+- **Phát hiện & Phân tích nguyên nhân thực tế (qua ảnh chụp phản hồi của người dùng)**:
+  1. **Lỗi rớt ký tự theo chiều dọc ("A\nl\ne\nx\na\nn\nd\ne\nr\n...")**: Khi Ant Design Table render trên mobile/tablet, nếu cột không khai báo `width` hoặc thiếu `whiteSpace: 'nowrap'`, trình duyệt sẽ ưu tiên ép co độ rộng cột đó xuống mức tối thiểu (1ch = 1 ký tự), dẫn đến tình trạng tên khách, tên phòng, email, diễn giải bị bẻ gãy rớt dòng từng chữ cái một.
+  2. **Lỗi cột Thao tác đè chết 50% diện tích màn hình**: Thiết lập cứng `fixed: 'right'` với độ rộng 140px - 180px khiến trên màn hình điện thoại (viewport 360px - 390px), cột Thao tác ghim chết đè lên hơn nửa màn hình, che kín toàn bộ dữ liệu của các cột khác.
+  3. **Thiếu `scroll.x` tương thích**: Một số bảng chưa khai báo `scroll={{ x: ... }}` hoặc giá trị `x` nhỏ hơn tổng chiều rộng tối thiểu của các cột, làm mất thanh cuộn ngang nội bộ của Ant Design.
+
+- **Giải pháp chuẩn hóa kỹ thuật áp dụng thống nhất**:
+  1. Mọi cột dạng text dài (Tên khách, Hạng phòng, Tên dịch vụ, Tên vật tư, Email, Diễn giải, Ghi chú) đều được đặt `width` cố định tối thiểu (180px - 320px) kèm CSS `whiteSpace: 'nowrap'`.
+  2. Chuyển đổi toàn bộ cột Thao tác / Hành động sang cơ chế ghim động theo breakpoint: `fixed: (screens.xs ? false : 'right') as 'right' | false`. Trên mobile, cột Thao tác tự động nhả ghim và xếp ở cuối hàng, cho phép người dùng cuộn ngang tự nhiên mà không bị che khuất dữ liệu.
+  3. Nâng và cấu hình giá trị `scroll={{ x: ... }}` phù hợp với tổng độ rộng các cột trên tất cả các bảng.
+  4. Nâng cấp Drawer/Modal trên mobile thành `width={screens.xs ? '100%' : ...}` tránh tràn màn hình.
+
+- **Chi tiết các module và bảng dữ liệu đã xử lý triệt để**:
+  1. **Quản lý Đặt phòng (`ReservationsPage.tsx`)**:
+     - Cột Khách hàng: `width: 220`, bọc text với `whiteSpace: 'nowrap'`.
+     - Cột Thao tác: `fixed: (screens.xs ? false : 'right')`.
+     - Nâng `scroll={{ x: 1350 }}` cho bảng danh sách đơn đặt phòng.
+  2. **Quản lý Khách hàng (`GuestsPage.tsx`)**:
+     - Cột Họ và tên: `width: 200`, `whiteSpace: 'nowrap'`.
+     - Cột Email: `width: 220`, `whiteSpace: 'nowrap'`.
+     - Bỏ thuộc tính deprecated `orientation="horizontal"`.
+     - Thêm `scroll={{ x: 1050 }}` cho bảng khách hàng; Drawer co giãn `width={screens.xs ? '100%' : 560}`.
+  3. **Quản lý Lưu trú & Check-in (`StaysPage.tsx`)**:
+     - Bảng Đang lưu trú & Lịch sử: Khách lưu trú `width: 200` + `whiteSpace: 'nowrap'`, Thao tác dynamic fixed, nâng `scroll={{ x: 1200 }}`.
+     - Bảng Quầy Check-in (Arrivals): Khách đặt `width: 200` + `whiteSpace: 'nowrap'`, Thao tác dynamic fixed, nâng `scroll={{ x: 1200 }}`.
+  4. **Quản lý Phòng vật lý (`RoomsPage.tsx`)**:
+     - Bảng Table View: Cột Hạng phòng `width: 180`, Cột Khách lưu trú `width: 150`, bọc `whiteSpace: 'nowrap'`, nâng `scroll={{ x: 1000 }}`.
+  5. **Quản lý Hạng phòng (`RoomTypesPage.tsx`)**:
+     - Cột Tên hạng phòng `width: 220` + `whiteSpace: 'nowrap'`, Thao tác dynamic fixed, nâng `scroll={{ x: 980 }}`.
+  6. **Tổng quan Bảng điều khiển (`DashboardPage.tsx`)**:
+     - Bảng Khách đến hôm nay (Arrivals): Thêm `width: 180` + `whiteSpace: 'nowrap'` cho Tên khách, nâng `scroll={{ x: 680 }}`.
+     - Bảng Khách đang lưu trú (In-House): Thêm `width: 180` + `whiteSpace: 'nowrap'` cho Tên khách, nâng `scroll={{ x: 700 }}`.
+  7. **Quản lý Nhân sự (`EmployeesPage.tsx`)**:
+     - Cột Nhân viên & Tài khoản: `whiteSpace: 'nowrap'`. Cột Email và Ngày tham gia: `whiteSpace: 'nowrap'`.
+     - Cột Thao tác: dynamic fixed, nâng `scroll={{ x: 1100 }}`.
+  8. **Kế toán & Thu ngân Folio (`FolioTab.tsx`)**:
+     - Bảng Đơn đặt phòng: Khách đặt `width: 200`, Khoảng ngày `width: 220`, Tổng tiền `width: 140`, dynamic fixed actions, bổ sung `scroll={{ x: 1050 }}`.
+     - Bảng Sổ cái chi phí (`itemColumns`): Diễn giải dịch vụ `width: 250` + `whiteSpace: 'nowrap'`, bổ sung `scroll={{ x: 1100 }}`.
+     - Bảng Lịch sử thanh toán (`paymentColumns`): Mã tham chiếu/Lý do `width: 220` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1220 }}`.
+  9. **Dịch vụ (`ServiceCatalogTab.tsx` & `ServiceOrdersTab.tsx`)**:
+     - Bảng Danh mục dịch vụ: Tên dịch vụ `width: 220` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1080 }}`.
+     - Bảng Đơn dịch vụ: Chi tiết mặt hàng `width: 320` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1250 }}`.
+  10. **Buồng phòng (`HousekeepingPage.tsx`)**:
+     - Bảng Hàng đợi phòng dơ: Cột Hạng phòng `width: 180` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1100 }}`.
+  11. **Bảo trì Kỹ thuật (`MaintenancePage.tsx`)**:
+     - Bảng Phiếu sự cố kỹ thuật: Tiêu đề & Mô tả `width: 250` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1250 }}`.
+     - Bảng Lệnh khóa phòng: Lý do khóa phòng `width: 250` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1080 }}`.
+  12. **Quản lý Vật tư & Kho (`Inventory`)**:
+     - `InventoryOverviewTab.tsx`: Bảng Sắp hết hàng (`scroll={{ x: 860 }}`) và Bảng Danh mục (`scroll={{ x: 560 }}`).
+     - `InventoryItemsTab.tsx`: Tên vật tư `width: 220` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1110 }}`.
+     - `InventoryCategoriesTab.tsx`: Tên nhóm `width: 220`, Mô tả `width: 200`, dynamic fixed actions, bổ sung `scroll={{ x: 980 }}`.
+     - `InventorySuppliersTab.tsx`: Tên NCC `width: 220`, Người liên hệ `width: 170`, Liên lạc `width: 190`, Địa chỉ `width: 200`, dynamic fixed actions, bổ sung `scroll={{ x: 1150 }}`.
+     - `InventoryReceiptsTab.tsx`: Tên NCC `width: 220` + `whiteSpace: 'nowrap'`, dynamic fixed actions, bổ sung `scroll={{ x: 1000 }}`.
+     - `InventoryIssuesTab.tsx`: Bộ phận nhận `width: 180`, Mục đích `width: 200`, dynamic fixed actions, bổ sung `scroll={{ x: 1010 }}`.
+     - `InventoryMovementsTab.tsx`: Tên vật tư `width: 220`, Ghi chú `width: 200` + `whiteSpace: 'nowrap'`, bổ sung `scroll={{ x: 1500 }}`.
+     - `ReceiptDetailModal.tsx` & `IssueDetailModal.tsx`: Thêm `scroll={{ x: ... }}`, `width` các cột và modal `width={screens.xs ? '100%' : ...}`.
+
+- **Kiểm thử chất lượng toàn dự án**:
+  - `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript**.
+  - `npm run lint` (`oxlint`): **0 cảnh báo / 0 lỗi linter**.
+
