@@ -1497,14 +1497,15 @@ export const ReportsPage: React.FC = () => {
         title: 'Mã hóa đơn / Folio',
         dataIndex: 'folioId',
         key: 'folioId',
+        width: 220,
         sorter: true,
         render: (id) => (
-          <Space orientation="vertical" size={2}>
-            <Text strong style={{ color: '#1b4d3e' }}>#{id}</Text>
+          <Space direction="vertical" size={2}>
+            <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>#{id}</Text>
             <Button
               type="link"
               size="small"
-              style={{ padding: 0, fontSize: 12 }}
+              style={{ padding: 0, fontSize: 12, whiteSpace: 'nowrap' }}
               onClick={() => navigate('/folios')}
             >
               Xem chi tiết hóa đơn &rarr;
@@ -1515,27 +1516,29 @@ export const ReportsPage: React.FC = () => {
       {
         title: 'Phân loại công nợ',
         key: 'balanceType',
+        width: 260,
         align: 'center',
         render: (_, r) => {
           const num = parseFloat(r.outstandingBalance || '0');
           if (num > 0) {
-            return <Tag color="volcano">DEBIT: Khách còn nợ tiền</Tag>;
+            return <Tag color="volcano" style={{ whiteSpace: 'nowrap' }}>DEBIT: Khách còn nợ tiền</Tag>;
           } else if (num < 0) {
-            return <Tag color="green">CREDIT: Khách trả dư / Cần hoàn</Tag>;
+            return <Tag color="green" style={{ whiteSpace: 'nowrap' }}>CREDIT: Khách trả dư / Cần hoàn</Tag>;
           }
-          return <Tag color="default">Đã tất toán (0 ₫)</Tag>;
+          return <Tag color="default" style={{ whiteSpace: 'nowrap' }}>Đã tất toán (0 ₫)</Tag>;
         },
       },
       {
         title: 'Số dư công nợ',
         dataIndex: 'outstandingBalance',
         key: 'outstandingBalance',
+        width: 200,
         align: 'right',
         sorter: true,
         render: (val) => {
           const num = parseFloat(val || '0');
           const color = num > 0 ? '#cf1322' : num < 0 ? '#389e0d' : '#595959';
-          return <Text strong style={{ color, fontSize: 15 }}>{formatVnd(val)}</Text>;
+          return <Text strong style={{ color, fontSize: 15, whiteSpace: 'nowrap' }}>{formatVnd(val)}</Text>;
         },
       },
     ];
@@ -1635,6 +1638,7 @@ export const ReportsPage: React.FC = () => {
               }
             }}
             size="middle"
+            scroll={{ x: 750 }}
           />
         </Card>
       </Spin>

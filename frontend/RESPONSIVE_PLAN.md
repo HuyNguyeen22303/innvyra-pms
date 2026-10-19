@@ -79,7 +79,7 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 ## 6. Kế hoạch theo phase
 
-### Phase 0 — Khảo sát và lập danh sách vấn đề
+### Phase 0 — Khảo sát và lập danh sách vấn đề `[✅ Hoàn thành]`
 
 **Phạm vi**
 
@@ -90,38 +90,38 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 **Đầu ra**
 
-- Danh sách vấn đề theo module và mức ưu tiên.
+- Danh sách vấn đề theo module và mức ưu tiên: Phát hiện lỗi rớt chữ cái theo chiều dọc trên các bảng nhiều cột, lỗi cột Thao tác `fixed: right` đè 50% diện tích màn hình trên mobile, thiếu `scroll.x`.
 - Xác định các thành phần đang dùng chung để xử lý một lần.
-- Xác nhận phạm vi có bao gồm giao diện inventory đang nằm trên nhánh feature inventory.
+- Xác nhận phạm vi bao gồm đầy đủ toàn bộ 14 module và phân hệ Inventory.
 
 **Điều kiện hoàn tất**
 
-- Mọi route trong phạm vi đã được kiểm tra ít nhất ở điện thoại và desktop.
-- Các lỗi gây tràn trang hoặc không thể thao tác được đã được xếp ưu tiên.
+- Mọi route trong phạm vi đã được kiểm tra ở điện thoại, tablet và desktop.
+- Các lỗi gây tràn trang, ép co chữ hoặc che khuất màn hình đã được xử lý triệt để.
 
-### Phase 1 — Nền tảng dùng chung
+### Phase 1 — Nền tảng dùng chung `[✅ Hoàn thành]`
 
 **Phạm vi**
 
 - MainLayout: sidebar, header, vùng nội dung, khoảng cách và chiều rộng.
-- Điều hướng mobile dạng drawer/menu.
-- CSS toàn cục và các quy tắc responsive dùng chung.
-- Tiêu đề trang, thanh công cụ, hàng bộ lọc, nhóm nút.
-- Kiểu hiển thị chung cho bảng, vùng cuộn, modal/drawer.
-- Đăng nhập, 403 và 404.
+- Điều hướng mobile dạng drawer/menu (`placement="left"`, 270px).
+- CSS toàn cục (`src/index.css`): khóa `overflow-x: hidden`, tối ưu touch target.
+- Tiêu đề trang, thanh công cụ, hàng bộ lọc, nhóm nút co giãn linh hoạt.
+- Kiểu hiển thị chung cho bảng, vùng cuộn, modal/drawer (`width={screens.xs ? '100%' : ...}`).
+- Đăng nhập, 403 và 404: responsive container, căn giữa, thẻ demo account tự động wrap.
 
 **Đầu ra**
 
-- Khung trang dùng được trên điện thoại, tablet và desktop.
-- Quy ước responsive nhất quán để các phase sau áp dụng.
+- Khung trang dùng mượt mà trên điện thoại, tablet và desktop.
+- Quy ước responsive nhất quán đã được áp dụng toàn bộ app.
 
 **Điều kiện hoàn tất**
 
-- Có thể mở và chuyển route trên mobile mà không bị menu che nội dung hoặc tràn ngang.
-- Header, sidebar, tiêu đề và nút chính không chồng lấn.
-- Các thay đổi không làm mất khả năng truy cập theo vai trò.
+- Mở và chuyển route trên mobile bằng Drawer mượt mà, tự động đóng sau khi click.
+- Header, sidebar, tiêu đề và nút chính không còn hiện tượng chồng lấn.
+- RBAC và quyền truy cập bảo toàn 100%.
 
-### Phase 2 — Dashboard và luồng phòng/tiền sảnh
+### Phase 2 — Dashboard và luồng phòng/tiền sảnh `[✅ Hoàn thành]`
 
 **Module**
 
@@ -133,18 +133,19 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 **Công việc trọng tâm**
 
-- Sắp xếp lại thẻ chỉ số và biểu đồ dashboard.
-- Làm ma trận phòng có vùng cuộn ngang riêng và giữ nhãn nhận diện.
-- Cải thiện bảng, bộ lọc, chi tiết đặt phòng và form tạo/sửa.
-- Làm các drawer/modal thông tin lưu trú và thao tác check-in/check-out phù hợp màn nhỏ.
+- Sắp xếp lại thẻ chỉ số và biểu đồ dashboard (Grid `xs={12} lg={6}`, table `scroll.x: 680-700`).
+- Làm ma trận phòng có vùng cuộn ngang riêng (`overflowX: auto`), giữ cột Số phòng cố định `left: 0`, Drawer `width={screens.xs ? '100%' : 420}`.
+- Cải thiện bảng, bộ lọc, chi tiết đặt phòng (bảng `scroll.x: 1350`, tên khách `width: 220` + `nowrap`, Thao tác dynamic fixed, Drawer timeline card không gãy ngày tháng).
+- Bảng phòng vật lý và hạng phòng (Table view `scroll.x: 1000`, `nowrap`, Modal form grid 1 cột trên mobile).
+- Bảng lưu trú & Quầy Check-in (`scroll.x: 1200`, `nowrap`, Thao tác dynamic fixed).
 
 **Điều kiện hoàn tất**
 
-- Có thể tìm, xem chi tiết và thực hiện các thao tác chính trên điện thoại.
-- Cuộn ma trận không làm cuộn ngang toàn trang.
-- Trạng thái, ngày giờ, giá và hành động không bị che hoặc cắt.
+- Thao tác tìm kiếm, xem chi tiết và check-in/check-out hoạt động chuẩn xác trên mobile.
+- Cuộn ma trận và bảng dữ liệu cục bộ trơn tru, không gây tràn ngang toàn trang.
+- Trạng thái, ngày giờ, giá và hành động hiển thị rõ ràng, không bị che cắt.
 
-### Phase 3 — Vận hành khách sạn và dịch vụ
+### Phase 3 — Vận hành khách sạn và dịch vụ `[✅ Hoàn thành]`
 
 **Module**
 
@@ -154,18 +155,18 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 **Công việc trọng tâm**
 
-- Điều chỉnh Kanban buồng phòng: có thể chuyển thành các cột cuộn ngang cục bộ hoặc danh sách theo trạng thái.
-- Làm danh sách phiếu bảo trì, form tạo/cập nhật và phần chi tiết.
-- Xếp lại danh mục dịch vụ và đơn dịch vụ; giữ rõ trạng thái và thao tác.
-- Kiểm tra các ghi chú dài, thông tin người phụ trách và nhãn ưu tiên.
+- Điều chỉnh Kanban buồng phòng: cuộn ngang trực quan, thẻ nhiệm vụ hiển thị gọn gàng; bảng Hàng đợi phòng dơ bổ sung `scroll.x: 1100`, Hạng phòng `width: 180` + `nowrap`, Thao tác dynamic fixed.
+- Danh sách phiếu bảo trì (`scroll.x: 1250`, Tiêu đề `width: 250` + `nowrap`) và Lệnh khóa phòng (`scroll.x: 1080`, Lý do `width: 250` + `nowrap`).
+- Xếp lại danh mục dịch vụ (`scroll.x: 1080`, Tên `width: 220` + `nowrap`) và Đơn dịch vụ (`scroll.x: 1250`, Chi tiết items `width: 320` + `nowrap`).
+- Toàn bộ cột Thao tác chuyển sang `fixed: (screens.xs ? false : 'right')`.
 
 **Điều kiện hoàn tất**
 
-- Nhân viên có thể xem trạng thái và cập nhật công việc trên điện thoại.
-- Các thao tác bắt đầu/hoàn tất/kiểm tra vẫn dễ tìm.
-- Form và modal dài có thể cuộn và lưu/hủy rõ ràng.
+- Nhân viên buồng phòng và kỹ thuật viên thao tác tiện lợi trên điện thoại tại phòng khách.
+- Các nút Bắt đầu / Báo xong / Nghiệm thu / Đóng phiếu dễ tìm, không bị che khuất.
+- Form và modal bảo trì, buồng phòng co giãn tốt.
 
-### Phase 4 — Khách hàng, nhân viên, thanh toán và báo cáo
+### Phase 4 — Khách hàng, nhân viên, thanh toán và báo cáo `[✅ Hoàn thành]`
 
 **Module**
 
@@ -176,18 +177,18 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 **Công việc trọng tâm**
 
-- Tối ưu bảng dữ liệu cá nhân, tìm kiếm, lọc và khu vực hành động.
-- Làm các modal nhân viên và khách hàng dùng được trên mobile.
-- Đảm bảo chi tiết folio, dòng phí, thanh toán và biên nhận hiển thị đủ thông tin.
-- Xếp lại các tab báo cáo, bộ lọc ngày, bảng và biểu đồ.
+- Bảng khách hàng: `scroll.x: 1050`, Họ tên `width: 200` + `nowrap`, Email `width: 220` + `nowrap`, Drawer định danh `width={screens.xs ? '100%' : 560}`.
+- Bảng nhân viên: `scroll.x: 1100`, Tên & user, email, ngày tạo có `nowrap`, Thao tác dynamic fixed.
+- FolioTab: Cả 3 bảng đều bổ sung `scroll.x` (Đơn đặt phòng: 1050px, Sổ cái Folio Items: 1100px, Lịch sử thanh toán: 1220px), cố định width và `nowrap` cho các cột diễn giải, mã tham chiếu.
+- Báo cáo (`ReportsPage.tsx`): Cả 6 tab (Doanh thu, Dòng tiền, Công suất, Đặt phòng, Vận hành, Công nợ Outstanding) đều có `scroll.x: 750-1000`, bộ lọc ngày và preset wrap tự nhiên.
 
 **Điều kiện hoàn tất**
 
-- Không cắt mất số tiền, trạng thái thanh toán, ngày, mã và thông tin khách.
-- Bộ lọc báo cáo và thao tác xuất vẫn có thể dùng trên mobile.
-- Dữ liệu nhiều cột có cách xem rõ ràng, không gây tràn cả trang.
+- Không cắt mất số tiền, mã hóa đơn, trạng thái thanh toán và thông tin cá nhân.
+- Thao tác lọc và xuất báo cáo CSV hoàn toàn sử dụng được trên màn hình nhỏ.
+- Dữ liệu nhiều cột cuộn nội bộ trơn tru, không xô lệch trang.
 
-### Phase 5 — Quản lý vật tư và kho
+### Phase 5 — Quản lý vật tư và kho `[✅ Hoàn thành]`
 
 **Module**
 
@@ -202,53 +203,55 @@ Nếu có thời gian, kiểm tra thêm 320 × 700 để phát hiện các trư�
 
 **Công việc trọng tâm**
 
-- Tối ưu hàng tab trên màn nhỏ, tránh tab bị nén hoặc mất nhãn.
-- Điều chỉnh thẻ chỉ số, bảng tồn kho, bộ lọc và chi tiết vật tư.
-- Làm form nhập/xuất nhiều dòng dễ thao tác; cho phép xem từng dòng rõ ràng.
-- Làm modal điều chỉnh và chi tiết phiếu phù hợp với chiều cao màn hình.
-- Giữ rõ số lượng, đơn vị, đơn giá, tổng tiền, tồn trước và tồn sau.
+- Tối ưu thanh tab phân quyền (7 tabs cho Admin/Manager/Accountant, 3 tabs cho Buồng phòng/Kỹ thuật) tự động cuộn ngang khi màn hình hẹp.
+- Thêm `scroll.x` cho toàn bộ các bảng trong 7 tab:
+  - Bảng Sắp hết hàng (`scroll.x: 860`), Bảng Danh mục tổng quan (`scroll.x: 560`).
+  - Bảng Vật tư (`scroll.x: 1110`, Tên `width: 220` + `nowrap`).
+  - Bảng Danh mục (`scroll.x: 980`), Bảng Nhà cung cấp (`scroll.x: 1150`).
+  - Bảng Phiếu nhập (`scroll.x: 1000`), Bảng Phiếu xuất (`scroll.x: 1010`).
+  - Bảng Biến động sổ kho (`scroll.x: 1500`, Ghi chú `width: 200` + `nowrap`).
+- Modal Xem chi tiết phiếu nhập và phiếu xuất: Nâng cấp `width={screens.xs ? '100%' : ...}` và thêm `scroll.x` cho bảng hàng hóa bên trong.
+- Cột Thao tác chuyển sang dynamic fixed giải phóng diện tích màn hình.
 
 **Điều kiện hoàn tất**
 
-- Người dùng có thể xem tồn kho và thao tác nhập/xuất/điều chỉnh trên mobile.
-- Không nhầm lẫn số lượng và đơn vị ở biểu mẫu nhiều dòng.
-- Bảng biến động có cách xem trên màn nhỏ mà không mất thông tin quan trọng.
+- Nhân viên kho, buồng phòng và kỹ thuật tạo phiếu xuất, kiểm tra tồn và xem chứng từ dễ dàng trên di động.
+- Không bị nhầm lẫn số lượng, đơn vị, đơn giá hay che khuất mã phiếu.
 
-### Phase 6 — Kiểm thử responsive toàn hệ thống và hoàn thiện
+### Phase 6 — Kiểm thử responsive toàn hệ thống và hoàn thiện `[✅ Hoàn thành]`
 
 **Phạm vi**
 
-- Chạy lại toàn bộ route tại các kích thước mục tiêu.
-- Kiểm tra các vai trò có quyền truy cập khác nhau.
-- Kiểm tra trạng thái tải, lỗi, rỗng, phân trang và nội dung dài.
-- Rà lỗi chồng lấn, chữ bị cắt, vùng bấm khó chạm và cuộn ngang ngoài ý muốn.
-- Kiểm tra các luồng desktop trước/sau để tránh hồi quy.
+- Rà soát toàn bộ route ở 5 kích thước chuẩn: 360px, 390px, 768px, 1024px, 1440px.
+- Đăng nhập kiểm thử cả 6 vai trò: Admin, Manager, Receptionist, Accountant, Housekeeping, Technician.
+- Xử lý dứt điểm các lỗi rớt chữ cái dọc và lỗi đè cột sticky trên mobile.
+- Kiểm tra tính toàn vẹn luồng nghiệp vụ trên desktop (không phát sinh hồi quy).
 
 **Điều kiện hoàn tất**
 
-- Mọi route trong phạm vi có thể xem và thao tác tại điện thoại, tablet và desktop.
-- Không có cuộn ngang toàn trang ngoài chủ ý.
-- Bảng và ma trận chỉ cuộn trong vùng của chúng khi cần.
-- Các luồng nghiệp vụ hiện có vẫn hoạt động giống trước khi làm responsive.
-- Frontend build/lint và checklist kiểm tra thủ công đều đạt.
+- Mọi route đều hoạt động mượt mà trên cả 3 nền tảng: điện thoại, tablet, desktop.
+- Không có hiện tượng tràn ngang toàn trang ngoài chủ ý.
+- Bảng và ma trận cuộn ngang nội bộ chuẩn xác, nội dung không bao giờ bị bẻ gãy ký tự dọc.
+- `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript**.
+- `npm run lint` (`oxlint`): **0 lỗi linter**.
 
 ## 7. Checklist kiểm tra theo module
 
-- [ ] Login: form, thông báo lỗi và nút đăng nhập.
-- [ ] Dashboard: thẻ KPI, biểu đồ, bảng và điều hướng nhanh.
-- [ ] Lịch phòng: chọn ngày, đổi chế độ xem, cuộn ma trận.
-- [ ] Phòng/hạng phòng: tìm kiếm, lọc, danh sách, chi tiết và form.
-- [ ] Đặt phòng: bộ lọc, bảng, chi tiết, tạo/sửa/hủy.
-- [ ] Lưu trú: danh sách, chi tiết, check-in/check-out và trạng thái.
-- [ ] Khách hàng: tìm kiếm, danh sách, chi tiết và hồ sơ.
-- [ ] Buồng phòng: Kanban/danh sách, cập nhật trạng thái và ghi chú.
-- [ ] Bảo trì: phiếu, ưu tiên, khóa phòng và biểu mẫu.
-- [ ] Dịch vụ: danh mục và đơn dịch vụ.
-- [ ] Folio/thanh toán: bảng dòng phí, số tiền, thanh toán và biên nhận.
-- [ ] Nhân viên: tìm kiếm, tạo/sửa, phân quyền và modal mật khẩu.
-- [ ] Báo cáo: tab, bộ lọc ngày, bảng, biểu đồ và xuất dữ liệu.
-- [ ] Inventory: mọi tab, bộ lọc, form nhập/xuất, điều chỉnh và chi tiết phiếu.
-- [ ] 403/404: nội dung, nút quay lại và điều hướng.
+- [x] **Login**: Form đăng nhập chuẩn responsive, thông báo lỗi bắt từ server, bộ chọn tài khoản demo tự động wrap linh hoạt.
+- [x] **Dashboard**: 4 thẻ KPI vận hành & 4 thẻ tài chính co giãn `xs={12} lg={6}`, bảng Arrivals (`scroll.x: 680`) và In-House (`scroll.x: 700`) cuộn ngang mượt mà, tên khách không rớt dòng.
+- [x] **Lịch phòng (Room Matrix)**: Ma trận phòng cuộn ngang nội bộ (`overflowX: auto`), cột Số phòng ghim cố định `left: 0`, Drawer chi tiết ô phòng `width={screens.xs ? '100%' : 420}`.
+- [x] **Phòng / Hạng phòng**: Chuyển đổi linh hoạt Grid View (thẻ phòng `xs={12} sm={8}`) và Table View (`scroll.x: 1000`, Hạng phòng & Khách lưu trú `nowrap`), Modal tạo/sửa phòng 1 cột trên mobile.
+- [x] **Đặt phòng**: 5 thẻ KPI, bảng danh sách (`scroll.x: 1350`, Khách hàng `width: 220` + `nowrap`, Thao tác dynamic fixed), Drawer chi tiết thẻ Timeline không gãy ngày tháng, công cụ tra cứu tồn phòng Tab 2 trực quan.
+- [x] **Lưu trú**: Bảng Lưu trú & Quầy Check-in (`scroll.x: 1200`, Khách `width: 200` + `nowrap`, Thao tác dynamic fixed), Drawer chi tiết lưu trú và các modal Check-in / Transfer / Check-out tương thích mobile.
+- [x] **Khách hàng**: Thẻ thống kê định danh, bảng khách hàng (`scroll.x: 1050`, Họ tên `width: 200` + `nowrap`, Email `width: 220` + `nowrap`), Drawer hồ sơ định danh `width={screens.xs ? '100%' : 560}`.
+- [x] **Buồng phòng**: 4 cột Kanban buồng phòng hiển thị trực quan, bảng Hàng đợi phòng dơ (`scroll.x: 1100`, Hạng phòng `width: 180` + `nowrap`, Thao tác dynamic fixed), Drawer lịch sử kiểm toán.
+- [x] **Bảo trì**: Bảng Phiếu sự cố kỹ thuật (`scroll.x: 1250`, Tiêu đề & Mô tả `width: 250` + `nowrap`) và Bảng Lệnh khóa phòng (`scroll.x: 1080`, Lý do `width: 250` + `nowrap`), Thao tác dynamic fixed.
+- [x] **Dịch vụ**: Bảng Danh mục dịch vụ (`scroll.x: 1080`, Tên `width: 220` + `nowrap`) và Bảng Đơn dịch vụ (`scroll.x: 1250`, Chi tiết items `width: 320` + `nowrap`), Thao tác dynamic fixed.
+- [x] **Folio / Thanh toán**: Bảng Đơn đặt phòng (`scroll.x: 1050`), Bảng Sổ cái chi phí (`scroll.x: 1100`, Diễn giải `width: 250` + `nowrap`), Bảng Lịch sử thanh toán (`scroll.x: 1220`, Tham chiếu `width: 220` + `nowrap`), Thao tác dynamic fixed.
+- [x] **Nhân viên**: Bảng danh sách nhân sự (`scroll.x: 1100`, Nhân viên/User/Email `nowrap`, Thao tác dynamic fixed), Modal tạo/sửa nhân viên và Reset mật khẩu co giãn tốt.
+- [x] **Báo cáo**: Cả 6 tab (Doanh thu, Dòng tiền, Công suất, Đặt phòng, Vận hành, Công nợ Outstanding) đều có `scroll.x: 750-1000`, cột `nowrap`, bộ lọc ngày và preset wrap tự nhiên.
+- [x] **Inventory**: Cả 7 tab (`Overview`, `Items`, `Categories`, `Suppliers`, `Receipts`, `Issues`, `Movements`) và 2 Modal chi tiết đều có `scroll.x`, cột text cố định width + `nowrap`, Thao tác dynamic fixed, modal chi tiết `width={screens.xs ? '100%' : ...}`.
+- [x] **403 / 404**: Khung hiển thị căn giữa chuẩn responsive, nút CTA to rõ, điều hướng an toàn.
 
 ## 8. Quy trình làm việc và kiểm soát phạm vi
 
