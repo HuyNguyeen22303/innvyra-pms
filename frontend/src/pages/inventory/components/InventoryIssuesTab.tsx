@@ -39,6 +39,7 @@ import type {
   InventoryItemView,
 } from '../../../types/inventory.types.ts';
 import { IssueDetailModal } from './IssueDetailModal.tsx';
+import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 
 const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -345,11 +346,11 @@ export const InventoryIssuesTab: React.FC = () => {
       <Card style={{ marginBottom: 16, borderRadius: 8 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space wrap size={10}>
-            <Input
+            <DebouncedSearchInput
               placeholder="Lọc theo phòng ban nhận..."
               value={departmentFilter}
-              onChange={(e) => {
-                setDepartmentFilter(e.target.value);
+              onChange={(val) => {
+                setDepartmentFilter(val);
                 setPage(1);
               }}
               style={{ width: 220 }}

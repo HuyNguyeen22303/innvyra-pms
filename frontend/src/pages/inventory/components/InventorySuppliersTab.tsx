@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import { inventoryApi, getInventoryErrorMessage } from '../../../api/inventory.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 import type {
   SupplierView,
   CreateSupplierDto,
@@ -307,12 +308,12 @@ export const InventorySuppliersTab: React.FC = () => {
       <Card style={{ marginBottom: 16, borderRadius: 8 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space wrap size={12}>
-            <Input
+            <DebouncedSearchInput
               placeholder="Tìm theo mã, tên hoặc liên hệ NCC..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+              onChange={(val) => {
+                setSearch(val);
                 setPage(1);
               }}
               style={{ width: 300 }}

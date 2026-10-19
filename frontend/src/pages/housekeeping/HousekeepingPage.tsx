@@ -63,6 +63,236 @@ import type {
 
 const { Title, Text, Paragraph } = Typography;
 
+interface CompleteTaskModalProps {
+  open: boolean;
+  task: HousekeepingTaskItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (notes?: string) => void;
+}
+
+const CompleteTaskModal: React.FC<CompleteTaskModalProps> = React.memo(
+  ({ open, task, confirmLoading, onCancel, onConfirm }) => {
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setNotes('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      onConfirm(notes.trim() ? notes.trim() : undefined);
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined style={{ color: '#722ed1' }} />
+            <span>Hoàn thành dọn dẹp & Gửi kiểm tra — Phòng #{task?.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Gửi nghiệm thu"
+        cancelText="Hủy"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="info"
+            showIcon
+            title="Xác nhận hoàn tất vệ sinh"
+            description="Sau khi gửi, trạng thái phòng sẽ chuyển sang INSPECTION (Chờ kiểm tra). Quản lý hoặc Giám sát buồng phòng sẽ tiến hành nghiệm thu thực tế trước khi phòng chuyển thành READY."
+          />
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú công việc đã làm (tùy chọn):
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Đã hút bụi, khử khuẩn, thay mới toàn bộ chăn ga gối, kiểm tra minibar..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface InspectTaskModalProps {
+  open: boolean;
+  task: HousekeepingTaskItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (dto: { passed: boolean; notes?: string }) => void;
+}
+
+const InspectTaskModal: React.FC<InspectTaskModalProps> = React.memo(
+  ({ open, task, confirmLoading, onCancel, onConfirm }) => {
+    const [passed, setPassed] = useState<boolean>(true);
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setPassed(true);
+        setNotes('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!passed && !notes.trim()) {
+        message.error('Khi từ chối nghiệm thu, bắt buộc phải nhập lý do/yêu cầu dọn lại!');
+        return;
+      }
+      onConfirm({ passed, notes: notes.trim() || undefined });
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined style={{ color: passed ? '#52c41a' : '#ff4d4f' }} />
+            <span>Nghiệm thu chất lượng buồng phòng — Phòng #{task?.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText={passed ? 'Xác nhận Đạt (Chuyển READY)' : 'Xác nhận Không đạt (Dọn lại)'}
+        okButtonProps={{ danger: !passed }}
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type={passed ? 'success' : 'warning'}
+            showIcon
+            title="Quy chuẩn nghiệm thu buồng phòng"
+            description={
+              passed
+                ? 'Nếu ĐẠT: Phòng sẽ ngay lập tức chuyển sang trạng thái READY (Sạch sẽ) và sẵn sàng đón khách nhận phòng.'
+                : 'Nếu KHÔNG ĐẠT: Nhiệm vụ sẽ quay về trạng thái PENDING và phòng quay về DIRTY để nhân viên làm lại.'
+            }
+          />
+
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              Kết quả nghiệm thu:
+            </Text>
+            <Radio.Group
+              value={passed}
+              onChange={(e) => setPassed(e.target.value)}
+              size="middle"
+            >
+              <Radio.Button value={true} style={{ color: '#389e0d' }}>
+                <CheckOutlined /> Đạt chuẩn (Pass)
+              </Radio.Button>
+              <Radio.Button value={false} style={{ color: '#cf1322' }}>
+                <CloseOutlined /> Chưa đạt (Reject)
+              </Radio.Button>
+            </Radio.Group>
+          </div>
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú nghiệm thu {passed ? '(tùy chọn)' : <span style={{ color: '#ff4d4f' }}>* (Bắt buộc)</span>}:
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder={
+                passed
+                  ? 'Ghi chú kiểm tra (VD: Phòng thơm, đầy đủ vật phẩm, minibar niêm phong chuẩn)'
+                  : 'Vui lòng nêu rõ lý do không đạt (VD: Bồn tắm còn vệt nước, chưa lau bụi bàn trang điểm)'
+              }
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface CancelTaskModalProps {
+  open: boolean;
+  task: HousekeepingTaskItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
+  ({ open, task, confirmLoading, onCancel, onConfirm }) => {
+    const [reason, setReason] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setReason('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!reason.trim()) {
+        message.error('Vui lòng nhập lý do hủy nhiệm vụ!');
+        return;
+      }
+      onConfirm(reason.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Hủy nhiệm vụ buồng phòng — Phòng #{task?.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Xác nhận hủy"
+        okButtonProps={{ danger: true }}
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="warning"
+            showIcon
+            title="Hành động hủy nhiệm vụ"
+            description="Khi hủy, nhiệm vụ sẽ kết thúc và phòng vẫn duy trì trạng thái DIRTY. Thao tác này giải phóng vị trí nhiệm vụ hoạt động để có thể tạo nhiệm vụ khác sau này."
+          />
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do hủy nhiệm vụ: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Kế hoạch thay đổi, phòng chuyển sang sửa chữa bảo trì, nhân viên phân công nhầm..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
 // Dynamic Housekeeping Staff Options loaded from employeesApi
 
 export const HousekeepingPage: React.FC = () => {
@@ -115,10 +345,6 @@ export const HousekeepingPage: React.FC = () => {
   }, [housekeepingStaffRes]);
 
   const [assignStaffId, setAssignStaffId] = useState<string>('');
-  const [inspectPassed, setInspectPassed] = useState<boolean>(true);
-  const [inspectNotes, setInspectNotes] = useState<string>('');
-  const [cancelReason, setCancelReason] = useState<string>('');
-  const [completeNotes, setCompleteNotes] = useState<string>('');
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState<boolean>(false);
 
   // ----------------------------------------------------
@@ -246,7 +472,6 @@ export const HousekeepingPage: React.FC = () => {
     onSuccess: () => {
       message.success('Đã gửi yêu cầu nghiệm thu! Trạng thái phòng: INSPECTION.');
       setIsCompleteModalOpen(false);
-      setCompleteNotes('');
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -267,7 +492,6 @@ export const HousekeepingPage: React.FC = () => {
         message.warning('Đã từ chối nghiệm thu. Nhiệm vụ quay về PENDING và phòng về DIRTY.');
       }
       setIsInspectModalOpen(false);
-      setInspectNotes('');
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dirty-rooms'] });
@@ -285,7 +509,6 @@ export const HousekeepingPage: React.FC = () => {
     onSuccess: () => {
       message.info('Đã hủy nhiệm vụ dọn phòng. Phòng giữ nguyên trạng thái DIRTY.');
       setIsCancelModalOpen(false);
-      setCancelReason('');
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dirty-rooms'] });
@@ -619,7 +842,6 @@ export const HousekeepingPage: React.FC = () => {
                     icon={<CloseOutlined />}
                     onClick={() => {
                       setActionTask(task);
-                      setCancelReason('');
                       setIsCancelModalOpen(true);
                     }}
                   />
@@ -639,7 +861,6 @@ export const HousekeepingPage: React.FC = () => {
                     style={{ background: '#722ed1', borderColor: '#722ed1' }}
                     onClick={() => {
                       setActionTask(task);
-                      setCompleteNotes('');
                       setIsCompleteModalOpen(true);
                     }}
                   >
@@ -656,7 +877,6 @@ export const HousekeepingPage: React.FC = () => {
                     icon={<CloseOutlined />}
                     onClick={() => {
                       setActionTask(task);
-                      setCancelReason('');
                       setIsCancelModalOpen(true);
                     }}
                   />
@@ -675,8 +895,6 @@ export const HousekeepingPage: React.FC = () => {
                   icon={<CheckCircleOutlined />}
                   onClick={() => {
                     setActionTask(task);
-                    setInspectPassed(true);
-                    setInspectNotes('');
                     setIsInspectModalOpen(true);
                   }}
                 >
@@ -1077,188 +1295,62 @@ export const HousekeepingPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* COMPLETE TASK MODAL (SUBMIT FOR INSPECTION) */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <CheckCircleOutlined style={{ color: '#722ed1' }} />
-            <span>Hoàn thành dọn dẹp & Gửi kiểm tra — Phòng #{actionTask?.room.roomNumber}</span>
-          </Space>
-        }
+      <CompleteTaskModal
         open={isCompleteModalOpen}
+        task={actionTask}
+        confirmLoading={completeMutation.isPending}
         onCancel={() => {
           setIsCompleteModalOpen(false);
           setActionTask(null);
         }}
-        onOk={() => {
+        onConfirm={(notes) => {
           if (actionTask) {
             completeMutation.mutate({
               id: actionTask.id,
-              notes: completeNotes.trim() ? completeNotes.trim() : undefined,
+              notes,
             });
           }
         }}
-        okText="Gửi nghiệm thu"
-        cancelText="Hủy"
-        confirmLoading={completeMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type="info"
-            showIcon
-            title="Xác nhận hoàn tất vệ sinh"
-            description="Sau khi gửi, trạng thái phòng sẽ chuyển sang INSPECTION (Chờ kiểm tra). Quản lý hoặc Giám sát buồng phòng sẽ tiến hành nghiệm thu thực tế trước khi phòng chuyển thành READY."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Ghi chú công việc đã làm (tùy chọn):
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Đã hút bụi, khử khuẩn, thay mới toàn bộ chăn ga gối, kiểm tra minibar..."
-              value={completeNotes}
-              onChange={(e) => setCompleteNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* INSPECTION MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <CheckCircleOutlined style={{ color: inspectPassed ? '#52c41a' : '#ff4d4f' }} />
-            <span>Nghiệm thu chất lượng buồng phòng — Phòng #{actionTask?.room.roomNumber}</span>
-          </Space>
-        }
+      <InspectTaskModal
         open={isInspectModalOpen}
+        task={actionTask}
+        confirmLoading={inspectMutation.isPending}
         onCancel={() => {
           setIsInspectModalOpen(false);
           setActionTask(null);
         }}
-        onOk={() => {
-          if (!inspectPassed && !inspectNotes.trim()) {
-            message.error('Khi từ chối nghiệm thu, bắt buộc phải nhập lý do/yêu cầu dọn lại!');
-            return;
-          }
+        onConfirm={(dto) => {
           if (actionTask) {
             inspectMutation.mutate({
               id: actionTask.id,
-              dto: { passed: inspectPassed, notes: inspectNotes.trim() || undefined },
+              dto,
             });
           }
         }}
-        okText={inspectPassed ? 'Xác nhận Đạt (Chuyển READY)' : 'Xác nhận Không đạt (Dọn lại)'}
-        okButtonProps={{ danger: !inspectPassed }}
-        cancelText="Đóng"
-        confirmLoading={inspectMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type={inspectPassed ? 'success' : 'warning'}
-            showIcon
-            title="Quy chuẩn nghiệm thu buồng phòng"
-            description={
-              inspectPassed
-                ? 'Nếu ĐẠT: Phòng sẽ ngay lập tức chuyển sang trạng thái READY (Sạch sẽ) và sẵn sàng đón khách nhận phòng.'
-                : 'Nếu KHÔNG ĐẠT: Nhiệm vụ sẽ quay về trạng thái PENDING và phòng quay về DIRTY để nhân viên làm lại.'
-            }
-          />
-
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Kết quả nghiệm thu:
-            </Text>
-            <Radio.Group
-              value={inspectPassed}
-              onChange={(e) => setInspectPassed(e.target.value)}
-              size="middle"
-            >
-              <Radio.Button value={true} style={{ color: '#389e0d' }}>
-                <CheckOutlined /> Đạt chuẩn (Pass)
-              </Radio.Button>
-              <Radio.Button value={false} style={{ color: '#cf1322' }}>
-                <CloseOutlined /> Chưa đạt (Reject)
-              </Radio.Button>
-            </Radio.Group>
-          </div>
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Ghi chú nghiệm thu {inspectPassed ? '(tùy chọn)' : <span style={{ color: '#ff4d4f' }}>* (Bắt buộc)</span>}:
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder={
-                inspectPassed
-                  ? 'Ghi chú kiểm tra (VD: Phòng thơm, đầy đủ vật phẩm, minibar niêm phong chuẩn)'
-                  : 'Vui lòng nêu rõ lý do không đạt (VD: Bồn tắm còn vệt nước, chưa lau bụi bàn trang điểm)'
-              }
-              value={inspectNotes}
-              onChange={(e) => setInspectNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* CANCEL TASK MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Hủy nhiệm vụ buồng phòng — Phòng #{actionTask?.room.roomNumber}</span>
-          </Space>
-        }
+      <CancelTaskModal
         open={isCancelModalOpen}
+        task={actionTask}
+        confirmLoading={cancelMutation.isPending}
         onCancel={() => {
           setIsCancelModalOpen(false);
           setActionTask(null);
         }}
-        onOk={() => {
-          if (!cancelReason.trim()) {
-            message.error('Vui lòng nhập lý do hủy nhiệm vụ!');
-            return;
-          }
+        onConfirm={(reason) => {
           if (actionTask) {
-            cancelMutation.mutate({ id: actionTask.id, reason: cancelReason.trim() });
+            cancelMutation.mutate({ id: actionTask.id, reason });
           }
         }}
-        okText="Xác nhận hủy"
-        okButtonProps={{ danger: true }}
-        cancelText="Đóng"
-        confirmLoading={cancelMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type="warning"
-            showIcon
-            title="Hành động hủy nhiệm vụ"
-            description="Khi hủy, nhiệm vụ sẽ kết thúc và phòng vẫn duy trì trạng thái DIRTY. Thao tác này giải phóng vị trí nhiệm vụ hoạt động để có thể tạo nhiệm vụ khác sau này."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Lý do hủy nhiệm vụ: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Kế hoạch thay đổi, phòng chuyển sang sửa chữa bảo trì, nhân viên phân công nhầm..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* TASK DETAIL & AUDIT LOG DRAWER */}

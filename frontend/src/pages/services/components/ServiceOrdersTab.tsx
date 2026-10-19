@@ -34,6 +34,7 @@ import { billingApi } from '../../../api/billing.api.ts';
 import { reservationsApi } from '../../../api/reservations.api.ts';
 import { staysApi } from '../../../api/stays.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 import type {
   ServiceOrderItem,
   CreateServiceOrderDto,
@@ -52,6 +53,79 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
   return errData?.error?.message || errData?.message || fallback;
 };
 
+// ---------------------------------------------------------
+// ISOLATED MODAL: Cancel Order Modal
+// ---------------------------------------------------------
+interface CancelOrderModalProps {
+  open: boolean;
+  order: ServiceOrderItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
+  open,
+  order,
+  confirmLoading,
+  onCancel,
+  onConfirm,
+}) => {
+  const [reason, setReason] = useState<string>('');
+
+  useEffect(() => {
+    if (open) {
+      setReason('');
+    }
+  }, [open]);
+
+  const handleOk = () => {
+    if (!reason.trim()) {
+      message.error('Vui lòng nhập lý do hủy yêu cầu dịch vụ!');
+      return;
+    }
+    onConfirm(reason.trim());
+  };
+
+  return (
+    <Modal
+      title={
+        <Space>
+          <CloseOutlined style={{ color: '#ff4d4f' }} />
+          <span>Hủy Yêu cầu Dịch vụ #{order?.id}</span>
+        </Space>
+      }
+      open={open}
+      onCancel={onCancel}
+      onOk={handleOk}
+      okText="Xác nhận Hủy"
+      cancelText="Quay lại"
+      okButtonProps={{ danger: true }}
+      confirmLoading={confirmLoading}
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        <Text>
+          Bạn có chắc chắn muốn hủy yêu cầu dịch vụ này? Hành động này không thể hoàn tác.
+        </Text>
+        <div>
+          <Text strong style={{ display: 'block', marginBottom: 4 }}>
+            Lý do hủy yêu cầu: <span style={{ color: '#ff4d4f' }}>*</span>
+          </Text>
+          <Input.TextArea
+            rows={3}
+            placeholder="VD: Khách báo hủy order, hết nguyên liệu pha chế, đổi món khác..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            maxLength={2000}
+            showCount
+          />
+        </div>
+      </Space>
+    </Modal>
+  );
+});
+CancelOrderModal.displayName = 'CancelOrderModal';
+
 export const ServiceOrdersTab: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -67,7 +141,6 @@ export const ServiceOrdersTab: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
   const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<ServiceOrderItem | null>(null);
-  const [cancelReason, setCancelReason] = useState<string>('');
 
   const [createForm] = Form.useForm();
 
@@ -208,7 +281,6 @@ export const ServiceOrdersTab: React.FC = () => {
       message.info('Đã hủy yêu cầu dịch vụ.');
       setIsCancelModalOpen(false);
       setSelectedOrderForCancel(null);
-      setCancelReason('');
       queryClient.invalidateQueries({ queryKey: ['billing-orders'] });
     },
     onError: (err: any) => {
@@ -430,7 +502,6 @@ export const ServiceOrdersTab: React.FC = () => {
                       icon={<CloseOutlined />}
                       onClick={() => {
                         setSelectedOrderForCancel(record);
-                        setCancelReason('');
                         setIsCancelModalOpen(true);
                       }}
                     >
@@ -452,12 +523,12 @@ export const ServiceOrdersTab: React.FC = () => {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={16} md={12}>
             <Space wrap size={10} style={{ width: '100%' }}>
-              <Input
+              <DebouncedSearchInput
                 placeholder="Mã đơn đặt phòng (VD: 1, 2)..."
                 prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
                 value={reservationSearch}
-                onChange={(e) => {
-                  setReservationSearch(e.target.value);
+                onChange={(val) => {
+                  setReservationSearch(val);
                   setPage(1);
                 }}
                 style={{ width: 220 }}
@@ -693,55 +764,23 @@ export const ServiceOrdersTab: React.FC = () => {
       </Modal>
 
       {/* CANCEL SERVICE ORDER MODAL */}
-      <Modal
-        title={
-          <Space>
-            <CloseOutlined style={{ color: '#ff4d4f' }} />
-            <span>Hủy Yêu cầu Dịch vụ #{selectedOrderForCancel?.id}</span>
-          </Space>
-        }
+      <CancelOrderModal
         open={isCancelModalOpen}
+        order={selectedOrderForCancel}
+        confirmLoading={cancelMutation.isPending}
         onCancel={() => {
           setIsCancelModalOpen(false);
           setSelectedOrderForCancel(null);
-          setCancelReason('');
         }}
-        onOk={() => {
-          if (!cancelReason.trim()) {
-            message.error('Vui lòng nhập lý do hủy yêu cầu dịch vụ!');
-            return;
-          }
+        onConfirm={(reason) => {
           if (selectedOrderForCancel) {
             cancelMutation.mutate({
               id: selectedOrderForCancel.id,
-              reason: cancelReason.trim(),
+              reason,
             });
           }
         }}
-        okText="Xác nhận Hủy"
-        cancelText="Quay lại"
-        okButtonProps={{ danger: true }}
-        confirmLoading={cancelMutation.isPending}
-      >
-        <Space orientation="vertical" style={{ width: '100%' }} size={12}>
-          <Text>
-            Bạn có chắc chắn muốn hủy yêu cầu dịch vụ này? Hành động này không thể hoàn tác.
-          </Text>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 4 }}>
-              Lý do hủy yêu cầu: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Khách báo hủy order, hết nguyên liệu pha chế, đổi món khác..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
     </div>
   );
 };

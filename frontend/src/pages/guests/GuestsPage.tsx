@@ -42,6 +42,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { guestsApi } from '../../api/guests.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import type {
@@ -620,11 +621,11 @@ export const GuestsPage: React.FC = () => {
       >
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={10}>
-            <Input
+            <DebouncedSearchInput
               placeholder="Tìm theo Tên khách hàng, SĐT, Email..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
+              onChange={(val) => setSearchKeyword(val)}
               allowClear
               style={{ width: '100%' }}
             />

@@ -42,6 +42,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { maintenanceApi } from '../../api/maintenance.api.ts';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { employeesApi } from '../../api/employees.api.ts';
@@ -64,6 +65,266 @@ import type {
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
+
+interface ResolveTicketModalProps {
+  open: boolean;
+  ticket: MaintenanceTicketItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (notes: string) => void;
+}
+
+const ResolveTicketModal: React.FC<ResolveTicketModalProps> = React.memo(
+  ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setNotes('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!notes.trim()) {
+        message.error('Vui lòng nhập ghi chú kết quả sửa chữa!');
+        return;
+      }
+      onConfirm(notes.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined style={{ color: '#722ed1' }} />
+            <span>Báo cáo hoàn thành sửa chữa — Phiếu #{ticket?.id}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Gửi báo cáo hoàn thành"
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="info"
+            showIcon
+            title="Báo cáo kỹ thuật"
+            description="Sau khi gửi, phiếu sẽ chuyển sang RESOLVED (Đã sửa xong). Quản lý hoặc Giám sát sẽ kiểm tra nghiệm thu trước khi đóng phiếu."
+          />
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú kết quả sửa chữa: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={4}
+              placeholder="VD: Đã thay thế van cấp nước mới, kiểm tra áp lực nước bình thường, vệ sinh lưới lọc điều hòa..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface CancelTicketModalProps {
+  open: boolean;
+  ticket: MaintenanceTicketItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const CancelTicketModal: React.FC<CancelTicketModalProps> = React.memo(
+  ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
+    const [reason, setReason] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setReason('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!reason.trim()) {
+        message.error('Vui lòng nhập lý do hủy phiếu sự cố!');
+        return;
+      }
+      onConfirm(reason.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Hủy phiếu sự cố #{ticket?.id}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Xác nhận Hủy phiếu"
+        okButtonProps={{ danger: true }}
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do hủy phiếu: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Khách báo nhầm, sự cố tự khắc phục, tạo trùng phiếu..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface ReleaseBlockModalProps {
+  open: boolean;
+  block: MaintenanceBlockItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (notes: string) => void;
+}
+
+const ReleaseBlockModal: React.FC<ReleaseBlockModalProps> = React.memo(
+  ({ open, block, confirmLoading, onCancel, onConfirm }) => {
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setNotes('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!notes.trim()) {
+        message.error('Vui lòng nhập ghi chú xác nhận an toàn kỹ thuật!');
+        return;
+      }
+      onConfirm(notes.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <UnlockOutlined style={{ color: '#52c41a' }} />
+            <span>Mở khóa phòng Bảo trì — Phòng #{block?.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Xác nhận Mở khóa"
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="info"
+            showIcon
+            title="Nghiệp vụ giải phóng bảo trì"
+            description="Khi xác nhận mở khóa: Hệ thống sẽ khôi phục trạng thái vật lý ACTIVE cho phòng. Đồng thời phòng sẽ tự động chuyển sang trạng thái DIRTY và kích hoạt một nhiệm vụ Buồng phòng để nhân viên làm vệ sinh sạch sẽ trước khi đón khách."
+          />
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú xác nhận an toàn kỹ thuật: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={4}
+              placeholder="VD: Kiểm tra toàn bộ thiết bị điện, nước, điều hòa hoạt động an toàn; đã bàn giao chìa khóa cho buồng phòng..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface CancelBlockModalProps {
+  open: boolean;
+  block: MaintenanceBlockItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
+  ({ open, block, confirmLoading, onCancel, onConfirm }) => {
+    const [reason, setReason] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setReason('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!reason.trim()) {
+        message.error('Vui lòng nhập lý do hủy lệnh bảo trì!');
+        return;
+      }
+      onConfirm(reason.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Hủy lệnh Bảo trì tương lai — Lệnh BLK#{block?.id}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        okText="Xác nhận Hủy lệnh"
+        okButtonProps={{ danger: true }}
+        cancelText="Đóng"
+        confirmLoading={confirmLoading}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do hủy lệnh bảo trì: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Hoãn kế hoạch nâng cấp, ưu tiên phục vụ đoàn khách lớn..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
 
 // Dynamic Technician Options loaded from employeesApi
 
@@ -149,10 +410,6 @@ export const MaintenancePage: React.FC = () => {
   }, [techniciansRes]);
 
   const [assignTechId, setAssignTechId] = useState<string>('');
-  const [resolutionNotes, setResolutionNotes] = useState<string>('');
-  const [cancelTicketReason, setCancelTicketReason] = useState<string>('');
-  const [releaseNotes, setReleaseNotes] = useState<string>('');
-  const [cancelBlockReason, setCancelBlockReason] = useState<string>('');
 
   // ----------------------------------------------------
   // QUERIES
@@ -306,7 +563,6 @@ export const MaintenancePage: React.FC = () => {
     onSuccess: () => {
       message.success('Đã báo cáo hoàn thành sửa chữa! Trạng thái phiếu: RESOLVED.');
       setIsResolveTicketModalOpen(false);
-      setResolutionNotes('');
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
@@ -336,7 +592,6 @@ export const MaintenancePage: React.FC = () => {
     onSuccess: () => {
       message.info('Đã hủy phiếu sự cố.');
       setIsCancelTicketModalOpen(false);
-      setCancelTicketReason('');
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
@@ -375,7 +630,6 @@ export const MaintenancePage: React.FC = () => {
     onSuccess: () => {
       message.success('Mở khóa phòng thành công! Phòng đã chuyển sang DIRTY và tạo việc dọn dẹp buồng phòng.');
       setIsReleaseBlockModalOpen(false);
-      setReleaseNotes('');
       setActionBlock(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-blocks'] });
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
@@ -394,7 +648,6 @@ export const MaintenancePage: React.FC = () => {
     onSuccess: () => {
       message.info('Đã hủy lệnh bảo trì đã lên lịch tương lai.');
       setIsCancelBlockModalOpen(false);
-      setCancelBlockReason('');
       setActionBlock(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-blocks'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -621,7 +874,6 @@ export const MaintenancePage: React.FC = () => {
                   style={{ background: '#722ed1', borderColor: '#722ed1' }}
                   onClick={() => {
                     setActionTicket(record);
-                    setResolutionNotes('');
                     setIsResolveTicketModalOpen(true);
                   }}
                 >
@@ -655,7 +907,6 @@ export const MaintenancePage: React.FC = () => {
                   icon={<CloseOutlined />}
                   onClick={() => {
                     setActionTicket(record);
-                    setCancelTicketReason('');
                     setIsCancelTicketModalOpen(true);
                   }}
                 />
@@ -768,7 +1019,6 @@ export const MaintenancePage: React.FC = () => {
                 style={{ background: '#52c41a', borderColor: '#52c41a' }}
                 onClick={() => {
                   setActionBlock(record);
-                  setReleaseNotes('');
                   setIsReleaseBlockModalOpen(true);
                 }}
               >
@@ -785,7 +1035,6 @@ export const MaintenancePage: React.FC = () => {
                 icon={<CloseOutlined />}
                 onClick={() => {
                   setActionBlock(record);
-                  setCancelBlockReason('');
                   setIsCancelBlockModalOpen(true);
                 }}
               />
@@ -925,11 +1174,11 @@ export const MaintenancePage: React.FC = () => {
                 <Card style={{ marginBottom: 16, borderRadius: 8 }}>
                   <Row gutter={[12, 12]} align="middle">
                     <Col xs={24} sm={8}>
-                      <Input
+                      <DebouncedSearchInput
                         placeholder="Tìm theo tiêu đề sự cố..."
                         prefix={<SearchOutlined />}
                         value={ticketSearch}
-                        onChange={(e) => setTicketSearch(e.target.value)}
+                        onChange={(val) => setTicketSearch(val)}
                         allowClear
                       />
                     </Col>
@@ -1202,54 +1451,20 @@ export const MaintenancePage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* RESOLVE TICKET MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <CheckCircleOutlined style={{ color: '#722ed1' }} />
-            <span>Báo cáo hoàn thành sửa chữa — Phiếu #{actionTicket?.id}</span>
-          </Space>
-        }
+      <ResolveTicketModal
         open={isResolveTicketModalOpen}
+        ticket={actionTicket}
+        confirmLoading={resolveTicketMutation.isPending}
         onCancel={() => {
           setIsResolveTicketModalOpen(false);
           setActionTicket(null);
         }}
-        onOk={() => {
-          if (!resolutionNotes.trim()) {
-            message.error('Vui lòng nhập ghi chú kết quả sửa chữa!');
-            return;
-          }
+        onConfirm={(notes) => {
           if (actionTicket) {
-            resolveTicketMutation.mutate({ id: actionTicket.id, notes: resolutionNotes.trim() });
+            resolveTicketMutation.mutate({ id: actionTicket.id, notes });
           }
         }}
-        okText="Gửi báo cáo hoàn thành"
-        cancelText="Đóng"
-        confirmLoading={resolveTicketMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type="info"
-            showIcon
-            title="Báo cáo kỹ thuật"
-            description="Sau khi gửi, phiếu sẽ chuyển sang RESOLVED (Đã sửa xong). Quản lý hoặc Giám sát sẽ kiểm tra nghiệm thu trước khi đóng phiếu."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Ghi chú kết quả sửa chữa: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={4}
-              placeholder="VD: Đã thay thế van cấp nước mới, kiểm tra áp lực nước bình thường, vệ sinh lưới lọc điều hòa..."
-              value={resolutionNotes}
-              onChange={(e) => setResolutionNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* CLOSE TICKET MODAL */}
@@ -1313,48 +1528,20 @@ export const MaintenancePage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* CANCEL TICKET MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Hủy phiếu sự cố #{actionTicket?.id}</span>
-          </Space>
-        }
+      <CancelTicketModal
         open={isCancelTicketModalOpen}
+        ticket={actionTicket}
+        confirmLoading={cancelTicketMutation.isPending}
         onCancel={() => {
           setIsCancelTicketModalOpen(false);
           setActionTicket(null);
         }}
-        onOk={() => {
-          if (!cancelTicketReason.trim()) {
-            message.error('Vui lòng nhập lý do hủy phiếu sự cố!');
-            return;
-          }
+        onConfirm={(reason) => {
           if (actionTicket) {
-            cancelTicketMutation.mutate({ id: actionTicket.id, reason: cancelTicketReason.trim() });
+            cancelTicketMutation.mutate({ id: actionTicket.id, reason });
           }
         }}
-        okText="Xác nhận Hủy phiếu"
-        okButtonProps={{ danger: true }}
-        cancelText="Đóng"
-        confirmLoading={cancelTicketMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Lý do hủy phiếu: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Khách báo nhầm, sự cố tự khắc phục, tạo trùng phiếu..."
-              value={cancelTicketReason}
-              onChange={(e) => setCancelTicketReason(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* CREATE BLOCK MODAL */}
@@ -1478,100 +1665,38 @@ export const MaintenancePage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* RELEASE BLOCK MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <UnlockOutlined style={{ color: '#52c41a' }} />
-            <span>Mở khóa phòng Bảo trì — Phòng #{actionBlock?.room.roomNumber}</span>
-          </Space>
-        }
+      <ReleaseBlockModal
         open={isReleaseBlockModalOpen}
+        block={actionBlock}
+        confirmLoading={releaseBlockMutation.isPending}
         onCancel={() => {
           setIsReleaseBlockModalOpen(false);
           setActionBlock(null);
         }}
-        onOk={() => {
-          if (!releaseNotes.trim()) {
-            message.error('Vui lòng nhập ghi chú xác nhận an toàn kỹ thuật!');
-            return;
-          }
+        onConfirm={(notes) => {
           if (actionBlock) {
-            releaseBlockMutation.mutate({ id: actionBlock.id, notes: releaseNotes.trim() });
+            releaseBlockMutation.mutate({ id: actionBlock.id, notes });
           }
         }}
-        okText="Xác nhận Mở khóa"
-        cancelText="Đóng"
-        confirmLoading={releaseBlockMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type="info"
-            showIcon
-            title="Nghiệp vụ giải phóng bảo trì"
-            description="Khi xác nhận mở khóa: Hệ thống sẽ khôi phục trạng thái vật lý ACTIVE cho phòng. Đồng thời phòng sẽ tự động chuyển sang trạng thái DIRTY và kích hoạt một nhiệm vụ Buồng phòng để nhân viên làm vệ sinh sạch sẽ trước khi đón khách."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Ghi chú xác nhận an toàn kỹ thuật: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={4}
-              placeholder="VD: Kiểm tra toàn bộ thiết bị điện, nước, điều hòa hoạt động an toàn; đã bàn giao chìa khóa cho buồng phòng..."
-              value={releaseNotes}
-              onChange={(e) => setReleaseNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* CANCEL BLOCK MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Hủy lệnh Bảo trì tương lai — Lệnh BLK#{actionBlock?.id}</span>
-          </Space>
-        }
+      <CancelBlockModal
         open={isCancelBlockModalOpen}
+        block={actionBlock}
+        confirmLoading={cancelBlockMutation.isPending}
         onCancel={() => {
           setIsCancelBlockModalOpen(false);
           setActionBlock(null);
         }}
-        onOk={() => {
-          if (!cancelBlockReason.trim()) {
-            message.error('Vui lòng nhập lý do hủy lệnh bảo trì!');
-            return;
-          }
+        onConfirm={(reason) => {
           if (actionBlock) {
-            cancelBlockMutation.mutate({ id: actionBlock.id, reason: cancelBlockReason.trim() });
+            cancelBlockMutation.mutate({ id: actionBlock.id, reason });
           }
         }}
-        okText="Xác nhận Hủy lệnh"
-        okButtonProps={{ danger: true }}
-        cancelText="Đóng"
-        confirmLoading={cancelBlockMutation.isPending}
-      >
-        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Lý do hủy lệnh bảo trì: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Hoãn kế hoạch nâng cấp, ưu tiên phục vụ đoàn khách lớn..."
-              value={cancelBlockReason}
-              onChange={(e) => setCancelBlockReason(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+      />
 
       {/* ---------------------------------------------------- */}
       {/* TICKET DETAIL DRAWER */}

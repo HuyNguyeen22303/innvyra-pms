@@ -42,6 +42,7 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { staysApi } from '../../api/stays.api.ts';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { roomsApi } from '../../api/rooms.api.ts';
@@ -77,6 +78,389 @@ const STAY_STATUS_CONFIG: Record<
   CHECKED_IN: { text: 'Đang lưu trú', color: 'green', badgeStatus: 'success' },
   CHECKED_OUT: { text: 'Đã trả phòng', color: 'purple', badgeStatus: 'default' },
 };
+
+interface CheckinStayModalProps {
+  open: boolean;
+  reservation: ReservationDetailItem | null;
+  allRoomsList: RoomItem[];
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (payload: {
+    reservationId: string;
+    reservationRoomId: string;
+    roomId: string;
+    notes?: string | null;
+  }) => void;
+}
+
+const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
+  ({ open, reservation, allRoomsList, confirmLoading, onCancel, onConfirm }) => {
+    const [selectedRoomItem, setSelectedRoomItem] = useState<any>(null);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open && reservation) {
+        const firstUnchecked = reservation.rooms.find((r) => !r.stay);
+        setSelectedRoomItem(firstUnchecked || reservation.rooms[0] || null);
+        setSelectedRoomId(null);
+        setNotes('');
+      }
+    }, [open, reservation]);
+
+    const eligibleRoomsForCheckin = useMemo(() => {
+      if (!selectedRoomItem) return [];
+      return allRoomsList.filter(
+        (r) =>
+          r.roomType.id === selectedRoomItem.roomType.id &&
+          r.housekeepingStatus === 'READY' &&
+          r.physicalStatus === 'ACTIVE'
+      );
+    }, [allRoomsList, selectedRoomItem]);
+
+    const handleOk = () => {
+      if (!reservation || !selectedRoomItem) return;
+      if (!selectedRoomId) {
+        message.warning('Vui lòng chọn phòng vật lý sẵn sàng (READY) để gán cho khách!');
+        return;
+      }
+      onConfirm({
+        reservationId: reservation.id,
+        reservationRoomId: selectedRoomItem.id,
+        roomId: selectedRoomId,
+        notes: notes.trim() || null,
+      });
+    };
+
+    if (!reservation || !selectedRoomItem) return null;
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <LoginOutlined style={{ color: '#1677ff' }} />
+            <span>Thủ tục Nhận phòng (Check-in)</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        okText="Xác nhận Check-in & Gán phòng"
+        cancelText="Đóng"
+        width={650}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          {/* Reservation Summary */}
+          <Card size="small" style={{ borderRadius: 8, background: '#f8fafc' }}>
+            <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered={false}>
+              <Descriptions.Item label="Mã đặt phòng">
+                <Text strong style={{ color: '#1677ff' }}>
+                  {reservation.confirmationCode}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Khách hàng">
+                <Text strong>{reservation.bookerGuest?.fullName}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày nhận phòng">
+                <Text strong>{dayjs(reservation.checkInDate).format('DD/MM/YYYY')}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày trả phòng">
+                <Text strong>{dayjs(reservation.checkOutDate).format('DD/MM/YYYY')}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          {/* If reservation has multiple rooms, allow selecting which room to check-in */}
+          {reservation.rooms.length > 1 && (
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 6 }}>
+                Chọn phòng cần làm thủ tục check-in trong đơn ({reservation.rooms.length} phòng):
+              </Text>
+              <Select
+                style={{ width: '100%' }}
+                value={selectedRoomItem.id}
+                onChange={(roomId) => {
+                  const found = reservation.rooms.find((r) => r.id === roomId);
+                  if (found) {
+                    setSelectedRoomItem(found);
+                    setSelectedRoomId(null);
+                  }
+                }}
+                options={reservation.rooms.map((r, idx) => ({
+                  value: r.id,
+                  label: `Phòng ${idx + 1}: ${r.roomType.name} (${r.adults} NL, ${r.children} TE) ${
+                    r.stay ? '● [ĐÃ NHẬN]' : '○ [CHỜ CHECK-IN]'
+                  }`,
+                  disabled: !!r.stay,
+                }))}
+              />
+            </div>
+          )}
+
+          {/* Targeted room information */}
+          <div style={{ background: '#e6f4ff', padding: '10px 14px', borderRadius: 6 }}>
+            <Row justify="space-between" align="middle">
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Hạng phòng cần gán:
+                </Text>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0958d9' }}>
+                  {selectedRoomItem.roomType.name} ({selectedRoomItem.roomType.code})
+                </div>
+              </div>
+              <Tag color="blue">
+                {selectedRoomItem.adults} Người lớn • {selectedRoomItem.children} Trẻ em
+              </Tag>
+            </Row>
+          </div>
+
+          {/* Select physical room */}
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Chọn Phòng vật lý sẵn sàng (READY): <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            {eligibleRoomsForCheckin.length === 0 ? (
+              <Alert
+                type="warning"
+                showIcon
+                icon={<WarningOutlined />}
+                title="Không có phòng nào sẵn sàng!"
+                description={`Hiện không có phòng vật lý nào thuộc hạng "${selectedRoomItem.roomType.name}" đang ở trạng thái Sẵn sàng (READY). Vui lòng thông báo cho bộ phận Buồng phòng kiểm tra và dọn phòng trước khi làm thủ tục.`}
+              />
+            ) : (
+              <Select
+                placeholder="Chọn số phòng vật lý..."
+                style={{ width: '100%' }}
+                value={selectedRoomId}
+                onChange={(val) => setSelectedRoomId(val)}
+                options={eligibleRoomsForCheckin.map((r) => ({
+                  value: r.id,
+                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
+                }))}
+              />
+            )}
+          </div>
+
+          {/* Arrival Date Warning if not today */}
+          {dayjs(reservation.checkInDate).format('YYYY-MM-DD') !==
+            dayjs().format('YYYY-MM-DD') && (
+            <Alert
+              type="warning"
+              showIcon
+              title="Lưu ý ngày nhận phòng"
+              description={`Đơn đặt phòng này có ngày nhận phòng là ${dayjs(
+                reservation.checkInDate
+              ).format(
+                'DD/MM/YYYY'
+              )}. Theo chính sách hệ thống, check-in chỉ được phép thực hiện vào đúng ngày khách đến đã đặt.`}
+            />
+          )}
+
+          {/* Check-in Notes */}
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú khi nhận phòng:
+            </Text>
+            <Input.TextArea
+              rows={2}
+              placeholder="VD: Khách gửi hành lý tại lễ tân, bàn giao 2 chìa khóa thẻ từ..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface CheckoutStayModalProps {
+  open: boolean;
+  stay: StaySummaryItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (stayId: string, notes?: string | null) => void;
+}
+
+const CheckoutStayModal: React.FC<CheckoutStayModalProps> = React.memo(
+  ({ open, stay, confirmLoading, onCancel, onConfirm }) => {
+    const [notes, setNotes] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setNotes('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!stay) return;
+      onConfirm(stay.stayId, notes.trim() || null);
+    };
+
+    if (!stay) return null;
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <LogoutOutlined style={{ color: '#cf1322' }} />
+            <span>Xác nhận Trả phòng (Check-out) - Phòng #{stay.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        okText="Xác nhận Trả phòng"
+        cancelText="Đóng"
+        okButtonProps={{ danger: true }}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="warning"
+            showIcon
+            title="Quy trình dọn buồng phòng"
+            description={`Khi xác nhận trả phòng, phòng #${stay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY (Chờ dọn dẹp) để bộ phận Buồng phòng tiến hành vệ sinh và thiết lập lại vật tư cho khách kế tiếp.`}
+          />
+
+          <Card size="small" style={{ borderRadius: 8, background: '#fafafa' }}>
+            <Descriptions size="small" column={1} bordered={false}>
+              <Descriptions.Item label="Khách lưu trú">
+                <Text strong>{stay.bookerGuest?.fullName}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Hạng phòng">
+                {stay.roomType.name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giờ nhận phòng">
+                {dayjs(stay.actualCheckinAt).format('DD/MM/YYYY HH:mm')}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Ghi chú khi trả phòng:
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Kiểm tra mini-bar đầy đủ, khách hoàn trả đủ 2 thẻ phòng, không có hư hỏng..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface TransferRoomModalProps {
+  open: boolean;
+  stay: StaySummaryItem | null;
+  eligibleRooms: RoomItem[];
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (stayId: string, toRoomId: string, reason: string) => void;
+}
+
+const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
+  ({ open, stay, eligibleRooms, confirmLoading, onCancel, onConfirm }) => {
+    const [toRoomId, setToRoomId] = useState<string | null>(null);
+    const [reason, setReason] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setToRoomId(null);
+        setReason('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!stay) return;
+      if (!toRoomId) {
+        message.warning('Vui lòng chọn phòng vật lý đích để chuyển khách!');
+        return;
+      }
+      if (!reason.trim()) {
+        message.warning('Vui lòng nhập lý do chuyển phòng!');
+        return;
+      }
+      onConfirm(stay.stayId, toRoomId, reason.trim());
+    };
+
+    if (!stay) return null;
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <SwapOutlined style={{ color: '#fa8c16' }} />
+            <span>Đổi phòng (Room Transfer) - Phòng hiện tại: #{stay.room.roomNumber}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        okText="Xác nhận Đổi phòng"
+        cancelText="Đóng"
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="info"
+            showIcon
+            title="Quy định đổi phòng giữa kỳ"
+            description={`Phòng mới bắt buộc phải cùng hạng phòng (${stay.roomType.name}) và đang ở trạng thái READY. Phòng cũ #${stay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY để buồng phòng dọn dẹp.`}
+          />
+
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Chọn Phòng đích sẵn sàng (READY): <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            {eligibleRooms.length === 0 ? (
+              <Alert
+                type="warning"
+                showIcon
+                title="Không có phòng thay thế!"
+                description={`Hiện không có phòng vật lý nào khác cùng hạng "${stay.roomType.name}" đang ở trạng thái READY.`}
+              />
+            ) : (
+              <Select
+                placeholder="Chọn số phòng mới..."
+                style={{ width: '100%' }}
+                value={toRoomId}
+                onChange={(val) => setToRoomId(val)}
+                options={eligibleRooms.map((r) => ({
+                  value: r.id,
+                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
+                }))}
+              />
+            )}
+          </div>
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do đổi phòng: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="Vui lòng nhập rõ lý do đổi phòng (VD: Điều hòa kêu to, khách yêu cầu đổi tầng cao, sự cố kỹ thuật...)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
 
 export const StaysPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -119,27 +503,16 @@ export const StaysPage: React.FC = () => {
   // Check-out Modal State
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [checkoutStay, setCheckoutStay] = useState<StaySummaryItem | null>(null);
-  const [checkoutNotes, setCheckoutNotes] = useState<string>('');
 
   // Transfer Room Modal State
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferStay, setTransferStay] = useState<StaySummaryItem | null>(null);
-  const [transferToRoomId, setTransferToRoomId] = useState<string | null>(null);
-  const [transferReason, setTransferReason] = useState<string>('');
 
   // ----------------------------------------------------
   // TAB 2: ARRIVALS / CHECK-IN MODAL STATE
   // ----------------------------------------------------
   const [isCheckinModalOpen, setIsCheckinModalOpen] = useState(false);
   const [checkinReservation, setCheckinReservation] = useState<ReservationDetailItem | null>(null);
-  const [checkinRoomItem, setCheckinRoomItem] = useState<{
-    id: string; // reservationRoomId
-    roomType: { id: string; code: string; name: string };
-    adults: number;
-    children: number;
-  } | null>(null);
-  const [checkinSelectedRoomId, setCheckinSelectedRoomId] = useState<string | null>(null);
-  const [checkinNotes, setCheckinNotes] = useState<string>('');
 
   // ----------------------------------------------------
   // QUERIES
@@ -232,9 +605,6 @@ export const StaysPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
       setIsCheckinModalOpen(false);
       setCheckinReservation(null);
-      setCheckinRoomItem(null);
-      setCheckinSelectedRoomId(null);
-      setCheckinNotes('');
     },
     onError: (err: any) => {
       const errorMsg =
@@ -258,7 +628,6 @@ export const StaysPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       setIsCheckoutModalOpen(false);
       setCheckoutStay(null);
-      setCheckoutNotes('');
     },
     onError: (err: any) => {
       const errorMsg =
@@ -281,8 +650,6 @@ export const StaysPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
       setIsTransferModalOpen(false);
       setTransferStay(null);
-      setTransferToRoomId(null);
-      setTransferReason('');
     },
     onError: (err: any) => {
       const errorMsg =
@@ -300,20 +667,8 @@ export const StaysPage: React.FC = () => {
   // Open Check-in Modal for a specific room of a reservation
   const handleOpenCheckinModal = async (reservationSummary: ReservationSummaryItem) => {
     try {
-      // Fetch full reservation detail to see individual rooms and their stay status
       const res = await reservationsApi.getById(reservationSummary.id);
-      const detail = res.data;
-      setCheckinReservation(detail);
-
-      // Find the first room that has not been checked in yet
-      const firstUncheckedRoom = detail.rooms.find((r) => !r.stay);
-      if (firstUncheckedRoom) {
-        setCheckinRoomItem(firstUncheckedRoom);
-      } else {
-        setCheckinRoomItem(detail.rooms[0] || null);
-      }
-      setCheckinSelectedRoomId(null);
-      setCheckinNotes('');
+      setCheckinReservation(res.data);
       setIsCheckinModalOpen(true);
     } catch {
       message.error('Không thể lấy chi tiết đơn đặt phòng!');
@@ -330,58 +685,45 @@ export const StaysPage: React.FC = () => {
     }
   }, [reservationIdParam, canWrite]);
 
-  const handleConfirmCheckin = () => {
-    if (!checkinReservation || !checkinRoomItem) return;
-    if (!checkinSelectedRoomId) {
-      message.warning('Vui lòng chọn phòng vật lý sẵn sàng (READY) để gán cho khách!');
-      return;
-    }
+  const handleConfirmCheckin = (payload: {
+    reservationId: string;
+    reservationRoomId: string;
+    roomId: string;
+    notes?: string | null;
+  }) => {
     checkinMutation.mutate({
-      reservationId: checkinReservation.id,
-      reservationRoomId: checkinRoomItem.id,
+      reservationId: payload.reservationId,
+      reservationRoomId: payload.reservationRoomId,
       data: {
-        roomId: checkinSelectedRoomId,
-        notes: checkinNotes.trim() || null,
+        roomId: payload.roomId,
+        notes: payload.notes || null,
       },
     });
   };
 
   const handleOpenCheckoutModal = (record: StaySummaryItem) => {
     setCheckoutStay(record);
-    setCheckoutNotes('');
     setIsCheckoutModalOpen(true);
   };
 
-  const handleConfirmCheckout = () => {
-    if (!checkoutStay) return;
+  const handleConfirmCheckout = (stayId: string, notes?: string | null) => {
     checkoutMutation.mutate({
-      id: checkoutStay.stayId,
-      data: { notes: checkoutNotes.trim() || null },
+      id: stayId,
+      data: { notes: notes || null },
     });
   };
 
   const handleOpenTransferModal = (record: StaySummaryItem) => {
     setTransferStay(record);
-    setTransferToRoomId(null);
-    setTransferReason('');
     setIsTransferModalOpen(true);
   };
 
-  const handleConfirmTransfer = () => {
-    if (!transferStay) return;
-    if (!transferToRoomId) {
-      message.warning('Vui lòng chọn phòng vật lý đích để chuyển khách!');
-      return;
-    }
-    if (!transferReason.trim()) {
-      message.warning('Vui lòng nhập lý do chuyển phòng!');
-      return;
-    }
+  const handleConfirmTransfer = (stayId: string, toRoomId: string, reason: string) => {
     transferMutation.mutate({
-      id: transferStay.stayId,
+      id: stayId,
       data: {
-        toRoomId: transferToRoomId,
-        reason: transferReason.trim(),
+        toRoomId,
+        reason,
       },
     });
   };
@@ -395,17 +737,6 @@ export const StaysPage: React.FC = () => {
     const checkedOut = stays.filter((s) => s.status === 'CHECKED_OUT').length;
     return { total, inHouse, checkedOut };
   }, [stays]);
-
-  // Eligible READY rooms for Check-in (must match checkinRoomItem.roomType.id and be READY & ACTIVE)
-  const eligibleRoomsForCheckin = useMemo(() => {
-    if (!checkinRoomItem) return [];
-    return allRoomsList.filter(
-      (r) =>
-        r.roomType.id === checkinRoomItem.roomType.id &&
-        r.housekeepingStatus === 'READY' &&
-        r.physicalStatus === 'ACTIVE'
-    );
-  }, [allRoomsList, checkinRoomItem]);
 
   // Eligible READY rooms for Transfer (must match transferStay.roomType.id, different room, and be READY & ACTIVE)
   const eligibleRoomsForTransfer = useMemo(() => {
@@ -811,11 +1142,11 @@ export const StaysPage: React.FC = () => {
                 <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
                   <Row gutter={[12, 12]} align="middle">
                     <Col xs={24} sm={14} md={10}>
-                      <Input
+                      <DebouncedSearchInput
                         placeholder="Tìm theo số phòng, mã đơn đặt phòng..."
                         prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                         value={searchKeyword}
-                        onChange={(e) => setSearchKeyword(e.target.value)}
+                        onChange={(val) => setSearchKeyword(val)}
                         allowClear
                       />
                     </Col>
@@ -915,287 +1246,46 @@ export const StaysPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* CHECK-IN MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <LoginOutlined style={{ color: '#1677ff' }} />
-            <span>Thủ tục Nhận phòng (Check-in)</span>
-          </Space>
-        }
+      <CheckinStayModal
         open={isCheckinModalOpen}
+        reservation={checkinReservation}
+        allRoomsList={allRoomsList}
+        confirmLoading={checkinMutation.isPending}
         onCancel={() => {
           setIsCheckinModalOpen(false);
           setCheckinReservation(null);
-          setCheckinRoomItem(null);
-          setCheckinSelectedRoomId(null);
-          setCheckinNotes('');
         }}
-        onOk={handleConfirmCheckin}
-        confirmLoading={checkinMutation.isPending}
-        okText="Xác nhận Check-in & Gán phòng"
-        cancelText="Đóng"
-        width={650}
-      >
-        {checkinReservation && checkinRoomItem && (
-          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
-            {/* Reservation Summary */}
-            <Card size="small" style={{ borderRadius: 8, background: '#f8fafc' }}>
-              <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered={false}>
-                <Descriptions.Item label="Mã đặt phòng">
-                  <Text strong style={{ color: '#1677ff' }}>
-                    {checkinReservation.confirmationCode}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Khách hàng">
-                  <Text strong>{checkinReservation.bookerGuest?.fullName}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Ngày nhận phòng">
-                  <Text strong>{dayjs(checkinReservation.checkInDate).format('DD/MM/YYYY')}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Ngày trả phòng">
-                  <Text strong>{dayjs(checkinReservation.checkOutDate).format('DD/MM/YYYY')}</Text>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-
-            {/* If reservation has multiple rooms, allow selecting which room to check-in */}
-            {checkinReservation.rooms.length > 1 && (
-              <div>
-                <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                  Chọn phòng cần làm thủ tục check-in trong đơn ({checkinReservation.rooms.length} phòng):
-                </Text>
-                <Select
-                  style={{ width: '100%' }}
-                  value={checkinRoomItem.id}
-                  onChange={(roomId) => {
-                    const found = checkinReservation.rooms.find((r) => r.id === roomId);
-                    if (found) {
-                      setCheckinRoomItem(found);
-                      setCheckinSelectedRoomId(null);
-                    }
-                  }}
-                  options={checkinReservation.rooms.map((r, idx) => ({
-                    value: r.id,
-                    label: `Phòng ${idx + 1}: ${r.roomType.name} (${r.adults} NL, ${r.children} TE) ${
-                      r.stay ? '● [ĐÃ NHẬN]' : '○ [CHỜ CHECK-IN]'
-                    }`,
-                    disabled: !!r.stay,
-                  }))}
-                />
-              </div>
-            )}
-
-            {/* Targeted room information */}
-            <div style={{ background: '#e6f4ff', padding: '10px 14px', borderRadius: 6 }}>
-              <Row justify="space-between" align="middle">
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Hạng phòng cần gán:
-                  </Text>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0958d9' }}>
-                    {checkinRoomItem.roomType.name} ({checkinRoomItem.roomType.code})
-                  </div>
-                </div>
-                <Tag color="blue">
-                  {checkinRoomItem.adults} Người lớn • {checkinRoomItem.children} Trẻ em
-                </Tag>
-              </Row>
-            </div>
-
-            {/* Select physical room */}
-            <div>
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Chọn Phòng vật lý sẵn sàng (READY): <span style={{ color: '#ff4d4f' }}>*</span>
-              </Text>
-              {eligibleRoomsForCheckin.length === 0 ? (
-                <Alert
-                  type="warning"
-                  showIcon
-                  icon={<WarningOutlined />}
-                  title="Không có phòng nào sẵn sàng!"
-                  description={`Hiện không có phòng vật lý nào thuộc hạng "${checkinRoomItem.roomType.name}" đang ở trạng thái Sẵn sàng (READY). Vui lòng thông báo cho bộ phận Buồng phòng kiểm tra và dọn phòng trước khi làm thủ tục.`}
-                />
-              ) : (
-                <Select
-                  placeholder="Chọn số phòng vật lý..."
-                  style={{ width: '100%' }}
-                  value={checkinSelectedRoomId}
-                  onChange={(val) => setCheckinSelectedRoomId(val)}
-                  options={eligibleRoomsForCheckin.map((r) => ({
-                    value: r.id,
-                    label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
-                  }))}
-                />
-              )}
-            </div>
-
-            {/* Arrival Date Warning if not today */}
-            {dayjs(checkinReservation.checkInDate).format('YYYY-MM-DD') !==
-              dayjs().format('YYYY-MM-DD') && (
-              <Alert
-                type="warning"
-                showIcon
-                title="Lưu ý ngày nhận phòng"
-                description={`Đơn đặt phòng này có ngày nhận phòng là ${dayjs(
-                  checkinReservation.checkInDate
-                ).format(
-                  'DD/MM/YYYY'
-                )}. Theo chính sách hệ thống, check-in chỉ được phép thực hiện vào đúng ngày khách đến đã đặt.`}
-              />
-            )}
-
-            {/* Check-in Notes */}
-            <div style={{ paddingBottom: 16 }}>
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Ghi chú khi nhận phòng:
-              </Text>
-              <Input.TextArea
-                rows={2}
-                placeholder="VD: Khách gửi hành lý tại lễ tân, bàn giao 2 chìa khóa thẻ từ..."
-                value={checkinNotes}
-                onChange={(e) => setCheckinNotes(e.target.value)}
-                maxLength={2000}
-                showCount
-              />
-            </div>
-          </Space>
-        )}
-      </Modal>
+        onConfirm={handleConfirmCheckin}
+      />
 
       {/* ---------------------------------------------------- */}
       {/* CHECK-OUT MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <LogoutOutlined style={{ color: '#cf1322' }} />
-            <span>Xác nhận Trả phòng (Check-out) - Phòng #{checkoutStay?.room.roomNumber}</span>
-          </Space>
-        }
+      <CheckoutStayModal
         open={isCheckoutModalOpen}
+        stay={checkoutStay}
+        confirmLoading={checkoutMutation.isPending}
         onCancel={() => {
           setIsCheckoutModalOpen(false);
           setCheckoutStay(null);
-          setCheckoutNotes('');
         }}
-        onOk={handleConfirmCheckout}
-        confirmLoading={checkoutMutation.isPending}
-        okText="Xác nhận Trả phòng"
-        cancelText="Đóng"
-        okButtonProps={{ danger: true }}
-      >
-        {checkoutStay && (
-          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
-            <Alert
-              type="warning"
-              showIcon
-              title="Quy trình dọn buồng phòng"
-              description={`Khi xác nhận trả phòng, phòng #${checkoutStay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY (Chờ dọn dẹp) để bộ phận Buồng phòng tiến hành vệ sinh và thiết lập lại vật tư cho khách kế tiếp.`}
-            />
-
-            <Card size="small" style={{ borderRadius: 8, background: '#fafafa' }}>
-              <Descriptions size="small" column={1} bordered={false}>
-                <Descriptions.Item label="Khách lưu trú">
-                  <Text strong>{checkoutStay.bookerGuest?.fullName}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Hạng phòng">
-                  {checkoutStay.roomType.name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Giờ nhận phòng">
-                  {dayjs(checkoutStay.actualCheckinAt).format('DD/MM/YYYY HH:mm')}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-
-            <div style={{ paddingBottom: 16 }}>
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Ghi chú khi trả phòng:
-              </Text>
-              <Input.TextArea
-                rows={3}
-                placeholder="VD: Kiểm tra mini-bar đầy đủ, khách hoàn trả đủ 2 thẻ phòng, không có hư hỏng..."
-                value={checkoutNotes}
-                onChange={(e) => setCheckoutNotes(e.target.value)}
-                maxLength={2000}
-                showCount
-              />
-            </div>
-          </Space>
-        )}
-      </Modal>
+        onConfirm={handleConfirmCheckout}
+      />
 
       {/* ---------------------------------------------------- */}
       {/* TRANSFER ROOM MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <SwapOutlined style={{ color: '#fa8c16' }} />
-            <span>Đổi phòng (Room Transfer) - Phòng hiện tại: #{transferStay?.room.roomNumber}</span>
-          </Space>
-        }
+      <TransferRoomModal
         open={isTransferModalOpen}
+        stay={transferStay}
+        eligibleRooms={eligibleRoomsForTransfer}
+        confirmLoading={transferMutation.isPending}
         onCancel={() => {
           setIsTransferModalOpen(false);
           setTransferStay(null);
-          setTransferToRoomId(null);
-          setTransferReason('');
         }}
-        onOk={handleConfirmTransfer}
-        confirmLoading={transferMutation.isPending}
-        okText="Xác nhận Đổi phòng"
-        cancelText="Đóng"
-      >
-        {transferStay && (
-          <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
-            <Alert
-              type="info"
-              showIcon
-              title="Quy định đổi phòng giữa kỳ"
-              description={`Phòng mới bắt buộc phải cùng hạng phòng (${transferStay.roomType.name}) và đang ở trạng thái READY. Phòng cũ #${transferStay.room.roomNumber} sẽ tự động chuyển sang trạng thái DIRTY để buồng phòng dọn dẹp.`}
-            />
-
-            <div>
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Chọn Phòng đích sẵn sàng (READY): <span style={{ color: '#ff4d4f' }}>*</span>
-              </Text>
-              {eligibleRoomsForTransfer.length === 0 ? (
-                <Alert
-                  type="warning"
-                  showIcon
-                  title="Không có phòng thay thế!"
-                  description={`Hiện không có phòng vật lý nào khác cùng hạng "${transferStay.roomType.name}" đang ở trạng thái READY.`}
-                />
-              ) : (
-                <Select
-                  placeholder="Chọn số phòng mới..."
-                  style={{ width: '100%' }}
-                  value={transferToRoomId}
-                  onChange={(val) => setTransferToRoomId(val)}
-                  options={eligibleRoomsForTransfer.map((r) => ({
-                    value: r.id,
-                    label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
-                  }))}
-                />
-              )}
-            </div>
-
-            <div style={{ paddingBottom: 16 }}>
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>
-                Lý do đổi phòng: <span style={{ color: '#ff4d4f' }}>*</span>
-              </Text>
-              <Input.TextArea
-                rows={3}
-                placeholder="Vui lòng nhập rõ lý do đổi phòng (VD: Điều hòa kêu to, khách yêu cầu đổi tầng cao, sự cố kỹ thuật...)"
-                value={transferReason}
-                onChange={(e) => setTransferReason(e.target.value)}
-                maxLength={2000}
-                showCount
-              />
-            </div>
-          </Space>
-        )}
-      </Modal>
+        onConfirm={handleConfirmTransfer}
+      />
 
       {/* ---------------------------------------------------- */}
       {/* STAY DETAIL DRAWER */}

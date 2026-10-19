@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -43,6 +43,106 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
+
+interface BookingNotesInputProps {
+  notesRef: React.MutableRefObject<string>;
+  resetKey: number;
+}
+
+const BookingNotesInput: React.FC<BookingNotesInputProps> = React.memo(({ notesRef, resetKey }) => {
+  const [value, setValue] = useState<string>(notesRef.current || '');
+
+  useEffect(() => {
+    setValue(notesRef.current || '');
+  }, [resetKey, notesRef]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value;
+    setValue(newVal);
+    notesRef.current = newVal;
+  };
+
+  return (
+    <Input.TextArea
+      rows={3}
+      value={value}
+      onChange={handleChange}
+      placeholder="VD: Khách yêu cầu tầng cao, check-in muộn sau 19:00, xuất hóa đơn công ty..."
+      maxLength={1000}
+      showCount
+    />
+  );
+});
+
+interface CancelReservationModalProps {
+  open: boolean;
+  reservation: ReservationSummaryItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo(
+  ({ open, reservation, confirmLoading, onCancel, onConfirm }) => {
+    const [reason, setReason] = useState<string>('');
+
+    useEffect(() => {
+      if (open) {
+        setReason('');
+      }
+    }, [open]);
+
+    const handleOk = () => {
+      if (!reason.trim()) {
+        message.warning('Vui lòng nhập lý do hủy đặt phòng!');
+        return;
+      }
+      onConfirm(reason.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <StopOutlined style={{ color: '#ff4d4f' }} />
+            <span>Hủy Đơn Đặt Phòng: {reservation?.confirmationCode}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        okText="Xác nhận Hủy Đơn"
+        cancelText="Đóng"
+        okButtonProps={{ danger: true }}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="warning"
+            showIcon
+            title="Cảnh báo quy trình khách sạn"
+            description="Khi xác nhận hủy đơn, toàn bộ các đêm phòng đã giữ chỗ cho khách hàng sẽ được giải phóng ngay lập tức trên hệ thống và quay lại trạng thái phòng trống cho khách khác đặt. Thao tác này KHÔNG thể hoàn tác."
+          />
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do hủy đặt phòng: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="Vui lòng nêu rõ lý do hủy (VD: Khách báo hủy chuyến bay, thay đổi lịch công tác, khách đổi ngày sang tháng sau...)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
 import dayjs, { type Dayjs } from 'dayjs';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { guestsApi } from '../../api/guests.api.ts';
@@ -128,7 +228,6 @@ export const ReservationsPage: React.FC = () => {
   // Cancel Modal state
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancellingReservation, setCancellingReservation] = useState<ReservationSummaryItem | null>(null);
-  const [cancelReason, setCancelReason] = useState<string>('');
 
   // Fetch Reservations
   const {
@@ -182,7 +281,6 @@ export const ReservationsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['reservationDetail', cancellingReservation?.id] });
       setCancelModalVisible(false);
       setCancellingReservation(null);
-      setCancelReason('');
     },
     onError: (err: any) => {
       const errorMsg =
@@ -196,19 +294,14 @@ export const ReservationsPage: React.FC = () => {
   // Handle Cancel Click
   const handleOpenCancelModal = (record: ReservationSummaryItem) => {
     setCancellingReservation(record);
-    setCancelReason('');
     setCancelModalVisible(true);
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = (reason: string) => {
     if (!cancellingReservation) return;
-    if (!cancelReason.trim()) {
-      message.warning('Vui lòng nhập lý do hủy đặt phòng!');
-      return;
-    }
     cancelMutation.mutate({
       id: cancellingReservation.id,
-      reason: cancelReason.trim(),
+      reason,
     });
   };
 
@@ -231,7 +324,8 @@ export const ReservationsPage: React.FC = () => {
   // Booker Guest and Extra fields
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<BookingSource>('DIRECT');
-  const [bookingNotes, setBookingNotes] = useState<string>('');
+  const bookingNotesRef = useRef<string>('');
+  const [bookingNotesResetKey, setBookingNotesResetKey] = useState<number>(0);
 
   // Fetch Guest list for Guest Selector Dropdown
   const { data: guestsRes, isLoading: isLoadingGuests } = useQuery({
@@ -345,7 +439,8 @@ export const ReservationsPage: React.FC = () => {
       // Reset form
       setSelectedRoomsMap({});
       setSelectedGuestId(null);
-      setBookingNotes('');
+      bookingNotesRef.current = '';
+      setBookingNotesResetKey((k) => k + 1);
       // Switch to list tab
       setActiveTab('list');
     },
@@ -388,7 +483,7 @@ export const ReservationsPage: React.FC = () => {
       checkOutDate: availDateRange[1].format('YYYY-MM-DD'),
       rooms: roomsPayload,
       bookingSource: selectedSource,
-      notes: bookingNotes.trim() || null,
+      notes: bookingNotesRef.current.trim() || null,
     });
   };
 
@@ -713,21 +808,21 @@ export const ReservationsPage: React.FC = () => {
                 <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
                   <Row gutter={[12, 12]} align="middle">
                     <Col xs={24} sm={12} md={6}>
-                      <Input
+                      <DebouncedSearchInput
                         placeholder="Mã đặt phòng (VD: RES-...)"
                         prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                         value={searchCode}
-                        onChange={(e) => setSearchCode(e.target.value)}
+                        onChange={(val) => setSearchCode(val)}
                         allowClear
                       />
                     </Col>
                     {!isAccountant && (
                       <Col xs={24} sm={12} md={5}>
-                        <Input
+                        <DebouncedSearchInput
                           placeholder="Tên khách hàng"
                           prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
                           value={guestSearch}
-                          onChange={(e) => setGuestSearch(e.target.value)}
+                          onChange={(val) => setGuestSearch(val)}
                           allowClear
                         />
                       </Col>
@@ -1140,14 +1235,7 @@ export const ReservationsPage: React.FC = () => {
                                 <Text strong style={{ display: 'block', marginBottom: 6 }}>
                                   Ghi chú đặt phòng (Yêu cầu đặc biệt):
                                 </Text>
-                                <Input.TextArea
-                                  rows={3}
-                                  value={bookingNotes}
-                                  onChange={(e) => setBookingNotes(e.target.value)}
-                                  placeholder="VD: Khách yêu cầu tầng cao, check-in muộn sau 19:00, xuất hóa đơn công ty..."
-                                  maxLength={1000}
-                                  showCount
-                                />
+                                <BookingNotesInput notesRef={bookingNotesRef} resetKey={bookingNotesResetKey} />
                               </div>
                             </Col>
 
@@ -1508,48 +1596,16 @@ export const ReservationsPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* CANCEL RESERVATION MODAL */}
       {/* ---------------------------------------------------- */}
-      <Modal
-        title={
-          <Space>
-            <StopOutlined style={{ color: '#ff4d4f' }} />
-            <span>Hủy Đơn Đặt Phòng: {cancellingReservation?.confirmationCode}</span>
-          </Space>
-        }
+      <CancelReservationModal
         open={cancelModalVisible}
+        reservation={cancellingReservation}
+        confirmLoading={cancelMutation.isPending}
         onCancel={() => {
           setCancelModalVisible(false);
           setCancellingReservation(null);
-          setCancelReason('');
         }}
-        onOk={handleConfirmCancel}
-        confirmLoading={cancelMutation.isPending}
-        okText="Xác nhận Hủy Đơn"
-        cancelText="Đóng"
-        okButtonProps={{ danger: true }}
-      >
-        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
-          <Alert
-            type="warning"
-            showIcon
-            title="Cảnh báo quy trình khách sạn"
-            description="Khi xác nhận hủy đơn, toàn bộ các đêm phòng đã giữ chỗ cho khách hàng sẽ được giải phóng ngay lập tức trên hệ thống và quay lại trạng thái phòng trống cho khách khác đặt. Thao tác này KHÔNG thể hoàn tác."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: 'block', marginBottom: 6 }}>
-              Lý do hủy đặt phòng: <span style={{ color: '#ff4d4f' }}>*</span>
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="Vui lòng nêu rõ lý do hủy (VD: Khách báo hủy chuyến bay, thay đổi lịch công tác, khách đổi ngày sang tháng sau...)"
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
+        onConfirm={handleConfirmCancel}
+      />
     </div>
   );
 };

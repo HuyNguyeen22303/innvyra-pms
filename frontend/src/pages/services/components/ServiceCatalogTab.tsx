@@ -31,6 +31,7 @@ import {
 import dayjs from 'dayjs';
 import { billingApi } from '../../../api/billing.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 import type {
   ServiceItem,
   CreateServiceDto,
@@ -254,12 +255,12 @@ export const ServiceCatalogTab: React.FC = () => {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={16} md={12}>
             <Space wrap size={10} style={{ width: '100%' }}>
-              <Input
+              <DebouncedSearchInput
                 placeholder="Tìm theo mã hoặc tên dịch vụ..."
                 prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
+                onChange={(val) => {
+                  setSearch(val);
                   setPage(1);
                 }}
                 style={{ width: 260 }}

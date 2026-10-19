@@ -4,7 +4,6 @@ import {
   Table,
   Button,
   Space,
-  Input,
   Select,
   Tag,
   Avatar,
@@ -48,6 +47,7 @@ import { CreateEmployeeModal } from './components/CreateEmployeeModal.tsx';
 import { EditEmployeeModal } from './components/EditEmployeeModal.tsx';
 import { ResetPasswordModal } from './components/ResetPasswordModal.tsx';
 import { registerStaffMembers } from '../../utils/staffDirectory.ts';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -66,7 +66,6 @@ export const EmployeesPage: React.FC = () => {
   const [resetPasswordEmployee, setResetPasswordEmployee] = useState<EmployeeItem | null>(null);
 
   // Filters & Pagination State
-  const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<Role | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
@@ -612,21 +611,14 @@ export const EmployeesPage: React.FC = () => {
       <Card size="small" style={{ marginBottom: 16, borderRadius: 8, border: '1px solid #e2e8f0' }}>
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} sm={12} md={7}>
-            <Input
+            <DebouncedSearchInput
               placeholder="Tìm theo họ tên, username hoặc email..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              value={searchKeyword}
+              value={debouncedSearch}
               allowClear
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onPressEnter={() => {
-                setDebouncedSearch(searchKeyword.trim());
+              onChange={(val) => {
+                setDebouncedSearch(val.trim());
                 setCurrentPage(1);
-              }}
-              onBlur={() => {
-                if (searchKeyword.trim() !== debouncedSearch) {
-                  setDebouncedSearch(searchKeyword.trim());
-                  setCurrentPage(1);
-                }
               }}
             />
           </Col>
@@ -693,7 +685,6 @@ export const EmployeesPage: React.FC = () => {
             <Button
               icon={<FilterOutlined />}
               onClick={() => {
-                setSearchKeyword('');
                 setDebouncedSearch('');
                 setRoleFilter(undefined);
                 setStatusFilter(undefined);

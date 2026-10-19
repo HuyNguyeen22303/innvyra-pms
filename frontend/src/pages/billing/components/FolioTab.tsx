@@ -54,6 +54,7 @@ import type {
 } from '../../../types/billing.types.ts';
 import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 import { ReceiptModal } from './ReceiptModal.tsx';
+import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 
 const { Text } = Typography;
 
@@ -962,13 +963,17 @@ export const FolioTab: React.FC = () => {
                   { value: 'CANCELLED', label: 'Đã hủy (CANCELLED)' },
                 ]}
               />
-              <Input
+              <DebouncedSearchInput
                 placeholder="Tìm mã đơn, tên khách..."
                 prefix={<SearchOutlined />}
                 style={{ width: 220 }}
                 value={resTableSearch}
-                onChange={(e) => setResTableSearch(e.target.value)}
+                onChange={(val) => {
+                  setResTableSearch(val);
+                  setResTablePage(1);
+                }}
                 onPressEnter={() => setResTablePage(1)}
+                allowClear
               />
               <Button icon={<ReloadOutlined />} onClick={() => refetchReservations()}>
                 Làm mới

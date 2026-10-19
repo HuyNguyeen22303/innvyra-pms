@@ -33,6 +33,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
+import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import type {
   RoomItem,
   RoomTypeItem,
@@ -482,10 +483,10 @@ export const RoomsPage: React.FC = () => {
       >
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} sm={12} md={6}>
-            <Input
+            <DebouncedSearchInput
               placeholder="Tìm số phòng (VD: 101, 302)..."
               value={searchNumber}
-              onChange={(e) => setSearchNumber(e.target.value)}
+              onChange={(val) => setSearchNumber(val)}
               allowClear
             />
           </Col>
