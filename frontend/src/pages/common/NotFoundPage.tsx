@@ -6,15 +6,21 @@ export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <Result
-      status="404"
-      title="404 - Không tìm thấy trang"
-      subTitle="Trang bạn đang tìm kiếm không tồn tại hoặc đã được thay đổi đường dẫn."
-      extra={
-        <Button type="primary" onClick={() => navigate('/dashboard')}>
-          Về Trang Chủ
-        </Button>
-      }
-    />
+    <div style={{ padding: '32px 16px', maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+      <Result
+        status="404"
+        title="404 - Không tìm thấy trang"
+        subTitle="Trang bạn đang tìm kiếm không tồn tại hoặc đã được thay đổi đường dẫn."
+        extra={
+          <Button
+            type="primary"
+            onClick={() => navigate('/dashboard')}
+            style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
+          >
+            Về Trang Chủ
+          </Button>
+        }
+      />
+    </div>
   );
 };

@@ -53,7 +53,7 @@ export const LoginPage: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(145deg, #091c17 0%, #0f2922 45%, #1b4d3e 100%)',
-        padding: '24px',
+        padding: '16px 12px',
       }}
     >
       <Card
@@ -64,10 +64,10 @@ export const LoginPage: React.FC = () => {
           borderRadius: 16,
           border: '1px solid rgba(255, 255, 255, 0.1)',
           background: '#ffffff',
-          padding: '8px 12px',
+          padding: '4px 6px',
         }}
       >
-        <Space orientation="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
+        <Space direction="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
           {/* Logo Badge */}
           <div
             style={{

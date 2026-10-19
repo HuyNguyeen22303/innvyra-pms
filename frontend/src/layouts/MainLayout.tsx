@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Layout,
   Menu,
@@ -8,6 +8,8 @@ import {
   Typography,
   Button,
   Tag,
+  Grid,
+  Drawer,
 } from "antd";
 import type { MenuProps } from "antd";
 import {
@@ -30,6 +32,7 @@ import {
   ClockCircleOutlined,
   CustomerServiceOutlined,
   InboxOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import dayjs from "dayjs";
@@ -42,6 +45,7 @@ import type { Role } from "../types/auth.types.ts";
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 interface MenuItemDef {
   key: string;
@@ -182,9 +186,19 @@ const menuGroups: MenuGroupDef[] = [
 
 export const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const screens = useBreakpoint();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+
+  // Determine screen category: mobile (< 768px), tablet (768 - 991px), desktop (>= 992px)
+  const isMobile = !screens.md;
+
+  // Automatically close mobile drawer whenever route changes
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [location.pathname]);
 
   // Globally preload and subscribe to hotel staff directory for all pages
   useStaffDirectory();
@@ -204,6 +218,7 @@ export const MainLayout: React.FC = () => {
 
   // Dynamic real-time operational date & shift
   const currentDate = dayjs().format("DD/MM/YYYY");
+  const currentShortDate = dayjs().format("DD/MM");
   const currentHour = dayjs().hour();
   const currentShift =
     currentHour >= 6 && currentHour < 14
@@ -243,7 +258,7 @@ export const MainLayout: React.FC = () => {
     },
   ];
 
-  const filteredMenuItems: MenuProps["items"] = collapsed
+  const filteredMenuItems: MenuProps["items"] = (collapsed && !isMobile)
     ? menuGroups
         .flatMap((group) =>
           group.items.filter(
@@ -291,138 +306,182 @@ export const MainLayout: React.FC = () => {
         })
         .filter(Boolean) as MenuProps["items"]);
 
-  return (
-    <Layout style={{ minHeight: "100vh", background: "#f8fafc" }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={250}
-        theme="dark"
+  // Sidebar branding & property info block
+  const brandBlock = (
+    <div
+      style={{
+        height: 70,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 20px",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        background: "#091c17",
+      }}
+    >
+      <div
         style={{
-          overflowY: "auto",
-          overflowX: "hidden",
-          height: "100vh",
-          position: "fixed",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 100,
-          background: "#0f2922", // Forest Slate
-          borderRight: "1px solid #163d33",
-          boxShadow: "3px 0 12px rgba(15,41,34,0.12)",
+          width: 38,
+          height: 38,
+          borderRadius: 8,
+          backgroundColor: "#1b4d3e",
+          border: "1px solid #2d6b58",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 20,
+          marginRight: (collapsed && !isMobile) ? 0 : 12,
+          flexShrink: 0,
         }}
       >
-        {/* Brand Header */}
-        <div
+        🏨
+      </div>
+      {(!collapsed || isMobile) && (
+        <div style={{ overflow: "hidden" }}>
+          <div
+            style={{
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: 16,
+              letterSpacing: 0.8,
+              lineHeight: 1.2,
+            }}
+          >
+            INNVYRA PMS
+          </div>
+          <div
+            style={{
+              color: "#94a3b8",
+              fontSize: 10,
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+              marginTop: 2,
+            }}
+          >
+            Boutique Hotel & Resort
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const propertyStrip = (!collapsed || isMobile) && (
+    <div
+      style={{
+        margin: "14px 16px",
+        padding: "10px 12px",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 8,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          color: "#cbd5e1",
+          fontWeight: 600,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <span>Innvyra Hotel</span>
+        <span style={{ color: "#4ade80" }}>● {roomCount} phòng</span>
+      </div>
+      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
+        {currentShift}
+      </div>
+    </div>
+  );
+
+  return (
+    <Layout style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100vw", overflowX: "hidden" }}>
+      {/* Desktop Sider (Hidden on Mobile) */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          width={250}
+          theme="dark"
           style={{
-            height: 70,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 20px",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            background: "#091c17",
+            overflowY: "auto",
+            overflowX: "hidden",
+            height: "100vh",
+            position: "fixed",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 100,
+            background: "#0f2922", // Forest Slate
+            borderRight: "1px solid #163d33",
+            boxShadow: "3px 0 12px rgba(15,41,34,0.12)",
           }}
         >
-          <div
+          {brandBlock}
+          {propertyStrip}
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={filteredMenuItems}
+            onClick={({ key }) => navigate(key)}
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              backgroundColor: "#1b4d3e",
-              border: "1px solid #2d6b58",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              marginRight: collapsed ? 0 : 12,
-              flexShrink: 0,
+              background: "transparent",
+              borderRight: 0,
+              padding: "4px 8px",
             }}
-          >
-            🏨
-          </div>
-          {!collapsed && (
-            <div style={{ overflow: "hidden" }}>
-              <div
-                style={{
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  fontSize: 16,
-                  letterSpacing: 0.8,
-                  lineHeight: 1.2,
-                }}
-              >
-                INNVYRA PMS
-              </div>
-              <div
-                style={{
-                  color: "#94a3b8",
-                  fontSize: 10,
-                  letterSpacing: 1.2,
-                  textTransform: "uppercase",
-                  marginTop: 2,
-                }}
-              >
-                Boutique Hotel & Resort
-              </div>
-            </div>
-          )}
-        </div>
+          />
+        </Sider>
+      )}
 
-        {/* Property & Shift Strip */}
-        {!collapsed && (
-          <div
-            style={{
-              margin: "14px 16px",
-              padding: "10px 12px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 8,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                color: "#cbd5e1",
-                fontWeight: 600,
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <span>Innvyra Hotel</span>
-              <span style={{ color: "#4ade80" }}>● {roomCount} phòng</span>
-            </div>
-            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
-              {currentShift}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Menu */}
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={filteredMenuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{
-            background: "transparent",
-            borderRight: 0,
-            padding: "4px 8px",
+      {/* Mobile Navigation Drawer */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          width={270}
+          closable={false}
+          styles={{
+            body: {
+              padding: 0,
+              background: "#0f2922",
+              height: "100%",
+              overflowY: "auto",
+            },
           }}
-        />
-      </Sider>
+        >
+          {brandBlock}
+          {propertyStrip}
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={filteredMenuItems}
+            onClick={({ key }) => {
+              navigate(key);
+              setMobileDrawerOpen(false);
+            }}
+            style={{
+              background: "transparent",
+              borderRight: 0,
+              padding: "4px 8px",
+            }}
+          />
+        </Drawer>
+      )}
 
+      {/* Main Content Layout Container */}
       <Layout
         style={{
-          marginLeft: collapsed ? 80 : 250,
+          marginLeft: isMobile ? 0 : collapsed ? 80 : 250,
           transition: "all 0.2s",
           background: "#f8fafc",
+          minWidth: 0,
         }}
       >
         <Header
           style={{
-            padding: "0 28px",
+            padding: isMobile ? "0 12px" : "0 24px",
             background: "#ffffff",
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
@@ -431,34 +490,49 @@ export const MainLayout: React.FC = () => {
             position: "sticky",
             top: 0,
             zIndex: 99,
-            height: 64,
+            height: 60,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 17, color: "#334155" }}
-            />
+          {/* Left Action / Brand breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 14, minWidth: 0 }}>
+            {isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setMobileDrawerOpen(true)}
+                style={{ fontSize: 18, color: "#1b4d3e" }}
+                aria-label="Mở menu điều hướng"
+              />
+            ) : (
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{ fontSize: 17, color: "#334155" }}
+              />
+            )}
+
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 6,
                 fontSize: 13,
                 color: "#64748b",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
               }}
             >
-              <span>Không gian làm việc</span>
-              <span>/</span>
+              {!isMobile && <span>Không gian làm việc /</span>}
               <strong style={{ color: "#0f172a", fontWeight: 600 }}>
-                Hệ thống quản lý PMS
+                {isMobile ? "INNVYRA PMS" : "Hệ thống quản lý PMS"}
               </strong>
             </div>
           </div>
 
-          <Space size="large" align="center">
+          {/* Right User & Operational Status */}
+          <Space size={isMobile ? "small" : "middle"} align="center">
             {/* Operational Date Tag */}
             <Tag
               icon={<ClockCircleOutlined />}
@@ -466,13 +540,14 @@ export const MainLayout: React.FC = () => {
                 backgroundColor: "#f1f5f9",
                 borderColor: "#cbd5e1",
                 color: "#334155",
-                fontSize: 12,
-                padding: "4px 10px",
+                fontSize: 11,
+                padding: isMobile ? "2px 6px" : "3px 8px",
                 borderRadius: 6,
                 fontWeight: 500,
+                marginRight: 0,
               }}
             >
-              Ngày vận hành: {currentDate}
+              {isMobile ? currentShortDate : `Ngày vận hành: ${currentDate}`}
             </Tag>
 
             {user && <RoleBadge role={user.role} />}
@@ -485,7 +560,7 @@ export const MainLayout: React.FC = () => {
               <Space
                 style={{
                   cursor: "pointer",
-                  padding: "4px 8px",
+                  padding: "4px 4px",
                   borderRadius: 6,
                 }}
               >
@@ -495,32 +570,37 @@ export const MainLayout: React.FC = () => {
                     color: "#ffffff",
                     fontWeight: 600,
                   }}
+                  size={isMobile ? 32 : 36}
                   icon={<UserOutlined />}
                 />
-                <div style={{ lineHeight: 1.2, textAlign: "left" }}>
-                  <div
-                    style={{ fontWeight: 600, color: "#0f172a", fontSize: 13 }}
-                  >
-                    {user?.fullName}
+                {!isMobile && (
+                  <div style={{ lineHeight: 1.2, textAlign: "left" }}>
+                    <div
+                      style={{ fontWeight: 600, color: "#0f172a", fontSize: 13 }}
+                    >
+                      {user?.fullName}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      {user?.role}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>
-                    {user?.role}
-                  </div>
-                </div>
+                )}
               </Space>
             </Dropdown>
           </Space>
         </Header>
 
+        {/* Content Area */}
         <Content
           style={{
-            margin: "24px 28px",
-            padding: "24px 28px",
+            margin: isMobile ? "12px 8px" : "20px 24px",
+            padding: isMobile ? "14px 10px" : "20px 24px",
             background: "#ffffff",
-            borderRadius: 12,
-            minHeight: "calc(100vh - 112px)",
+            borderRadius: isMobile ? 8 : 12,
+            minHeight: "calc(100vh - 84px)",
             border: "1px solid #e2e8f0",
             boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+            overflowX: "hidden",
           }}
         >
           <Outlet />
