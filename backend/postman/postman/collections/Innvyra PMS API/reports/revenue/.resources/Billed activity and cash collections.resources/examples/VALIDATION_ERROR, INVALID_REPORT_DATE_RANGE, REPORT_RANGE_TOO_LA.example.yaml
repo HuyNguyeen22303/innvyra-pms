@@ -1,0 +1,98 @@
+$kind: http-example
+name: VALIDATION_ERROR, INVALID_REPORT_DATE_RANGE, REPORT_RANGE_TOO_LARGE. Strict query whitelist rejects invalid dates, filters, sorting and unsupported types.
+request:
+  url: "{{baseUrl}}/reports/revenue?startDate=1965-07-06&endDate=1965-07-06&groupBy=day"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: startDate
+      value: 1965-07-06
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 1965-07-06
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 5000

@@ -1,0 +1,96 @@
+$kind: http-example
+name: "Business conflict: FOLIO_NOT_OPEN, FOLIO_UNSETTLED, FOLIO_PENDING_ACTIVITY, STAYS_NOT_FINISHED, SERVICE_INACTIVE, INVALID_ORDER_STATUS, INSUFFICIENT_OUTSTANDING_BALANCE, REFUND_AMOUNT_EXCEEDED, REFUND_NOT_ALLOWED, IDEMPOTENCY_CONFLICT or FINANCIAL_CONFLICT"
+request:
+  url: "{{baseUrl}}/service-orders/:id/cancel"
+  method: POST
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: ""
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "101"
+  body:
+    type: json
+    content: |-
+      {
+        "reason": "Guest withdrew request"
+      }
+response:
+  statusCode: 409
+  statusText: Conflict
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 5000

@@ -1,0 +1,172 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, ACCOUNTANT, TECHNICIAN. Data is scoped to the authenticated user's current hotel, including ADMIN. Unknown query parameters are rejected. No occupancy or date availability is calculated."
+url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=43638765395&floorNumber=3201&physicalStatus=OUT_OF_SERVICE&housekeepingStatus=CLEANING&sortBy=roomNumber"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: Decimal integer 1–1000000; default 1.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: Decimal integer 1–100; default 20.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      }
+  - key: isActive
+    value: "true"
+    disabled: false
+    description: Literal true or false. Omitted includes active and inactive records.
+    $type: boolean
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+  - key: roomTypeId
+    value: "43638765395"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,19}$"
+          }
+        }
+      }
+  - key: floorNumber
+    value: "3201"
+    disabled: false
+    description: Signed SMALLINT, -32768–32767; includes basement floors.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767
+          }
+        }
+      }
+  - key: physicalStatus
+    value: OUT_OF_SERVICE
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "OUT_OF_SERVICE",
+              "MAINTENANCE"
+            ]
+          }
+        }
+      }
+  - key: housekeepingStatus
+    value: CLEANING
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "DIRTY",
+              "CLEANING",
+              "INSPECTION",
+              "READY"
+            ]
+          }
+        }
+      }
+  - key: sortBy
+    value: roomNumber
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "roomNumber",
+            "enum": [
+              "roomNumber",
+              "floorNumber",
+              "createdAt"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List rooms.resources/examples
+order: 2000

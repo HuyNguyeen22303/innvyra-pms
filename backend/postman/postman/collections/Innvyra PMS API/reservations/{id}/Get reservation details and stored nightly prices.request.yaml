@@ -1,0 +1,36 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Hotel scoped; foreign IDs return 404. Booker projection is id/fullName only. ACCOUNTANT cannot see private notes or cancellation reason. Stored prices never follow later room type price changes."
+url: "{{baseUrl}}/reservations/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  - key: id
+    value: "12"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT as decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "12"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get reservation details and stored nightly prices.resources/examples
+order: 1000

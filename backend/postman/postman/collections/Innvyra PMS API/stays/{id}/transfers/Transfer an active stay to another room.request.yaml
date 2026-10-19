@@ -1,0 +1,84 @@
+$kind: http-request
+description: ADMIN, MANAGER, RECEPTIONIST. Same booked room type only, before booked checkout date. Destination must be ACTIVE, READY, vacant and free of overlapping assignments. Moves unique occupancy, records staff/time/reason and sets old room DIRTY in one transaction. Preserves Stay ID, arrival time, inventory and prices. Cross-type/overdue transfers require future amendment/billing policy and return 409.
+url: "{{baseUrl}}/stays/:id/transfers"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "toRoomId": "302",
+      "reason": "Air conditioner malfunction"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "toRoomId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "301",
+          "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "toRoomId",
+        "reason"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Transfer an active stay to another room.resources/examples
+order: 1000

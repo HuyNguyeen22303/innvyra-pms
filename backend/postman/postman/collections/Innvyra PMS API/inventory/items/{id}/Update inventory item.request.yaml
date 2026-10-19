@@ -1,0 +1,99 @@
+$kind: http-request
+description: Updates item details. Current stock cannot be altered here.
+url: "{{baseUrl}}/inventory/items/:id"
+method: PATCH
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "1"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "code": "string",
+      "name": "string",
+      "categoryId": "string",
+      "unit": "string",
+      "description": "string",
+      "minStockLevel": "string"
+    }
+  $type: |-
+    {
+      "description": "Current stock cannot be updated directly through this endpoint. Stock changes only through receipts, issues, or adjustments.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 191
+        },
+        "categoryId": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "minStockLevel": {
+          "type": "string"
+        }
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update inventory item.resources/examples
+order: 2000

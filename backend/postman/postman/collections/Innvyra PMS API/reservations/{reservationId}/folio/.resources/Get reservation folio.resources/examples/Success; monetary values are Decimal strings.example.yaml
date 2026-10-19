@@ -1,0 +1,170 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reservations/:reservationId/folio"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    reservationId: "101"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Get reservation folio",
+        "data": {
+          "id": "1",
+          "reservationId": "101",
+          "currency": "VND",
+          "status": "OPEN",
+          "openedAt": "2026-10-15T00:00:00.000Z",
+          "closedAt": null,
+          "createdAt": "2026-10-15T00:00:00.000Z",
+          "updatedAt": "2026-10-15T00:00:00.000Z",
+          "totalCharges": "1950000.00",
+          "totalCredits": "0.00",
+          "totalPayments": "1000000.00",
+          "totalDeposits": "500000.00",
+          "totalRefunds": "0.00",
+          "netCharges": "1950000.00",
+          "netPaid": "1500000.00",
+          "outstandingBalance": "450000.00"
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "reservationId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "CLOSED"
+                ]
+              },
+              "openedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "closedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "totalCharges": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "totalCredits": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "totalPayments": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "totalDeposits": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "totalRefunds": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "netCharges": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "netPaid": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              },
+              "outstandingBalance": {
+                "type": "string",
+                "example": "450000.00",
+                "description": "Exact Decimal string; negative outstanding is surfaced, never clamped."
+              }
+            },
+            "required": [
+              "id",
+              "reservationId",
+              "currency",
+              "status",
+              "openedAt",
+              "closedAt",
+              "createdAt",
+              "updatedAt",
+              "totalCharges",
+              "totalCredits",
+              "totalPayments",
+              "totalDeposits",
+              "totalRefunds",
+              "netCharges",
+              "netPaid",
+              "outstandingBalance"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

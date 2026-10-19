@@ -1,0 +1,202 @@
+$kind: http-request
+description: "Tickets: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED. OPEN/ASSIGNED can be CANCELLED after all linked blocks are ended. Reporting/resolving a ticket never releases inventory. Only the assignee starts/resolves. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=ASSIGNED&priority=NORMAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: sortOrder
+    value: asc
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      }
+  - key: status
+    value: ASSIGNED
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "RESOLVED",
+              "CLOSED",
+              "CANCELLED"
+            ]
+          }
+        }
+      }
+  - key: priority
+    value: NORMAL
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "CRITICAL"
+            ]
+          }
+        }
+      }
+  - key: roomId
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        }
+      }
+  - key: assignedTo
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        }
+      }
+  - key: fromDate
+    value: 2026-11-01
+    disabled: false
+    description: Inclusive reported date in the hotel timezone
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          }
+        }
+      }
+  - key: toDate
+    value: 2026-11-01
+    disabled: false
+    description: Inclusive reported date in the hotel timezone
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          }
+        }
+      }
+  - key: sortBy
+    value: reportedAt
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "reportedAt",
+            "enum": [
+              "reportedAt",
+              "priority",
+              "status"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List maintenance tickets.resources/examples
+order: 1000

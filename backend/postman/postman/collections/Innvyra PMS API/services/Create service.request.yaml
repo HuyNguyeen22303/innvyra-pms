@@ -1,0 +1,84 @@
+$kind: http-request
+description: "Create a catalog price in whole VND. Required roles: ADMIN, MANAGER. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/services"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "LAUNDRY",
+      "name": "Laundry",
+      "unit": "item",
+      "price": "50000.00"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9][A-Z0-9_-]{0,39}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "price": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,15})(\\.0{1,2})?$",
+          "example": "50000.00",
+          "description": "Whole VND Decimal string. Maximum 9999999999999999.00; responses use two decimal places. Positive for receipts/refunds/adjustments."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "unit",
+        "price"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create service.resources/examples
+order: 2000

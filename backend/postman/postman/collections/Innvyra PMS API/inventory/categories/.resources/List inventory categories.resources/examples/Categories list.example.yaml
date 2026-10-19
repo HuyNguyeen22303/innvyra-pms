@@ -1,0 +1,166 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/categories?page=1&limit=20&search=string&isActive=true"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    page: "1"
+    limit: "20"
+    search: string
+    isActive: "true"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "items": [
+            {
+              "id": "1",
+              "hotelId": "1",
+              "code": "HOUSEKEEPING",
+              "name": "Housekeeping Supplies",
+              "isActive": true,
+              "createdAt": "1990-05-05T01:52:23.660Z",
+              "updatedAt": "1972-07-26T01:59:01.623Z",
+              "description": "Cleaning supplies and amenities"
+            },
+            {
+              "id": "1",
+              "hotelId": "1",
+              "code": "HOUSEKEEPING",
+              "name": "Housekeeping Supplies",
+              "isActive": true,
+              "createdAt": "1953-08-02T07:08:54.259Z",
+              "updatedAt": "1996-10-13T04:41:23.561Z",
+              "description": "Cleaning supplies and amenities"
+            }
+          ],
+          "pagination": {
+            "page": 8384,
+            "limit": 5466,
+            "total": 5026,
+            "totalPages": 4412
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "HOUSEKEEPING"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Housekeeping Supplies"
+                    },
+                    "description": {
+                      "type": "string",
+                      "example": "Cleaning supplies and amenities"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "code",
+                    "name",
+                    "isActive",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

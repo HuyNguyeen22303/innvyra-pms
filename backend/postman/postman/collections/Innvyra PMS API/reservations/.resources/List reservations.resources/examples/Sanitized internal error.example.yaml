@@ -1,0 +1,129 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reservations?page=1&limit=20&search=string&guestId=12&guestSearch=string&status=CANCELLED&checkInDate=2026-10-20&checkOutDate=2026-10-20&bookingSource=DIRECT&sortBy=createdAt&sortOrder=desc"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: false
+      description: Page
+    - key: limit
+      value: "20"
+      disabled: false
+      description: Page size
+    - key: search
+      value: string
+      disabled: false
+      description: Confirmation code contains
+    - key: guestId
+      value: "12"
+      disabled: false
+      description: Booker ID
+    - key: guestSearch
+      value: string
+      disabled: false
+      description: Guest name contains; front desk roles only
+    - key: status
+      value: CANCELLED
+      disabled: false
+      description: Reservation status
+    - key: checkInDate
+      value: 2026-10-20
+      disabled: false
+      description: Exact check-in date
+    - key: checkOutDate
+      value: 2026-10-20
+      disabled: false
+      description: Exact check-out date
+    - key: bookingSource
+      value: DIRECT
+      disabled: false
+      description: Booking channel
+    - key: sortBy
+      value: createdAt
+      disabled: false
+      description: Sort field
+    - key: sortOrder
+      value: desc
+      disabled: false
+      description: Sort direction
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 500
+  statusText: Internal Server Error
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 7000

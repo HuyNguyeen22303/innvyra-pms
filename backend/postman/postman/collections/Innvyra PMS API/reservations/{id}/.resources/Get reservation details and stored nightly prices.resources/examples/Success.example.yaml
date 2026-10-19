@@ -1,0 +1,378 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reservations/:id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "12"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Success",
+        "data": {
+          "id": "101",
+          "confirmationCode": "INN-A7DC158049FA43FC102B1240F001",
+          "bookerGuest": {
+            "id": "12",
+            "fullName": "Synthetic Guest"
+          },
+          "checkInDate": "2026-10-20",
+          "checkOutDate": "2026-10-22",
+          "totalNights": 2,
+          "totalRooms": 2,
+          "status": "CONFIRMED",
+          "bookingSource": "DIRECT",
+          "totalAmount": "3600000.00",
+          "currency": "VND",
+          "createdAt": "2026-10-14T00:00:00.000Z",
+          "createdBy": {
+            "id": "1",
+            "fullName": "Receptionist"
+          },
+          "updatedAt": "2026-10-14T00:00:00.000Z",
+          "notes": null,
+          "cancellation": null,
+          "rooms": [
+            {
+              "id": "201",
+              "roomType": {
+                "id": "2",
+                "code": "DELUXE",
+                "name": "Deluxe"
+              },
+              "roomId": null,
+              "stay": null,
+              "adults": 2,
+              "children": 0,
+              "nights": [
+                {
+                  "stayDate": "2026-10-20",
+                  "nightlyRate": "900000.00"
+                },
+                {
+                  "stayDate": "2026-10-21",
+                  "nightlyRate": "900000.00"
+                }
+              ]
+            },
+            {
+              "id": "202",
+              "roomType": {
+                "id": "2",
+                "code": "DELUXE",
+                "name": "Deluxe"
+              },
+              "roomId": null,
+              "stay": null,
+              "adults": 2,
+              "children": 0,
+              "nights": [
+                {
+                  "stayDate": "2026-10-20",
+                  "nightlyRate": "900000.00"
+                },
+                {
+                  "stayDate": "2026-10-21",
+                  "nightlyRate": "900000.00"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "12",
+                "description": "Unsigned BIGINT as decimal string"
+              },
+              "confirmationCode": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "CONFIRMED",
+                  "CANCELLED",
+                  "CHECKED_IN",
+                  "CHECKED_OUT",
+                  "NO_SHOW",
+                  "PARTIALLY_CHECKED_IN"
+                ]
+              },
+              "bookerGuest": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "12",
+                    "description": "Unsigned BIGINT as decimal string"
+                  },
+                  "fullName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "fullName"
+                ]
+              },
+              "checkInDate": {
+                "type": "string",
+                "example": "2026-10-20",
+                "format": "date"
+              },
+              "checkOutDate": {
+                "type": "string",
+                "example": "2026-10-20",
+                "format": "date"
+              },
+              "totalNights": {
+                "type": "integer"
+              },
+              "totalRooms": {
+                "type": "integer"
+              },
+              "bookingSource": {
+                "type": "string",
+                "enum": [
+                  "DIRECT",
+                  "PHONE",
+                  "EMAIL",
+                  "WALK_IN",
+                  "AGENT",
+                  "OTHER"
+                ]
+              },
+              "totalAmount": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d{2}$",
+                "example": "900000.00"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdBy": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "12",
+                    "description": "Unsigned BIGINT as decimal string"
+                  },
+                  "fullName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "fullName"
+                ]
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "notes": {
+                "type": "string",
+                "description": "Omitted for ACCOUNTANT."
+              },
+              "cancellation": {
+                "type": "object",
+                "properties": {
+                  "cancelledAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "cancelledBy": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "example": "12",
+                        "description": "Unsigned BIGINT as decimal string"
+                      },
+                      "fullName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "fullName"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Omitted for ACCOUNTANT."
+                  }
+                }
+              },
+              "rooms": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "12",
+                      "description": "Unsigned BIGINT as decimal string"
+                    },
+                    "roomType": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "12",
+                          "description": "Unsigned BIGINT as decimal string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "12",
+                      "description": "Current or last physical assignment, managed only by Stay workflows."
+                    },
+                    "stay": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "12",
+                          "description": "Unsigned BIGINT as decimal string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CHECKED_IN",
+                            "CHECKED_OUT"
+                          ]
+                        },
+                        "actualCheckinAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "actualCheckoutAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "adults": {
+                      "type": "integer"
+                    },
+                    "children": {
+                      "type": "integer"
+                    },
+                    "nights": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stayDate": {
+                            "type": "string",
+                            "example": "2026-10-20",
+                            "format": "date"
+                          },
+                          "nightlyRate": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d{2}$",
+                            "example": "900000.00"
+                          }
+                        },
+                        "required": [
+                          "stayDate",
+                          "nightlyRate"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "roomType",
+                    "roomId",
+                    "adults",
+                    "children",
+                    "nights"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "confirmationCode",
+              "status",
+              "bookerGuest",
+              "checkInDate",
+              "checkOutDate",
+              "totalNights",
+              "totalRooms",
+              "bookingSource",
+              "totalAmount",
+              "currency",
+              "createdAt",
+              "createdBy",
+              "updatedAt",
+              "rooms",
+              "cancellation"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

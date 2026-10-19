@@ -1,0 +1,36 @@
+$kind: http-request
+description: "Tickets: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED. OPEN/ASSIGNED can be CANCELLED after all linked blocks are ended. Reporting/resolving a ticket never releases inventory. Only the assignee starts/resolves. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/maintenance/tickets/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  - key: id
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get ticket and history.resources/examples
+order: 1000

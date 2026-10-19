@@ -1,0 +1,190 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/suppliers?page=1&limit=20&search=string&isActive=true"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    page: "1"
+    limit: "20"
+    search: string
+    isActive: "true"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "items": [
+            {
+              "id": "1",
+              "hotelId": "1",
+              "code": "SUP-001",
+              "name": "Vinamilk Supply Corp",
+              "isActive": true,
+              "createdAt": "2012-04-15T18:41:46.739Z",
+              "updatedAt": "1999-07-03T19:08:26.891Z",
+              "contactPerson": "Nguyễn Văn Nam",
+              "phone": "0901234567",
+              "email": "contact@vinamilk.test",
+              "address": "10 Tân Trào, Quận 7, TP. HCM",
+              "notes": "string"
+            },
+            {
+              "id": "1",
+              "hotelId": "1",
+              "code": "SUP-001",
+              "name": "Vinamilk Supply Corp",
+              "isActive": true,
+              "createdAt": "1965-10-28T12:01:23.750Z",
+              "updatedAt": "2004-12-27T18:02:59.395Z",
+              "contactPerson": "Nguyễn Văn Nam",
+              "phone": "0901234567",
+              "email": "contact@vinamilk.test",
+              "address": "10 Tân Trào, Quận 7, TP. HCM",
+              "notes": "string"
+            }
+          ],
+          "pagination": {
+            "page": 9087,
+            "limit": 1685,
+            "total": 3227,
+            "totalPages": 2838
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "SUP-001"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Vinamilk Supply Corp"
+                    },
+                    "contactPerson": {
+                      "type": "string",
+                      "example": "Nguyễn Văn Nam"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "0901234567"
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "contact@vinamilk.test",
+                      "format": "email"
+                    },
+                    "address": {
+                      "type": "string",
+                      "example": "10 Tân Trào, Quận 7, TP. HCM"
+                    },
+                    "notes": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "code",
+                    "name",
+                    "isActive",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

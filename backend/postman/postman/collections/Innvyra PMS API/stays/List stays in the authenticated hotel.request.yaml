@@ -1,0 +1,178 @@
+$kind: http-request
+description: ADMIN, MANAGER, RECEPTIONIST and ACCOUNTANT. All statuses by default; status=CHECKED_IN selects active stays. Accountant receives room/date/booking identifiers only. Actual date filters use hotel.timezone (default Asia/Ho_Chi_Minh), not UTC calendar dates. roomId/roomNumber mean current or last room. Stable pagination and sorting.
+url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1965-07-06&checkOutDate=1965-07-06&search=string&sortBy=actualCheckinAt&sortOrder=desc"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: Page number
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      }
+  - key: limit
+    value: "20"
+    disabled: false
+    description: Page size
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+  - key: status
+    value: CHECKED_OUT
+    disabled: false
+    description: Filter stay status
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "CHECKED_IN",
+              "CHECKED_OUT"
+            ]
+          }
+        }
+      }
+  - key: roomId
+    value: "301"
+    disabled: false
+    description: Current or last internal room ID
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Internal unsigned BIGINT ID, maximum 18446744073709551615; not a room number",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        }
+      }
+  - key: roomNumber
+    value: string
+    disabled: false
+    description: Exact current or last room number
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      }
+  - key: checkInDate
+    value: 1965-07-06
+    disabled: false
+    description: Actual check-in hotel-local date
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+  - key: checkOutDate
+    value: 1965-07-06
+    disabled: false
+    description: Actual checkout hotel-local date
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+  - key: search
+    value: string
+    disabled: false
+    description: Confirmation code substring
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        }
+      }
+  - key: sortBy
+    value: actualCheckinAt
+    disabled: false
+    description: Sort column
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "actualCheckinAt",
+            "enum": [
+              "actualCheckinAt",
+              "actualCheckoutAt",
+              "createdAt",
+              "id"
+            ]
+          }
+        }
+      }
+  - key: sortOrder
+    value: desc
+    disabled: false
+    description: Sort direction
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "desc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List stays in the authenticated hotel.resources/examples
+order: 1000

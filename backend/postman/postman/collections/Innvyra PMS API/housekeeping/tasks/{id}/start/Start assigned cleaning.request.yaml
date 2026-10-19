@@ -1,0 +1,65 @@
+$kind: http-request
+description: "Turnover MVP: DIRTY → CLEANING → INSPECTION → READY. Failed inspection requires notes, returns PENDING/DIRTY and retains audit history. Only the assignee starts/completes; ADMIN/MANAGER inspect. Occupancy is derived independently from active stays. No stayover cleaning. Required roles: ADMIN, MANAGER, HOUSEKEEPING. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/housekeeping/tasks/:id/start"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "301"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "301"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: "null"
+  $type: |-
+    {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Start assigned cleaning.resources/examples
+order: 1000

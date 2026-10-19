@@ -1,0 +1,76 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST. CONFIRMED -> CANCELLED only. Repeating cancellation returns 200 with original audit information retained. PARTIALLY_CHECKED_IN/CHECKED_IN/CHECKED_OUT/NO_SHOW return 409. Inventory is released exactly once in the same transaction. Physical checkout never releases booked nights. Nightly snapshots are retained; refund policy belongs to Payments/Billing. No arbitrary status/date/room PATCH endpoint."
+url: "{{baseUrl}}/reservations/:id/cancel"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "12"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT as decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "12"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Guest changed travel plans"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Cancel a confirmed reservation.resources/examples
+order: 1000

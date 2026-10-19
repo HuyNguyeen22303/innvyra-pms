@@ -1,0 +1,107 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Increases item stock and logs inventory movements in an atomic database transaction."
+url: "{{baseUrl}}/inventory/receipts"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "items": [
+        {
+          "itemId": "1",
+          "quantity": "100.00",
+          "unitPrice": "15000.00",
+          "notes": "string"
+        }
+      ],
+      "receiptNumber": "REC-20261018-001",
+      "supplierId": "1",
+      "receiptDate": "1972-01-08T03:14:25.566Z",
+      "notes": "string"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "receiptNumber": {
+          "type": "string",
+          "maxLength": 50,
+          "example": "REC-20261018-001"
+        },
+        "supplierId": {
+          "type": "string",
+          "example": "1"
+        },
+        "receiptDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string",
+                "example": "1"
+              },
+              "quantity": {
+                "type": "string",
+                "example": "100.00"
+              },
+              "unitPrice": {
+                "type": "string",
+                "example": "15000.00"
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "itemId",
+              "quantity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "items"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create stock receipt (Nhập kho).resources/examples
+order: 1000

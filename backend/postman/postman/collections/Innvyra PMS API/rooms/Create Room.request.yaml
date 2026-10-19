@@ -1,0 +1,98 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Hotel comes only from the authenticated user. Other roles receive 403. POST/PATCH/DELETE require X-CSRF-Protection: 1. No hard delete and no reservation/stay records are modified."
+url: "{{baseUrl}}/rooms"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required for writes; browser Origin must be allowlisted.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "roomNumber": "301",
+      "floorNumber": 3,
+      "roomTypeId": "3",
+      "physicalStatus": "ACTIVE",
+      "housekeepingStatus": "DIRTY",
+      "notes": "Near elevator"
+    }
+  $type: |-
+    {
+      "description": "Room type must be active and belong to the authenticated hotel. Basement floors may be negative. New rooms must be DIRTY; READY requires a completed cleaning task and authorized inspection. MAINTENANCE requires a Maintenance Block. Unknown fields are rejected.",
+      "type": "object",
+      "properties": {
+        "roomNumber": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "floorNumber": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "roomTypeId": {
+          "type": "string",
+          "pattern": "^[1-9]\\d{0,19}$"
+        },
+        "physicalStatus": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "OUT_OF_SERVICE",
+            "MAINTENANCE"
+          ]
+        },
+        "housekeepingStatus": {
+          "type": "string",
+          "enum": [
+            "DIRTY",
+            "CLEANING",
+            "INSPECTION",
+            "READY"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "roomNumber",
+        "floorNumber",
+        "roomTypeId"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create Room.resources/examples
+order: 3000

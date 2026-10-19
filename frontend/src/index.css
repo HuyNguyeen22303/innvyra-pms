@@ -1,0 +1,261 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Shared containment rules keep wide forms, charts and tables inside the page. */
+.pms-shell,
+.pms-shell .ant-layout,
+.pms-content,
+.pms-content > *,
+.pms-content .ant-row,
+.pms-content .ant-col,
+.pms-content .ant-card,
+.pms-content .ant-card-body,
+.pms-content .ant-tabs,
+.pms-content .ant-tabs-content-holder,
+.pms-content .ant-form,
+.pms-content .ant-table-wrapper {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pms-content .ant-table-wrapper {
+  width: 100%;
+}
+
+.pms-content .ant-table-cell {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.pms-header-actions {
+  flex-shrink: 0;
+}
+
+.pms-header-actions .ant-space-item {
+  min-width: 0;
+}
+
+.ant-drawer-content-wrapper {
+  max-width: calc(100vw - 12px);
+}
+
+/* Custom crisp scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Ant Design Menu Group Title on Dark Sidebar */
+.ant-menu-dark .ant-menu-item-group-title {
+  padding: 14px 12px 6px 12px !important;
+  line-height: 1.4 !important;
+}
+
+.ant-menu-dark .ant-menu-item-group:first-child .ant-menu-item-group-title {
+  padding-top: 6px !important;
+}
+
+/* Responsive Table & Container Helpers */
+.pms-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pms-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Scoped KPI & Summary Card Equal-Height Helpers (Only targets designated KPI rows) */
+.pms-kpi-row {
+  align-items: stretch;
+}
+
+.pms-kpi-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.pms-kpi-card .ant-card-body {
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.pms-kpi-card .ant-statistic {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.pms-kpi-card .ant-statistic-title {
+  margin-bottom: 6px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Tablet and compact laptop: give cards, filters and tabs room to wrap. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ant-card-head-title {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .ant-card-extra {
+    max-width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .ant-tabs-nav {
+    max-width: 100%;
+  }
+
+  .ant-form-item-control-input-content {
+    min-width: 0;
+  }
+
+  .ant-modal {
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 340px) {
+  .pms-header-actions .pms-role-badge {
+    display: none;
+  }
+}
+
+/* Mobile Specific Global Adjustments */
+@media (max-width: 767px) {
+  /* Prevent modals from overflowing small viewports */
+  .ant-modal {
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px auto !important;
+    top: 12px !important;
+  }
+
+  .ant-modal .ant-modal-content {
+    padding: 16px 14px !important;
+  }
+
+  .ant-modal-wrap {
+    overscroll-behavior: contain;
+  }
+
+  .ant-modal .ant-modal-body {
+    max-height: calc(100dvh - 190px);
+    overflow-y: auto;
+  }
+
+  /* Make tabs scroll horizontally smoothly without compressing tab labels */
+  .ant-tabs-nav {
+    margin-bottom: 12px !important;
+  }
+
+  .ant-tabs-nav-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Table responsive wrap */
+  .ant-table-wrapper {
+    max-width: 100%;
+  }
+
+  .ant-table {
+    font-size: 13px !important;
+  }
+
+  /* Pagination on mobile */
+  .ant-pagination {
+    flex-wrap: wrap;
+    justify-content: center !important;
+    gap: 6px;
+  }
+
+  /* Prevent Card head from clipping title on mobile */
+  .ant-card-head-wrapper {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .ant-card-head-title {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    padding-top: 8px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .ant-card-extra {
+    margin-inline-start: 0 !important;
+    padding-bottom: 8px !important;
+    max-width: 100%;
+  }
+
+  .ant-btn {
+    max-width: 100%;
+  }
+
+  .ant-picker,
+  .ant-select,
+  .ant-input-number {
+    max-width: 100%;
+  }
+
+  .ant-drawer-body {
+    overscroll-behavior: contain;
+  }
+}

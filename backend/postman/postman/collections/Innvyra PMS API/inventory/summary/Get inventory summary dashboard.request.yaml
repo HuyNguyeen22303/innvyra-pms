@@ -1,0 +1,16 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, ACCOUNTANT. Scoped to authenticated user\\'s hotel."
+url: "{{baseUrl}}/inventory/summary"
+method: GET
+headers:
+  Accept: application/json
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get inventory summary dashboard.resources/examples
+order: 1000

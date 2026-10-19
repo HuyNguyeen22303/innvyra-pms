@@ -1,0 +1,132 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/summary"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "totalActiveItems": 42,
+          "lowStockItemsCount": 3,
+          "outOfStockItemsCount": 1,
+          "totalCategories": 6,
+          "categories": [
+            {
+              "id": "1",
+              "code": "HOUSEKEEPING",
+              "name": "Housekeeping Supplies",
+              "totalItems": 15,
+              "lowStockItems": 2
+            },
+            {
+              "id": "1",
+              "code": "HOUSEKEEPING",
+              "name": "Housekeeping Supplies",
+              "totalItems": 15,
+              "lowStockItems": 2
+            }
+          ],
+          "totalInventoryEstimatedValue": "18500000.00"
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "totalActiveItems": {
+                "type": "integer",
+                "example": 42
+              },
+              "lowStockItemsCount": {
+                "type": "integer",
+                "example": 3
+              },
+              "outOfStockItemsCount": {
+                "type": "integer",
+                "example": 1
+              },
+              "totalCategories": {
+                "type": "integer",
+                "example": 6
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "HOUSEKEEPING"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Housekeeping Supplies"
+                    },
+                    "totalItems": {
+                      "type": "integer",
+                      "example": 15
+                    },
+                    "lowStockItems": {
+                      "type": "integer",
+                      "example": 2
+                    }
+                  }
+                }
+              },
+              "totalInventoryEstimatedValue": {
+                "type": "string",
+                "example": "18500000.00"
+              }
+            },
+            "required": [
+              "totalActiveItems",
+              "lowStockItemsCount",
+              "outOfStockItemsCount",
+              "totalCategories",
+              "categories",
+              "totalInventoryEstimatedValue"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

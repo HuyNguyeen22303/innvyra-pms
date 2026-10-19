@@ -1,0 +1,90 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Hotel/actor/role come only from server authentication. Requires X-CSRF-Protection: 1. Role hierarchy enforced: cannot create/edit employees with equal or higher role. MANAGER cannot manage ADMIN accounts. Password is hashed with Argon2id before storage. Password is never returned."
+url: "{{baseUrl}}/employees"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "fullName": "Nguyễn Minh Anh",
+      "username": "minhanh",
+      "email": "minhanh@example.test",
+      "password": "Innvyra@Secure2026!",
+      "role": "RECEPTIONIST"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 191
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9._-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 191,
+          "format": "email"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 15,
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "ADMIN",
+            "MANAGER",
+            "RECEPTIONIST",
+            "HOUSEKEEPING",
+            "ACCOUNTANT",
+            "TECHNICIAN"
+          ]
+        }
+      },
+      "required": [
+        "fullName",
+        "username",
+        "password",
+        "role"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create employee.resources/examples
+order: 2000

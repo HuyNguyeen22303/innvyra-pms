@@ -1,0 +1,96 @@
+$kind: http-example
+name: VALIDATION_ERROR, INVALID_IDEMPOTENCY_KEY, INVALID_PAYMENT_AMOUNT or REFUND_REFERENCE_REQUIRED
+request:
+  url: "{{baseUrl}}/service-orders/:id/cancel"
+  method: POST
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: ""
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "101"
+  body:
+    type: json
+    content: |-
+      {
+        "reason": "Guest withdrew request"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 6000

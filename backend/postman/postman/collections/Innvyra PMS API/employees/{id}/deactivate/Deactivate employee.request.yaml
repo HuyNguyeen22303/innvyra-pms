@@ -1,0 +1,57 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Soft-disables the account (isActive=false) and revokes all active sessions. Cannot deactivate self. Cannot deactivate the last active ADMIN in the hotel. Role hierarchy enforced. No data is deleted."
+url: "{{baseUrl}}/employees/:id/deactivate"
+method: PATCH
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "10"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "10"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Deactivate employee.resources/examples
+order: 1000

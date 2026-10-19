@@ -1,0 +1,361 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/maintenance/tickets/:id/cancel"
+  method: POST
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: ""
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "301"
+  body:
+    type: json
+    content: |-
+      {
+        "reason": "Duplicate request reported by reception"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "id": "301",
+          "hotelId": "301",
+          "roomId": "301",
+          "createdAt": "2008-09-01T07:03:44.749Z",
+          "updatedAt": "1966-06-29T19:52:36.746Z",
+          "room": {
+            "id": "301",
+            "roomNumber": "string",
+            "floorNumber": 3063,
+            "roomTypeId": "301",
+            "physicalStatus": "ACTIVE",
+            "housekeepingStatus": "DIRTY",
+            "isActive": true
+          },
+          "title": "string",
+          "description": "string",
+          "priority": "CRITICAL",
+          "status": "OPEN",
+          "reportedBy": "301",
+          "assignedTo": "301",
+          "resolvedBy": "301",
+          "reportedAt": "1983-02-17T04:02:27.968Z",
+          "startedAt": "1978-06-03T00:33:28.620Z",
+          "resolvedAt": "2000-02-08T08:58:18.371Z",
+          "closedAt": "2003-06-23T00:18:12.282Z",
+          "resolutionNotes": "string",
+          "history": [
+            {
+              "id": "301",
+              "hotelId": "301",
+              "actorId": "301",
+              "taskId": "301",
+              "ticketId": "301",
+              "blockId": "301",
+              "action": "string",
+              "fromStatus": "string",
+              "toStatus": "string",
+              "notes": "string",
+              "createdAt": "1963-09-06T22:33:15.239Z"
+            },
+            {
+              "id": "301",
+              "hotelId": "301",
+              "actorId": "301",
+              "taskId": "301",
+              "ticketId": "301",
+              "blockId": "301",
+              "action": "string",
+              "fromStatus": "string",
+              "toStatus": "string",
+              "notes": "string",
+              "createdAt": "2015-08-22T01:25:35.713Z"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "hotelId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "roomId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "room": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "301",
+                    "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                  },
+                  "roomNumber": {
+                    "type": "string"
+                  },
+                  "floorNumber": {
+                    "type": "integer"
+                  },
+                  "roomTypeId": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "301",
+                    "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                  },
+                  "physicalStatus": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "MAINTENANCE",
+                      "OUT_OF_SERVICE"
+                    ]
+                  },
+                  "housekeepingStatus": {
+                    "type": "string",
+                    "enum": [
+                      "DIRTY",
+                      "CLEANING",
+                      "INSPECTION",
+                      "READY"
+                    ]
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "roomNumber",
+                  "floorNumber",
+                  "roomTypeId",
+                  "physicalStatus",
+                  "housekeepingStatus",
+                  "isActive"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "LOW",
+                  "NORMAL",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "ASSIGNED",
+                  "IN_PROGRESS",
+                  "RESOLVED",
+                  "CLOSED",
+                  "CANCELLED"
+                ]
+              },
+              "reportedBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "assignedTo": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "resolvedBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "301",
+                "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+              },
+              "reportedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "startedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "resolvedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "closedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "resolutionNotes": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "actorId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "taskId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "ticketId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "blockId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "301",
+                      "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "fromStatus": {
+                      "type": "string"
+                    },
+                    "toStatus": {
+                      "type": "string"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "actorId",
+                    "taskId",
+                    "ticketId",
+                    "blockId",
+                    "action",
+                    "fromStatus",
+                    "toStatus",
+                    "notes",
+                    "createdAt"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "hotelId",
+              "roomId",
+              "createdAt",
+              "updatedAt",
+              "room",
+              "title",
+              "description",
+              "priority",
+              "status",
+              "reportedBy",
+              "assignedTo",
+              "resolvedBy",
+              "reportedAt",
+              "startedAt",
+              "resolvedAt",
+              "closedAt",
+              "resolutionNotes",
+              "history"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

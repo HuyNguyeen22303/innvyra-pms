@@ -1,0 +1,433 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/payments?startDate=1965-07-06&endDate=1965-07-06&groupBy=day&paymentMethod=BANK_TRANSFER"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: startDate
+      value: 1965-07-06
+      disabled: false
+      description: Inclusive hotel business date.
+    - key: endDate
+      value: 1965-07-06
+      disabled: false
+      description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    - key: groupBy
+      value: day
+      disabled: false
+      description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+    - key: paymentMethod
+      value: BANK_TRANSFER
+      disabled: false
+      description: Filters cash activity only. Cumulative balance always includes ALL methods.
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Report generated successfully",
+        "data": {
+          "period": {
+            "startDate": "2026-10-01",
+            "endDate": "2026-10-02",
+            "endExclusive": true
+          },
+          "timezone": "Asia/Ho_Chi_Minh",
+          "currency": "VND",
+          "groupBy": "day",
+          "generatedAt": "2026-10-15T05:00:00.000Z",
+          "dataQuality": {
+            "status": "complete",
+            "limitations": [
+              "Illustrative example only; see endpoint definitions."
+            ]
+          },
+          "summary": {
+            "successfulPayments": "0.00",
+            "successfulDeposits": "0.00",
+            "successfulRefunds": "0.00",
+            "cashPayments": "0.00",
+            "bankTransferPayments": "0.00",
+            "netCashCollected": "0.00",
+            "paymentCount": 0,
+            "depositCount": 0,
+            "refundCount": 0
+          },
+          "series": [
+            {
+              "date": "2026-10-01",
+              "successfulPayments": "0.00",
+              "successfulDeposits": "0.00",
+              "successfulRefunds": "0.00",
+              "cashPayments": "0.00",
+              "bankTransferPayments": "0.00",
+              "netCashCollected": "0.00",
+              "paymentCount": 0,
+              "depositCount": 0,
+              "refundCount": 0
+            }
+          ],
+          "filters": {
+            "paymentMethod": null
+          },
+          "balance": {
+            "outstandingBalance": "0.00",
+            "accountsReceivable": "0.00",
+            "customerCredits": "0.00",
+            "folioCount": 0,
+            "cutoffExclusive": "2026-10-01T17:00:00.000Z",
+            "scope": "ALL_PAYMENT_METHODS"
+          },
+          "basis": {
+            "charges": "FOLIO_POSTED_AT",
+            "cash": "CONFIRMED_PAYMENT_PROCESSED_AT",
+            "balance": "ALL_LEDGER_ACTIVITY_BEFORE_CUTOFF",
+            "recognition": "NOT_ACCOUNTING_RECOGNIZED_REVENUE",
+            "cashPayments": "CONFIRMED_PAYMENTS_AND_DEPOSITS_BEFORE_REFUNDS"
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endExclusive": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "startDate",
+                  "endDate",
+                  "endExclusive"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "example": "Asia/Ho_Chi_Minh"
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "VND"
+                ]
+              },
+              "groupBy": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "month"
+                ]
+              },
+              "generatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "dataQuality": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "complete",
+                      "estimated",
+                      "incomplete"
+                    ]
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "status",
+                  "limitations"
+                ]
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "successfulPayments": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "successfulDeposits": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "successfulRefunds": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "cashPayments": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "bankTransferPayments": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "netCashCollected": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "paymentCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "depositCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "refundCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "successfulPayments",
+                  "successfulDeposits",
+                  "successfulRefunds",
+                  "cashPayments",
+                  "bankTransferPayments",
+                  "netCashCollected",
+                  "paymentCount",
+                  "depositCount",
+                  "refundCount"
+                ]
+              },
+              "series": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "successfulPayments": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "successfulDeposits": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "successfulRefunds": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "cashPayments": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "bankTransferPayments": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "netCashCollected": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                      "example": "900000.00",
+                      "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                    },
+                    "paymentCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "depositCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "refundCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "successfulPayments",
+                    "successfulDeposits",
+                    "successfulRefunds",
+                    "cashPayments",
+                    "bankTransferPayments",
+                    "netCashCollected",
+                    "paymentCount",
+                    "depositCount",
+                    "refundCount"
+                  ]
+                }
+              },
+              "balance": {
+                "type": "object",
+                "properties": {
+                  "outstandingBalance": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "accountsReceivable": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "customerCredits": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+                    "example": "900000.00",
+                    "description": "Exact Decimal, rounded half-up to 2 decimals. Never a JSON number."
+                  },
+                  "folioCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cutoffExclusive": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PAYMENT_METHODS"
+                    ]
+                  }
+                },
+                "required": [
+                  "outstandingBalance",
+                  "accountsReceivable",
+                  "customerCredits",
+                  "folioCount",
+                  "cutoffExclusive",
+                  "scope"
+                ]
+              },
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "CASH",
+                      "BANK_TRANSFER",
+                      null
+                    ]
+                  }
+                },
+                "required": [
+                  "paymentMethod"
+                ]
+              },
+              "basis": {
+                "type": "object",
+                "properties": {
+                  "charges": {
+                    "type": "string"
+                  },
+                  "cash": {
+                    "type": "string"
+                  },
+                  "balance": {
+                    "type": "string"
+                  },
+                  "recognition": {
+                    "type": "string"
+                  },
+                  "cashPayments": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "charges",
+                  "cash",
+                  "balance",
+                  "recognition",
+                  "cashPayments"
+                ]
+              }
+            },
+            "required": [
+              "period",
+              "timezone",
+              "currency",
+              "groupBy",
+              "generatedAt",
+              "dataQuality",
+              "summary",
+              "series",
+              "balance",
+              "filters",
+              "basis"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

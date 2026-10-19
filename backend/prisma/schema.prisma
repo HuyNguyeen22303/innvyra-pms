@@ -26,6 +26,13 @@ model Hotel {
   housekeepingTasks  HousekeepingTask[]
   maintenanceTickets MaintenanceTicket[]
   maintenanceBlocks  MaintenanceBlock[]
+  inventoryCategories InventoryCategory[]
+  inventoryItems      InventoryItem[]
+  suppliers           Supplier[]
+  stockReceipts       StockReceipt[]
+  stockIssues         StockIssue[]
+  stockAdjustments    StockAdjustment[]
+  inventoryMovements  InventoryMovement[]
 
   @@map("hotels")
 }
@@ -72,6 +79,10 @@ model StaffUser {
   blocksCreated          MaintenanceBlock[]   @relation("BlockCreator")
   blocksReleased         MaintenanceBlock[]   @relation("BlockReleaser")
   operationsAudits       OperationsAuditLog[]
+  createdStockReceipts   StockReceipt[]       @relation("ReceiptCreator")
+  createdStockIssues     StockIssue[]         @relation("IssueCreator")
+  createdStockAdjustments StockAdjustment[]   @relation("AdjustmentCreator")
+  inventoryMovements     InventoryMovement[]  @relation("MovementCreator")
 
   @@unique([hotelId, id])
   @@index([hotelId])
@@ -760,4 +771,206 @@ model BillingAuditLog {
 
   @@index([hotelId, action, entityId, createdAt])
   @@map("billing_audit_logs")
+}
+
+enum InventoryMovementType {
+  RECEIPT
+  ISSUE
+  ADJUSTMENT
+}
+
+model InventoryCategory {
+  id          BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId     BigInt          @map("hotel_id") @db.UnsignedBigInt
+  code        String          @db.VarChar(50)
+  name        String          @db.VarChar(150)
+  description String?         @db.Text
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel       Hotel           @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  items       InventoryItem[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, code])
+  @@index([hotelId, isActive])
+  @@index([hotelId, name])
+  @@map("inventory_categories")
+}
+
+model Supplier {
+  id            BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt         @map("hotel_id") @db.UnsignedBigInt
+  code          String         @db.VarChar(50)
+  name          String         @db.VarChar(191)
+  contactPerson String?        @map("contact_person") @db.VarChar(150)
+  phone         String?        @db.VarChar(50)
+  email         String?        @db.VarChar(191)
+  address       String?        @db.VarChar(255)
+  notes         String?        @db.Text
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel         Hotel          @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  receipts      StockReceipt[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, code])
+  @@index([hotelId, isActive])
+  @@index([hotelId, name])
+  @@map("suppliers")
+}
+
+model InventoryItem {
+  id            BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt              @map("hotel_id") @db.UnsignedBigInt
+  categoryId    BigInt              @map("category_id") @db.UnsignedBigInt
+  code          String              @db.VarChar(50)
+  name          String              @db.VarChar(191)
+  unit          String              @db.VarChar(30)
+  description   String?             @db.Text
+  currentStock  Decimal             @default(0.00) @map("current_stock") @db.Decimal(14, 2)
+  minStockLevel Decimal             @default(0.00) @map("min_stock_level") @db.Decimal(14, 2)
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel         Hotel               @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  category      InventoryCategory   @relation(fields: [hotelId, categoryId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  receiptItems  StockReceiptItem[]
+  issueItems    StockIssueItem[]
+  adjustments   StockAdjustment[]
+  movements     InventoryMovement[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, code])
+  @@index([hotelId, categoryId])
+  @@index([hotelId, isActive])
+  @@index([hotelId, name])
+  @@map("inventory_items")
+}
+
+model StockReceipt {
+  id            BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId       BigInt             @map("hotel_id") @db.UnsignedBigInt
+  supplierId    BigInt?            @map("supplier_id") @db.UnsignedBigInt
+  receiptNumber String             @map("receipt_number") @db.VarChar(50)
+  receiptDate   DateTime           @map("receipt_date") @db.DateTime(3)
+  totalAmount   Decimal            @default(0.00) @map("total_amount") @db.Decimal(18, 2)
+  notes         String?            @db.Text
+  createdBy     BigInt             @map("created_by") @db.UnsignedBigInt
+  createdAt     DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel         Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  supplier      Supplier?          @relation(fields: [hotelId, supplierId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator       StaffUser          @relation("ReceiptCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  items         StockReceiptItem[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, receiptNumber])
+  @@index([hotelId, receiptDate])
+  @@index([hotelId, supplierId])
+  @@map("stock_receipts")
+}
+
+model StockReceiptItem {
+  id        BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId   BigInt        @map("hotel_id") @db.UnsignedBigInt
+  receiptId BigInt        @map("receipt_id") @db.UnsignedBigInt
+  itemId    BigInt        @map("item_id") @db.UnsignedBigInt
+  quantity  Decimal       @db.Decimal(14, 2)
+  unitPrice Decimal       @default(0.00) @map("unit_price") @db.Decimal(18, 2)
+  lineTotal Decimal       @default(0.00) @map("line_total") @db.Decimal(18, 2)
+  notes     String?       @db.VarChar(500)
+  createdAt DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  receipt   StockReceipt  @relation(fields: [hotelId, receiptId], references: [hotelId, id], onDelete: Cascade, onUpdate: Restrict)
+  item      InventoryItem @relation(fields: [hotelId, itemId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, id])
+  @@index([hotelId, receiptId])
+  @@index([hotelId, itemId])
+  @@map("stock_receipt_items")
+}
+
+model StockIssue {
+  id          BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId     BigInt           @map("hotel_id") @db.UnsignedBigInt
+  issueNumber String           @map("issue_number") @db.VarChar(50)
+  issueDate   DateTime         @map("issue_date") @db.DateTime(3)
+  department  String           @db.VarChar(100)
+  purpose     String?          @db.VarChar(500)
+  notes       String?          @db.Text
+  createdBy   BigInt           @map("created_by") @db.UnsignedBigInt
+  createdAt   DateTime         @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel       Hotel            @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  creator     StaffUser        @relation("IssueCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  items       StockIssueItem[]
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, issueNumber])
+  @@index([hotelId, issueDate])
+  @@index([hotelId, department])
+  @@map("stock_issues")
+}
+
+model StockIssueItem {
+  id        BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId   BigInt        @map("hotel_id") @db.UnsignedBigInt
+  issueId   BigInt        @map("issue_id") @db.UnsignedBigInt
+  itemId    BigInt        @map("item_id") @db.UnsignedBigInt
+  quantity  Decimal       @db.Decimal(14, 2)
+  notes     String?       @db.VarChar(500)
+  createdAt DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  issue     StockIssue    @relation(fields: [hotelId, issueId], references: [hotelId, id], onDelete: Cascade, onUpdate: Restrict)
+  item      InventoryItem @relation(fields: [hotelId, itemId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, id])
+  @@index([hotelId, issueId])
+  @@index([hotelId, itemId])
+  @@map("stock_issue_items")
+}
+
+model StockAdjustment {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId          BigInt        @map("hotel_id") @db.UnsignedBigInt
+  adjustmentNumber String        @map("adjustment_number") @db.VarChar(50)
+  itemId           BigInt        @map("item_id") @db.UnsignedBigInt
+  systemQuantity   Decimal       @map("system_quantity") @db.Decimal(14, 2)
+  actualQuantity   Decimal       @map("actual_quantity") @db.Decimal(14, 2)
+  difference       Decimal       @db.Decimal(14, 2)
+  reason           String        @db.VarChar(500)
+  createdBy        BigInt        @map("created_by") @db.UnsignedBigInt
+  createdAt        DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  hotel            Hotel         @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  item             InventoryItem @relation(fields: [hotelId, itemId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator          StaffUser     @relation("AdjustmentCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, id])
+  @@unique([hotelId, adjustmentNumber])
+  @@index([hotelId, itemId, createdAt])
+  @@map("stock_adjustments")
+}
+
+model InventoryMovement {
+  id              BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId         BigInt                @map("hotel_id") @db.UnsignedBigInt
+  itemId          BigInt                @map("item_id") @db.UnsignedBigInt
+  type            InventoryMovementType
+  quantity        Decimal               @db.Decimal(14, 2)
+  previousStock   Decimal               @map("previous_stock") @db.Decimal(14, 2)
+  currentStock    Decimal               @map("current_stock") @db.Decimal(14, 2)
+  referenceType   String                @map("reference_type") @db.VarChar(50)
+  referenceId     BigInt?               @map("reference_id") @db.UnsignedBigInt
+  referenceNumber String?               @map("reference_number") @db.VarChar(50)
+  notes           String?               @db.VarChar(500)
+  createdBy       BigInt                @map("created_by") @db.UnsignedBigInt
+  createdAt       DateTime              @default(now()) @map("created_at") @db.DateTime(3)
+  hotel           Hotel                 @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  item            InventoryItem         @relation(fields: [hotelId, itemId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator         StaffUser             @relation("MovementCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, id])
+  @@index([hotelId, itemId, createdAt])
+  @@index([hotelId, type, createdAt])
+  @@map("inventory_movements")
 }

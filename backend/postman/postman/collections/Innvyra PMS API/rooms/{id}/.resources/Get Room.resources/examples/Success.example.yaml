@@ -1,0 +1,201 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/rooms/:id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "1"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Room retrieved",
+        "data": {
+          "id": "301",
+          "hotelId": "1",
+          "roomTypeId": "3",
+          "roomNumber": "301",
+          "floorNumber": 3,
+          "physicalStatus": "ACTIVE",
+          "housekeepingStatus": "READY",
+          "occupancyStatus": "VACANT",
+          "notes": "Near elevator",
+          "isActive": true,
+          "roomType": {
+            "id": "3",
+            "code": "DLX",
+            "name": "Deluxe",
+            "isActive": true
+          },
+          "createdAt": "2026-10-14T00:00:00.000Z",
+          "updatedAt": "2026-10-14T00:00:00.000Z"
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "example": {
+              "id": "301",
+              "hotelId": "1",
+              "roomTypeId": "3",
+              "roomNumber": "301",
+              "floorNumber": 3,
+              "physicalStatus": "ACTIVE",
+              "housekeepingStatus": "READY",
+              "occupancyStatus": "VACANT",
+              "notes": "Near elevator",
+              "isActive": true,
+              "roomType": {
+                "id": "3",
+                "code": "DLX",
+                "name": "Deluxe",
+                "isActive": true
+              },
+              "createdAt": "2026-10-14T00:00:00.000Z",
+              "updatedAt": "2026-10-14T00:00:00.000Z"
+            },
+            "properties": {
+              "occupancyStatus": {
+                "type": "string",
+                "enum": [
+                  "OCCUPIED",
+                  "VACANT"
+                ],
+                "description": "Derived from current room occupancy; independent of housekeeping and future availability."
+              },
+              "roomNumber": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "floorNumber": {
+                "type": "integer",
+                "minimum": -32768,
+                "maximum": 32767
+              },
+              "roomTypeId": {
+                "type": "string",
+                "pattern": "^[1-9]\\d{0,19}$"
+              },
+              "physicalStatus": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "OUT_OF_SERVICE",
+                  "MAINTENANCE"
+                ]
+              },
+              "housekeepingStatus": {
+                "type": "string",
+                "enum": [
+                  "DIRTY",
+                  "CLEANING",
+                  "INSPECTION",
+                  "READY"
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "hotelId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "roomType": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "1",
+                    "description": "Positive unsigned BIGINT, maximum 18446744073709551615"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "code",
+                  "name",
+                  "isActive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "hotelId",
+              "roomTypeId",
+              "roomNumber",
+              "floorNumber",
+              "physicalStatus",
+              "housekeepingStatus",
+              "occupancyStatus",
+              "notes",
+              "isActive",
+              "roomType",
+              "createdAt",
+              "updatedAt"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

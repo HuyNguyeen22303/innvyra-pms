@@ -1,0 +1,99 @@
+$kind: http-request
+description: "Requires at least one active stay; supplied stayId must be active and belong to this reservation. Price is read from the database at creation. Required roles: ADMIN, MANAGER, RECEPTIONIST. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/service-orders"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "reservationId": "101",
+      "stayId": "501",
+      "items": [
+        {
+          "serviceId": "1",
+          "quantity": 2
+        }
+      ]
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "reservationId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "101",
+          "description": "Unsigned BIGINT, maximum 18446744073709551615"
+        },
+        "stayId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "101",
+          "description": "Unsigned BIGINT, maximum 18446744073709551615"
+        },
+        "items": {
+          "type": "array",
+          "description": "Unique serviceId values. Server snapshots catalog prices at request creation.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "serviceId",
+              "quantity"
+            ]
+          }
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "reservationId",
+        "items"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Request services.resources/examples
+order: 2000

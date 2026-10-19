@@ -9,3 +9,10 @@ coverage/
 !.env.example
 
 /backend/src/generated/
+
+# AI tools & IDE configurations
+.agent/
+.agents/
+.claude/
+.windsurf/
+.windsuft/

@@ -1,0 +1,266 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/movements?page=1&limit=20&itemId=1&type=RECEIPT&startDate=1965-07-06&endDate=1965-07-06"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    page: "1"
+    limit: "20"
+    itemId: "1"
+    type: RECEIPT
+    startDate: 1965-07-06
+    endDate: 1965-07-06
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "items": [
+            {
+              "id": "1",
+              "hotelId": "1",
+              "itemId": "1",
+              "item": {
+                "id": "1",
+                "code": "string",
+                "name": "string",
+                "unit": "string"
+              },
+              "type": "RECEIPT",
+              "quantity": "+50.00",
+              "previousStock": "100.00",
+              "currentStock": "150.00",
+              "referenceType": "STOCK_RECEIPT",
+              "createdBy": "1",
+              "createdAt": "1977-04-27T07:00:11.112Z",
+              "referenceId": "string",
+              "referenceNumber": "string",
+              "notes": "string",
+              "creator": {
+                "id": "1",
+                "fullName": "string",
+                "username": "string"
+              }
+            },
+            {
+              "id": "1",
+              "hotelId": "1",
+              "itemId": "1",
+              "item": {
+                "id": "1",
+                "code": "string",
+                "name": "string",
+                "unit": "string"
+              },
+              "type": "RECEIPT",
+              "quantity": "+50.00",
+              "previousStock": "100.00",
+              "currentStock": "150.00",
+              "referenceType": "STOCK_RECEIPT",
+              "createdBy": "1",
+              "createdAt": "1961-05-31T08:26:28.370Z",
+              "referenceId": "string",
+              "referenceNumber": "string",
+              "notes": "string",
+              "creator": {
+                "id": "1",
+                "fullName": "string",
+                "username": "string"
+              }
+            }
+          ],
+          "pagination": {
+            "page": 7158,
+            "limit": 4206,
+            "total": 1607,
+            "totalPages": 5727
+          }
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "hotelId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "itemId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "item": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "1",
+                          "description": "Unsigned BIGINT decimal string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "RECEIPT",
+                        "ISSUE",
+                        "ADJUSTMENT"
+                      ]
+                    },
+                    "quantity": {
+                      "type": "string",
+                      "example": "+50.00"
+                    },
+                    "previousStock": {
+                      "type": "string",
+                      "example": "100.00"
+                    },
+                    "currentStock": {
+                      "type": "string",
+                      "example": "150.00"
+                    },
+                    "referenceType": {
+                      "type": "string",
+                      "example": "STOCK_RECEIPT"
+                    },
+                    "referenceId": {
+                      "type": "string"
+                    },
+                    "referenceNumber": {
+                      "type": "string"
+                    },
+                    "notes": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "1",
+                      "description": "Unsigned BIGINT decimal string"
+                    },
+                    "creator": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "example": "1",
+                          "description": "Unsigned BIGINT decimal string"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "hotelId",
+                    "itemId",
+                    "item",
+                    "type",
+                    "quantity",
+                    "previousStock",
+                    "currentStock",
+                    "referenceType",
+                    "createdBy",
+                    "createdAt"
+                  ]
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "totalPages": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "page",
+                  "limit",
+                  "total",
+                  "totalPages"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "pagination"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

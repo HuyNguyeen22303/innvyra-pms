@@ -1,0 +1,132 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST. One transaction locks hotel capacity, validates scoped active guest/types, checks each night, snapshots Decimal prices and confirms all rooms. No temporary hold. Max rooms 20 and nights 30 by default (server configuration). Capacity or partial-write failures roll back the entire reservation. Hotel and actor IDs come from server context; supplied guest/type IDs are checked within that hotel. No physical assignment, tax, discounts or payments. A retried POST is a new booking; creation has no idempotency key."
+url: "{{baseUrl}}/reservations"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "guestId": "12",
+      "checkInDate": "2026-10-20",
+      "checkOutDate": "2026-10-22",
+      "rooms": [
+        {
+          "roomTypeId": "2",
+          "quantity": 2,
+          "adults": 2,
+          "children": 0
+        }
+      ],
+      "bookingSource": "DIRECT",
+      "notes": "Quiet rooms preferred"
+    }
+  $type: |-
+    {
+      "description": "adults/children are PER ROOM. Each roomTypeId must occur once. Total rooms limited by RESERVATION_MAX_ROOMS (default 20). No roomId, hotelId, status, price or creator fields allowed.",
+      "type": "object",
+      "properties": {
+        "guestId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "12",
+          "description": "Unsigned BIGINT as decimal string"
+        },
+        "checkInDate": {
+          "type": "string",
+          "example": "2026-10-20",
+          "format": "date"
+        },
+        "checkOutDate": {
+          "type": "string",
+          "example": "2026-10-20",
+          "format": "date"
+        },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "roomTypeId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "12",
+                "description": "Unsigned BIGINT as decimal string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "adults": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "children": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            },
+            "required": [
+              "roomTypeId",
+              "quantity",
+              "adults"
+            ]
+          }
+        },
+        "bookingSource": {
+          "type": "string",
+          "enum": [
+            "DIRECT",
+            "PHONE",
+            "EMAIL",
+            "WALK_IN",
+            "AGENT",
+            "OTHER"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "guestId",
+        "checkInDate",
+        "checkOutDate",
+        "rooms"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create a confirmed multi-room reservation.resources/examples
+order: 2000

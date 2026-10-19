@@ -1,0 +1,122 @@
+$kind: http-request
+description: "ADMIN/MANAGER: all four types; ACCOUNTANT: revenue/payments only. UTF-8 BOM, quoted cells, exact Decimal strings, formula-prefix protection. No temporary files. Same scope/filters/definitions/limitations as JSON. Maximum REPORT_EXPORT_MAX_ROWS (default 366), in addition to REPORT_MAX_DAYS. Null metrics become blank, never zero. CSV contains period/grouping/quality metadata on every row; it exports series, not cumulative folio balances."
+url: "{{baseUrl}}/reports/export?type=payments&startDate=1965-07-06&endDate=1965-07-06&groupBy=day&roomTypeId=10646658400037829&paymentMethod=BANK_TRANSFER"
+method: GET
+headers:
+  Accept: text/csv
+queryParams:
+  - key: type
+    value: payments
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "revenue",
+              "occupancy",
+              "reservations",
+              "payments"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: startDate
+    value: 1965-07-06
+    disabled: false
+    description: Inclusive hotel business date.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: endDate
+    value: 1965-07-06
+    disabled: false
+    description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: groupBy
+    value: day
+    disabled: false
+    description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "day",
+            "enum": [
+              "day",
+              "month"
+            ]
+          }
+        }
+      }
+  - key: roomTypeId
+    value: "10646658400037829"
+    disabled: false
+    description: Must belong to authenticated hotel; foreign IDs return 404.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          }
+        }
+      }
+  - key: paymentMethod
+    value: BANK_TRANSFER
+    disabled: false
+    description: Filters cash activity only. Cumulative balance always includes ALL methods.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Export bounded report series as CSV.resources/examples
+order: 1000

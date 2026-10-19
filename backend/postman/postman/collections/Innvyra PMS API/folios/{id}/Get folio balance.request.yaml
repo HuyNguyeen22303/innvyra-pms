@@ -1,0 +1,36 @@
+$kind: http-request
+description: "Outstanding = debits - credits - confirmed payments - confirmed deposits + confirmed refunds. Pending/failed transactions do not settle debt. Deposits are receipts, not room charges or additional revenue. Required roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
+url: "{{baseUrl}}/folios/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  - key: id
+    value: "101"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT, maximum 18446744073709551615",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "101"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get folio balance.resources/examples
+order: 1000

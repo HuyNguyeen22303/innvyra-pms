@@ -1,0 +1,129 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=ASSIGNED&priority=NORMAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: false
+      description: ""
+    - key: limit
+      value: "20"
+      disabled: false
+      description: ""
+    - key: sortOrder
+      value: asc
+      disabled: false
+      description: ""
+    - key: search
+      value: string
+      disabled: false
+      description: ""
+    - key: status
+      value: ASSIGNED
+      disabled: false
+      description: ""
+    - key: priority
+      value: NORMAL
+      disabled: false
+      description: ""
+    - key: roomId
+      value: "301"
+      disabled: false
+      description: ""
+    - key: assignedTo
+      value: "301"
+      disabled: false
+      description: ""
+    - key: fromDate
+      value: 2026-11-01
+      disabled: false
+      description: Inclusive reported date in the hotel timezone
+    - key: toDate
+      value: 2026-11-01
+      disabled: false
+      description: Inclusive reported date in the hotel timezone
+    - key: sortBy
+      value: reportedAt
+      disabled: false
+      description: ""
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 500
+  statusText: Internal Server Error
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 8000

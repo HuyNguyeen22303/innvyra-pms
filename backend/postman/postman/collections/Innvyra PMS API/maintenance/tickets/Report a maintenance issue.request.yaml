@@ -1,0 +1,87 @@
+$kind: http-request
+description: "Tickets: OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED. OPEN/ASSIGNED can be CANCELLED after all linked blocks are ended. Reporting/resolving a ticket never releases inventory. Only the assignee starts/resolves. Required roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN. Current hotel only. HOUSEKEEPING sees only assigned tasks; TECHNICIAN sees only assigned tickets. Responses exclude guest data. Mutation bodies reject unknown fields. Actor and hotel come from authentication."
+url: "{{baseUrl}}/maintenance/tickets"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "roomId": "301",
+      "title": "Air conditioner malfunction",
+      "description": "Air conditioner is not cooling",
+      "priority": "HIGH"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "example": {
+        "roomId": "301",
+        "title": "Air conditioner malfunction",
+        "description": "Air conditioner is not cooling",
+        "priority": "HIGH"
+      },
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$",
+          "example": "301",
+          "description": "Unsigned BIGINT decimal string, maximum 18446744073709551615"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "NORMAL",
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      },
+      "required": [
+        "roomId",
+        "title",
+        "description"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Report a maintenance issue.resources/examples
+order: 2000

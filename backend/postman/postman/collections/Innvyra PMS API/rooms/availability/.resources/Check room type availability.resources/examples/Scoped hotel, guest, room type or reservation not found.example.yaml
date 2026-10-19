@@ -1,0 +1,105 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/rooms/availability?checkInDate=2026-10-20&checkOutDate=2026-10-20&adults=1&children=0&roomTypeId=12"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: checkInDate
+      value: 2026-10-20
+      disabled: false
+      description: Hotel-local DATE
+    - key: checkOutDate
+      value: 2026-10-20
+      disabled: false
+      description: Exclusive departure date
+    - key: adults
+      value: "1"
+      disabled: false
+      description: Adults per room
+    - key: children
+      value: "0"
+      disabled: false
+      description: Children per room
+    - key: roomTypeId
+      value: "12"
+      disabled: false
+      description: Optional scoped room type; missing/inactive yields 404/409
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 4000

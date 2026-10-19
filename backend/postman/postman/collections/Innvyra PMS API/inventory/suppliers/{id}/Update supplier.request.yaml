@@ -1,0 +1,109 @@
+$kind: http-request
+description: ""
+url: "{{baseUrl}}/inventory/suppliers/:id"
+method: PATCH
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "1"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "code": "string",
+      "name": "string",
+      "contactPerson": "string",
+      "phone": "string",
+      "email": "iN9YfUm79M@eNkhgGvDARImiWNJ.lk",
+      "address": "string",
+      "notes": "string",
+      "isActive": false
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 191
+        },
+        "contactPerson": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 191,
+          "format": "email"
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update supplier.resources/examples
+order: 2000

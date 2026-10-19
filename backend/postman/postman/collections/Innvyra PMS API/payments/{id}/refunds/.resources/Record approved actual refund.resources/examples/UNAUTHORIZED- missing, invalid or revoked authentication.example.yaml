@@ -1,0 +1,102 @@
+$kind: http-example
+name: "UNAUTHORIZED: missing, invalid or revoked authentication"
+request:
+  url: "{{baseUrl}}/payments/:id/refunds"
+  method: POST
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: ""
+    - key: Idempotency-Key
+      value: billing-receipt-0001
+      disabled: false
+      description: Unique per hotel across payment, refund and adjustment endpoints. Same normalized payload replays original response, even after closing. Different payload/target/operation returns 409. Keys are retained; use a new key only for a new transaction.
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "101"
+  body:
+    type: json
+    content: |-
+      {
+        "amount": "200000.00",
+        "reason": "Manager approved return of deposit",
+        "confirmedRefunded": true
+      }
+response:
+  statusCode: 401
+  statusText: Unauthorized
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "string",
+        "error": {
+          "code": "string",
+          "details": [
+            {
+              "path": "string",
+              "message": "string"
+            },
+            {
+              "path": "string",
+              "message": "string"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "error"
+        ]
+      }
+order: 2000

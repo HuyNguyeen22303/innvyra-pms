@@ -1,0 +1,91 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER. Requires X-CSRF-Protection: 1."
+url: "{{baseUrl}}/inventory/suppliers"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: Required custom header for CSRF protection on mutating requests.
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "SUP-001",
+      "name": "Vinamilk Supply Corp",
+      "contactPerson": "string",
+      "phone": "string",
+      "email": "roDQn@IaH.esxs",
+      "address": "string",
+      "notes": "string"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "example": "SUP-001"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 191,
+          "example": "Vinamilk Supply Corp"
+        },
+        "contactPerson": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 191,
+          "format": "email"
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create supplier.resources/examples
+order: 1000

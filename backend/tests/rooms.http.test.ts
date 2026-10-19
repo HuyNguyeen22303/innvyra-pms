@@ -409,14 +409,14 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
     expect(preflight.headers['access-control-allow-methods']).toContain('PATCH');
     expect(preflight.headers['access-control-allow-methods']).toContain('DELETE');
   });
-  it('publishes all 79 operations with resolvable schema references and matching response envelopes', async () => {
+  it('publishes all 110 operations with resolvable schema references and matching response envelopes', async () => {
     const response = await request(app).get('/api-docs/openapi.json');
     expect(response.status).toBe(200);
     const spec = response.body as {
       paths: Record<string, Record<string, unknown>>;
       components: { schemas: Record<string, unknown> };
     };
-    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(79);
+    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(110);
     const text = JSON.stringify(spec);
     for (const match of text.matchAll(/"\$ref":"#\/components\/schemas\/([^"]+)"/g))
       expect(spec.components.schemas).toHaveProperty(match[1]!);

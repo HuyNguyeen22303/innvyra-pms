@@ -1,0 +1,186 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/inventory/items/:id"
+  method: PATCH
+  headers:
+    - key: X-CSRF-Protection
+      value: "1"
+      disabled: false
+      description: Required custom header for CSRF protection on mutating requests.
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "1"
+  body:
+    type: json
+    content: |-
+      {
+        "code": "string",
+        "name": "string",
+        "categoryId": "string",
+        "unit": "string",
+        "description": "string",
+        "minStockLevel": "string"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "string",
+        "data": {
+          "id": "1",
+          "hotelId": "1",
+          "categoryId": "1",
+          "category": {
+            "id": "1",
+            "code": "string",
+            "name": "string",
+            "isActive": true
+          },
+          "code": "ITEM-SHAMPOO",
+          "name": "Dầu gội mini 30ml",
+          "unit": "bottle",
+          "currentStock": "150.00",
+          "minStockLevel": "50.00",
+          "isLowStock": false,
+          "isOutOfStock": false,
+          "isActive": true,
+          "createdAt": "2021-01-07T11:53:07.045Z",
+          "updatedAt": "1985-01-11T01:17:15.838Z",
+          "description": "string"
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "hotelId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "categoryId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "1",
+                "description": "Unsigned BIGINT decimal string"
+              },
+              "category": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "example": "1",
+                    "description": "Unsigned BIGINT decimal string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "code": {
+                "type": "string",
+                "example": "ITEM-SHAMPOO"
+              },
+              "name": {
+                "type": "string",
+                "example": "Dầu gội mini 30ml"
+              },
+              "unit": {
+                "type": "string",
+                "example": "bottle"
+              },
+              "description": {
+                "type": "string"
+              },
+              "currentStock": {
+                "type": "string",
+                "example": "150.00"
+              },
+              "minStockLevel": {
+                "type": "string",
+                "example": "50.00"
+              },
+              "isLowStock": {
+                "type": "boolean",
+                "example": false
+              },
+              "isOutOfStock": {
+                "type": "boolean",
+                "example": false
+              },
+              "isActive": {
+                "type": "boolean",
+                "example": true
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "hotelId",
+              "categoryId",
+              "category",
+              "code",
+              "name",
+              "unit",
+              "currentStock",
+              "minStockLevel",
+              "isLowStock",
+              "isOutOfStock",
+              "isActive",
+              "createdAt",
+              "updatedAt"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

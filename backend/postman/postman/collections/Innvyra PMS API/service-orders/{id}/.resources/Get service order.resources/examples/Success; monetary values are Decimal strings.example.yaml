@@ -1,0 +1,219 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/service-orders/:id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: "101"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Get service order",
+        "data": {
+          "id": "1",
+          "reservationId": "101",
+          "stayId": "501",
+          "status": "REQUESTED",
+          "notes": null,
+          "createdBy": "1",
+          "completedBy": null,
+          "completedAt": null,
+          "cancelledBy": null,
+          "cancelledAt": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-15T00:00:00.000Z",
+          "updatedAt": "2026-10-15T00:00:00.000Z",
+          "items": [
+            {
+              "id": "1",
+              "serviceId": "1",
+              "nameSnapshot": "Laundry",
+              "unitSnapshot": "item",
+              "quantity": 2,
+              "unitPriceSnapshot": "50000.00",
+              "lineTotal": "100000.00",
+              "createdAt": "2026-10-15T00:00:00.000Z"
+            }
+          ]
+        }
+      }
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "reservationId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "stayId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "REQUESTED",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "createdBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "completedBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "cancelledBy": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "example": "101",
+                "description": "Unsigned BIGINT, maximum 18446744073709551615"
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "cancellationReason": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "101",
+                      "description": "Unsigned BIGINT, maximum 18446744073709551615"
+                    },
+                    "serviceId": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "example": "101",
+                      "description": "Unsigned BIGINT, maximum 18446744073709551615"
+                    },
+                    "nameSnapshot": {
+                      "type": "string"
+                    },
+                    "unitSnapshot": {
+                      "type": "string"
+                    },
+                    "quantity": {
+                      "type": "integer"
+                    },
+                    "unitPriceSnapshot": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,15})(\\.0{1,2})?$",
+                      "example": "50000.00",
+                      "description": "Whole VND Decimal string. Maximum 9999999999999999.00; responses use two decimal places. Positive for receipts/refunds/adjustments."
+                    },
+                    "lineTotal": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,15})(\\.0{1,2})?$",
+                      "example": "50000.00",
+                      "description": "Whole VND Decimal string. Maximum 9999999999999999.00; responses use two decimal places. Positive for receipts/refunds/adjustments."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "serviceId",
+                    "nameSnapshot",
+                    "unitSnapshot",
+                    "quantity",
+                    "unitPriceSnapshot",
+                    "lineTotal",
+                    "createdAt"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "reservationId",
+              "stayId",
+              "status",
+              "notes",
+              "createdBy",
+              "completedBy",
+              "completedAt",
+              "cancelledBy",
+              "cancelledAt",
+              "cancellationReason",
+              "createdAt",
+              "updatedAt",
+              "items"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data"
+        ]
+      }
+order: 1000

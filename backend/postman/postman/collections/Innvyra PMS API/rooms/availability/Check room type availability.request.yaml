@@ -1,0 +1,101 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST. Read-only consistent snapshot. Half-open [checkInDate, checkOutDate); minimum remaining capacity across every night. Active room types and ACTIVE physical rooms only; housekeeping readiness is not a future capacity constraint. Dates must start today or later in hotel.timezone; max nights configured by RESERVATION_MAX_NIGHTS (default 30). Creation rechecks inventory and prices. Zero-availability types are returned with availableRooms=0. No maintenance scheduling."
+url: "{{baseUrl}}/rooms/availability?checkInDate=2026-10-20&checkOutDate=2026-10-20&adults=1&children=0&roomTypeId=12"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: checkInDate
+    value: 2026-10-20
+    disabled: false
+    description: Hotel-local DATE
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-20"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: checkOutDate
+    value: 2026-10-20
+    disabled: false
+    description: Exclusive departure date
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-20"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: adults
+    value: "1"
+    disabled: false
+    description: Adults per room
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 65535
+          }
+        }
+      }
+  - key: children
+    value: "0"
+    disabled: false
+    description: Children per room
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 65535
+          }
+        }
+      }
+  - key: roomTypeId
+    value: "12"
+    disabled: false
+    description: Optional scoped room type; missing/inactive yields 404/409
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT as decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "12"
+          }
+        }
+      }
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Check room type availability.resources/examples
+order: 1000
