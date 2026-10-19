@@ -191,11 +191,11 @@ export class HousekeepingService {
       },
     );
   }
-  start(scope: OperationsScope, id: bigint) {
-    return this.transition(scope, id, 'start');
+  start(scope: OperationsScope, id: bigint, notes?: string) {
+    return this.transition(scope, id, 'start', notes);
   }
-  complete(scope: OperationsScope, id: bigint) {
-    return this.transition(scope, id, 'complete');
+  complete(scope: OperationsScope, id: bigint, notes?: string) {
+    return this.transition(scope, id, 'complete', notes);
   }
   inspect(scope: OperationsScope, id: bigint, input: InspectInput) {
     return this.transition(scope, id, 'inspect', input);

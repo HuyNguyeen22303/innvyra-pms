@@ -1,8 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
-import { createConnection } from 'mariadb';
-import { databaseOptions } from '../src/database/prisma.js';
-import { scriptPrisma, requiredDatabaseUrl } from '../scripts/database-tools.js';
+import { scriptPrisma } from '../scripts/database-tools.js';
 import { AppError } from '../src/shared/errors/app-error.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import { GuestCrypto } from '../src/modules/guests/guest.crypto.js';
@@ -521,94 +518,88 @@ function addDays(dateStr: string, days: number): string {
 }
 
 // ----------------------------------------------------
-// MAIN SEED PROCESS (IDEMPOTENT & REPRODUCIBLE)
+// MAIN SEED PROCESS (IDEMPOTENT & ENVIRONMENT-AWARE)
+// ----------------------------------------------------
+// Environment:
+//   NODE_ENV=production  → roles + hotel only; demo data is refused.
+//   SEED_DEMO_DATA=false → roles + hotel only (no demo staff/rooms/inventory).
+//   Default (development) → upserts roles + hotel then creates demo data.
+//   SEED_HOTEL_CODE / SEED_HOTEL_NAME → override the default hotel identity
+//     when multiple hotels exist.
 // ----------------------------------------------------
 async function main() {
   const prisma = scriptPrisma();
 
   try {
-    console.info('🚀 Bắt đầu quá trình đồng bộ và khởi tạo cơ sở dữ liệu Innvyra Hotel 40 Phòng...');
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    const seedDemoFlag = process.env.SEED_DEMO_DATA;
+    const hotelCodeOverride = process.env.SEED_HOTEL_CODE;
+    const hotelNameOverride = process.env.SEED_HOTEL_NAME;
 
-    // 1. CLEAN RESET TRANSACTIONAL TABLES TO GUARANTEE SYNCHRONIZATION
-    console.info('🧹 Làm sạch dữ liệu cũ để đồng bộ trạng thái giữa các thành viên...');
-    const tablesToReset = [
-      'inventory_movements',
-      'stock_adjustments',
-      'stock_issue_items',
-      'stock_issues',
-      'stock_receipt_items',
-      'stock_receipts',
-      'inventory_items',
-      'suppliers',
-      'inventory_categories',
-      'billing_audit_logs',
-      'billing_idempotency',
-      'operations_audit_logs',
-      'guest_audit_logs',
-      'folio_items',
-      'payments',
-      'folios',
-      'service_order_items',
-      'service_orders',
-      'room_occupancies',
-      'room_transfers',
-      'stays',
-      'reservation_room_nights',
-      'reservation_rooms',
-      'reservations',
-      'housekeeping_tasks',
-      'maintenance_blocks',
-      'maintenance_tickets',
-      'rooms',
-      'room_types',
-      'guests',
-      'services',
-      'refresh_tokens',
-      'auth_sessions',
-      'staff_users',
-    ];
-
-    const resetConn = await createConnection(
-      databaseOptions(
-        requiredDatabaseUrl(),
-        process.env.DATABASE_SSL === 'true',
-        process.env.DATABASE_SSL_CA_FILE,
-      ),
-    );
-    try {
-      await resetConn.query('SET FOREIGN_KEY_CHECKS = 0');
-      for (const table of tablesToReset) {
-        await resetConn.query(`DELETE FROM \`${table}\``);
+    // Determine whether demo data should be seeded.
+    // Production never seeds demo data unless explicitly opted in with SEED_DEMO_DATA=true
+    // (but that is still blocked below for safety).
+    const shouldSeedDemo = (() => {
+      if (nodeEnv === 'production') {
+        if (seedDemoFlag === 'true') {
+          throw new Error(
+            'SEED_DEMO_DATA=true is forbidden in production. ' +
+              'Set NODE_ENV=development if you need a local demo dataset.',
+          );
+        }
+        return false;
       }
-      await resetConn.query('SET FOREIGN_KEY_CHECKS = 1');
-    } finally {
-      await resetConn.end();
-    }
-    console.info('✅ Dọn dẹp hoàn tất. Bắt đầu nạp dữ liệu chuẩn mới...');
+      // Non-production: default is true unless explicitly set to 'false'.
+      if (seedDemoFlag === 'false') return false;
+      return true;
+    })();
 
-    // 2. SEED ROLES
+    console.info(
+      `🚀 Seed starting | NODE_ENV=${nodeEnv} | SEED_DEMO_DATA=${
+        shouldSeedDemo ? 'true' : 'false'
+      } | Hotel=${hotelCodeOverride ?? 'MAIN'}`,
+    );
+
+    // 1. SEED ROLES (always: indempotent upsert)
     for (const [code, name] of roles) {
       await prisma.role.upsert({ where: { code }, create: { code, name }, update: {} });
     }
-    console.info('✅ Đã khởi tạo 6 Roles phân quyền.');
+    console.info('✅ Đã đồng bộ 6 Roles phân quyền.');
 
-    // 3. SEED HOTEL
+    // 2. SEED HOTEL (always: indempotent upsert)
+    // If hotel code/name overrides are provided, both must be present (per README policy).
+    if (Boolean(hotelCodeOverride) !== Boolean(hotelNameOverride)) {
+      throw new Error(
+        'Supply both SEED_HOTEL_CODE and SEED_HOTEL_NAME to target a specific hotel, or neither.',
+      );
+    }
+    const hotelCode = hotelCodeOverride ?? 'MAIN';
+    const hotelName = hotelNameOverride ?? 'Innvyra Hotel';
+
     const hotel = await prisma.hotel.upsert({
-      where: { code: 'MAIN' },
-      create: { code: 'MAIN', name: 'Innvyra Hotel', timezone: 'Asia/Ho_Chi_Minh' },
-      update: { name: 'Innvyra Hotel', timezone: 'Asia/Ho_Chi_Minh' },
+      where: { code: hotelCode },
+      create: { code: hotelCode, name: hotelName, timezone: 'Asia/Ho_Chi_Minh' },
+      update: { name: hotelName, timezone: 'Asia/Ho_Chi_Minh' },
     });
     console.info(`✅ Khách sạn: ${hotel.name} (Code: ${hotel.code}, ID: ${hotel.id})`);
 
-    // 4. SEED STAFF (17 accounts with password 'Innvyra@Demo2026!')
+    if (!shouldSeedDemo) {
+      console.info(
+        'ℹ️ Skipping demo data (roles + hotel seeded). Set SEED_DEMO_DATA=true to include staff, rooms, guests, inventory.',
+      );
+      return;
+    }
+
+    // 3. SEED STAFF (17 accounts, upsert by username — never overwrites passwords)
     const demoPassword = process.env.SEED_STAFF_PASSWORD || 'Innvyra@Demo2026!';
     const passwordHash = await hashPassword(demoPassword);
 
     const staffMap = new Map<string, any>();
     for (const [roleCode, username, fullName] of staffAccounts) {
       const role = await prisma.role.findUniqueOrThrow({ where: { code: roleCode } });
-      const staff = await prisma.staffUser.create({
-        data: {
+      const staff = await prisma.staffUser.upsert({
+        where: { username },
+        create: {
           hotelId: hotel.id,
           roleId: role.id,
           username,
@@ -617,16 +608,18 @@ async function main() {
           email: `${username}@innvyra.com`,
           isActive: true,
         },
+        update: {},
       });
       staffMap.set(username, staff);
     }
-    console.info(`✅ Đã tạo ${staffMap.size} nhân sự trải đều các ca trực 24/7.`);
+    console.info(`✅ Đã đồng bộ ${staffMap.size} nhân sự trải đều các ca trực 24/7.`);
 
-    // 5. SEED ROOM TYPES (6 realistic types)
+    // 4. SEED ROOM TYPES (upsert by hotel+code)
     const roomTypeMap = new Map<string, any>();
     for (const rt of roomTypesConfig) {
-      const createdRt = await prisma.roomType.create({
-        data: {
+      const createdRt = await prisma.roomType.upsert({
+        where: { hotelId_code: { hotelId: hotel.id, code: rt.code } },
+        create: {
           hotelId: hotel.id,
           code: rt.code,
           name: rt.name,
@@ -637,17 +630,19 @@ async function main() {
           isActive: true,
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
+        update: {},
       });
       roomTypeMap.set(rt.code, createdRt);
     }
-    console.info(`✅ Đã tạo 6 Hạng phòng phân cấp kim tự tháp chuẩn.`);
+    console.info(`✅ Đã đồng bộ 6 Hạng phòng phân cấp kim tự tháp chuẩn.`);
 
-    // 6. SEED PHYSICAL ROOMS (40 rooms across 4 floors)
+    // 5. SEED PHYSICAL ROOMS (upsert by hotel+roomNumber)
     const roomMap = new Map<string, any>();
     for (const [roomNumber, floorNumber, roomTypeCode, physicalStatus, housekeepingStatus] of roomsConfig) {
       const rt = roomTypeMap.get(roomTypeCode);
-      const room = await prisma.room.create({
-        data: {
+      const room = await prisma.room.upsert({
+        where: { hotelId_roomNumber: { hotelId: hotel.id, roomNumber } },
+        create: {
           hotelId: hotel.id,
           roomTypeId: rt.id,
           roomNumber,
@@ -657,16 +652,18 @@ async function main() {
           notes: `Phòng ${roomNumber} - Tầng ${floorNumber} (${rt.name})`,
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
+        update: {},
       });
       roomMap.set(roomNumber, room);
     }
-    console.info(`✅ Đã tạo 40 Phòng vật lý (Tầng 1–4, mỗi tầng 10 phòng: 101–410).`);
+    console.info(`✅ Đã đồng bộ 40 Phòng vật lý (Tầng 1–4, mỗi tầng 10 phòng: 101–410).`);
 
-    // 7. SEED SERVICES
+    // 6. SEED SERVICES (upsert by hotel+code)
     const serviceMap = new Map<string, any>();
     for (const srv of servicesConfig) {
-      const s = await prisma.service.create({
-        data: {
+      const s = await prisma.service.upsert({
+        where: { hotelId_code: { hotelId: hotel.id, code: srv.code } },
+        create: {
           hotelId: hotel.id,
           code: srv.code,
           name: srv.name,
@@ -674,12 +671,13 @@ async function main() {
           price: srv.price,
           isActive: true,
         },
+        update: {},
       });
       serviceMap.set(srv.code, s);
     }
-    console.info(`✅ Đã tạo 5 Dịch vụ khách sạn (Nước suối, bia, giặt ủi, buffet, xe đưa đón).`);
+    console.info(`✅ Đã đồng bộ 5 Dịch vụ khách sạn (Nước suối, bia, giặt ủi, buffet, xe đưa đón).`);
 
-    // 8. SEED GUESTS (35 guests with encrypted document numbers)
+    // 7. SEED GUESTS (35 guests with encrypted document numbers)
     const crypto =
       process.env.GUEST_ENCRYPTION_KEY && process.env.GUEST_HASH_KEY
         ? new GuestCrypto({
@@ -709,7 +707,7 @@ async function main() {
     }
     console.info(`✅ Đã mã hóa và tạo 35 Hồ sơ khách hàng lưu trú.`);
 
-    // 9. SEED OPERATIONAL DATA (Relative to Hotel Today)
+    // 8. SEED OPERATIONAL DATA (Relative to Hotel Today)
     const today = hotelToday(hotel.timezone);
     console.info(`📅 Ngày tham chiếu khách sạn hôm nay: ${today}`);
 
@@ -1799,7 +1797,7 @@ main().catch((error: unknown) => {
   console.error(
     error instanceof AppError
       ? error.message
-      : error instanceof z.ZodError
+      : error instanceof Error && error.name === 'ZodError'
         ? 'Invalid seed configuration.'
         : error,
   );
