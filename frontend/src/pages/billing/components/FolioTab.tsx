@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -74,8 +75,13 @@ export const FolioTab: React.FC = () => {
   const canOpenOrPay = ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'].includes(userRole);
   const canSettleOrAdjust = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
 
-  // Selected Reservation
-  const [selectedReservationId, setSelectedReservationId] = useState<string>('');
+  // URL Query Parameters (e.g. /folios?folioId=... or /folios?reservationId=...)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const folioIdParam = searchParams.get('folioId');
+  const reservationIdParam = searchParams.get('reservationId');
+
+  // Selected Reservation ID is derived directly from the URL query param
+  const selectedReservationId = reservationIdParam || '';
 
   // Active Sub-tab in Folio
   const [activeLedgerTab, setActiveLedgerTab] = useState<string>('items');
@@ -121,6 +127,28 @@ export const FolioTab: React.FC = () => {
   // Dynamic staff directory hook for instant name resolution
   const { getStaff } = useStaffDirectory();
 
+  // 0. Query Folio by ID if folioId is supplied via URL search params (e.g. from Reports or Dashboard)
+  const {
+    data: folioByIdRes,
+    isLoading: isFolioByIdLoading,
+    error: folioByIdError,
+  } = useQuery({
+    queryKey: ['billing-folio-by-id', folioIdParam],
+    queryFn: () => (folioIdParam ? billingApi.getFolioById(folioIdParam) : null),
+    enabled: !!folioIdParam && !reservationIdParam,
+    retry: 1,
+  });
+
+  // When folioId is supplied without reservationId, resolve it and update URL
+  useEffect(() => {
+    if (folioIdParam && !reservationIdParam && folioByIdRes?.data?.reservationId) {
+      const resId = String(folioByIdRes.data.reservationId);
+      // Cache the folio so getFolioByReservation has immediate data
+      queryClient.setQueryData(['billing-folio', resId], folioByIdRes);
+      setSearchParams({ reservationId: resId }, { replace: true });
+    }
+  }, [folioIdParam, reservationIdParam, folioByIdRes, setSearchParams, queryClient]);
+
   // 1. Reservations list with pagination & filters
   const {
     data: reservationsRes,
@@ -139,7 +167,10 @@ export const FolioTab: React.FC = () => {
       }),
   });
 
-  const reservationList = reservationsRes?.data?.items || [];
+  const reservationList = useMemo(
+    () => reservationsRes?.data?.items || [],
+    [reservationsRes]
+  );
   const reservationTotal = reservationsRes?.data?.pagination?.total || 0;
 
   // Fetch physical rooms to map roomId to real physical roomNumber
@@ -795,9 +826,9 @@ export const FolioTab: React.FC = () => {
               borderColor: isClosed ? '#595959' : isNotOpened ? '#fa8c16' : '#1b4d3e',
             }}
             onClick={() => {
-              setSelectedReservationId(String(record.id));
               setItemsPage(1);
               setPaymentsPage(1);
+              setSearchParams({ reservationId: String(record.id) });
             }}
           >
             {isClosed ? 'Xem (Đã đóng)' : isNotOpened ? 'Mở Folio' : 'Xem Folio'}
@@ -806,6 +837,24 @@ export const FolioTab: React.FC = () => {
       },
     },
   ];
+
+  const reservationSelectOptions = useMemo(() => {
+    const list = reservationList.map((r) => ({
+      value: String(r.id),
+      label: `Đơn #${r.id} - ${r.bookerGuest?.fullName || 'Khách'} (${r.status} - ${r.totalRooms || 1} phòng)`,
+    }));
+    if (
+      selectedReservationId &&
+      reservationDetail &&
+      !list.some((item) => item.value === String(selectedReservationId))
+    ) {
+      list.unshift({
+        value: String(selectedReservationId),
+        label: `Đơn #${selectedReservationId} - ${reservationDetail.bookerGuest?.fullName || 'Khách'} (${reservationDetail.status} - ${reservationDetail.rooms?.length || 1} phòng)`,
+      });
+    }
+    return list;
+  }, [reservationList, selectedReservationId, reservationDetail]);
 
   return (
     <div>
@@ -818,7 +867,9 @@ export const FolioTab: React.FC = () => {
                 <Button
                   icon={<LeftOutlined />}
                   onClick={() => {
-                    setSelectedReservationId('');
+                    setItemsPage(1);
+                    setPaymentsPage(1);
+                    setSearchParams({});
                   }}
                 >
                   ← Quay lại danh sách đơn
@@ -826,29 +877,26 @@ export const FolioTab: React.FC = () => {
                 <Text type="secondary">|</Text>
                 <Text strong>Đang xem Folio:</Text>
                 <Tag color="#1b4d3e" style={{ fontSize: 13, fontWeight: 600 }}>
-                  Đơn #{selectedReservationId}
+                  {folio ? `Folio #${folio.id} (Đơn #${selectedReservationId})` : `Đơn #${selectedReservationId}`}
                 </Tag>
                 <Select
                   showSearch
                   placeholder="Chuyển nhanh sang đơn khác..."
-                  style={{ width: 320 }}
+                  style={{ width: screens.xs ? '100%' : 320 }}
                   value={selectedReservationId}
                   onChange={(val) => {
-                    setSelectedReservationId(val);
                     setItemsPage(1);
                     setPaymentsPage(1);
+                    setSearchParams({ reservationId: val });
                   }}
                   filterOption={(input, option) =>
                     String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
-                  options={reservationList.map((r) => ({
-                    value: String(r.id),
-                    label: `Đơn #${r.id} - ${r.bookerGuest?.fullName || 'Khách'} (${r.status} - ${r.totalRooms || 1} phòng)`,
-                  }))}
+                  options={reservationSelectOptions}
                 />
               </Space>
             </Col>
-            <Col xs={24} md={8} style={{ textAlign: 'right' }}>
+            <Col xs={24} md={8} style={{ textAlign: screens.xs ? 'left' : 'right' }}>
               <Button icon={<ReloadOutlined />} onClick={() => refetchFolio()}>
                 Cập nhật số liệu Folio
               </Button>
@@ -858,7 +906,35 @@ export const FolioTab: React.FC = () => {
       )}
 
       {/* Main Folio Content Area */}
-      {!selectedReservationId ? (
+      {folioIdParam && !selectedReservationId && isFolioByIdLoading ? (
+        <Card style={{ borderRadius: 8, textAlign: 'center', padding: '60px 20px', marginBottom: 16 }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16, color: '#1b4d3e', fontWeight: 600, fontSize: 15 }}>
+            Đang truy xuất thông tin Sổ công nợ Folio #{folioIdParam}...
+          </div>
+          <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+            Hệ thống đang đối chiếu dữ liệu hóa đơn và mở hồ sơ thanh toán tương ứng.
+          </Text>
+        </Card>
+      ) : folioIdParam && !selectedReservationId && folioByIdError ? (
+        <Card style={{ borderRadius: 8, textAlign: 'center', padding: '40px 20px', marginBottom: 16 }}>
+          <Alert
+            type="error"
+            showIcon
+            message={`Không tìm thấy Sổ công nợ Folio #${folioIdParam}`}
+            description="Mã hóa đơn / Folio không tồn tại trên hệ thống hoặc đã bị hủy. Vui lòng kiểm tra lại danh sách hoặc chọn đơn đặt phòng bên dưới."
+            style={{ maxWidth: 650, margin: '0 auto 20px auto', textAlign: 'left' }}
+          />
+          <Button
+            type="primary"
+            onClick={() => {
+              setSearchParams({}, { replace: true });
+            }}
+          >
+            ← Quay lại danh sách đơn đặt phòng
+          </Button>
+        </Card>
+      ) : !selectedReservationId ? (
         <Card
           title={
             <Space>

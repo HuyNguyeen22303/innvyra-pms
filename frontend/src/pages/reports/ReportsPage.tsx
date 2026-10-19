@@ -1528,7 +1528,7 @@ export const ReportsPage: React.FC = () => {
               type="link"
               size="small"
               style={{ padding: 0, fontSize: 12, whiteSpace: 'nowrap' }}
-              onClick={() => navigate('/folios')}
+              onClick={() => navigate(`/folios?folioId=${id}`)}
             >
               Xem chi tiết hóa đơn &rarr;
             </Button>

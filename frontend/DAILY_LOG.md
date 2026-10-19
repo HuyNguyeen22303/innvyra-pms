@@ -1058,4 +1058,36 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run build`: **100% thành công, 0 lỗi TypeScript**.
   - `npm run lint`: **0 lỗi linter**.
 
+---
+
+#### Phase 2.3: Nâng cấp Điều hướng Trực tiếp từ Báo cáo Công nợ & Dashboard sang Chi tiết Folio:
+
+- **Bối cảnh & Yêu cầu**:
+  - Tại trang Báo cáo & Phân tích (`ReportsPage.tsx`), tab **Sổ theo dõi Công nợ** (`renderOutstandingTab`), nút "Xem chi tiết hóa đơn →" trước đây chỉ chuyển hướng chung chung tới danh sách `/folios`, khiến kế toán và lễ tân phải tự tìm lại đơn đó.
+  - Người dùng yêu cầu: Khi bấm nút này thì phải mở thẳng vào giao diện chi tiết của chính Folio đó.
+
+- **Giải pháp & Triển khai Kỹ thuật**:
+  1. **Trang Báo cáo (`ReportsPage.tsx`)**:
+     - Cập nhật nút "Xem chi tiết hóa đơn →" truyền trực tiếp `folioId` qua URL query parameters: `onClick={() => navigate(`/folios?folioId=${id}`)}`.
+  2. **Trang Bảng điều khiển (`DashboardPage.tsx`)**:
+     - Cập nhật nút "Xử lý" tại bảng công nợ kế toán sang: `onClick={() => navigate(`/folios?folioId=${record.folioId}`)}`.
+  3. **Màn hình Folio (`FolioTab.tsx`)**:
+     - Sử dụng `useSearchParams` từ `react-router-dom` làm Single Source of Truth cho đơn đặt phòng đang chọn: `const selectedReservationId = reservationIdParam || '';`.
+     - Thêm truy vấn `billingApi.getFolioById(folioIdParam)` khi truy cập bằng `folioId` để tra cứu `reservationId`, tự động gán dữ liệu vào cache React Query `['billing-folio', resId]` và cập nhật URL query `?reservationId=${resId}`.
+     - Xây dựng giao diện hiển thị mượt mà:
+       - Thẻ quay chờ (Spin Card) với thông điệp rõ ràng khi đang đối chiếu `folioId`.
+       - Thẻ thông báo lỗi thân thiện (Alert Error Card) với nút quay lại danh sách nếu mã Folio không tồn tại.
+     - Cập nhật thanh điều hướng (Navigation Bar):
+       - Nút `[← Quay lại danh sách đơn]` làm sạch URL search params bằng `setSearchParams({})`.
+       - Nhãn hiển thị trực quan: `Folio #{folio.id} (Đơn #{selectedReservationId})`.
+       - Bộ chọn nhanh `<Select>` tự động bổ sung đơn hiện tại vào danh sách lựa chọn nếu đơn đó nằm ngoài trang đầu tiên (`useMemo` `reservationSelectOptions`).
+       - Tối ưu responsive: Select có độ rộng `screens.xs ? '100%' : 320`, nút làm mới tự căn lề `screens.xs ? 'left' : 'right'`.
+     - Nút "Xem Folio" / "Mở Folio" trên từng dòng bảng đặt phòng tự động đồng bộ URL search params `?reservationId=${id}` giúp hỗ trợ hoàn hảo nút Back/Forward của trình duyệt.
+     - Memoize `reservationList` với `useMemo` giúp loại bỏ toàn bộ cảnh báo re-evaluation linter.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% biên dịch thành công, 0 lỗi TypeScript**.
+  - `npm run lint`: **0 lỗi linter**, cảnh báo giảm từ 28 xuống 25.
+
+
 

@@ -606,8 +606,11 @@ export const DashboardPage: React.FC = () => {
                 {
                   title: 'Thao tác',
                   key: 'action',
-                  render: () => (
-                    <Button size="small" onClick={() => navigate('/folios')}>
+                  render: (_, record: any) => (
+                    <Button
+                      size="small"
+                      onClick={() => navigate(`/folios?folioId=${record.folioId}`)}
+                    >
                       Xử lý
                     </Button>
                   ),
