@@ -491,10 +491,14 @@ export const MaintenancePage: React.FC = () => {
     {
       title: 'Tiêu đề sự cố & Mô tả',
       key: 'titleDesc',
-      width: 250,
+      width: 260,
       render: (_, record) => (
-        <div style={{ whiteSpace: 'nowrap' }}>
-          <Text strong style={{ display: 'block', fontSize: 14, color: '#262626' }}>
+        <div style={{ maxWidth: 240 }}>
+          <Text
+            strong
+            ellipsis={{ tooltip: record.title }}
+            style={{ display: 'block', fontSize: 14, color: '#262626' }}
+          >
             {record.title}
           </Text>
           <Paragraph
@@ -518,30 +522,32 @@ export const MaintenancePage: React.FC = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 170,
+      width: 180,
       render: (s: any) => <div style={{ whiteSpace: 'nowrap' }}>{renderTicketStatusTag(s)}</div>,
     },
     {
       title: 'Kỹ thuật viên',
       dataIndex: 'assignedTo',
       key: 'assignedTo',
-      width: 200,
+      width: 210,
       render: (staffId: string | null) => {
         if (!staffId) return <Tag color="orange" style={{ whiteSpace: 'nowrap' }}>Chưa phân công</Tag>;
         const staff = getStaffDisplay(staffId, user);
         return (
-          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
-            <UserOutlined style={{ color: '#1b4d3e' }} />
-            <Text strong style={{ color: '#1b4d3e' }}>
-              {staff.fullName}
-            </Text>
+          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+            <Space size={4} style={{ whiteSpace: 'nowrap' }}>
+              <UserOutlined style={{ color: '#1b4d3e' }} />
+              <Text strong style={{ color: '#1b4d3e' }}>
+                {staff.fullName}
+              </Text>
+            </Space>
             <Tag
               color={staff.color}
               style={{ fontSize: 10, margin: 0, padding: '0 4px', lineHeight: '18px' }}
             >
               {staff.roleTitle}
             </Tag>
-          </Space>
+          </div>
         );
       },
     },
@@ -549,7 +555,7 @@ export const MaintenancePage: React.FC = () => {
       title: 'Thời gian báo',
       dataIndex: 'reportedAt',
       key: 'reportedAt',
-      width: 140,
+      width: 150,
       render: (date: string) => (
         <span style={{ whiteSpace: 'nowrap' }}>
           {dayjs(date).format('DD/MM/YYYY HH:mm')}
@@ -971,7 +977,7 @@ export const MaintenancePage: React.FC = () => {
                     dataSource={ticketList}
                     rowKey="id"
                     loading={isTicketsLoading}
-                    scroll={{ x: 1250 }}
+                    scroll={{ x: 1320 }}
                     pagination={{ pageSize: 10, showSizeChanger: true }}
                   />
                 </Card>

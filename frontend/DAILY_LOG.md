@@ -1164,3 +1164,30 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run lint`: **0 lỗi linter**.
   - Giao diện cả 4 module đã đồng bộ 100% với màn hình mẫu Quản lý đặt phòng / Lưu trú (Ảnh 1).
 
+---
+
+#### Phase 2.6: Khắc phục Triệt để Lỗi Đè Chữ (Text Overlapping) Bảng Phiếu Bảo trì Kỹ thuật:
+
+- **Bối cảnh & Phản ánh từ Người dùng**:
+  - Trên màn hình Bảo trì Kỹ thuật (`/maintenance`), tại bảng danh sách Phiếu sự cố kỹ thuật:
+    - Cột **Kỹ thuật viên** hiển thị họ tên kèm tag chức vụ (ví dụ: `Hoàng Văn Nam (Kỹ thuật Điện lạnh)`, `Ngô Đức Long (Kỹ thuật Cáp thoát nước)`).
+    - Do toàn bộ icon + tên + tag bị ép chung trên 1 dòng với `whiteSpace: 'nowrap'` trong khi độ rộng cột `width: 200` không đủ chứa, nội dung đã tràn sang phải và vẽ đè trực tiếp lên cột **Thời gian báo** (`19/10/2026 10:17`).
+
+- **Giải pháp & Triển khai Kỹ thuật (`MaintenancePage.tsx`)**:
+  1. **Cấu trúc lại ô Kỹ thuật viên (2 tầng gọn gàng)**:
+     - Tầng trên: Icon `<UserOutlined />` + Họ tên kỹ thuật viên (in đậm, màu xanh `#1b4d3e`).
+     - Tầng dưới: Tag chức vụ chuyên môn (`staff.roleTitle`) bo góc nhỏ xinh xắn với khoảng cách `gap: 2px`.
+     - Loại bỏ việc ép ngang dài dòng, đảm bảo chiều ngang chỉ ~130px, nằm lọt hoàn toàn trong ô mà không bao giờ bị tràn sang cột bên cạnh.
+  2. **Tối ưu hóa Độ rộng các Cột & Scroll Ngang**:
+     - Cột `Tiêu đề sự cố & Mô tả`: Tăng `width: 260`, bọc `ellipsis` an toàn cho tiêu đề dài kèm tooltip.
+     - Cột `Trạng thái`: Tăng `width: 180` giúp các nhãn dài như `Đang sửa chữa (IN_PROGRESS)` có khoảng cách thoáng đãng.
+     - Cột `Kỹ thuật viên`: Điều chỉnh `width: 210`.
+     - Cột `Thời gian báo`: Tăng `width: 150`.
+     - Bảng `Table`: Nâng `scroll={{ x: 1320 }}` tương ứng, đảm bảo thanh cuộn mượt mà và không bị cắt xén nội dung trên mọi kích thước màn hình.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% thành công, 0 lỗi TypeScript** (thời gian build 682ms).
+  - `npm run lint`: **0 lỗi linter**.
+  - Chấm dứt hoàn toàn hiện tượng đè chữ giữa cột Kỹ thuật viên và Thời gian báo.
+
+
