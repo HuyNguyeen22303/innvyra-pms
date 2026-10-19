@@ -904,3 +904,23 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run build` (`tsc -b && vite build`): **100% thành công, 0 lỗi TypeScript**.
   - `npm run lint` (`oxlint`): **0 lỗi linter**.
 - Đã commit toàn bộ mã nguồn vào nhánh `feature/fe-inventory` trên local Git.
+
+---
+
+### 📱 Bắt đầu triển khai Kế hoạch Responsive Toàn hệ thống (Nhánh `feature/responsive`):
+
+#### Phase 1: Nền tảng dùng chung (Layout, Navigation, Global CSS & Common Pages):
+- **Tạo tài liệu kế hoạch**: `frontend/RESPONSIVE_PLAN.md` định nghĩa 7 phase chi tiết, ma trận kích thước kiểm thử (360px, 390px, 768px, 1024px, 1440px) và checklist rà soát cho 14 module.
+- **Nâng cấp `src/layouts/MainLayout.tsx`**:
+  - Nhúng `Grid.useBreakpoint()` để phân tách tự động giữa màn hình Mobile (`< 768px`) và Desktop/Tablet.
+  - Trên Mobile: Ẩn sidebar cố định; cung cấp nút Hamburger mở menu điều hướng dạng **Ant Design Drawer** (`placement="left"`, rộng 270px). Tự động đóng Drawer ngay khi người dùng chọn route.
+  - Tối ưu Header: Bỏ `Space size="large"` cứng nhắc, trên mobile ẩn bớt breadcrumb dài và chữ thừa của ngày vận hành (`DD/MM`), avatar user thu gọn tránh tràn viền.
+  - Tối ưu Content Container: Loại bỏ `marginLeft` cố định trên mobile (`marginLeft: 0`), co giãn margin/padding linh hoạt (`12px 8px` / `14px 10px`) giúp không gian hiển thị rộng rãi, không bị bóp nghẹt.
+- **Bổ sung CSS toàn cục `src/index.css`**:
+  - Khóa tràn ngang toàn trang: `overflow-x: hidden`, `max-width: 100vw`.
+  - Hỗ trợ cuộn ngang mượt mà cho bảng nhiều cột trên mobile: `.pms-table-responsive`.
+  - Tối ưu kích thước cảm ứng và hiển thị modal, tabs, pagination trên màn hình hẹp $\le 767\text{px}$.
+- **Tối ưu các trang chung**:
+  - `src/pages/auth/LoginPage.tsx`: Thu nhỏ padding container ngoài từ 24px xuống 16px/12px, các thẻ demo account tự động wrap căn giữa thẩm mỹ.
+  - `src/pages/common/ForbiddenPage.tsx` & `NotFoundPage.tsx`: Bọc trong responsive container căn giữa, nút quay về trang chủ to rõ.
+- **Kiểm thử**: `npm run build` và `npm run lint` pass 100% không lỗi. Commit `addc99d`.
