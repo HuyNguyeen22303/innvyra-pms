@@ -108,6 +108,38 @@ body {
   justify-content: space-between;
 }
 
+/* Scoped KPI & Summary Card Equal-Height Helpers (Only targets designated KPI rows) */
+.pms-kpi-row {
+  align-items: stretch;
+}
+
+.pms-kpi-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.pms-kpi-card .ant-card-body {
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.pms-kpi-card .ant-statistic {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.pms-kpi-card .ant-statistic-title {
+  margin-bottom: 6px;
+  white-space: normal;
+  word-break: break-word;
+}
+
 /* Tablet and compact laptop: give cards, filters and tabs room to wrap. */
 @media (min-width: 768px) and (max-width: 1199px) {
   .ant-card-head-wrapper {

@@ -275,20 +275,24 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       </div>
 
       {/* KPI Statistic Cards */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} className="pms-kpi-row">
         <Col xs={24} sm={12} lg={6}>
           <Card
-            bordered
+            variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 8,
               borderLeft: '4px solid #1b4d3e',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
           >
             {isSummaryLoading ? (
               <Skeleton active paragraph={{ rows: 1 }} />
             ) : (
               <Statistic
+                style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                 title={
                   <Space>
                     <InboxOutlined style={{ color: '#1b4d3e' }} />
@@ -306,16 +310,20 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
         <Col xs={24} sm={12} lg={6}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 8,
               borderLeft: '4px solid #d97706',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
           >
             {isSummaryLoading ? (
               <Skeleton active paragraph={{ rows: 1 }} />
             ) : (
               <Statistic
+                style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                 title={
                   <Space>
                     <WarningOutlined style={{ color: '#d97706' }} />
@@ -333,16 +341,20 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
         <Col xs={24} sm={12} lg={6}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 8,
               borderLeft: '4px solid #b91c1c',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
           >
             {isSummaryLoading ? (
               <Skeleton active paragraph={{ rows: 1 }} />
             ) : (
               <Statistic
+                style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                 title={
                   <Space>
                     <CloseCircleOutlined style={{ color: '#b91c1c' }} />
@@ -360,16 +372,20 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
         <Col xs={24} sm={12} lg={6}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 8,
               borderLeft: '4px solid #0284c7',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
           >
             {isSummaryLoading ? (
               <Skeleton active paragraph={{ rows: 1 }} />
             ) : (
               <Statistic
+                style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                 title={
                   <Space>
                     <DollarOutlined style={{ color: '#0284c7' }} />

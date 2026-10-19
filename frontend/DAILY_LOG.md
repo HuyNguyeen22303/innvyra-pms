@@ -1338,6 +1338,75 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
     - `StaysPage` (Tìm kiếm lưu trú): INP giảm từ **~832ms** xuống **< 16ms** khi gõ liên tục.
     - Số lượng API requests dư thừa giảm từ N lần (mỗi ký tự 1 request) xuống đúng 1 request sau khi người dùng dừng gõ.
 
+---
+
+#### Phase 2.10: Rà soát & Chuẩn Hóa Chiều Cao Đồng Đều Cho Toàn Bộ Thẻ Thống Kê / KPI Cùng Hàng (Equal-Height KPI Cards Across All Breakpoints):
+
+- **Bối cảnh & Phản ánh từ Người dùng**:
+  - Người dùng gửi các ảnh chụp thực tế từ các module:
+    - *Đặt phòng*: Thẻ "Đã trả phòng (CHECKED_OUT)" xuống 2 dòng khiến thẻ này cao hơn 4 thẻ còn lại cùng hàng.
+    - *Buồng phòng*: Thẻ "Đang làm vệ sinh (In-Progress)" và "Chờ nghiệm thu (Inspection)" xuống dòng làm lồi lên so với 2 thẻ 1 dòng.
+    - *Bảo trì kỹ thuật*: Thẻ "Đang xử lý (IN_PROGRESS)" xuống dòng làm cao hơn 3 thẻ còn lại.
+    - *Quản lý kho*: Thẻ "Vật tư sắp hết (Dưới mức tối thiểu)" dài hơn làm hàng thẻ nhấp nhô đáy.
+    - *Báo cáo & Thống kê*: Thẻ "Tác vụ dọn đang mở" trong nhóm Snapshot buồng phòng làm lệch hàng 6 thẻ.
+    - Xuất hiện hiện tượng tương tự khi co kéo cửa sổ trình duyệt hoặc mở dock Chrome DevTools sang cạnh phải.
+
+- **Nguyên nhân Kỹ thuật Cốt lõi**:
+  1. Trong Ant Design, thẻ `<Row>` sử dụng CSS Flexbox (`display: flex; flex-flow: row wrap;`).
+  2. Mặc định theo quy chuẩn CSS Flexbox, các container con `<Col>` trong cùng 1 visual line tự động co giãn bằng nhau (`align-items: stretch`).
+  3. Tuy nhiên, component `<Card>` hoặc `<div>` bên trong `<Col>` lại có chiều cao tự nhiên `height: auto`.
+  4. Khi một thẻ có tiêu đề dài hoặc chứa mã trạng thái rớt xuống 2 dòng, nội dung của nó cao hơn, làm `<Col>` của nó giãn rộng ra theo chiều dọc. Nhưng các thẻ bên cạnh vẫn giữ `height: auto`, dẫn đến việc các thẻ bên cạnh bị hụt ở đáy, tạo ra hàng thẻ "răng cưa / nhấp nhô" rất mất thẩm mỹ.
+
+- **Chiến lược & Giải pháp Kỹ thuật Triệt để**:
+  1. **Tạo Bộ Scoped CSS Helpers Chuẩn Hóa (`frontend/src/index.css`)**:
+     - `.pms-kpi-row`: Thiết lập `align-items: stretch;` cho flex container.
+     - `.pms-kpi-card`: Đảm bảo Card luôn chiếm trọn `height: 100% !important; display: flex !important; flex-direction: column !important;`.
+     - `.pms-kpi-card .ant-card-body`: Chiếm trọn `height: 100% !important; flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important;`.
+     - `.pms-kpi-card .ant-statistic`: Co giãn `height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important;`.
+     - `.pms-kpi-card .ant-statistic-title`: Cho phép wrap chữ tự nhiên (`white-space: normal; word-break: break-word;`).
+     - **Tính cách ly tuyệt đối**: Selector CSS chỉ áp dụng riêng cho các thẻ có class `.pms-kpi-card`, hoàn toàn không ảnh hưởng đến các Card bảng biểu, form, dashboard charts khác trong toàn ứng dụng.
+  2. **Gia cố Layout Inline Trên Từng Thẻ KPI**:
+     - Cấu hình trực tiếp `style={{ height: '100%', ... }}` và `styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}`.
+     - **Hiệu quả**: Tiêu đề (nhãn) luôn nằm cố định ở đỉnh trên; số liệu thống kê và badge/suffix luôn được đẩy xuống chân thẻ và thẳng hàng tuyệt đối trên cùng một đường chân trời (horizontal baseline).
+  3. **Không Cắt Chữ, Không Dùng Chiều Cao Cố Định**:
+     - Tuyệt đối không dùng `overflow: hidden; text-overflow: ellipsis;` làm mất nhãn.
+     - Tuyệt đối không hardcode fixed height cứng (ví dụ: `height: 120px`), cho phép chiều cao co giãn linh hoạt theo thẻ cao nhất của từng hàng độc lập.
+     - Khi màn hình co về kích thước mobile (2 cột) hoặc tablet (3 cột), mỗi hàng con flexbox tự động tính toán và cân bằng chiều cao riêng biệt.
+
+- **Danh Sách Module & Nhóm Thẻ Đã Được Đồng Bộ Toàn Diện**:
+  1. `frontend/src/pages/reservations/ReservationsPage.tsx`: 5 thẻ KPI đơn đặt phòng (`total`, `confirmed`, `inHouse`, `checkedOut`, `cancelled`).
+  2. `frontend/src/pages/housekeeping/HousekeepingPage.tsx`: 4 thẻ KPI công việc buồng phòng (`pendingTasks`, `inProgressTasks`, `awaitingTasks`, `completedTasks`).
+  3. `frontend/src/pages/maintenance/MaintenancePage.tsx`:
+     - Tab 1: 4 thẻ sự cố kỹ thuật (`openTickets`, `inProgressTickets`, `resolvedTickets`, `closedTickets`).
+     - Tab 2: 3 thẻ lệnh khóa phòng (`activeBlocks`, `scheduledBlocks`, `releasedBlocks`).
+  4. `frontend/src/pages/inventory/components/InventoryOverviewTab.tsx`: 4 thẻ tổng quan tồn kho & định mức (`totalActiveItems`, `lowStockItemsCount`, `outOfStockItemsCount`, `totalInventoryEstimatedValue`).
+  5. `frontend/src/pages/reports/ReportsPage.tsx`:
+     - Tab 1 (Doanh thu & Dòng tiền): 4 thẻ Financial KPI Summary.
+     - Tab 2 (Thanh toán & Thu ngân): 4 thẻ Payment KPI Summary.
+     - Tab 3 (Công suất phòng & ADR/RevPAR): 4 thẻ Occupancy KPI Summary.
+     - Tab 4 (Báo cáo ngày quản lý): 4 thẻ Manager Daily Report KPI.
+     - Tab 5 (Vận hành buồng phòng & bảo trì): 6 thẻ Housekeeping Snapshot, 2 thẻ Housekeeping Period, 5 thẻ Maintenance Snapshot, 1 thẻ Quỹ phòng bán bảo trì.
+     - Tab 6 (Sổ theo dõi công nợ): 4 thẻ Outstanding Balances KPI.
+  6. `frontend/src/pages/stays/StaysPage.tsx`: 3 thẻ lưu trú (`inHouse`, `checkedOut`, `total`).
+  7. `frontend/src/pages/dashboard/DashboardPage.tsx`:
+     - FrontDesk: 4 thẻ phòng vận hành & 4 thẻ tài chính trong ngày.
+     - Accountant: 3 thẻ doanh số, thực thu và dư nợ chưa quyết toán.
+     - Housekeeping: 4 thẻ trạng thái buồng phòng.
+     - Technician: 4 thẻ tình trạng bảo trì & sự cố.
+  8. `frontend/src/pages/billing/components/FolioTab.tsx`: 4 thẻ tài chính chi tiết Folio (Charges, Credits, Net Paid, Outstanding Balance).
+  9. `frontend/src/pages/guests/GuestsPage.tsx`: 3 thẻ hồ sơ khách hàng (Tổng khách, Khách nội địa, Khách quốc tế).
+  10. `frontend/src/pages/employees/EmployeesPage.tsx`: 3 thẻ nhân sự (Tổng nhân sự, Đang hoạt động, Đã vô hiệu hóa).
+
+- **Kết Quả Kiểm Thử & Đo Đạc Responsive**:
+  - `npm run build`: **100% biên dịch thành công, 0 lỗi TypeScript** (3.263 modules transformed).
+  - `npm run lint`: **0 lỗi linter**.
+  - **Kiểm thử Responsive ở tất cả breakpoints**:
+    - **320px, 360px, 390px, 575px (Mobile Portrait)**: Thẻ chia 2 cột (hoặc 1 cột trên kho/folio). Từng hàng 2 thẻ tự động cân bằng chiều cao với nhau, không bị giật lồi lõm, không có thanh cuộn ngang toàn trang.
+    - **576px, 767px (Mobile Landscape / Small Tablet)**: Chia 2-3 cột mượt mà.
+    - **768px, 991px (Tablet / Docked DevTools)**: Cân bằng tự động khi DevTools dock sang phải chiếm 400-500px chiều ngang.
+    - **992px, 1024px, 1199px (Desktop / Laptop)**: Hàng 4, 5 và 6 thẻ trải đều trên 1 hàng, chiều cao phẳng tắp 100%, số liệu thẳng hàng chân đế.
+    - **1200px, 1440px (Wide Desktop)**: Cực kỳ thông thoáng, thẩm mỹ sắc nét.
+
 
 
 

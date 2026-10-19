@@ -1125,36 +1125,36 @@ export const FolioTab: React.FC = () => {
             )}
 
             {/* 4 Financial Metric Cards */}
-            <Row gutter={[12, 12]}>
+            <Row gutter={[12, 12]} className="pms-kpi-row">
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>Tổng phát sinh (Charges)</Text>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#cf1322', marginTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#cf1322', marginTop: 4 }}>
                     {formatVND(folio.totalCharges)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
                     Tiền phòng + Dịch vụ
                   </div>
                 </div>
               </Col>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>Tổng giảm trừ (Credits)</Text>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#52c41a', marginTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#52c41a', marginTop: 4 }}>
                     {formatVND(folio.totalCredits)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
                     Chiết khấu / Điều chỉnh
                   </div>
                 </div>
               </Col>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+                <div style={{ padding: 12, background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>Đã thực thu (Net Paid)</Text>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#1677ff', marginTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#1677ff', marginTop: 4 }}>
                     {formatVND(folio.netPaid)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
                     Cọc: {formatVND(folio.totalDeposits)} | Thu: {formatVND(folio.totalPayments)}
                   </div>
                 </div>
@@ -1163,6 +1163,10 @@ export const FolioTab: React.FC = () => {
                 <div
                   style={{
                     padding: 12,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                     background:
                       parseFloat(folio.outstandingBalance) > 0
                         ? '#fff7e6'
@@ -1190,12 +1194,12 @@ export const FolioTab: React.FC = () => {
                           : parseFloat(folio.outstandingBalance) === 0
                           ? '#389e0d'
                           : '#531dab',
-                      marginTop: 2,
+                      marginTop: 4,
                     }}
                   >
                     {formatVND(folio.outstandingBalance)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#595959', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#595959', marginTop: 4 }}>
                     {parseFloat(folio.outstandingBalance) > 0
                       ? 'Chưa thanh toán hết'
                       : parseFloat(folio.outstandingBalance) === 0

@@ -1089,21 +1089,24 @@ export const StaysPage: React.FC = () => {
             children: (
               <>
                 {/* KPI Stat Cards */}
-                <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 16 }}>
                   <Col xs={12} sm={8} md={8}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
+                      className="pms-kpi-card"
                       style={{
+                        height: '100%',
                         borderRadius: 8,
                         borderColor: '#b7eb8f',
                         background: '#f6ffed',
                       }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
                     >
                       <Text style={{ fontSize: 12, color: '#389e0d' }}>
                         Khách đang lưu trú (In-house)
                       </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#389e0d' }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#389e0d', marginTop: 4 }}>
                         {stats.inHouse}
                       </div>
                     </Card>
@@ -1111,27 +1114,36 @@ export const StaysPage: React.FC = () => {
                   <Col xs={12} sm={8} md={8}>
                     <Card
                       size="small"
-                      bordered
+                      variant="outlined"
+                      className="pms-kpi-card"
                       style={{
+                        height: '100%',
                         borderRadius: 8,
                         borderColor: '#d3adf7',
                         background: '#f9f0ff',
                       }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
                     >
                       <Text style={{ fontSize: 12, color: '#531dab' }}>
                         Đã trả phòng (Checked-out)
                       </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#531dab' }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#531dab', marginTop: 4 }}>
                         {stats.checkedOut}
                       </div>
                     </Card>
                   </Col>
                   <Col xs={24} sm={8} md={8}>
-                    <Card size="small" variant="outlined" style={{ borderRadius: 8, background: '#fafafa' }}>
+                    <Card
+                      size="small"
+                      variant="outlined"
+                      className="pms-kpi-card"
+                      style={{ height: '100%', borderRadius: 8, background: '#fafafa' }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                    >
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         Tổng lượt lưu trú ghi nhận
                       </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#1f1f1f' }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#1f1f1f', marginTop: 4 }}>
                         {stats.total}
                       </div>
                     </Card>

@@ -312,9 +312,14 @@ export const DashboardPage: React.FC = () => {
           ) : (
             <>
               {/* Primary KPI Metrics */}
-              <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+              <Row gutter={[12, 12]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
                 <Col xs={12} sm={12} lg={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                  <Card
+                    size="small"
+                    className="pms-kpi-card"
+                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                  >
                     <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Phòng đang có khách
                     </Text>
@@ -330,7 +335,12 @@ export const DashboardPage: React.FC = () => {
                 </Col>
 
                 <Col xs={12} sm={12} lg={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                  <Card
+                    size="small"
+                    className="pms-kpi-card"
+                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                  >
                     <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Phòng sạch sẵn sàng
                     </Text>
@@ -344,7 +354,12 @@ export const DashboardPage: React.FC = () => {
                 </Col>
 
                 <Col xs={12} sm={12} lg={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                  <Card
+                    size="small"
+                    className="pms-kpi-card"
+                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                  >
                     <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Lượt khách đến dự kiến
                     </Text>
@@ -360,7 +375,12 @@ export const DashboardPage: React.FC = () => {
                 </Col>
 
                 <Col xs={12} sm={12} lg={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                  <Card
+                    size="small"
+                    className="pms-kpi-card"
+                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                  >
                     <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Lượt khách đi dự kiến
                     </Text>
@@ -422,9 +442,14 @@ export const DashboardPage: React.FC = () => {
 
               {/* Finance summary if role has permission (ADMIN, MANAGER) */}
               {dashboardData?.finance && (
-                <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+                <Row gutter={[12, 12]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
                   <Col xs={12} sm={12} lg={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Card
+                      size="small"
+                      className="pms-kpi-card"
+                      style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                    >
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         Thực thu trong ngày
                       </Text>
@@ -434,7 +459,12 @@ export const DashboardPage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={12} lg={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Card
+                      size="small"
+                      className="pms-kpi-card"
+                      style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                    >
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         Thu tiền mặt
                       </Text>
@@ -444,7 +474,12 @@ export const DashboardPage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={12} lg={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Card
+                      size="small"
+                      className="pms-kpi-card"
+                      style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                    >
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         Thu chuyển khoản
                       </Text>
@@ -454,7 +489,12 @@ export const DashboardPage: React.FC = () => {
                     </Card>
                   </Col>
                   <Col xs={12} sm={12} lg={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Card
+                      size="small"
+                      className="pms-kpi-card"
+                      style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                    >
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         Dư nợ Folio chưa thu
                       </Text>
@@ -527,35 +567,50 @@ export const DashboardPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isAccountant && (
         <Spin spinning={isAccRevLoading || isAccOutLoading}>
-          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
             <Col xs={24} sm={8} md={8}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
                   Doanh số phòng ghi nợ (30 ngày)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#1b4d3e' }}>
+                <Title level={3} style={{ margin: '8px 0 0', color: '#1b4d3e' }}>
                   {formatVnd(accountantRevRes?.data?.summary?.roomCharges)}
                 </Title>
               </Card>
             </Col>
 
             <Col xs={24} sm={8} md={8}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
                   Thực thu tiền mặt & chuyển khoản
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#15803d' }}>
+                <Title level={3} style={{ margin: '8px 0 0', color: '#15803d' }}>
                   {formatVnd(accountantRevRes?.data?.summary?.netCashCollected)}
                 </Title>
               </Card>
             </Col>
 
             <Col xs={24} sm={8} md={8}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
                   Tổng dư nợ chưa quyết toán
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                <Title level={3} style={{ margin: '8px 0 0', color: '#cf1322' }}>
                   {formatVnd(accountantRevRes?.data?.balance?.outstandingBalance)}
                 </Title>
               </Card>
@@ -626,43 +681,63 @@ export const DashboardPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isHousekeeping && (
         <Spin spinning={isOpsLoading}>
-          <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+          <Row gutter={[12, 12]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Cần dọn (Dirty)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#cf1322' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.dirtyRooms ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Đang làm vệ sinh
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#096dd9' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.cleaningRooms ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Chờ duyệt (Inspection)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#722ed1' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.roomsAwaitingInspection ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Đạt chuẩn (Ready)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#389e0d' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#389e0d' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.readyRooms ?? '-'}
                 </Title>
               </Card>
@@ -691,43 +766,63 @@ export const DashboardPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isTechnician && (
         <Spin spinning={isOpsLoading}>
-          <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+          <Row gutter={[12, 12]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Phòng đang bảo trì
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#cf1322' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.roomsUnderMaintenance ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Sự cố mới báo (Open)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#d46b08' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#d46b08' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.openMaintenanceTickets ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Đang xử lý (In-progress)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#096dd9' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.inProgressMaintenanceTickets ?? '-'}
                 </Title>
               </Card>
             </Col>
             <Col xs={12} sm={12} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+              <Card
+                size="small"
+                className="pms-kpi-card"
+                style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+                styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              >
                 <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Lệnh khóa phòng (Blocks)
                 </Text>
-                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '8px 0 0', color: '#722ed1' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.activeMaintenanceBlocks ?? '-'}
                 </Title>
               </Card>

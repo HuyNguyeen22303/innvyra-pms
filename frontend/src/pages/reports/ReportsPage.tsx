@@ -431,51 +431,67 @@ export const ReportsPage: React.FC = () => {
 
 
         {/* Financial KPI Summary Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tiền phòng đã Billed</Text>}
                 value={formatVnd(summary?.roomCharges)}
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Ghi nhận từ tiền phòng theo đêm lưu trú
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tiền dịch vụ phát sinh</Text>}
                 value={formatVnd(summary?.serviceCharges)}
                 styles={{ content: { color: '#1890ff', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Dịch vụ, minibar, giặt ủi, ẩm thực
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Thực thu ròng kỳ này</Text>}
                 value={formatVnd(summary?.netCashCollected)}
                 styles={{ content: { color: '#52c41a', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 (Thanh toán + Đặt cọc) - Hoàn trả
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #fa8c16' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #fa8c16' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Biến động công nợ kỳ</Text>}
                 value={formatVnd(summary?.balanceMovement)}
                 styles={{ content: { color: '#fa8c16', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Net Billed trừ Net Cash trong khoảng thời gian
               </Text>
             </Card>
@@ -705,51 +721,67 @@ export const ReportsPage: React.FC = () => {
           </Space>
         </div>
 
-        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Thực thu ròng (Net Cash)</Text>}
                 value={formatVnd(summary?.netCashCollected)}
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Tổng tiền mặt & ngân hàng sau trừ hoàn trả
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #389e0d' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #389e0d' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Thu tiền mặt (CASH)</Text>}
                 value={formatVnd(summary?.cashPayments)}
                 styles={{ content: { color: '#389e0d', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Tiền mặt thu tại quầy lễ tân
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #096dd9' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #096dd9' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Thu Chuyển khoản (BANK)</Text>}
                 value={formatVnd(summary?.bankTransferPayments)}
                 styles={{ content: { color: '#096dd9', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Chuyển khoản ngân hàng & QR
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #cf1322' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #cf1322' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tiền hoàn trả (Refunds)</Text>}
                 value={formatVnd(summary?.successfulRefunds)}
                 styles={{ content: { color: '#cf1322', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 {summary?.refundCount || 0} lượt hoàn trả cho khách
               </Text>
             </Card>
@@ -991,9 +1023,13 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {/* Occupancy KPI Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tỷ lệ lấp đầy (Occupancy)</Text>}
                 value={
@@ -1003,7 +1039,7 @@ export const ReportsPage: React.FC = () => {
                 }
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 {summary?.occupiedRoomNights ?? closedOccupied} / {summary?.sellableRoomNights ?? closedSellable} phòng-đêm
               </Text>
             </Card>
@@ -1011,25 +1047,33 @@ export const ReportsPage: React.FC = () => {
           {!isReceptionist && (
             <>
               <Col xs={24} sm={12} lg={6}>
-                <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}>
+                <Card
+                  className="pms-kpi-card"
+                  style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
                   <Statistic
                     title={<Text strong style={{ color: '#595959' }}>Giá phòng bình quân (ADR)</Text>}
                     value={displayAdr ? formatVnd(displayAdr) : 'Chưa đủ dữ liệu'}
                     styles={{ content: { color: '#1890ff', fontWeight: 600, fontSize: 20 } }}
                   />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                     Doanh thu bình quân / phòng có khách
                   </Text>
                 </Card>
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}>
+                <Card
+                  className="pms-kpi-card"
+                  style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
                   <Statistic
                     title={<Text strong style={{ color: '#595959' }}>Doanh thu trên phòng sẵn có (RevPAR)</Text>}
                     value={displayRevpar ? formatVnd(displayRevpar) : 'Chưa đủ dữ liệu'}
                     styles={{ content: { color: '#52c41a', fontWeight: 600, fontSize: 20 } }}
                   />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                     Doanh thu bình quân / tổng phòng có thể bán
                   </Text>
                 </Card>
@@ -1037,13 +1081,17 @@ export const ReportsPage: React.FC = () => {
             </>
           )}
           <Col xs={24} sm={12} lg={isReceptionist ? 12 : 6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #faad14' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #faad14' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Phòng bảo trì / OOS</Text>}
                 value={summary?.maintenanceBlockedRoomNights || 0}
                 styles={{ content: { color: '#d46b08', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Số phòng-đêm bị chặn do bảo trì sửa chữa
               </Text>
             </Card>
@@ -1197,51 +1245,67 @@ export const ReportsPage: React.FC = () => {
           />
         )}
 
-        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Lượt đặt tạo mới trong kỳ</Text>}
                 value={summary?.reservationsCreated || 0}
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Tổng {summary?.reservationRoomsCreated || 0} phòng được đặt
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #52c41a' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Check-in thực tế</Text>}
                 value={summary?.actualCheckins || 0}
                 styles={{ content: { color: '#52c41a', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Lượt khách đã làm thủ tục nhận phòng
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1890ff' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Check-out thực tế</Text>}
                 value={summary?.actualCheckouts || 0}
                 styles={{ content: { color: '#1890ff', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Lượt khách đã thanh toán trả phòng
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #ff4d4f' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #ff4d4f' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Đã hủy & No-show</Text>}
                 value={(summary?.cancelledReservations || 0) + (summary?.noShowReservationsInCreatedCohort || 0)}
                 styles={{ content: { color: '#cf1322', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 {summary?.cancelledReservations || 0} đã hủy, {summary?.noShowReservationsInCreatedCohort || 0} no-show
               </Text>
             </Card>
@@ -1379,35 +1443,89 @@ export const ReportsPage: React.FC = () => {
             <Title level={5} style={{ color: '#595959', marginBottom: 12 }}>
               Tình trạng phòng tức thời (Snapshot)
             </Title>
-            <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #ff4d4f' }}>
-                  <Statistic title="Phòng bẩn" value={hk.snapshot.dirtyRooms} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #ff4d4f', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phòng bẩn"
+                    value={hk.snapshot.dirtyRooms}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #faad14' }}>
-                  <Statistic title="Đang dọn" value={hk.snapshot.cleaningRooms} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #faad14', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Đang dọn"
+                    value={hk.snapshot.cleaningRooms}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #1890ff' }}>
-                  <Statistic title="Chờ nghiệm thu" value={hk.snapshot.roomsAwaitingInspection} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #1890ff', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Chờ nghiệm thu"
+                    value={hk.snapshot.roomsAwaitingInspection}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #52c41a' }}>
-                  <Statistic title="Sẵn sàng đón khách" value={hk.snapshot.readyRooms} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #52c41a', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Sẵn sàng đón khách"
+                    value={hk.snapshot.readyRooms}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #722ed1' }}>
-                  <Statistic title="Tác vụ dọn đang mở" value={hk.snapshot.activeHousekeepingTasks} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #722ed1', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Tác vụ dọn đang mở"
+                    value={hk.snapshot.activeHousekeepingTasks}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #13c2c2' }}>
-                  <Statistic title="Nhiệm vụ làm sạch" value={hk.snapshot.cleaningTasks} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #13c2c2', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Nhiệm vụ làm sạch"
+                    value={hk.snapshot.cleaningTasks}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
             </Row>
@@ -1415,10 +1533,16 @@ export const ReportsPage: React.FC = () => {
             <Title level={5} style={{ color: '#595959', marginBottom: 12 }}>
               Hiệu suất hoàn thành trong kỳ được chọn
             </Title>
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} className="pms-kpi-row">
               <Col xs={24} sm={12}>
-                <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ background: '#f6ffed', border: '1px solid #b7eb8f', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
                   <Statistic
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                     title={<Text strong>Số tác vụ dọn đã hoàn thành (Cleaned)</Text>}
                     value={hk.period.completedHousekeepingTasks}
                     styles={{ content: { color: '#389e0d', fontWeight: 600 } }}
@@ -1426,8 +1550,14 @@ export const ReportsPage: React.FC = () => {
                 </Card>
               </Col>
               <Col xs={24} sm={12}>
-                <Card size="small" style={{ background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ background: '#e6f7ff', border: '1px solid #91d5ff', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
                   <Statistic
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                     title={<Text strong>Số tác vụ đã kiểm định & nghiệm thu (Inspected)</Text>}
                     value={hk.period.inspectedHousekeepingTasks}
                     styles={{ content: { color: '#096dd9', fontWeight: 600 } }}
@@ -1454,30 +1584,75 @@ export const ReportsPage: React.FC = () => {
             <Title level={5} style={{ color: '#595959', marginBottom: 12 }}>
               Tình trạng thiết bị & phòng tức thời (Snapshot)
             </Title>
-            <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
               <Col xs={12} sm={8} lg={5}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #ff4d4f' }}>
-                  <Statistic title="Phòng đang sửa chữa" value={maint.snapshot.roomsUnderMaintenance} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #ff4d4f', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phòng đang sửa chữa"
+                    value={maint.snapshot.roomsUnderMaintenance}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={5}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #fa8c16' }}>
-                  <Statistic title="Phòng ngừng phục vụ (OOS)" value={maint.snapshot.roomsOutOfService} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #fa8c16', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phòng ngừng phục vụ (OOS)"
+                    value={maint.snapshot.roomsOutOfService}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={5}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #1890ff' }}>
-                  <Statistic title="Phiếu bảo trì đang mở" value={maint.snapshot.openMaintenanceTickets} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #1890ff', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phiếu bảo trì đang mở"
+                    value={maint.snapshot.openMaintenanceTickets}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={5}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #faad14' }}>
-                  <Statistic title="Phiếu đang xử lý" value={maint.snapshot.inProgressMaintenanceTickets} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #faad14', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phiếu đang xử lý"
+                    value={maint.snapshot.inProgressMaintenanceTickets}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <Card size="small" style={{ textAlign: 'center', borderTop: '3px solid #722ed1' }}>
-                  <Statistic title="Phòng đang bị chặn" value={maint.snapshot.activeMaintenanceBlocks} />
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ textAlign: 'center', borderTop: '3px solid #722ed1', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
+                  <Statistic
+                    title="Phòng đang bị chặn"
+                    value={maint.snapshot.activeMaintenanceBlocks}
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  />
                 </Card>
               </Col>
             </Row>
@@ -1485,15 +1660,21 @@ export const ReportsPage: React.FC = () => {
             <Title level={5} style={{ color: '#595959', marginBottom: 12 }}>
               Ảnh hưởng đến quỹ phòng bán trong kỳ
             </Title>
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} className="pms-kpi-row">
               <Col xs={24} sm={12}>
-                <Card size="small" style={{ background: '#fff2e8', border: '1px solid #ffbb96' }}>
+                <Card
+                  size="small"
+                  className="pms-kpi-card"
+                  style={{ background: '#fff2e8', border: '1px solid #ffbb96', height: '100%' }}
+                  styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                >
                   <Statistic
+                    style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                     title={<Text strong>Tổng số đêm phòng bị chặn bảo trì (Blocked Room Nights)</Text>}
                     value={maint.period.maintenanceBlockedRoomNights}
                     styles={{ content: { color: '#d4380d', fontWeight: 600 } }}
                   />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                     Số đêm phòng không thể bán do sự cố kỹ thuật trong khoảng thời gian đã chọn
                   </Text>
                 </Card>
@@ -1576,51 +1757,67 @@ export const ReportsPage: React.FC = () => {
           />
         )}
 
-        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #1b4d3e' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Tổng dư nợ ròng</Text>}
                 value={formatVnd(summary?.outstandingBalance)}
                 styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Net Accounts Receivable - Customer Credits
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #cf1322' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #cf1322' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Phải thu từ khách (Nợ)</Text>}
                 value={formatVnd(summary?.accountsReceivable)}
                 styles={{ content: { color: '#cf1322', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Tổng số tiền khách lưu trú chưa thanh toán
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #389e0d' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #389e0d' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Khách trả thừa / Trả trước (Có)</Text>}
                 value={formatVnd(summary?.customerCredits)}
                 styles={{ content: { color: '#389e0d', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Tiền đặt cọc hoặc thanh toán vượt mức hóa đơn
               </Text>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #fa8c16' }}>
+            <Card
+              className="pms-kpi-card"
+              style={{ borderRadius: 8, height: '100%', borderLeft: '4px solid #fa8c16' }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+            >
               <Statistic
                 title={<Text strong style={{ color: '#595959' }}>Số Folio có số dư</Text>}
                 value={summary?.folioCount || 0}
                 styles={{ content: { color: '#fa8c16', fontWeight: 600, fontSize: 20 } }}
               />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
                 Các hóa đơn chưa cân bằng về 0 ₫
               </Text>
             </Card>

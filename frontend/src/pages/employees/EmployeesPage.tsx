@@ -515,13 +515,18 @@ export const EmployeesPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Summary */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
         <Col xs={24} sm={8} md={8}>
-          <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <Card
+            size="small"
+            className="pms-kpi-card"
+            style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Tổng nhân sự khách sạn
             </Text>
-            <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <Title level={3} style={{ margin: 0, color: '#1b4d3e' }}>
                 {totalAllRes?.data?.pagination?.total ?? <Skeleton.Button active size="small" />}
               </Title>
@@ -533,11 +538,16 @@ export const EmployeesPage: React.FC = () => {
         </Col>
 
         <Col xs={12} sm={8} md={8}>
-          <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <Card
+            size="small"
+            className="pms-kpi-card"
+            style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Đang hoạt động (Active)
             </Text>
-            <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <Title level={3} style={{ margin: 0, color: '#15803d' }}>
                 {totalActiveRes?.data?.pagination?.total ?? <Skeleton.Button active size="small" />}
               </Title>
@@ -547,11 +557,16 @@ export const EmployeesPage: React.FC = () => {
         </Col>
 
         <Col xs={12} sm={8} md={8}>
-          <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <Card
+            size="small"
+            className="pms-kpi-card"
+            style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Đã vô hiệu hóa (Disabled)
             </Text>
-            <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <Title level={3} style={{ margin: 0, color: '#64748b' }}>
                 {totalInactiveRes?.data?.pagination?.total ?? <Skeleton.Button active size="small" />}
               </Title>

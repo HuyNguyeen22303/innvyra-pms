@@ -967,46 +967,66 @@ export const HousekeepingPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
-          <Card variant="borderless" style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
+          <Card
+            variant="borderless"
+            className="pms-kpi-card"
+            style={{ height: '100%', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Chờ dọn dẹp (Pending)
             </Text>
-            <Title level={2} style={{ margin: '4px 0 0', color: '#d48806' }}>
+            <Title level={2} style={{ margin: '8px 0 0', color: '#d48806' }}>
               {pendingTasks.length}
             </Title>
           </Card>
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card variant="borderless" style={{ background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}>
+          <Card
+            variant="borderless"
+            className="pms-kpi-card"
+            style={{ height: '100%', background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8 }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Đang làm vệ sinh (In-Progress)
             </Text>
-            <Title level={2} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+            <Title level={2} style={{ margin: '8px 0 0', color: '#096dd9' }}>
               {inProgressTasks.length}
             </Title>
           </Card>
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card variant="borderless" style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}>
+          <Card
+            variant="borderless"
+            className="pms-kpi-card"
+            style={{ height: '100%', background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8 }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Chờ nghiệm thu (Inspection)
             </Text>
-            <Title level={2} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+            <Title level={2} style={{ margin: '8px 0 0', color: '#722ed1' }}>
               {awaitingTasks.length}
             </Title>
           </Card>
         </Col>
 
         <Col xs={12} sm={6}>
-          <Card variant="borderless" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
+          <Card
+            variant="borderless"
+            className="pms-kpi-card"
+            style={{ height: '100%', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}
+            styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+          >
             <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
               Đã hoàn thành (Ready)
             </Text>
-            <Title level={2} style={{ margin: '4px 0 0', color: '#389e0d' }}>
+            <Title level={2} style={{ margin: '8px 0 0', color: '#389e0d' }}>
               {completedTasks.length}
             </Title>
           </Card>

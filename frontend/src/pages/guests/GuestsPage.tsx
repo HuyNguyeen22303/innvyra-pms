@@ -527,15 +527,18 @@ export const GuestsPage: React.FC = () => {
       )}
 
       {/* 3 Metrics Overview Cards */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} className="pms-kpi-row">
         <Col xs={24} sm={8}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 12,
               borderColor: '#e2e8f0',
               boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', alignItems: 'center' } }}
           >
             <Space align="center">
               <Avatar
@@ -558,11 +561,14 @@ export const GuestsPage: React.FC = () => {
         <Col xs={12} sm={8}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 12,
               borderColor: '#e2e8f0',
               boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', alignItems: 'center' } }}
           >
             <Space align="center">
               <Avatar
@@ -585,11 +591,14 @@ export const GuestsPage: React.FC = () => {
         <Col xs={12} sm={8}>
           <Card
             variant="outlined"
+            className="pms-kpi-card"
             style={{
+              height: '100%',
               borderRadius: 12,
               borderColor: '#e2e8f0',
               boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
             }}
+            styles={{ body: { height: '100%', display: 'flex', alignItems: 'center' } }}
           >
             <Space align="center">
               <Avatar
