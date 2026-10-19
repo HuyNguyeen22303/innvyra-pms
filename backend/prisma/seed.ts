@@ -3,15 +3,11 @@ import { z } from 'zod';
 import { createConnection } from 'mariadb';
 import { databaseOptions } from '../src/database/prisma.js';
 import { scriptPrisma, requiredDatabaseUrl } from '../scripts/database-tools.js';
-import { adminInputSchema } from '../src/modules/auth/auth.schema.js';
 import { AppError } from '../src/shared/errors/app-error.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import { GuestCrypto } from '../src/modules/guests/guest.crypto.js';
-<<<<<<< HEAD
-import { Prisma } from '../src/generated/prisma/client.js';
-=======
 import { hotelToday } from '../src/modules/reservations/reservation.dates.js';
->>>>>>> 830eca3bd6b3494ae15c7584ef9bacdb530a59f1
+import { Prisma } from '../src/generated/prisma/client.js';
 
 // ----------------------------------------------------
 // 1. ROLES & STAFF DEFINITIONS (17 staff across shifts)
@@ -217,7 +213,7 @@ const demoGuests = [
   { fullName: 'Lucas Rossi', phone: '+39061234567', email: 'lucas.rossi@roma.it', gender: 'MALE' as const, nationality: 'Italy', docType: 'PASSPORT' as const, docNum: 'IT12349876', address: 'Via del Corso 184, 00186 Roma, Italy' },
 ];
 
-<<<<<<< HEAD
+
 const demoInventoryCategories = [
   {
     code: 'AMENITY',
@@ -516,14 +512,13 @@ const demoInventoryItems = [
     supplierCode: 'SUP-TANPHAT',
   },
 ] as const;
-=======
+
 // Helper: Add days to YYYY-MM-DD
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
->>>>>>> 830eca3bd6b3494ae15c7584ef9bacdb530a59f1
 
 // ----------------------------------------------------
 // MAIN SEED PROCESS (IDEMPOTENT & REPRODUCIBLE)
@@ -537,6 +532,15 @@ async function main() {
     // 1. CLEAN RESET TRANSACTIONAL TABLES TO GUARANTEE SYNCHRONIZATION
     console.info('🧹 Làm sạch dữ liệu cũ để đồng bộ trạng thái giữa các thành viên...');
     const tablesToReset = [
+      'inventory_movements',
+      'stock_adjustments',
+      'stock_issue_items',
+      'stock_issues',
+      'stock_receipt_items',
+      'stock_receipts',
+      'inventory_items',
+      'suppliers',
+      'inventory_categories',
       'billing_audit_logs',
       'billing_idempotency',
       'operations_audit_logs',
@@ -571,115 +575,6 @@ async function main() {
         process.env.DATABASE_SSL_CA_FILE,
       ),
     );
-<<<<<<< HEAD
-    const result = await prisma.$transaction(
-      async (tx) => {
-        for (const [code, name] of roles) {
-          await tx.role.upsert({ where: { code }, create: { code, name }, update: {} });
-        }
-        let hotel = hotelInput
-          ? await tx.hotel.upsert({
-              where: { code: hotelInput.code },
-              create: hotelInput,
-              update: {},
-            })
-          : undefined;
-        if (!seedDemo)
-          return {
-            hotel,
-            staff: 0,
-            roomTypes: 0,
-            rooms: 0,
-            guests: 0,
-            categories: 0,
-            suppliers: 0,
-            items: 0,
-          };
-        if (!hotel) {
-          const hotels = await tx.hotel.findMany({ take: 2, orderBy: { id: 'asc' } });
-          if (hotels.length > 1) {
-            throw new AppError(
-              400,
-              'SEED_HOTEL_REQUIRED',
-              'Multiple hotels found. Set SEED_HOTEL_CODE and SEED_HOTEL_NAME.',
-            );
-          }
-          hotel =
-            hotels[0] ?? (await tx.hotel.create({ data: { code: 'MAIN', name: 'Innvyra Hotel' } }));
-        }
-        const crypto =
-          process.env.GUEST_ENCRYPTION_KEY && process.env.GUEST_HASH_KEY
-            ? new GuestCrypto({
-                GUEST_ENCRYPTION_KEY: process.env.GUEST_ENCRYPTION_KEY,
-                GUEST_HASH_KEY: process.env.GUEST_HASH_KEY,
-              })
-            : null;
-
-        const created = {
-          hotel,
-          staff: 0,
-          roomTypes: 0,
-          rooms: 0,
-          guests: 0,
-          categories: 0,
-          suppliers: 0,
-          items: 0,
-        };
-        for (const { roleCode, ...account } of accounts) {
-          const role = await tx.role.findUniqueOrThrow({ where: { code: roleCode } });
-          const existing = await tx.staffUser.findUnique({ where: { username: account.username } });
-          if (existing) {
-            if (existing.hotelId !== hotel.id || existing.roleId !== role.id) {
-              throw new AppError(
-                409,
-                'SEED_ACCOUNT_CONFLICT',
-                `Seed username ${account.username} belongs to another hotel or role.`,
-              );
-            }
-            continue;
-          }
-          await tx.staffUser.create({ data: { ...account, hotelId: hotel.id, roleId: role.id } });
-          created.staff++;
-        }
-        for (const [
-          index,
-          [code, name, maxAdults, maxChildren, basePrice],
-        ] of roomTypes.entries()) {
-          let roomType = await tx.roomType.findUnique({
-            where: { hotelId_code: { hotelId: hotel.id, code } },
-          });
-          if (!roomType) {
-            roomType = await tx.roomType.create({
-              data: {
-                hotelId: hotel.id,
-                code,
-                name,
-                description: `Phòng ${name} dành cho tối đa ${maxAdults} người lớn và ${maxChildren} trẻ em.`,
-                maxAdults,
-                maxChildren,
-                basePrice,
-              },
-            });
-            created.roomTypes++;
-          }
-          const floorNumber = Math.floor(index / 10) + 1;
-          const roomNumber = String(floorNumber * 100 + (index % 10) + 1);
-          if (
-            await tx.room.findUnique({
-              where: { hotelId_roomNumber: { hotelId: hotel.id, roomNumber } },
-            })
-          ) {
-            continue;
-          }
-          if (!roomType.isActive) {
-            throw new AppError(
-              409,
-              'SEED_ROOM_TYPE_INACTIVE',
-              `Seed room type ${code} is inactive.`,
-            );
-          }
-          await tx.room.create({
-=======
     try {
       await resetConn.query('SET FOREIGN_KEY_CHECKS = 0');
       for (const table of tablesToReset) {
@@ -839,10 +734,10 @@ async function main() {
 
     let guestIdx = 0;
     for (let i = 0; i < occupiedRoomNumbers.length; i++) {
-      const roomNum = occupiedRoomNumbers[i];
+      const roomNum = occupiedRoomNumbers[i]!;
       const room = roomMap.get(roomNum)!;
       const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: room.roomTypeId } });
-      const guest = guestList[guestIdx++ % guestList.length];
+      const guest = guestList[guestIdx++ % guestList.length]!;
 
       // Check-in dates: 1-3 days ago, check-out: 1-3 days in future
       const stayDaysAgo = (i % 3) + 1;
@@ -862,7 +757,7 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CHECKED_IN',
-          bookingSource: validBookingSources[i % validBookingSources.length],
+          bookingSource: validBookingSources[i % validBookingSources.length] ?? 'DIRECT',
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
           createdAt: bookingCreatedAt,
@@ -936,7 +831,7 @@ async function main() {
       const nightsBilled = stayDaysAgo; // nights up to today billed
       let roomChargesAmount = 0;
       for (let n = 0; n < nightsBilled; n++) {
-        const night = nightRecords[n];
+        const night = nightRecords[n]!;
         roomChargesAmount += parseFloat(rt.basePrice.toString());
         await prisma.folioItem.create({
           data: {
@@ -1127,7 +1022,6 @@ async function main() {
         const paidAmount = roomChargesAmount + extraServiceAmount;
         if (paidAmount > 0) {
           await prisma.payment.create({
->>>>>>> 830eca3bd6b3494ae15c7584ef9bacdb530a59f1
             data: {
               hotelId: hotel.id,
               folioId: folio.id,
@@ -1180,7 +1074,7 @@ async function main() {
     // B. 6 EXPECTED ARRIVALS (TODAY CONFIRMED)
     const arrivalRooms = ['102', '107', '203', '208', '303', '403'];
     for (let i = 0; i < arrivalRooms.length; i++) {
-      const roomNum = arrivalRooms[i];
+      const roomNum = arrivalRooms[i]!;
       const room = roomMap.get(roomNum)!;
       const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: room.roomTypeId } });
       const guest = guestList[guestIdx++ % guestList.length];
@@ -1190,284 +1084,6 @@ async function main() {
       const totalRate = parseFloat(rt.basePrice.toString()) * 2;
       const bookingCreatedAt = new Date(`${addDays(today, -2)}T09:30:00.000Z`);
 
-<<<<<<< HEAD
-        // Seed Inventory Categories
-        const categoryMap = new Map<string, bigint>();
-        for (const cat of demoInventoryCategories) {
-          const category = await tx.inventoryCategory.upsert({
-            where: { hotelId_code: { hotelId: hotel.id, code: cat.code } },
-            create: {
-              hotelId: hotel.id,
-              code: cat.code,
-              name: cat.name,
-              description: cat.description,
-              isActive: true,
-            },
-            update: {},
-          });
-          categoryMap.set(cat.code, category.id);
-          created.categories++;
-        }
-
-        // Seed Suppliers
-        const supplierMap = new Map<string, bigint>();
-        for (const sup of demoSuppliers) {
-          const supplier = await tx.supplier.upsert({
-            where: { hotelId_code: { hotelId: hotel.id, code: sup.code } },
-            create: {
-              hotelId: hotel.id,
-              code: sup.code,
-              name: sup.name,
-              contactPerson: sup.contactPerson,
-              phone: sup.phone,
-              email: sup.email,
-              address: sup.address,
-              notes: sup.notes,
-              isActive: true,
-            },
-            update: {},
-          });
-          supplierMap.set(sup.code, supplier.id);
-          created.suppliers++;
-        }
-
-        // Seed 20 Inventory Items
-        const itemMap = new Map<string, { id: bigint; code: string; name: string }>();
-        for (const it of demoInventoryItems) {
-          const categoryId = categoryMap.get(it.categoryCode);
-          if (!categoryId) continue;
-
-          const item = await tx.inventoryItem.upsert({
-            where: { hotelId_code: { hotelId: hotel.id, code: it.code } },
-            create: {
-              hotelId: hotel.id,
-              categoryId,
-              code: it.code,
-              name: it.name,
-              unit: it.unit,
-              description: it.description,
-              minStockLevel: new Prisma.Decimal(it.minStockLevel),
-              currentStock: new Prisma.Decimal('0.00'),
-              isActive: true,
-            },
-            update: {},
-          });
-          itemMap.set(it.code, { id: item.id, code: item.code, name: item.name });
-          created.items++;
-        }
-
-        // Seed sample inventory transactions if a staff user is available
-        const staffActor = await tx.staffUser.findFirst({
-          where: { hotelId: hotel.id, isActive: true },
-          orderBy: { id: 'asc' },
-        });
-
-        if (staffActor) {
-          const receiptNumber = 'REC-INIT-SEED01';
-          const existingReceipt = await tx.stockReceipt.findFirst({
-            where: { hotelId: hotel.id, receiptNumber },
-          });
-
-          if (!existingReceipt) {
-            const supplierId = supplierMap.get('SUP-ASIA') ?? null;
-            let totalAmount = new Prisma.Decimal(0);
-            for (const it of demoInventoryItems) {
-              const lineTotal = new Prisma.Decimal(it.initialStock).mul(new Prisma.Decimal(it.unitPrice));
-              totalAmount = totalAmount.add(lineTotal);
-            }
-
-            const receipt = await tx.stockReceipt.create({
-              data: {
-                hotelId: hotel.id,
-                supplierId,
-                receiptNumber,
-                receiptDate: new Date(),
-                totalAmount,
-                notes: 'Phiếu nhập kho ban đầu thiết lập số dư tồn đầu kỳ cho hệ thống',
-                createdBy: staffActor.id,
-              },
-            });
-
-            for (const it of demoInventoryItems) {
-              const itemMeta = itemMap.get(it.code);
-              if (!itemMeta) continue;
-              const qty = new Prisma.Decimal(it.initialStock);
-              const price = new Prisma.Decimal(it.unitPrice);
-              const lineTotal = qty.mul(price);
-
-              await tx.stockReceiptItem.create({
-                data: {
-                  hotelId: hotel.id,
-                  receiptId: receipt.id,
-                  itemId: itemMeta.id,
-                  quantity: qty,
-                  unitPrice: price,
-                  lineTotal,
-                  notes: `Nhập tồn ban đầu: ${it.name}`,
-                },
-              });
-
-              const currentItem = await tx.inventoryItem.findUniqueOrThrow({
-                where: { id: itemMeta.id },
-              });
-              const prevStock = currentItem.currentStock;
-              const newStock = prevStock.add(qty);
-
-              await tx.inventoryItem.update({
-                where: { id: itemMeta.id },
-                data: { currentStock: newStock },
-              });
-
-              await tx.inventoryMovement.create({
-                data: {
-                  hotelId: hotel.id,
-                  itemId: itemMeta.id,
-                  type: 'RECEIPT',
-                  quantity: qty,
-                  previousStock: prevStock,
-                  currentStock: newStock,
-                  referenceType: 'STOCK_RECEIPT',
-                  referenceId: receipt.id,
-                  referenceNumber: receipt.receiptNumber,
-                  notes: 'Nhập kho ban đầu',
-                  createdBy: staffActor.id,
-                },
-              });
-            }
-          }
-
-          const issueNumber = 'ISS-DEMO-HK01';
-          const existingIssue = await tx.stockIssue.findFirst({
-            where: { hotelId: hotel.id, issueNumber },
-          });
-
-          if (!existingIssue) {
-            const soapItem = itemMap.get('AMEN-SG-40ML');
-            const toothBrushItem = itemMap.get('AMEN-TB-01');
-
-            if (soapItem && toothBrushItem) {
-              const issue = await tx.stockIssue.create({
-                data: {
-                  hotelId: hotel.id,
-                  issueNumber,
-                  issueDate: new Date(),
-                  department: 'Housekeeping',
-                  purpose: 'Cấp phát vật tư phòng khách tầng 3 & tầng 4',
-                  notes: 'Xuất kho ca sáng',
-                  createdBy: staffActor.id,
-                },
-              });
-
-              const issueLines = [
-                { meta: soapItem, qty: new Prisma.Decimal('30.00') },
-                { meta: toothBrushItem, qty: new Prisma.Decimal('50.00') },
-              ];
-
-              for (const line of issueLines) {
-                await tx.stockIssueItem.create({
-                  data: {
-                    hotelId: hotel.id,
-                    issueId: issue.id,
-                    itemId: line.meta.id,
-                    quantity: line.qty,
-                    notes: 'Xuất cấp phát phòng',
-                  },
-                });
-
-                const currentItem = await tx.inventoryItem.findUniqueOrThrow({
-                  where: { id: line.meta.id },
-                });
-                const prevStock = currentItem.currentStock;
-                const newStock = prevStock.sub(line.qty);
-
-                await tx.inventoryItem.update({
-                  where: { id: line.meta.id },
-                  data: { currentStock: newStock },
-                });
-
-                await tx.inventoryMovement.create({
-                  data: {
-                    hotelId: hotel.id,
-                    itemId: line.meta.id,
-                    type: 'ISSUE',
-                    quantity: line.qty,
-                    previousStock: prevStock,
-                    currentStock: newStock,
-                    referenceType: 'STOCK_ISSUE',
-                    referenceId: issue.id,
-                    referenceNumber: issue.issueNumber,
-                    notes: 'Xuất kho cho Housekeeping',
-                    createdBy: staffActor.id,
-                  },
-                });
-              }
-            }
-          }
-
-          const adjNumber = 'ADJ-DEMO-CHK01';
-          const waterItem = itemMap.get('AMEN-WATER');
-          const existingAdj = await tx.stockAdjustment.findFirst({
-            where: { hotelId: hotel.id, adjustmentNumber: adjNumber },
-          });
-
-          if (!existingAdj && waterItem) {
-            const currentItem = await tx.inventoryItem.findUniqueOrThrow({
-              where: { id: waterItem.id },
-            });
-            const systemQty = currentItem.currentStock;
-            const actualQty = systemQty.add(new Prisma.Decimal('5.00'));
-            const diff = actualQty.sub(systemQty);
-
-            const adj = await tx.stockAdjustment.create({
-              data: {
-                hotelId: hotel.id,
-                adjustmentNumber: adjNumber,
-                itemId: waterItem.id,
-                systemQuantity: systemQty,
-                actualQuantity: actualQty,
-                difference: diff,
-                reason: 'Kiểm kê định kỳ phát hiện thừa 5 chai nước đóng thùng nguyên vẹn',
-                createdBy: staffActor.id,
-              },
-            });
-
-            await tx.inventoryItem.update({
-              where: { id: waterItem.id },
-              data: { currentStock: actualQty },
-            });
-
-            await tx.inventoryMovement.create({
-              data: {
-                hotelId: hotel.id,
-                itemId: waterItem.id,
-                type: 'ADJUSTMENT',
-                quantity: diff,
-                previousStock: systemQty,
-                currentStock: actualQty,
-                referenceType: 'STOCK_ADJUSTMENT',
-                referenceId: adj.id,
-                referenceNumber: adj.adjustmentNumber,
-                notes: 'Điều chỉnh sau kiểm kê',
-                createdBy: staffActor.id,
-              },
-            });
-          }
-        }
-
-        return created;
-      },
-      { timeout: 60000 },
-    );
-    console.info('Roles seeded idempotently. Existing data and passwords were preserved.');
-    if (result.hotel)
-      console.info(`Hotel: ${result.hotel.code} (ID: ${result.hotel.id.toString()})`);
-    if (seedDemo) {
-      console.info(
-        `Created ${result.staff} staff accounts, ${result.roomTypes} room types, ${result.rooms} rooms, ${result.guests} demo guests, and ${result.items} inventory items.`,
-      );
-      console.info(`Demo usernames: ${staffAccounts.map(([, username]) => username).join(', ')}`);
-    }
-=======
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
@@ -1476,7 +1092,7 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CONFIRMED',
-          bookingSource: validBookingSources[(i + 1) % validBookingSources.length],
+          bookingSource: validBookingSources[(i + 1) % validBookingSources.length] ?? 'DIRECT',
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
           createdAt: bookingCreatedAt,
@@ -1500,7 +1116,7 @@ async function main() {
     // C. 4 UNASSIGNED RESERVATIONS (RoomId is null)
     const unassignedTypes = ['STD-DBL', 'SUP-DBL', 'DLX-BALCONY', 'SUITE-EXEC'];
     for (let i = 0; i < unassignedTypes.length; i++) {
-      const rtCode = unassignedTypes[i];
+      const rtCode = unassignedTypes[i]!;
       const rt = roomTypeMap.get(rtCode)!;
       const guest = guestList[guestIdx++ % guestList.length];
 
@@ -1517,7 +1133,7 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CONFIRMED',
-          bookingSource: validBookingSources[(i + 3) % validBookingSources.length],
+          bookingSource: validBookingSources[(i + 3) % validBookingSources.length] ?? 'DIRECT',
           totalAmount: totalRate.toFixed(2),
           createdBy: receptionist.id,
           createdAt: bookingCreatedAt,
@@ -1553,7 +1169,7 @@ async function main() {
     ];
 
     for (let i = 0; i < pastStaysConfig.length; i++) {
-      const item = pastStaysConfig[i];
+      const item = pastStaysConfig[i]!;
       const guest = guestList[guestIdx++ % guestList.length];
       const targetRoom = roomMap.get(item.roomNum)!;
       const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: targetRoom.roomTypeId } });
@@ -1570,7 +1186,7 @@ async function main() {
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CHECKED_OUT',
-          bookingSource: validBookingSources[i % validBookingSources.length],
+          bookingSource: validBookingSources[i % validBookingSources.length] ?? 'DIRECT',
           totalAmount: pastTotalAmount,
           createdBy: receptionist.id,
           createdAt: bookingCreatedAt,
@@ -1663,8 +1279,8 @@ async function main() {
       { daysAgoCreated: 3, daysAgoCancelled: 1, source: 'AGENT' as const },
     ];
     for (let i = 0; i < cancelledConfig.length; i++) {
-      const cfg = cancelledConfig[i];
-      const rt = roomTypesConfig[i % roomTypesConfig.length];
+      const cfg = cancelledConfig[i]!;
+      const rt = roomTypesConfig[i % roomTypesConfig.length]!;
       const rtRecord = roomTypeMap.get(rt.code)!;
       const guest = guestList[guestIdx++ % guestList.length];
       const checkInDate = addDays(today, 2 + i);
@@ -1711,8 +1327,8 @@ async function main() {
       { daysAgoCreated: 5, checkInDaysAgo: 2, source: 'WALK_IN' as const },
     ];
     for (let i = 0; i < noShowConfig.length; i++) {
-      const cfg = noShowConfig[i];
-      const rt = roomTypesConfig[(i + 2) % roomTypesConfig.length];
+      const cfg = noShowConfig[i]!;
+      const rt = roomTypesConfig[(i + 2) % roomTypesConfig.length]!;
       const rtRecord = roomTypeMap.get(rt.code)!;
       const guest = guestList[guestIdx++ % guestList.length];
       const checkInDate = addDays(today, -cfg.checkInDaysAgo);
@@ -1782,7 +1398,6 @@ async function main() {
         createdBy: hkLead.id,
       },
     });
->>>>>>> 830eca3bd6b3494ae15c7584ef9bacdb530a59f1
 
     const cleaningRoom2 = roomMap.get('304')!;
     await prisma.housekeepingTask.create({
@@ -1908,6 +1523,259 @@ async function main() {
       },
     });
     console.info(`✅ Đã tạo các phiếu sự cố kỹ thuật và 2 Lệnh khóa phòng bảo trì (Room 104 & 206).`);
+    // G. SEED INVENTORY MODULE
+    console.info('📦 Bắt đầu khởi tạo dữ liệu mẫu Module Inventory (20 vật tư, phiếu nhập, xuất, kiểm kê)...');
+    const categoryMap = new Map<string, bigint>();
+    for (const cat of demoInventoryCategories) {
+      const category = await prisma.inventoryCategory.upsert({
+        where: { hotelId_code: { hotelId: hotel.id, code: cat.code } },
+        create: {
+          hotelId: hotel.id,
+          code: cat.code,
+          name: cat.name,
+          description: cat.description,
+          isActive: true,
+        },
+        update: {},
+      });
+      categoryMap.set(cat.code, category.id);
+    }
+
+    const supplierMap = new Map<string, bigint>();
+    for (const sup of demoSuppliers) {
+      const supplier = await prisma.supplier.upsert({
+        where: { hotelId_code: { hotelId: hotel.id, code: sup.code } },
+        create: {
+          hotelId: hotel.id,
+          code: sup.code,
+          name: sup.name,
+          contactPerson: sup.contactPerson,
+          phone: sup.phone,
+          email: sup.email,
+          address: sup.address,
+          notes: sup.notes,
+          isActive: true,
+        },
+        update: {},
+      });
+      supplierMap.set(sup.code, supplier.id);
+    }
+
+    const itemMap = new Map<string, { id: bigint; code: string; name: string }>();
+    for (const it of demoInventoryItems) {
+      const categoryId = categoryMap.get(it.categoryCode);
+      if (!categoryId) continue;
+
+      const item = await prisma.inventoryItem.upsert({
+        where: { hotelId_code: { hotelId: hotel.id, code: it.code } },
+        create: {
+          hotelId: hotel.id,
+          categoryId,
+          code: it.code,
+          name: it.name,
+          unit: it.unit,
+          description: it.description,
+          minStockLevel: new Prisma.Decimal(it.minStockLevel),
+          currentStock: new Prisma.Decimal('0.00'),
+          isActive: true,
+        },
+        update: {},
+      });
+      itemMap.set(it.code, { id: item.id, code: item.code, name: item.name });
+    }
+
+    const staffActor = staffMap.get('admin') ?? receptionist;
+    const receiptNumber = 'REC-INIT-SEED01';
+    const existingReceipt = await prisma.stockReceipt.findFirst({
+      where: { hotelId: hotel.id, receiptNumber },
+    });
+
+    if (!existingReceipt) {
+      const supplierId = supplierMap.get('SUP-ASIA') ?? null;
+      let totalAmount = new Prisma.Decimal(0);
+      for (const it of demoInventoryItems) {
+        const lineTotal = new Prisma.Decimal(it.initialStock).mul(new Prisma.Decimal(it.unitPrice));
+        totalAmount = totalAmount.add(lineTotal);
+      }
+
+      const receipt = await prisma.stockReceipt.create({
+        data: {
+          hotelId: hotel.id,
+          supplierId,
+          receiptNumber,
+          receiptDate: new Date(),
+          totalAmount,
+          notes: 'Phiếu nhập kho ban đầu thiết lập số dư tồn đầu kỳ cho hệ thống',
+          createdBy: staffActor.id,
+        },
+      });
+
+      for (const it of demoInventoryItems) {
+        const itemMeta = itemMap.get(it.code);
+        if (!itemMeta) continue;
+        const qty = new Prisma.Decimal(it.initialStock);
+        const price = new Prisma.Decimal(it.unitPrice);
+        const lineTotal = qty.mul(price);
+
+        await prisma.stockReceiptItem.create({
+          data: {
+            hotelId: hotel.id,
+            receiptId: receipt.id,
+            itemId: itemMeta.id,
+            quantity: qty,
+            unitPrice: price,
+            lineTotal,
+            notes: `Nhập tồn ban đầu: ${it.name}`,
+          },
+        });
+
+        const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
+          where: { id: itemMeta.id },
+        });
+        const prevStock = currentItem.currentStock;
+        const newStock = prevStock.add(qty);
+
+        await prisma.inventoryItem.update({
+          where: { id: itemMeta.id },
+          data: { currentStock: newStock },
+        });
+
+        await prisma.inventoryMovement.create({
+          data: {
+            hotelId: hotel.id,
+            itemId: itemMeta.id,
+            type: 'RECEIPT',
+            quantity: qty,
+            previousStock: prevStock,
+            currentStock: newStock,
+            referenceType: 'STOCK_RECEIPT',
+            referenceId: receipt.id,
+            referenceNumber: receipt.receiptNumber,
+            notes: 'Nhập kho ban đầu',
+            createdBy: staffActor.id,
+          },
+        });
+      }
+    }
+
+    const issueNumber = 'ISS-DEMO-HK01';
+    const existingIssue = await prisma.stockIssue.findFirst({
+      where: { hotelId: hotel.id, issueNumber },
+    });
+
+    if (!existingIssue) {
+      const soapItem = itemMap.get('AMEN-SG-40ML');
+      const toothBrushItem = itemMap.get('AMEN-TB-01');
+
+      if (soapItem && toothBrushItem) {
+        const issue = await prisma.stockIssue.create({
+          data: {
+            hotelId: hotel.id,
+            issueNumber,
+            issueDate: new Date(),
+            department: 'Housekeeping',
+            purpose: 'Cấp phát vật tư phòng khách tầng 3 & tầng 4',
+            notes: 'Xuất kho ca sáng',
+            createdBy: staffActor.id,
+          },
+        });
+
+        const issueLines = [
+          { meta: soapItem, qty: new Prisma.Decimal('30.00') },
+          { meta: toothBrushItem, qty: new Prisma.Decimal('50.00') },
+        ];
+
+        for (const line of issueLines) {
+          await prisma.stockIssueItem.create({
+            data: {
+              hotelId: hotel.id,
+              issueId: issue.id,
+              itemId: line.meta.id,
+              quantity: line.qty,
+              notes: 'Xuất cấp phát phòng',
+            },
+          });
+
+          const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
+            where: { id: line.meta.id },
+          });
+          const prevStock = currentItem.currentStock;
+          const newStock = prevStock.sub(line.qty);
+
+          await prisma.inventoryItem.update({
+            where: { id: line.meta.id },
+            data: { currentStock: newStock },
+          });
+
+          await prisma.inventoryMovement.create({
+            data: {
+              hotelId: hotel.id,
+              itemId: line.meta.id,
+              type: 'ISSUE',
+              quantity: line.qty,
+              previousStock: prevStock,
+              currentStock: newStock,
+              referenceType: 'STOCK_ISSUE',
+              referenceId: issue.id,
+              referenceNumber: issue.issueNumber,
+              notes: 'Xuất kho cho Housekeeping',
+              createdBy: staffActor.id,
+            },
+          });
+        }
+      }
+    }
+
+    const adjNumber = 'ADJ-DEMO-CHK01';
+    const waterItem = itemMap.get('AMEN-WATER');
+    const existingAdj = await prisma.stockAdjustment.findFirst({
+      where: { hotelId: hotel.id, adjustmentNumber: adjNumber },
+    });
+
+    if (!existingAdj && waterItem) {
+      const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
+        where: { id: waterItem.id },
+      });
+      const systemQty = currentItem.currentStock;
+      const actualQty = systemQty.add(new Prisma.Decimal('5.00'));
+      const diff = actualQty.sub(systemQty);
+
+      const adj = await prisma.stockAdjustment.create({
+        data: {
+          hotelId: hotel.id,
+          adjustmentNumber: adjNumber,
+          itemId: waterItem.id,
+          systemQuantity: systemQty,
+          actualQuantity: actualQty,
+          difference: diff,
+          reason: 'Kiểm kê định kỳ phát hiện thừa 5 chai nước đóng thùng nguyên vẹn',
+          createdBy: staffActor.id,
+        },
+      });
+
+      await prisma.inventoryItem.update({
+        where: { id: waterItem.id },
+        data: { currentStock: actualQty },
+      });
+
+      await prisma.inventoryMovement.create({
+        data: {
+          hotelId: hotel.id,
+          itemId: waterItem.id,
+          type: 'ADJUSTMENT',
+          quantity: diff,
+          previousStock: systemQty,
+          currentStock: actualQty,
+          referenceType: 'STOCK_ADJUSTMENT',
+          referenceId: adj.id,
+          referenceNumber: adj.adjustmentNumber,
+          notes: 'Điều chỉnh sau kiểm kê',
+          createdBy: staffActor.id,
+        },
+      });
+    }
+    console.info('✅ Đã tạo 20 vật tư kho, phiếu nhập ban đầu, phiếu xuất và phiếu kiểm kê.');
+
 
     console.info('\n🎉 ========================================================');
     console.info('🎉 ĐỒNG BỘ CƠ SỞ DỮ LIỆU INNVYRA PMS 40 PHÒNG THÀNH CÔNG!');
@@ -1920,6 +1788,7 @@ async function main() {
     console.info(`• Khóa bảo trì: 2 phòng (104, 206) - Phòng Matrix hiển thị đỏ`);
     console.info(`• Dự kiến đến hôm nay: 6 đơn | Chưa gán phòng: 4 đơn`);
     console.info(`• Buồng phòng: Đầy đủ 4 cột Kanban | Sổ công nợ: Đầy đủ Debit & Credit`);
+    console.info(`• Kho vật tư: 20 mặt hàng, 5 danh mục, 4 nhà cung cấp, đủ lịch sử nhập/xuất/kiểm kê`);
     console.info('========================================================\n');
   } finally {
     await prisma.$disconnect();
