@@ -137,10 +137,9 @@ const menuGroups: MenuGroupDef[] = [
         roles: [
           "ADMIN",
           "MANAGER",
-          "RECEPTIONIST",
+          "ACCOUNTANT",
           "HOUSEKEEPING",
           "TECHNICIAN",
-          "ACCOUNTANT",
         ],
       },
     ],

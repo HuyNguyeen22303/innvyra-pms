@@ -112,7 +112,7 @@ export const AppRoutes: React.FC = () => {
         <Route
           path="inventory"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN', 'ACCOUNTANT']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN']}>
               <InventoryPage />
             </ProtectedRoute>
           }

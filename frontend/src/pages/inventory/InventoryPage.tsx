@@ -1,21 +1,151 @@
-import React from 'react';
-import { Typography, Space, Card, Result, Tag, Row, Col, Alert } from 'antd';
+import React, { useMemo } from 'react';
+import { Tabs, Typography, Space } from 'antd';
 import {
   InboxOutlined,
-  ToolOutlined,
-  SyncOutlined,
+  DashboardOutlined,
+  AppstoreOutlined,
   ShopOutlined,
-  SafetyCertificateOutlined,
   FileDoneOutlined,
+  ExportOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore.ts';
+import { InventoryOverviewTab } from './components/InventoryOverviewTab.tsx';
+import { InventoryItemsTab } from './components/InventoryItemsTab.tsx';
+import { InventoryCategoriesTab } from './components/InventoryCategoriesTab.tsx';
+import { InventorySuppliersTab } from './components/InventorySuppliersTab.tsx';
+import { InventoryReceiptsTab } from './components/InventoryReceiptsTab.tsx';
+import { InventoryIssuesTab } from './components/InventoryIssuesTab.tsx';
+import { InventoryMovementsTab } from './components/InventoryMovementsTab.tsx';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export const InventoryPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuthStore();
+  const userRole = user?.role || '';
+
+  // Determine allowed tabs based on user role
+  const isManagementOrAccountant = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
+  const isStaffRole = ['HOUSEKEEPING', 'TECHNICIAN'].includes(userRole);
+
+  const availableTabItems = useMemo(() => {
+    const tabs = [];
+
+    // Overview Tab (ADMIN, MANAGER, ACCOUNTANT)
+    if (isManagementOrAccountant) {
+      tabs.push({
+        key: 'overview',
+        label: (
+          <Space>
+            <DashboardOutlined />
+            <span>Tổng quan & Định mức</span>
+          </Space>
+        ),
+        children: <InventoryOverviewTab onNavigateTab={(key) => handleTabChange(key)} />,
+      });
+    }
+
+    // Items Tab (ALL ALLOWED ROLES)
+    tabs.push({
+      key: 'items',
+      label: (
+        <Space>
+          <InboxOutlined />
+          <span>Vật tư kho</span>
+        </Space>
+      ),
+      children: <InventoryItemsTab />,
+    });
+
+    // Categories Tab (ALL ALLOWED ROLES)
+    tabs.push({
+      key: 'categories',
+      label: (
+        <Space>
+          <AppstoreOutlined />
+          <span>Nhóm danh mục</span>
+        </Space>
+      ),
+      children: <InventoryCategoriesTab />,
+    });
+
+    // Suppliers Tab (ADMIN, MANAGER, ACCOUNTANT)
+    if (isManagementOrAccountant) {
+      tabs.push({
+        key: 'suppliers',
+        label: (
+          <Space>
+            <ShopOutlined />
+            <span>Nhà cung cấp</span>
+          </Space>
+        ),
+        children: <InventorySuppliersTab />,
+      });
+    }
+
+    // Receipts Tab (ADMIN, MANAGER, ACCOUNTANT)
+    if (isManagementOrAccountant) {
+      tabs.push({
+        key: 'receipts',
+        label: (
+          <Space>
+            <FileDoneOutlined />
+            <span>Phiếu Nhập kho</span>
+          </Space>
+        ),
+        children: <InventoryReceiptsTab />,
+      });
+    }
+
+    // Issues Tab (ALL ALLOWED ROLES)
+    tabs.push({
+      key: 'issues',
+      label: (
+        <Space>
+          <ExportOutlined />
+          <span>Phiếu Xuất kho</span>
+        </Space>
+      ),
+      children: <InventoryIssuesTab />,
+    });
+
+    // Movements Tab (ADMIN, MANAGER, ACCOUNTANT)
+    if (isManagementOrAccountant) {
+      tabs.push({
+        key: 'movements',
+        label: (
+          <Space>
+            <HistoryOutlined />
+            <span>Sổ kho & Biến động</span>
+          </Space>
+        ),
+        children: <InventoryMovementsTab />,
+      });
+    }
+
+    return tabs;
+  }, [userRole, isManagementOrAccountant, isStaffRole]);
+
+  // Valid tab keys
+  const validKeys = useMemo(
+    () => availableTabItems.map((tab) => tab.key),
+    [availableTabItems],
+  );
+
+  const defaultKey = isStaffRole ? 'items' : 'overview';
+  const paramTab = searchParams.get('tab');
+  const activeTab = paramTab && validKeys.includes(paramTab) ? paramTab : defaultKey;
+
+  const handleTabChange = (key: string) => {
+    setSearchParams({ tab: key }, { replace: true });
+  };
+
   return (
     <div style={{ padding: '0 0 24px 0' }}>
       {/* Page Header */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 20 }}>
         <Space align="center" size={12}>
           <div
             style={{
@@ -35,111 +165,25 @@ export const InventoryPage: React.FC = () => {
               Quản lý Vật tư & Kho (Supplies & Warehouse)
             </Title>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Kiểm soát nhập - xuất - tồn vật tư tiêu hao, đồ vải buồng phòng (Linen), công cụ dụng cụ và linh kiện bảo trì kỹ thuật.
+              Kiểm soát quy trình nhập - xuất - tồn, phân loại danh mục, định mức tồn kho tối thiểu và kiểm kê vật tư khách sạn.
             </Text>
           </div>
         </Space>
       </div>
 
-      {/* Development Status Banner */}
-      <Alert
-        message="Module đang trong quá trình phát triển (Backend Integration Pending)"
-        description="Giao diện và nghiệp vụ kho đang chờ kết nối các API từ backend. Dưới đây là khung kiến trúc tính năng dự kiến sẽ triển khai."
-        type="info"
-        showIcon
-        style={{ marginBottom: 24, borderRadius: 8 }}
+      {/* Main Tabs Container */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        type="card"
+        style={{
+          background: '#ffffff',
+          borderRadius: 8,
+          padding: '16px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}
+        items={availableTabItems}
       />
-
-      {/* Feature Blueprint Preview Cards */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            style={{ borderRadius: 8, height: '100%', border: '1px solid #e2e8f0' }}
-          >
-            <Space orientation="vertical" size={8}>
-              <SyncOutlined style={{ fontSize: 28, color: '#0284c7' }} />
-              <Text strong style={{ fontSize: 15, color: '#0f172a' }}>
-                Đồ vải & Buồng phòng
-              </Text>
-              <Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-                Quản lý số lượng drap giường, khăn tắm, áo choàng, hóa chất giặt là và định mức tồn phòng sạch.
-              </Paragraph>
-              <Tag color="cyan">Linen & Laundry</Tag>
-            </Space>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            style={{ borderRadius: 8, height: '100%', border: '1px solid #e2e8f0' }}
-          >
-            <Space orientation="vertical" size={8}>
-              <ShopOutlined style={{ fontSize: 28, color: '#16a34a' }} />
-              <Text strong style={{ fontSize: 15, color: '#0f172a' }}>
-                Đồ tiêu hao (Amenities)
-              </Text>
-              <Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-                Bàn chải, dầu gội, trà, café, nước suối minibar. Cảnh báo khi mức tồn kho chạm ngưỡng tối thiểu.
-              </Paragraph>
-              <Tag color="green">Consumables</Tag>
-            </Space>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            style={{ borderRadius: 8, height: '100%', border: '1px solid #e2e8f0' }}
-          >
-            <Space orientation="vertical" size={8}>
-              <ToolOutlined style={{ fontSize: 28, color: '#d97706' }} />
-              <Text strong style={{ fontSize: 15, color: '#0f172a' }}>
-                Vật tư & Linh kiện kỹ thuật
-              </Text>
-              <Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-                Bóng đèn, khóa thẻ từ, phụ kiện điện nước phục vụ cho các phiếu bảo trì và sửa chữa phòng.
-              </Paragraph>
-              <Tag color="orange">Maintenance Spare Parts</Tag>
-            </Space>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            style={{ borderRadius: 8, height: '100%', border: '1px solid #e2e8f0' }}
-          >
-            <Space orientation="vertical" size={8}>
-              <FileDoneOutlined style={{ fontSize: 28, color: '#7c3aed' }} />
-              <Text strong style={{ fontSize: 15, color: '#0f172a' }}>
-                Phiếu Nhập - Xuất & Kiểm kê
-              </Text>
-              <Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
-                Lập phiếu nhập kho từ nhà cung cấp, xuất kho nội bộ theo bộ phận và đối soát biên bản kiểm kê định kỳ.
-              </Paragraph>
-              <Tag color="purple">Inventory Audits</Tag>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Main Empty State Placeholder */}
-      <Card style={{ marginTop: 24, borderRadius: 12, textAlign: 'center', padding: '24px 0' }}>
-        <Result
-          icon={<InboxOutlined style={{ fontSize: 56, color: '#1b4d3e' }} />}
-          title="Phân hệ Quản lý Vật tư & Kho đang được chuẩn bị"
-          subTitle="Khi Backend API hoàn tất, các bảng dữ liệu quản lý danh mục vật tư, phiếu nhập xuất kho và báo cáo tồn kho sẽ tự động kích hoạt tại đây."
-          extra={
-            <Space>
-              <Tag icon={<SafetyCertificateOutlined />} color="default">
-                Sẵn sàng cấu trúc Frontend Router
-              </Tag>
-            </Space>
-          }
-        />
-      </Card>
     </div>
   );
 };
