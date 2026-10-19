@@ -21,6 +21,7 @@ import {
   Empty,
   Spin,
   Timeline,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -78,6 +79,7 @@ const STAY_STATUS_CONFIG: Record<
 };
 
 export const StaysPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -546,7 +548,7 @@ export const StaysPage: React.FC = () => {
       render: (_, record) => {
         const isInHouse = record.status === 'CHECKED_IN';
         return (
-          <Space orientation="horizontal" size="small">
+          <Space size="small">
             <Tooltip title="Xem chi tiết lượt lưu trú">
               <Button
                 type="text"
@@ -837,7 +839,7 @@ export const StaysPage: React.FC = () => {
                 )}
 
                 {/* Stays Table */}
-                <Card bodyStyle={{ padding: 0 }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
                   <Table
                     columns={stayColumns}
                     dataSource={stays}
@@ -878,7 +880,7 @@ export const StaysPage: React.FC = () => {
                   description="Khi khách đến nhận phòng, chọn 'Làm thủ tục' để gán phòng vật lý đang ở trạng thái READY (Đã vệ sinh sạch sẽ). Hệ thống chỉ kích hoạt check-in vào đúng ngày nhận phòng đã đăng ký theo chính sách của khách sạn."
                 />
 
-                <Card bodyStyle={{ padding: 0 }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
                   <Table
                     columns={arrivalColumns}
                     dataSource={arrivalReservations}
@@ -1205,7 +1207,7 @@ export const StaysPage: React.FC = () => {
             )}
           </div>
         }
-        width={720}
+        width={screens.xs ? '100%' : screens.sm ? 560 : 720}
         open={isDetailDrawerOpen}
         onClose={() => {
           setIsDetailDrawerOpen(false);

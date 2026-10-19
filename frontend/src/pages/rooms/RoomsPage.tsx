@@ -17,6 +17,7 @@ import {
   Radio,
   Row,
   Col,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -44,6 +45,7 @@ import type {
 const { Title, Text, Paragraph } = Typography;
 
 export const RoomsPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [form] = Form.useForm();
@@ -469,7 +471,7 @@ export const RoomsPage: React.FC = () => {
           backgroundColor: '#ffffff',
           boxShadow: '0 1px 3px rgba(15,23,42,0.03)',
         }}
-        bodyStyle={{ padding: '14px 18px' }}
+        styles={{ body: { padding: '14px 18px' } }}
       >
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} sm={12} md={6}>
@@ -604,7 +606,7 @@ export const RoomsPage: React.FC = () => {
                             boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
                             transition: 'all 0.2s',
                           }}
-                          bodyStyle={{ padding: '14px 14px' }}
+                          styles={{ body: { padding: '14px 14px' } }}
                         >
                           <div
                             style={{
@@ -710,6 +712,7 @@ export const RoomsPage: React.FC = () => {
             loading={isLoading}
             pagination={{ pageSize: 12, showSizeChanger: true }}
             size="middle"
+            scroll={{ x: 800 }}
           />
         </Card>
       )}
@@ -735,7 +738,7 @@ export const RoomsPage: React.FC = () => {
           onFinish={handleSubmit}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: screens.xs ? '1fr' : '1fr 1fr', gap: 16 }}>
             <Form.Item
               name="roomNumber"
               label={<Text strong>Số phòng (VD: 101, 202)</Text>}
@@ -769,7 +772,7 @@ export const RoomsPage: React.FC = () => {
             />
           </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: screens.xs ? '1fr' : '1fr 1fr', gap: 16 }}>
             <Form.Item
               name="housekeepingStatus"
               label={<Text strong>Trạng thái vệ sinh ban đầu</Text>}

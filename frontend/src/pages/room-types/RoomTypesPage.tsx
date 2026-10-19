@@ -13,6 +13,7 @@ import {
   Popconfirm,
   Card,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -31,6 +32,7 @@ import type { RoomTypeItem, CreateRoomTypeDto } from '../../types/rooms.types.ts
 const { Title, Text, Paragraph } = Typography;
 
 export const RoomTypesPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [form] = Form.useForm();
@@ -375,6 +377,7 @@ export const RoomTypesPage: React.FC = () => {
             },
           }}
           size="middle"
+          scroll={{ x: 750 }}
         />
       </Card>
 
@@ -432,7 +435,7 @@ export const RoomTypesPage: React.FC = () => {
             />
           </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: screens.xs ? '1fr' : '1fr 1fr', gap: 16 }}>
             <Form.Item
               name="maxAdults"
               label={<Text strong>Số người lớn tối đa</Text>}

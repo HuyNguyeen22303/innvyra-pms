@@ -16,6 +16,7 @@ import {
   Spin,
   Empty,
   Collapse,
+  Grid,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -47,6 +48,7 @@ dayjs.extend(isBetween);
 const { Title, Text } = Typography;
 
 export const RoomMatrixPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
@@ -343,8 +345,8 @@ export const RoomMatrixPage: React.FC = () => {
 
       {/* Filter Bar */}
       <Card size="small" style={{ marginBottom: 16, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={12} sm={6} md={5}>
+        <Row gutter={[10, 10]} align="middle">
+          <Col xs={24} sm={12} md={8} lg={5}>
             <Select
               style={{ width: '100%' }}
               value={floorFilter}
@@ -356,7 +358,7 @@ export const RoomMatrixPage: React.FC = () => {
             />
           </Col>
 
-          <Col xs={12} sm={6} md={6}>
+          <Col xs={24} sm={12} md={8} lg={6}>
             <Select
               style={{ width: '100%' }}
               value={roomTypeFilter}
@@ -368,7 +370,7 @@ export const RoomMatrixPage: React.FC = () => {
             />
           </Col>
 
-          <Col xs={12} sm={6} md={5}>
+          <Col xs={24} sm={12} md={8} lg={5}>
             <Select
               style={{ width: '100%' }}
               value={statusFilter}
@@ -382,8 +384,8 @@ export const RoomMatrixPage: React.FC = () => {
             />
           </Col>
 
-          <Col xs={12} sm={6} md={8} style={{ textAlign: 'right' }}>
-            <Space size={8} wrap>
+          <Col xs={24} sm={12} md={24} lg={8} style={{ textAlign: screens.lg ? 'right' : 'left' }}>
+            <Space size={6} wrap>
               <Tag color="success">● Có khách</Tag>
               <Tag color="error">● Khóa bảo trì</Tag>
               <Tag color="cyan">● Sẵn sàng</Tag>
@@ -395,7 +397,7 @@ export const RoomMatrixPage: React.FC = () => {
 
       {/* Matrix Table */}
       <Card
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
         style={{ borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: 20 }}
       >
         {isRoomsLoading ? (
@@ -634,7 +636,7 @@ export const RoomMatrixPage: React.FC = () => {
         }
         open={!!selectedCell}
         onClose={() => setSelectedCell(null)}
-        width={420}
+        width={screens.xs ? '100%' : 420}
       >
         {selectedCell && (
           <div>

@@ -23,6 +23,7 @@ import {
   Tabs,
   Empty,
   Spin,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -99,6 +100,7 @@ const STATUS_CONFIG: Record<
 };
 
 export const ReservationsPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -414,7 +416,7 @@ export const ReservationsPage: React.FC = () => {
       key: 'confirmationCode',
       width: 170,
       render: (code: string) => (
-        <Space orientation="vertical" size={2}>
+        <Space direction="vertical" size={2}>
           <Text strong style={{ color: '#1677ff', letterSpacing: 0.5 }}>
             {code}
           </Text>
@@ -524,7 +526,7 @@ export const ReservationsPage: React.FC = () => {
       render: (_, record) => {
         const isConfirmed = record.status === 'CONFIRMED';
         return (
-          <Space orientation="horizontal" size="small">
+          <Space size="small">
             <Tooltip title="Xem chi tiết đơn đặt phòng">
               <Button
                 type="text"
@@ -786,7 +788,7 @@ export const ReservationsPage: React.FC = () => {
                 )}
 
                 {/* Reservations Table */}
-                <Card bodyStyle={{ padding: 0 }} bordered style={{ borderRadius: 8 }}>
+                <Card styles={{ body: { padding: 0 } }} bordered style={{ borderRadius: 8 }}>
                   <Table
                     columns={columns}
                     dataSource={reservations}
@@ -1232,7 +1234,7 @@ export const ReservationsPage: React.FC = () => {
             )}
           </div>
         }
-        width={720}
+        width={screens.xs ? '100%' : screens.sm ? 560 : 720}
         open={isDrawerOpen}
         onClose={() => {
           setIsDrawerOpen(false);

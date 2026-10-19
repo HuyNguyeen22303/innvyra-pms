@@ -924,3 +924,46 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `src/pages/auth/LoginPage.tsx`: Thu nhỏ padding container ngoài từ 24px xuống 16px/12px, các thẻ demo account tự động wrap căn giữa thẩm mỹ.
   - `src/pages/common/ForbiddenPage.tsx` & `NotFoundPage.tsx`: Bọc trong responsive container căn giữa, nút quay về trang chủ to rõ.
 - **Kiểm thử**: `npm run build` và `npm run lint` pass 100% không lỗi. Commit `addc99d`.
+
+#### Phase 2: Dashboard và Luồng Phòng / Tiền Sảnh:
+- **`src/pages/dashboard/DashboardPage.tsx`**:
+  - Tích hợp `Grid.useBreakpoint()` thích ứng kích cỡ màn hình linh hoạt.
+  - Tối ưu 4 thẻ KPI vận hành & 4 thẻ tài chính: Co giãn tự động `xs={12} sm={12} lg={6}`, giảm font chữ tiêu đề trên mobile hẹp tránh tràn số liệu.
+  - Thanh hiện trạng buồng phòng & kỹ thuật: Thêm flex container wrap tự nhiên, tối ưu kích cỡ Tag trạng thái.
+  - Thêm `scroll={{ x: 600 }}` cho cả 2 bảng Khách Đến Dự Kiến (Arrivals) và Đang Lưu Trú (In-House).
+  - Thêm `scroll={{ x: 500 }}` cho bảng công nợ Folio cần quyết toán (Accountant view).
+  - Thay thế thuộc tính deprecated `bodyStyle` thành `styles={{ body: ... }}`.
+  - Tối ưu các thẻ KPI và Card CTA của Buồng phòng (Kanban) và Bảo trì kỹ thuật.
+
+- **`src/pages/calendar/RoomMatrixPage.tsx`**:
+  - Bộ lọc Tầng, Hạng phòng, Trạng thái: Điều chỉnh cột linh hoạt `xs={24} sm={12} md={8} lg={...}` giúp các ô Dropdown Select không bị đè chữ; cụm Tag chú thích chuyển sang hàng riêng trên mobile.
+  - Ma trận sơ đồ phòng: Đảm bảo vùng cuộn ngang cục bộ `overflowX: auto` hoạt động trơn tru với cột Số phòng cố định `position: sticky, left: 0`.
+  - Drawer chi tiết ô phòng: Tự động co giãn theo màn hình `width={screens.xs ? '100%' : 420}` giúp người dùng điện thoại xem trọn vẹn thông tin khách lưu trú/lệnh khóa phòng.
+  - Thay `bodyStyle` thành `styles={{ body: ... }}`.
+
+- **`src/pages/rooms/RoomsPage.tsx`**:
+  - Chuyển đổi mượt mà giữa Grid View (lưới phòng) và Table View (danh sách).
+  - Grid View: Card phòng co giãn linh hoạt theo tỷ lệ `xs={12} sm={8} md={6} lg={4}`.
+  - Table View: Thêm `scroll={{ x: 800 }}` tránh tràn màn hình.
+  - Form Modal tạo/sửa phòng: Tự động chuyển đổi `gridTemplateColumns` từ 2 cột sang 1 cột trên mobile (`screens.xs ? '1fr' : '1fr 1fr'`).
+  - Thay thế `bodyStyle` bằng `styles={{ body: ... }}`.
+
+- **`src/pages/room-types/RoomTypesPage.tsx`**:
+  - Thêm `scroll={{ x: 750 }}` cho bảng danh mục loại phòng.
+  - Form Modal tạo/sửa loại phòng: Chuyển đổi trường số người lớn/trẻ em thành 1 cột trên mobile (`screens.xs ? '1fr' : '1fr 1fr'`).
+
+- **`src/pages/reservations/ReservationsPage.tsx`**:
+  - Sửa lỗi cú pháp `Space orientation` thành `Space direction="vertical"` / `Space size="small"`.
+  - Thay `bodyStyle` bằng `styles={{ body: ... }}` cho Card bọc bảng.
+  - Drawer chi tiết đặt phòng: Tự động điều chỉnh `width={screens.xs ? '100%' : screens.sm ? 560 : 720}`.
+  - Bảng danh sách đặt phòng đã cấu hình sẵn `scroll={{ x: 1100 }}`.
+
+- **`src/pages/stays/StaysPage.tsx`**:
+  - Sửa lỗi `Space orientation` sang `Space size="small"`.
+  - Thay `bodyStyle` bằng `styles={{ body: ... }}` trên các Card bọc bảng.
+  - Drawer chi tiết lượt lưu trú: Điều chỉnh `width={screens.xs ? '100%' : screens.sm ? 560 : 720}`.
+  - Bảng lưu trú (`scroll={{ x: 1050 }}`) và Quầy check-in arrivals (`scroll={{ x: 1000 }}`) cuộn ngang cục bộ trơn tru.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build` (`tsc -b && vite build`): **100% pass, 0 lỗi TypeScript**.
+  - `npm run lint` (`oxlint`): **0 lỗi linter**.

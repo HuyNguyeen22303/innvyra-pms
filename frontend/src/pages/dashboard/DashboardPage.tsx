@@ -14,6 +14,7 @@ import {
   Spin,
   Badge,
   Tooltip,
+  Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -37,6 +38,7 @@ import type { StaySummaryItem } from '../../types/stays.types.ts';
 const { Title, Text, Paragraph } = Typography;
 
 export const DashboardPage: React.FC = () => {
+  const screens = Grid.useBreakpoint();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -305,63 +307,63 @@ export const DashboardPage: React.FC = () => {
           ) : (
             <>
               {/* Primary KPI Metrics */}
-              <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-                <Col xs={12} sm={6} md={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
+              <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+                <Col xs={12} sm={12} lg={6}>
+                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Phòng đang có khách
                     </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={3} style={{ margin: 0, color: '#1b4d3e' }}>
+                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#1b4d3e' }}>
                         {dashboardData?.rooms?.occupied ?? '-'}
                       </Title>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         / {dashboardData?.rooms?.active ?? '-'} phòng active
                       </Text>
                     </div>
                   </Card>
                 </Col>
 
-                <Col xs={12} sm={6} md={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
-                      Phòng sạch sẵn sàng (Ready)
+                <Col xs={12} sm={12} lg={6}>
+                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
+                      Phòng sạch sẵn sàng
                     </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={3} style={{ margin: 0, color: '#389e0d' }}>
+                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#389e0d' }}>
                         {dashboardData?.rooms?.ready ?? '-'}
                       </Title>
-                      <Badge status="success" text="Đón khách" style={{ fontSize: 12 }} />
+                      <Badge status="success" text="Đón khách" style={{ fontSize: 11 }} />
                     </div>
                   </Card>
                 </Col>
 
-                <Col xs={12} sm={6} md={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
+                <Col xs={12} sm={12} lg={6}>
+                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Lượt khách đến dự kiến
                     </Text>
                     <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={3} style={{ margin: 0, color: '#096dd9' }}>
+                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#096dd9' }}>
                         {dashboardData?.reservations?.expectedArrivals ?? 0}
                       </Title>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         lượt
                       </Text>
                     </div>
                   </Card>
                 </Col>
 
-                <Col xs={12} sm={6} md={6}>
-                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
+                <Col xs={12} sm={12} lg={6}>
+                  <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
                       Lượt khách đi dự kiến
                     </Text>
                     <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={3} style={{ margin: 0, color: '#d46b08' }}>
+                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#d46b08' }}>
                         {dashboardData?.reservations?.expectedDepartures ?? 0}
                       </Title>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         lượt
                       </Text>
                     </div>
@@ -378,6 +380,7 @@ export const DashboardPage: React.FC = () => {
                   border: '1px solid #e2e8f0',
                   backgroundColor: '#f8fafc',
                 }}
+                styles={{ body: { padding: screens.xs ? '10px 12px' : undefined } }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                   <Space size={6}>
@@ -387,70 +390,70 @@ export const DashboardPage: React.FC = () => {
                     </Text>
                   </Space>
 
-                  <Space wrap size={10}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     <Tooltip title="Phòng trống (Không có khách lưu trú). Lưu ý: phòng trống có thể đang bẩn hoặc đang bảo trì nên chưa chắc bán được ngay.">
                       <Tag color="cyan">
-                        <strong>Trống (Vacant):</strong> {dashboardData?.rooms?.vacant ?? '-'}
+                        <strong>Trống:</strong> {dashboardData?.rooms?.vacant ?? '-'}
                       </Tag>
                     </Tooltip>
                     <Tag color="error">
-                      <strong>Cần dọn (Dirty):</strong> {dashboardData?.rooms?.dirty ?? '-'}
+                      <strong>Cần dọn:</strong> {dashboardData?.rooms?.dirty ?? '-'}
                     </Tag>
                     <Tag color="processing">
-                      <strong>Đang dọn (Cleaning):</strong> {dashboardData?.rooms?.cleaning ?? '-'}
+                      <strong>Đang dọn:</strong> {dashboardData?.rooms?.cleaning ?? '-'}
                     </Tag>
                     <Tag color="purple">
-                      <strong>Chờ duyệt (Inspection):</strong> {dashboardData?.rooms?.awaitingInspection ?? '-'}
+                      <strong>Chờ duyệt:</strong> {dashboardData?.rooms?.awaitingInspection ?? '-'}
                     </Tag>
                     <Tag color="volcano">
-                      <strong>Đang bảo trì:</strong> {dashboardData?.rooms?.underMaintenance ?? '-'}
+                      <strong>Bảo trì:</strong> {dashboardData?.rooms?.underMaintenance ?? '-'}
                     </Tag>
                     <Tag color="default">
-                      <strong>Ngừng phục vụ (OOS):</strong> {dashboardData?.rooms?.outOfService ?? '-'}
+                      <strong>Ngừng PV:</strong> {dashboardData?.rooms?.outOfService ?? '-'}
                     </Tag>
-                  </Space>
+                  </div>
                 </div>
               </Card>
 
               {/* Finance summary if role has permission (ADMIN, MANAGER) */}
               {dashboardData?.finance && (
-                <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-                  <Col xs={12} sm={6} md={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+                  <Col xs={12} sm={12} lg={6}>
+                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         Thực thu trong ngày
                       </Text>
-                      <Title level={4} style={{ margin: '4px 0 0', color: '#15803d' }}>
+                      <Title level={screens.xs ? 5 : 4} style={{ margin: '4px 0 0', color: '#15803d' }}>
                         {formatVnd(dashboardData.finance.netCashCollected)}
                       </Title>
                     </Card>
                   </Col>
-                  <Col xs={12} sm={6} md={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Col xs={12} sm={12} lg={6}>
+                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         Thu tiền mặt
                       </Text>
-                      <Title level={4} style={{ margin: '4px 0 0', color: '#1b4d3e' }}>
+                      <Title level={screens.xs ? 5 : 4} style={{ margin: '4px 0 0', color: '#1b4d3e' }}>
                         {formatVnd(dashboardData.finance.cashPayments)}
                       </Title>
                     </Card>
                   </Col>
-                  <Col xs={12} sm={6} md={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Col xs={12} sm={12} lg={6}>
+                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         Thu chuyển khoản
                       </Text>
-                      <Title level={4} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+                      <Title level={screens.xs ? 5 : 4} style={{ margin: '4px 0 0', color: '#096dd9' }}>
                         {formatVnd(dashboardData.finance.bankTransferPayments)}
                       </Title>
                     </Card>
                   </Col>
-                  <Col xs={12} sm={6} md={6}>
-                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                  <Col xs={12} sm={12} lg={6}>
+                    <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
                         Dư nợ Folio chưa thu
                       </Text>
-                      <Title level={4} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                      <Title level={screens.xs ? 5 : 4} style={{ margin: '4px 0 0', color: '#cf1322' }}>
                         {formatVnd(dashboardData.finance.outstandingBalance)}
                       </Title>
                     </Card>
@@ -461,7 +464,7 @@ export const DashboardPage: React.FC = () => {
               {/* Real Arrivals & Departures Lists */}
               <Card
                 style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
-                bodyStyle={{ padding: '8px 16px' }}
+                styles={{ body: { padding: screens.xs ? '8px 8px' : '8px 16px' } }}
               >
                 <Tabs
                   defaultActiveKey="arrivals"
@@ -469,9 +472,9 @@ export const DashboardPage: React.FC = () => {
                     {
                       key: 'arrivals',
                       label: (
-                        <Space>
+                        <Space size={4}>
                           <LoginOutlined />
-                          <span>Khách Đến Dự Kiến ({arrivalsList.length})</span>
+                          <span>Khách Đến ({arrivalsList.length})</span>
                         </Space>
                       ),
                       children: (
@@ -482,15 +485,16 @@ export const DashboardPage: React.FC = () => {
                           loading={isArrivalsLoading}
                           pagination={{ pageSize: 5 }}
                           size="small"
+                          scroll={{ x: 600 }}
                         />
                       ),
                     },
                     {
                       key: 'in-house',
                       label: (
-                        <Space>
+                        <Space size={4}>
                           <HomeOutlined />
-                          <span>Đang Lưu Trú Tại Khách Sạn ({inHouseList.length})</span>
+                          <span>Đang Lưu Trú ({inHouseList.length})</span>
                         </Space>
                       ),
                       children: (
@@ -501,6 +505,7 @@ export const DashboardPage: React.FC = () => {
                           loading={isInHouseLoading}
                           pagination={{ pageSize: 5 }}
                           size="small"
+                          scroll={{ x: 600 }}
                         />
                       ),
                     },
@@ -572,6 +577,7 @@ export const DashboardPage: React.FC = () => {
               loading={isAccOutLoading}
               pagination={false}
               size="small"
+              scroll={{ x: 500 }}
               columns={[
                 {
                   title: 'Mã Sổ Folio',
@@ -612,50 +618,50 @@ export const DashboardPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isHousekeeping && (
         <Spin spinning={isOpsLoading}>
-          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Phòng bẩn cần dọn (Dirty)
+          <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
+                  Cần dọn (Dirty)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.dirtyRooms ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Đang làm vệ sinh
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.cleaningRooms ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Chờ kiểm tra (Inspection)
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
+                  Chờ duyệt (Inspection)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.roomsAwaitingInspection ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Phòng sạch đạt chuẩn (Ready)
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
+                  Đạt chuẩn (Ready)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#389e0d' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#389e0d' }}>
                   {operationsRes?.data?.housekeeping?.snapshot?.readyRooms ?? '-'}
                 </Title>
               </Card>
             </Col>
           </Row>
 
-          <Card style={{ borderRadius: 8, border: '1px solid #e2e8f0', textAlign: 'center', padding: '30px 0' }}>
+          <Card style={{ borderRadius: 8, border: '1px solid #e2e8f0', textAlign: 'center', padding: screens.xs ? '20px 12px' : '30px 0' }}>
             <Title level={5}>Bảng Công Việc Buồng Phòng</Title>
             <Paragraph type="secondary">
               Xem chi tiết hàng đợi phòng bẩn, nhận nhiệm vụ và báo hoàn thành trên bảng Kanban.
@@ -677,50 +683,50 @@ export const DashboardPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {isTechnician && (
         <Spin spinning={isOpsLoading}>
-          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+          <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Phòng đang bảo trì
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#cf1322' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.roomsUnderMaintenance ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Sự cố mới báo (Open)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#d46b08' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#d46b08' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.openMaintenanceTickets ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Đang xử lý (In-progress)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#096dd9' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.inProgressMaintenanceTickets ?? '-'}
                 </Title>
               </Card>
             </Col>
-            <Col xs={12} sm={6} md={6}>
-              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}>
+                <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12 }}>
                   Lệnh khóa phòng (Blocks)
                 </Text>
-                <Title level={3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+                <Title level={screens.xs ? 4 : 3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
                   {operationsRes?.data?.maintenance?.snapshot?.activeMaintenanceBlocks ?? '-'}
                 </Title>
               </Card>
             </Col>
           </Row>
 
-          <Card style={{ borderRadius: 8, border: '1px solid #e2e8f0', textAlign: 'center', padding: '30px 0' }}>
+          <Card style={{ borderRadius: 8, border: '1px solid #e2e8f0', textAlign: 'center', padding: screens.xs ? '20px 12px' : '30px 0' }}>
             <Title level={5}>Hệ Thống Bảo Trì Kỹ Thuật</Title>
             <Paragraph type="secondary">
               Xem các phiếu sự cố được phân công, cập nhật tiến độ khắc phục và báo cáo sự cố phát sinh.
