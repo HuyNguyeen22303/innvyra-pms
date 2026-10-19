@@ -786,3 +786,121 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 #### 6. Kết quả Kiểm thử & Đóng gói:
 - `npm run build` (`tsc -b && vite build`): **Biên dịch thành công 100%, 0 lỗi TypeScript**.
 - `npm run lint` (`oxlint`): **0 lỗi linter**.
+
+---
+
+## 📅 Ngày: 19/10/2026
+
+### 🎯 Mục tiêu trong ngày:
+- Triển khai toàn diện **Phase Frontend cho Module Quản lý Vật tư & Kho (Inventory & Warehouse Management)** trên nhánh `feature/fe-inventory`.
+- Thay thế hoàn toàn màn hình placeholder `InventoryPage.tsx` bằng giao diện kho chuyên nghiệp, tích hợp liền mạch với Backend API hiện có.
+- Hiện thực hóa 6 luồng màn hình nghiệp vụ trọng yếu: Tổng quan định mức, Danh mục vật tư, Nhóm danh mục, Nhà cung cấp, Phiếu nhập kho, Phiếu xuất kho, Kiểm kê và Sổ kho biến động.
+- Áp dụng chuẩn nhận diện thương hiệu PMS (Emerald `#1b4d3e`, Slate `#0f2922`, Card trắng viền `#e2e8f0`).
+- Thực hiện cơ chế phân quyền truy cập ma trận RBAC chặt chẽ khớp 100% với `inventoryPermissions` của Backend.
+- Kiểm tra biên dịch TypeScript, Lint và xác nhận vận hành thành công cùng cơ sở dữ liệu đã nạp seed data.
+
+---
+
+### 💻 Công việc kỹ thuật đã hoàn thành:
+
+#### 1. Khởi tạo Nhánh Git & Định nghĩa Kiểu dữ liệu (`types/inventory.types.ts`):
+- Khởi tạo và làm việc trên nhánh tính năng chuẩn: `feature/fe-inventory`.
+- Tạo `frontend/src/types/inventory.types.ts`:
+  - Định nghĩa chuẩn toàn bộ interface Views tương thích với backend response:
+    - `InventoryCategoryView`, `SupplierView`, `InventoryItemView`, `InventoryItemCategoryInfo`.
+    - `StockReceiptView`, `StockReceiptItemView`.
+    - `StockIssueView`, `StockIssueItemView`.
+    - `StockAdjustmentView`, `InventoryMovementView`.
+    - `InventorySummary`, `InventorySummaryCategory`.
+  - Định nghĩa DTOs cho các thao tác ghi dữ liệu:
+    - `CreateCategoryDto`, `UpdateCategoryDto`, `CategoryQueryParams`.
+    - `CreateSupplierDto`, `UpdateSupplierDto`, `SupplierQueryParams`.
+    - `CreateItemDto`, `UpdateItemDto`, `ItemQueryParams`, `StockStatusFilter` (`ALL`, `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`).
+    - `CreateReceiptDto`, `CreateReceiptItemDto`, `ReceiptQueryParams`.
+    - `CreateIssueDto`, `CreateIssueItemDto`, `IssueQueryParams`.
+    - `CreateAdjustmentDto`, `MovementQueryParams`, `LowStockQueryParams`.
+  - **Quy chuẩn số liệu & ID**: Giữ ID dưới dạng `string` (hạn chế tràn số BigInt trên trình duyệt), số lượng và đơn giá dạng `string` decimal hai chữ số thập phân (`"0.00"`).
+
+#### 2. Xây dựng API Client Wrapper (`api/inventory.api.ts`):
+- Sử dụng trực tiếp `apiClient` từ `axiosClient.ts` (đã tích hợp tự động Access Token, CSRF token qua header `X-CSRF-Protection: 1`, và Silent Refresh Token khi gặp mã lỗi 401).
+- Đóng gói đầy đủ các endpoints:
+  - Báo cáo tổng hợp: `GET /inventory/summary`, `GET /inventory/low-stock`.
+  - Danh mục: `GET/POST /inventory/categories`, `GET/PATCH /inventory/categories/:id`, `PATCH /inventory/categories/:id/deactivate`.
+  - Nhà cung cấp: `GET/POST /inventory/suppliers`, `GET/PATCH /inventory/suppliers/:id`, `PATCH /inventory/suppliers/:id/deactivate`.
+  - Vật tư: `GET/POST /inventory/items`, `GET/PATCH /inventory/items/:id`, `PATCH /inventory/items/:id/deactivate`.
+  - Phiếu nhập: `GET/POST /inventory/receipts`, `GET /inventory/receipts/:id`.
+  - Phiếu xuất: `GET/POST /inventory/issues`, `GET /inventory/issues/:id`.
+  - Điều chỉnh kiểm kê: `POST /inventory/adjustments`.
+  - Biến động sổ kho: `GET /inventory/movements`.
+- **Hàm xử lý Clean Params (`cleanParams`)**: Tự động loại bỏ các thuộc tính `undefined`, `null` hoặc chuỗi rỗng trước khi gửi request params. Đảm bảo tuân thủ nghiêm ngặt Zod `.strict()` schema của Backend (tuyệt đối không gửi `sortBy` hay `sortOrder` tránh bị trả về HTTP 400).
+- **Hàm ánh xạ mã lỗi chuyên sâu (`getInventoryErrorMessage`)**: Bắt mã lỗi từ `error.response?.data?.error?.code` và chuyển dịch thành thông báo tiếng Việt trực quan:
+  - `CATEGORY_CODE_EXISTS`, `CATEGORY_IN_USE`, `CATEGORY_NOT_FOUND`.
+  - `SUPPLIER_CODE_EXISTS`, `SUPPLIER_INACTIVE`, `SUPPLIER_NOT_FOUND`.
+  - `ITEM_CODE_EXISTS`, `ITEM_INACTIVE`, `ITEM_NOT_FOUND`.
+  - `INSUFFICIENT_STOCK`, `RECEIPT_NUMBER_EXISTS`, `ISSUE_NUMBER_EXISTS`, `ADJUSTMENT_NUMBER_EXISTS`.
+
+#### 3. Xây dựng các Tab & Components Giao diện Kho:
+
+1. **Tab Tổng quan & Định mức (`InventoryOverviewTab.tsx`)**:
+   - 4 Thẻ KPI vận hành: Tổng số vật tư đang quản lý, Vật tư sắp hết (dưới định mức tối thiểu), Vật tư đã hết hàng, Tổng giá trị tồn kho ước tính (VNĐ).
+   - Bảng cảnh báo vật tư dưới ngưỡng tối thiểu: Hiển thị nhanh mức tồn hiện tại, định mức và nút tắt mở lập phiếu nhập kho hoặc xem chi tiết.
+   - Bảng phân nhóm danh mục: Thống kê số lượng mặt hàng và số lượng vật tư chạm ngưỡng cảnh báo theo từng nhóm.
+
+2. **Tab Danh mục Vật tư kho (`InventoryItemsTab.tsx`)**:
+   - Bảng Ant Design Table phân trang (10, 20, 50, 100), thanh tìm kiếm theo mã/tên, bộ lọc theo danh mục, trạng thái hoạt động và 4 trạng thái tồn (`ALL`, `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`).
+   - Cột tồn kho hiển thị màu trạng thái: Xanh lá (Đủ hàng), Cam (Sắp hết), Đỏ (Hết hàng).
+   - Modal Thêm & Sửa vật tư: Nhập mã, tên, danh mục, đơn vị tính, định mức tồn tối thiểu và mô tả. **Khóa hoàn toàn trường `currentStock`** (không cho nhập tồn trực tiếp để bảo vệ tính toàn vẹn sổ kho).
+   - Modal Chi tiết vật tư ([`ItemDetailModal.tsx`](file:///c:/Users/trand/hoc_tap/H%E1%BB%8Dc%20K%E1%BB%B3%20Doanh%20Nghi%E1%BB%87p/D%E1%BB%B1%20%C3%A1n%20Qly/innvyra-pms/frontend/src/pages/inventory/components/ItemDetailModal.tsx)) kèm nút kích hoạt nhanh biên bản kiểm kê.
+
+3. **Tab Nhóm Danh mục (`InventoryCategoriesTab.tsx`)**:
+   - Bảng quản lý danh mục vật tư: Mã, tên, mô tả, trạng thái hoạt động.
+   - Modal tạo mới và chỉnh sửa danh mục.
+   - Thao tác ngừng hoạt động với Popconfirm xác nhận, bắt và giải thích mã lỗi `CATEGORY_IN_USE` khi còn vật tư gán vào nhóm.
+
+4. **Tab Nhà Cung Cấp (`InventorySuppliersTab.tsx`)**:
+   - Danh sách nhà cung cấp vật tư & trang thiết bị kèm thông tin liên lạc (người đại diện, số điện thoại, email, địa chỉ).
+   - Modal thêm mới và chỉnh sửa nhà cung cấp, thao tác ngừng hợp tác.
+
+5. **Tab Phiếu Nhập kho (`InventoryReceiptsTab.tsx`)**:
+   - Bảng lịch sử phiếu nhập có bộ lọc theo nhà cung cấp và khoảng ngày (`RangePicker`).
+   - Modal lập phiếu nhập kho linh hoạt: Chọn nhà cung cấp (hoặc nhập lẻ), ngày nhập, ghi chú.
+   - Danh sách dòng mặt hàng động: Cho phép thêm nhiều dòng vật tư, số lượng (> 0) và đơn giá nhập (VNĐ).
+   - **Cơ chế tự động gộp dòng (Auto-Merge Deduplication)**: Tự động phát hiện khi người dùng chọn trùng vật tư ở các dòng khác nhau, cộng dồn số lượng và thông báo rõ ràng cho người dùng.
+   - Tính toán xem trước tổng tiền phiếu nhập thời gian thực.
+   - Modal Xem chi tiết phiếu nhập ([`ReceiptDetailModal.tsx`](file:///c:/Users/trand/hoc_tap/H%E1%BB%8Dc%20K%E1%BB%B3%20Doanh%20Nghi%E1%BB%87p/D%E1%BB%B1%20%C3%A1n%20Qly/innvyra-pms/frontend/src/pages/inventory/components/ReceiptDetailModal.tsx)) hiển thị đầy đủ bảng hàng hóa và đơn giá.
+
+6. **Tab Phiếu Xuất kho (`InventoryIssuesTab.tsx`)**:
+   - Bảng lịch sử phiếu xuất có bộ lọc theo bộ phận nhận và khoảng ngày.
+   - Modal lập phiếu xuất kho: Chọn bộ phận nhận (Housekeeping, Technician, Front Desk, F&B, v.v.), mục đích xuất dùng, ngày xuất.
+   - Bảng chọn vật tư xuất hiển thị tức thời tồn kho khả dụng để người dùng chủ động điều chỉnh số lượng.
+   - **Xử lý sự cố tồn kho thân thiện (`INSUFFICIENT_STOCK` & `ITEM_INACTIVE`)**: Khi máy chủ từ chối do thiếu tồn kho hoặc vật tư ngừng hoạt động, form xuất kho **giữ nguyên toàn bộ dữ liệu** đã nhập kèm thông báo cảnh báo để người dùng dễ dàng chỉnh sửa mà không bị mất công nhập lại từ đầu.
+   - Modal Xem chi tiết phiếu xuất ([`IssueDetailModal.tsx`](file:///c:/Users/trand/hoc_tap/H%E1%BB%8Dc%20K%E1%BB%B3%20Doanh%20Nghi%E1%BB%87p/D%E1%BB%B1%20%C3%A1n%20Qly/innvyra-pms/frontend/src/pages/inventory/components/IssueDetailModal.tsx)).
+
+7. **Tab Sổ kho & Nhật ký Biến động (`InventoryMovementsTab.tsx`)**:
+   - Ghi nhận dòng chảy vật tư theo thời gian thực từ `GET /inventory/movements`.
+   - Phân loại rõ ràng 3 loại giao dịch: Nhập kho (`RECEIPT` - Xanh lá), Xuất kho (`ISSUE` - Cam đỏ), Kiểm kê (`ADJUSTMENT` - Tím).
+   - Thể hiện rõ chiều biến động số lượng ($+X$ hoặc $-X$), lượng tồn trước và tồn sau giao dịch để kế toán và quản lý đối chiếu chứng từ.
+
+8. **Modal Kiểm kê & Điều chỉnh Tồn kho (`StockAdjustmentModal.tsx`)**:
+   - Form kiểm kê cho phép nhập số lượng thực tế đếm được trong kho ($\ge 0$).
+   - Tự động tính toán và hiển thị độ chênh lệch tăng/giảm ($Difference = Actual - System$) bằng Tag màu trực quan trước khi gửi.
+   - Bắt buộc ghi rõ lý do kiểm kê/điều chỉnh (hao hụt, kiểm kê định kỳ, hư hỏng) để phục vụ thanh tra nội bộ.
+
+#### 4. Phân Quyền & Tích Hợp Hệ Thống:
+- Nâng cấp `src/pages/inventory/InventoryPage.tsx`:
+  - Đồng bộ trạng thái tab đang chọn lên URL query string (`?tab=...`).
+  - Phân luồng hiển thị tab theo vai trò:
+    - `ADMIN` & `MANAGER`: Hiển thị trọn vẹn 7 tab, đầy đủ nút Tạo/Sửa/Ngừng HĐ/Kiểm kê.
+    - `ACCOUNTANT`: Hiển thị 7 tab ở chế độ Chỉ đọc (Read-only, ẩn toàn bộ nút can thiệp dữ liệu).
+    - `HOUSEKEEPING` & `TECHNICIAN`: Chỉ hiển thị 3 tab được phép (Vật tư, Danh mục, Phiếu xuất kho); được phép lập phiếu xuất kho.
+- Cập nhật `src/routes/AppRoutes.tsx`: Gỡ bỏ vai trò `RECEPTIONIST` khỏi route `/inventory` để bảo vệ từ tầng router (tránh tình trạng truy cập vào bị lỗi 403 Forbidden).
+- Cập nhật `src/layouts/MainLayout.tsx`: Gỡ bỏ vai trò `RECEPTIONIST` khỏi menu điều hướng "Quản lý vật tư & Kho".
+
+#### 5. Đồng Bộ Cơ Sở Dữ Liệu & Kiểm Thử Toàn Diện:
+- Thực hiện sinh lại Prisma Client: `npm run prisma:generate`.
+- Áp dụng migration tạo bảng: `npm run db:migrate` (`20261016000000_inventory_management`).
+- Nạp dữ liệu mẫu ban đầu: `npm run seed:inventory` (5 danh mục, 5 nhà cung cấp, 25 mặt hàng vật tư đa ngành, các phiếu nhập kho mẫu tạo tồn khả dụng).
+- Kiểm tra biên dịch dự án Frontend:
+  - `npm run build` (`tsc -b && vite build`): **100% thành công, 0 lỗi TypeScript**.
+  - `npm run lint` (`oxlint`): **0 lỗi linter**.
+- Đã commit toàn bộ mã nguồn vào nhánh `feature/fe-inventory` trên local Git.
