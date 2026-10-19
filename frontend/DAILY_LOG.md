@@ -1190,4 +1190,42 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run lint`: **0 lỗi linter**.
   - Chấm dứt hoàn toàn hiện tượng đè chữ giữa cột Kỹ thuật viên và Thời gian báo.
 
+---
+
+#### Phase 2.7: Khắc phục Triệt để Lỗi Đè Chữ (Text Overlapping) trên Các Bảng Quản lý Vật tư & Kho:
+
+- **Bối cảnh & Phản ánh từ Người dùng**:
+  - Tại module **Quản lý Vật tư & Kho** (`/inventory`), người dùng phát hiện lỗi đè chữ nghiêm trọng trên nhiều tab:
+    1. **Nhóm danh mục (`InventoryCategoriesTab.tsx`)**: Cột `Mô tả` bị tag `Trạng thái` ("Đang hoạt động") vẽ đè lên cuối câu mô tả.
+    2. **Nhà cung cấp (`InventorySuppliersTab.tsx`)**: Cột `Tên nhà cung cấp` dài bị tràn và vẽ đè lên `Người liên hệ`; cột `Địa chỉ` dài bị tràn và vẽ đè lên `Trạng thái`.
+    3. **Phiếu nhập kho (`InventoryReceiptsTab.tsx`)**: Khi co kéo màn hình về độ rộng ~800px, tên nhà cung cấp tràn sang và vẽ đè trực tiếp lên cột `Tổng giá trị` (`71.107.800 VNĐ`).
+
+- **Nguyên nhân Kỹ thuật**:
+  - Các ô dữ liệu văn bản dài (tên công ty, mô tả, địa chỉ) đều bị gán `style={{ whiteSpace: 'nowrap' }}` trong khi độ rộng cột `width` không đủ lớn cho chuỗi văn bản dài hàng chục ký tự.
+  - Do bảng Ant Design sử dụng `table-layout: fixed` khi bật `scroll.x`, các phần tử con có `white-space: nowrap` không thể tự ngắt dòng mà bị tràn (`overflow`) ra ngoài ranh giới ô `<td>` và vẽ đè lên cột liền kề.
+
+- **Giải pháp & Triển khai Kỹ thuật**:
+  1. **Nhóm danh mục (`InventoryCategoriesTab.tsx`)**:
+     - Gỡ bỏ `whiteSpace: 'nowrap'` ở cột `Mô tả`, chuyển sang dùng `<Paragraph ellipsis={{ rows: 2, tooltip: desc }}>` với `width: 300`.
+     - Cột `Tên danh mục`: Thêm `ellipsis` an toàn, tăng `width: 240`. Cột `Trạng thái`: `width: 160`.
+     - Nâng `scroll.x` lên `1100`.
+  2. **Nhà cung cấp (`InventorySuppliersTab.tsx`)**:
+     - Cột `Tên nhà cung cấp`: Chuyển sang `<Paragraph ellipsis={{ rows: 2, tooltip: name }}>`, tăng `width: 260`.
+     - Cột `Địa chỉ`: Chuyển sang `<Paragraph ellipsis={{ rows: 2, tooltip: addr }}>`, tăng `width: 260`.
+     - Cân chỉnh cột `Người liên hệ` (`width: 160`), `Trạng thái` (`width: 150`), nâng `scroll.x` lên `1250`.
+  3. **Phiếu nhập kho (`InventoryReceiptsTab.tsx`)**:
+     - Gỡ bỏ `whiteSpace: 'nowrap'` trên `Nhà cung cấp`, chuyển sang `<Paragraph ellipsis={{ rows: 2, tooltip: name }}>` với `width: 260`.
+     - Cột `Tổng giá trị`: Điều chỉnh `width: 160`, nâng `scroll.x` lên `1100`.
+  4. **Rà soát & Gia cố các tab còn lại**:
+     - **Phiếu xuất kho (`InventoryIssuesTab.tsx`)**: Bọc `Paragraph ellipsis` cho cột `Mục đích sử dụng`, tăng `width: 240`, `scroll.x: 1080`.
+     - **Sổ kho & Biến động (`InventoryMovementsTab.tsx`)**: Bọc `Paragraph ellipsis` cho `Tên vật tư` và `Diễn giải / Ghi chú`.
+     - **Vật tư kho (`InventoryItemsTab.tsx`)**: Bọc `Paragraph ellipsis` cho `Tên vật tư` (`width: 240`, `scroll.x: 1150`).
+     - **Tổng quan kho (`InventoryOverviewTab.tsx`)**: Bọc `Paragraph ellipsis` cho `Tên vật tư` (`width: 240`, `scroll.x: 880`).
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% biên dịch thành công, 0 lỗi TypeScript** (thời gian build 664ms).
+  - `npm run lint`: **0 lỗi linter**.
+  - Triệt tiêu 100% hiện tượng đè chữ và mất chữ trên toàn bộ 7 tabs của module Quản lý Vật tư.
+
+
 

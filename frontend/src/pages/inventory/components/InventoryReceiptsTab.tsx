@@ -39,7 +39,7 @@ import type {
 } from '../../../types/inventory.types.ts';
 import { ReceiptDetailModal } from './ReceiptDetailModal.tsx';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 interface FormLineItem {
@@ -270,26 +270,30 @@ export const InventoryReceiptsTab: React.FC = () => {
       title: 'Nhà cung cấp',
       dataIndex: ['supplier', 'name'],
       key: 'supplierName',
-      width: 220,
+      width: 260,
       render: (name, record) =>
         record.supplier ? (
-          <div style={{ whiteSpace: 'nowrap' }}>
-            <Text strong>{name}</Text>
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.supplier.code}
-              </Text>
-            </div>
+          <div>
+            <Paragraph
+              ellipsis={{ rows: 2, tooltip: name }}
+              strong
+              style={{ margin: 0, color: '#0f172a' }}
+            >
+              {name}
+            </Paragraph>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.supplier.code}
+            </Text>
           </div>
         ) : (
-          <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>Nhập trực tiếp / Không NCC</Text>
+          <Text type="secondary">Nhập trực tiếp / Không NCC</Text>
         ),
     },
     {
       title: 'Tổng giá trị',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      width: 150,
+      width: 160,
       align: 'right',
       render: (amount) => (
         <Text strong style={{ color: '#1b4d3e', whiteSpace: 'nowrap' }}>
@@ -401,7 +405,7 @@ export const InventoryReceiptsTab: React.FC = () => {
         dataSource={receiptList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1100 }}
         pagination={{
           current: page,
           pageSize,

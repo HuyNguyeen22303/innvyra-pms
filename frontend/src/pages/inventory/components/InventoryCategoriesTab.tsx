@@ -36,7 +36,7 @@ import type {
   UpdateCategoryDto,
 } from '../../../types/inventory.types.ts';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 export const InventoryCategoriesTab: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -173,21 +173,32 @@ export const InventoryCategoriesTab: React.FC = () => {
       title: 'Tên danh mục vật tư',
       dataIndex: 'name',
       key: 'name',
-      width: 220,
-      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
+      width: 240,
+      render: (name) => (
+        <Text strong ellipsis={{ tooltip: name }} style={{ display: 'block', maxWidth: 220 }}>
+          {name}
+        </Text>
+      ),
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      width: 200,
-      render: (desc) => <span style={{ whiteSpace: 'nowrap' }}>{desc || '-'}</span>,
+      width: 300,
+      render: (desc) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: desc }}
+          style={{ margin: 0, fontSize: 13, color: '#475569' }}
+        >
+          {desc || '-'}
+        </Paragraph>
+      ),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      width: 150,
+      width: 160,
       align: 'center',
       render: (isActive) =>
         isActive ? (
@@ -317,7 +328,7 @@ export const InventoryCategoriesTab: React.FC = () => {
         dataSource={categoryList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 980 }}
+        scroll={{ x: 1100 }}
         pagination={{
           current: page,
           pageSize,

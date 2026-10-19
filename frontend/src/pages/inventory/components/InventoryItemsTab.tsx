@@ -42,7 +42,7 @@ import type {
 import { ItemDetailModal } from './ItemDetailModal.tsx';
 import { StockAdjustmentModal } from './StockAdjustmentModal.tsx';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 export const InventoryItemsTab: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -209,16 +209,20 @@ export const InventoryItemsTab: React.FC = () => {
       title: 'Tên vật tư',
       dataIndex: 'name',
       key: 'name',
-      width: 220,
+      width: 240,
       render: (name, record) => (
-        <div style={{ whiteSpace: 'nowrap' }}>
-          <Text strong>{name}</Text>
+        <div>
+          <Paragraph
+            ellipsis={{ rows: 2, tooltip: name }}
+            strong
+            style={{ margin: 0, color: '#0f172a' }}
+          >
+            {name}
+          </Paragraph>
           {record.category && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.category.name}
-              </Text>
-            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.category.name}
+            </Text>
           )}
         </div>
       ),
@@ -464,7 +468,7 @@ export const InventoryItemsTab: React.FC = () => {
         dataSource={itemList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1110 }}
+        scroll={{ x: 1150 }}
         pagination={{
           current: page,
           pageSize,

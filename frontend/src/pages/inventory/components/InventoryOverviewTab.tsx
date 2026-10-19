@@ -34,7 +34,7 @@ import type {
 import { ItemDetailModal } from './ItemDetailModal.tsx';
 import { useAuthStore } from '../../../store/authStore.ts';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 interface InventoryOverviewTabProps {
   onNavigateTab?: (tabKey: string) => void;
@@ -138,16 +138,20 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       title: 'Tên vật tư',
       dataIndex: 'name',
       key: 'name',
-      width: 220,
+      width: 240,
       render: (name, record) => (
-        <div style={{ whiteSpace: 'nowrap' }}>
-          <Text strong>{name}</Text>
+        <div>
+          <Paragraph
+            ellipsis={{ rows: 2, tooltip: name }}
+            strong
+            style={{ margin: 0, color: '#0f172a' }}
+          >
+            {name}
+          </Paragraph>
           {record.category && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.category.name}
-              </Text>
-            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.category.name}
+            </Text>
           )}
         </div>
       ),
@@ -428,7 +432,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
                 dataSource={lowStockItems}
                 rowKey="id"
                 loading={isLowStockLoading}
-                scroll={{ x: 860 }}
+                scroll={{ x: 880 }}
                 pagination={{ pageSize: 5, size: 'small', showTotal: (t) => `Tổng ${t} mặt hàng` }}
                 size="middle"
               />

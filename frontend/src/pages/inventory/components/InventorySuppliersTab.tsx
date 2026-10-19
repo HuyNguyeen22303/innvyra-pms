@@ -37,7 +37,7 @@ import type {
   UpdateSupplierDto,
 } from '../../../types/inventory.types.ts';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 export const InventorySuppliersTab: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -183,14 +183,22 @@ export const InventorySuppliersTab: React.FC = () => {
       title: 'Tên nhà cung cấp',
       dataIndex: 'name',
       key: 'name',
-      width: 220,
-      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
+      width: 260,
+      render: (name) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: name }}
+          strong
+          style={{ margin: 0, color: '#0f172a' }}
+        >
+          {name}
+        </Paragraph>
+      ),
     },
     {
       title: 'Người liên hệ',
       dataIndex: 'contactPerson',
       key: 'contactPerson',
-      width: 170,
+      width: 160,
       render: (contact) => <span style={{ whiteSpace: 'nowrap' }}>{contact || '-'}</span>,
     },
     {
@@ -219,14 +227,21 @@ export const InventorySuppliersTab: React.FC = () => {
       title: 'Địa chỉ',
       dataIndex: 'address',
       key: 'address',
-      width: 200,
-      render: (addr) => <span style={{ whiteSpace: 'nowrap' }}>{addr || '-'}</span>,
+      width: 260,
+      render: (addr) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: addr }}
+          style={{ margin: 0, fontSize: 13, color: '#475569' }}
+        >
+          {addr || '-'}
+        </Paragraph>
+      ),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      width: 140,
+      width: 150,
       align: 'center',
       render: (isActive) =>
         isActive ? (
@@ -345,7 +360,7 @@ export const InventorySuppliersTab: React.FC = () => {
         dataSource={supplierList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1150 }}
+        scroll={{ x: 1250 }}
         pagination={{
           current: page,
           pageSize,

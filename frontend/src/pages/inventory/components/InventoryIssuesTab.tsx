@@ -40,7 +40,7 @@ import type {
 } from '../../../types/inventory.types.ts';
 import { IssueDetailModal } from './IssueDetailModal.tsx';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 interface FormLineItem {
@@ -287,8 +287,15 @@ export const InventoryIssuesTab: React.FC = () => {
       title: 'Mục đích sử dụng',
       dataIndex: 'purpose',
       key: 'purpose',
-      width: 200,
-      render: (purpose) => <span style={{ whiteSpace: 'nowrap' }}>{purpose || '-'}</span>,
+      width: 240,
+      render: (purpose) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: purpose }}
+          style={{ margin: 0, color: '#475569' }}
+        >
+          {purpose || '-'}
+        </Paragraph>
+      ),
     },
     {
       title: 'Mặt hàng',
@@ -391,7 +398,7 @@ export const InventoryIssuesTab: React.FC = () => {
         dataSource={issueList}
         rowKey="id"
         loading={isLoading}
-        scroll={{ x: 1010 }}
+        scroll={{ x: 1080 }}
         pagination={{
           current: page,
           pageSize,

@@ -26,7 +26,7 @@ import type {
   InventoryMovementType,
 } from '../../../types/inventory.types.ts';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 export const InventoryMovementsTab: React.FC = () => {
@@ -91,8 +91,16 @@ export const InventoryMovementsTab: React.FC = () => {
       title: 'Tên vật tư',
       dataIndex: ['item', 'name'],
       key: 'itemName',
-      width: 220,
-      render: (name) => <Text strong style={{ whiteSpace: 'nowrap' }}>{name}</Text>,
+      width: 240,
+      render: (name) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: name }}
+          strong
+          style={{ margin: 0, color: '#0f172a' }}
+        >
+          {name}
+        </Paragraph>
+      ),
     },
     {
       title: 'Loại biến động',
@@ -220,8 +228,15 @@ export const InventoryMovementsTab: React.FC = () => {
       title: 'Diễn giải / Ghi chú',
       dataIndex: 'notes',
       key: 'notes',
-      width: 200,
-      render: (notes) => <span style={{ whiteSpace: 'nowrap' }}>{notes || '-'}</span>,
+      width: 240,
+      render: (notes) => (
+        <Paragraph
+          ellipsis={{ rows: 2, tooltip: notes }}
+          style={{ margin: 0, color: '#475569' }}
+        >
+          {notes || '-'}
+        </Paragraph>
+      ),
     },
   ];
 
