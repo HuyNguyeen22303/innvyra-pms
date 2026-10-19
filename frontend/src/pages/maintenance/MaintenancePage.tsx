@@ -868,7 +868,6 @@ export const MaintenancePage: React.FC = () => {
       <Tabs
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k)}
-        type="card"
         items={[
           // TAB 1: TICKETS
           {

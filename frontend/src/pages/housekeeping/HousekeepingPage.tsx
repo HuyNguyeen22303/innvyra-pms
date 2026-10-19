@@ -799,7 +799,6 @@ export const HousekeepingPage: React.FC = () => {
       <Tabs
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k)}
-        type="card"
         items={[
           {
             key: 'kanban',

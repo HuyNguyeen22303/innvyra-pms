@@ -1126,3 +1126,41 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `npm run build`: **100% thành công, 0 lỗi TypeScript**.
   - `npm run lint`: **0 lỗi linter**.
   - Không còn bất kỳ thuộc tính cũ nào còn sót lại trong toàn bộ mã nguồn `frontend/src`.
+
+---
+
+#### Phase 2.5: Chuẩn hóa Đồng bộ Hiển thị Tab Đang chọn (Ink-Bar Underline) trên 4 Module Nghiệp vụ:
+
+- **Bối cảnh & Yêu cầu từ Người dùng**:
+  - Người dùng phản ánh trên 4 module sau đây, tab khi được chọn không chỉ rõ được trạng thái đang kích hoạt, tab active và tab inactive trông mờ nhạt và gần như giống hệt nhau:
+    1. **Dịch vụ khách sạn** (`/services`)
+    2. **Buồng phòng** (`/housekeeping`)
+    3. **Bảo trì kĩ thuật** (`/maintenance`)
+    4. **Quản lý vật tư** (`/inventory`)
+  - Yêu cầu đồng bộ giao diện hiển thị rõ ràng tab đang chọn theo đúng chuẩn như **Ảnh 1** (Màn hình Lưu trú & Đặt phòng `StaysPage.tsx` / `ReservationsPage.tsx`), nơi tab active có chữ màu xanh thương hiệu (`#1b4d3e`) và có **thanh gạch chân mực xanh (ink-bar)** sắc nét, nổi bật bên dưới.
+
+- **Nguyên nhân Kỹ thuật**:
+  - Tại 4 tệp trên, thẻ `<Tabs>` đang bị gán cứng thuộc tính `type="card"`:
+    - Khi dùng `type="card"`, Ant Design chuyển các tab thành thẻ hình chữ nhật bo góc với viền nhạt và nền xám/trắng, đồng thời **triệt tiêu hoàn toàn thanh gạch chân mực xanh (ink-bar)**.
+    - Trong khi đó, tại màn hình mẫu `StaysPage.tsx` và `ReservationsPage.tsx`, thẻ `<Tabs>` dùng chuẩn `type="line"` mặc định của Ant Design. Ở chế độ này, Ant Design tự động kích hoạt thanh underline `.ant-tabs-ink-bar` với màu `colorPrimary: #1b4d3e` rất nổi bật và trực quan.
+    - Ngoài ra, ở `ServicesPage.tsx` và `InventoryPage.tsx` trước đây có bọc thêm `style={{ background: '#ffffff', borderRadius: 8, padding: '16px', boxShadow: '...' }}` tạo ra cấu trúc lồng thẻ (Card lồng trong Card) không cần thiết.
+
+- **Giải pháp & Triển khai Kỹ thuật**:
+  1. **Buồng phòng (`HousekeepingPage.tsx:802`)**:
+     - Xóa bỏ `type="card"`, chuyển về chuẩn Line Tabs mặc định của Ant Design.
+     - 3 tabs (`Bảng tiến độ Kanban`, `Hàng đợi phòng bẩn`, `Định mức vật tư phòng`) lập tức có thanh ink-bar màu xanh ngọc bích bên dưới tab đang chọn.
+  2. **Bảo trì kỹ thuật (`MaintenancePage.tsx:871`)**:
+     - Xóa bỏ `type="card"`.
+     - 2 tabs (`Phiếu sự cố kỹ thuật`, `Lệnh khóa phòng bảo trì`) hiển thị ink-bar chuẩn xác và rõ ràng.
+  3. **Dịch vụ khách sạn (`ServicesPage.tsx:46`)**:
+     - Xóa bỏ `type="card"` và gỡ bỏ wrapper `style={{ background: '#ffffff', ... }}` dư thừa.
+     - 2 tabs (`Yêu cầu Dịch vụ`, `Danh mục Dịch vụ`) hiển thị thanh thoát trên layout nền, tab đang chọn có ink-bar xanh thương hiệu.
+  4. **Quản lý vật tư (`InventoryPage.tsx:178`)**:
+     - Xóa bỏ `type="card"` và gỡ bỏ wrapper `style={{ background: '#ffffff', ... }}` dư thừa.
+     - Cả 7 tabs (`Tổng quan & Định mức`, `Vật tư kho`, `Nhóm danh mục`, `Nhà cung cấp`, `Phiếu Nhập kho`, `Phiếu Xuất kho`, `Sổ kho & Biến động`) hiển thị nhất quán, ink-bar chạy mượt mà khi chuyển đổi giữa các tab.
+
+- **Kiểm thử chất lượng**:
+  - `npm run build`: **100% biên dịch thành công, 0 lỗi TypeScript** (thời gian build 655ms).
+  - `npm run lint`: **0 lỗi linter**.
+  - Giao diện cả 4 module đã đồng bộ 100% với màn hình mẫu Quản lý đặt phòng / Lưu trú (Ảnh 1).
+
