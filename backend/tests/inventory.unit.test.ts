@@ -277,6 +277,60 @@ describe('InventoryService Unit Tests', () => {
       expect(movements.items.every((m) => m.type === 'RECEIPT')).toBe(true);
     });
 
+    it('correctly accumulates duplicate itemId quantities for stock and movement (regression)', async () => {
+      const { repository } = memoryInventory();
+      const service = new InventoryService(repository);
+
+      const cat = await service.createCategory(adminScope, { code: 'DRINK', name: 'Beverages' });
+      const sup = await service.createSupplier(adminScope, { code: 'AQUAFINA', name: 'Aquafina VN' });
+
+      const item = await service.createItem(adminScope, {
+        code: 'JUICE-1L',
+        name: 'Orange Juice 1L',
+        categoryId: cat.id,
+        unit: 'carton',
+        minStockLevel: '5.00',
+      });
+
+      // Initial receipt: 10 units
+      await service.createReceipt(adminScope, {
+        supplierId: sup.id,
+        items: [{ itemId: item.id, quantity: '10.00', unitPrice: '25000.00' }],
+      });
+
+      // Second receipt: same itemId twice with different unit prices
+      // (e.g., one batch at 25000, another at 23000 sale price)
+      const receipt = await service.createReceipt(adminScope, {
+        supplierId: sup.id,
+        notes: 'Two batches of same juice with different unit costs',
+        items: [
+          { itemId: item.id, quantity: '3.00', unitPrice: '25000.00' },
+          { itemId: item.id, quantity: '5.00', unitPrice: '23000.00' },
+        ],
+      });
+
+      // Receipt detail should preserve both lines individually
+      expect(receipt.items).toHaveLength(2);
+      expect(Number(receipt.totalAmount)).toBe(3 * 25000 + 5 * 23000); // 190000.00
+
+      // Final stock must be 10 + 3 + 5 = 18
+      const checkItem = await service.getItemById(adminScope, BigInt(item.id));
+      expect(checkItem.currentStock).toBe('18.00');
+
+      // Movement must reflect a single aggregated +8 (not just the last +5)
+      const movements = await service.getMovements(adminScope, {
+        page: 1,
+        limit: 20,
+        type: 'RECEIPT',
+      });
+      // Two receipts: first receipt had 1 movement (+10), second had 1 movement (+8)
+      expect(movements.items).toHaveLength(2);
+      const secondReceiptMovement = movements.items[1];
+      expect(secondReceiptMovement?.quantity).toBe('8.00');
+      expect(secondReceiptMovement?.previousStock).toBe('10.00');
+      expect(secondReceiptMovement?.currentStock).toBe('18.00');
+    });
+
     it('rejects duplicate receipt number (409 RECEIPT_NUMBER_EXISTS)', async () => {
       const { repository } = memoryInventory();
       const service = new InventoryService(repository);

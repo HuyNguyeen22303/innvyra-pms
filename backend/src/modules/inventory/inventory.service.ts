@@ -345,27 +345,38 @@ export class InventoryService {
         preparedLines,
       );
 
-      // Increase stock and record movements
+      // Merge quantities per itemId for stock updates and movements
+      // (preserving the original lines for the receipt detail rows)
+      const mergedByItem = new Map<bigint, { totalQty: Prisma.Decimal; firstNotes: string | null }>();
       for (const line of preparedLines) {
-        const item = itemMap.get(line.itemId)!;
-        const prevStock = item.currentStock;
-        const newStock = prevStock.add(line.quantity);
+        const existing = mergedByItem.get(line.itemId);
+        if (existing) {
+          existing.totalQty = existing.totalQty.add(line.quantity);
+        } else {
+          mergedByItem.set(line.itemId, { totalQty: line.quantity, firstNotes: line.notes });
+        }
+      }
 
-        await repo.updateItem(scope.hotelId, line.itemId, {
+      for (const [itemId, merged] of mergedByItem) {
+        const item = itemMap.get(itemId)!;
+        const prevStock = item.currentStock;
+        const newStock = prevStock.add(merged.totalQty);
+
+        await repo.updateItem(scope.hotelId, itemId, {
           currentStock: newStock,
         });
 
         await repo.createMovement({
           hotelId: scope.hotelId,
-          itemId: line.itemId,
+          itemId,
           type: 'RECEIPT',
-          quantity: line.quantity,
+          quantity: merged.totalQty,
           previousStock: prevStock,
           currentStock: newStock,
           referenceType: 'STOCK_RECEIPT',
           referenceId: receipt.id,
           referenceNumber: receipt.receiptNumber,
-          notes: line.notes || `Stock Receipt ${receipt.receiptNumber}`,
+          notes: merged.firstNotes || `Stock Receipt ${receipt.receiptNumber}`,
           createdBy: scope.actorId,
         });
       }
