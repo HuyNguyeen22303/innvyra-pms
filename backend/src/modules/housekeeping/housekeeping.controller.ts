@@ -14,9 +14,11 @@ export function housekeepingController(service: HousekeepingService) {
     assign: handle<{ staffId: string }>('Task assigned', (s, { params, body }) =>
       service.assign(s, BigInt(params.id!), BigInt(body.staffId)),
     ),
-    start: handle('Cleaning started', (s, { params }) => service.start(s, BigInt(params.id!))),
-    complete: handle('Cleaning awaiting inspection', (s, { params }) =>
-      service.complete(s, BigInt(params.id!)),
+    start: handle<{ notes?: string }>('Cleaning started', (s, { params, body }) =>
+      service.start(s, BigInt(params.id!), body?.notes),
+    ),
+    complete: handle<{ notes?: string }>('Cleaning awaiting inspection', (s, { params, body }) =>
+      service.complete(s, BigInt(params.id!), body?.notes),
     ),
     inspect: handle<InspectInput>('Inspection recorded', (s, { params, body }) =>
       service.inspect(s, BigInt(params.id!), body),

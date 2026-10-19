@@ -18,6 +18,9 @@ export const inspectBody = z
     message: 'A failed inspection requires a reason',
     path: ['notes'],
   });
+export const taskNotesBody = z
+  .object({ notes: notes.optional() })
+  .strict();
 export const cancelTaskBody = z.object({ reason: notes }).strict();
 export const taskQuery = z
   .object({
