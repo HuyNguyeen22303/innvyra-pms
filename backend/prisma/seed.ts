@@ -1,13 +1,19 @@
-import { randomUUID } from 'node:crypto';
 import { scriptPrisma } from '../scripts/database-tools.js';
 import { AppError } from '../src/shared/errors/app-error.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import { GuestCrypto } from '../src/modules/guests/guest.crypto.js';
 import { hotelToday } from '../src/modules/reservations/reservation.dates.js';
 import { Prisma } from '../src/generated/prisma/client.js';
+import type {
+  StaffUserModel,
+  RoomTypeModel,
+  RoomModel,
+  ServiceModel,
+  GuestModel,
+} from '../src/generated/prisma/models.js';
 
 // ----------------------------------------------------
-// 1. ROLES & STAFF DEFINITIONS (17 staff across shifts)
+// 1. ROLES & STAFF DEFINITIONS (18 staff across shifts)
 // ----------------------------------------------------
 const roles = [
   ['ADMIN', 'Quản trị hệ thống'],
@@ -105,15 +111,20 @@ const roomTypesConfig = [
 // ----------------------------------------------------
 // 3. PHYSICAL ROOMS (40 rooms across 4 floors)
 // ----------------------------------------------------
-// Format: [roomNumber, floorNumber, roomTypeCode, physicalStatus, housekeepingStatus]
-type RoomSeedDef = [string, number, string, 'ACTIVE' | 'MAINTENANCE' | 'OUT_OF_SERVICE', 'READY' | 'DIRTY' | 'CLEANING' | 'INSPECTION'];
+type RoomSeedDef = [
+  string,
+  number,
+  string,
+  'ACTIVE' | 'MAINTENANCE' | 'OUT_OF_SERVICE',
+  'READY' | 'DIRTY' | 'CLEANING' | 'INSPECTION',
+];
 
 const roomsConfig: RoomSeedDef[] = [
   // TẦNG 1: 10 phòng (101 - 110)
   ['101', 1, 'STD-SGL', 'ACTIVE', 'READY'],
   ['102', 1, 'STD-SGL', 'ACTIVE', 'READY'],
   ['103', 1, 'STD-SGL', 'ACTIVE', 'DIRTY'],
-  ['104', 1, 'STD-SGL', 'MAINTENANCE', 'DIRTY'], // Khóa bảo trì
+  ['104', 1, 'STD-SGL', 'MAINTENANCE', 'DIRTY'], // Khóa bảo trì (rò rỉ ống nước)
   ['105', 1, 'STD-DBL', 'ACTIVE', 'READY'],
   ['106', 1, 'STD-DBL', 'ACTIVE', 'READY'],
   ['107', 1, 'STD-DBL', 'ACTIVE', 'READY'],
@@ -127,7 +138,7 @@ const roomsConfig: RoomSeedDef[] = [
   ['203', 2, 'STD-DBL', 'ACTIVE', 'READY'],
   ['204', 2, 'STD-DBL', 'ACTIVE', 'READY'],
   ['205', 2, 'SUP-TWN', 'ACTIVE', 'READY'],
-  ['206', 2, 'SUP-TWN', 'MAINTENANCE', 'DIRTY'], // Khóa bảo trì
+  ['206', 2, 'SUP-TWN', 'MAINTENANCE', 'DIRTY'], // Khóa bảo trì (bảo dưỡng máy lạnh)
   ['207', 2, 'SUP-TWN', 'ACTIVE', 'READY'],
   ['208', 2, 'SUP-TWN', 'ACTIVE', 'READY'],
   ['209', 2, 'SUP-TWN', 'ACTIVE', 'INSPECTION'],
@@ -210,7 +221,9 @@ const demoGuests = [
   { fullName: 'Lucas Rossi', phone: '+39061234567', email: 'lucas.rossi@roma.it', gender: 'MALE' as const, nationality: 'Italy', docType: 'PASSPORT' as const, docNum: 'IT12349876', address: 'Via del Corso 184, 00186 Roma, Italy' },
 ];
 
-
+// ----------------------------------------------------
+// 6. INVENTORY MASTER DATA
+// ----------------------------------------------------
 const demoInventoryCategories = [
   {
     code: 'AMENITY',
@@ -279,7 +292,7 @@ const demoSuppliers = [
 ] as const;
 
 const demoInventoryItems = [
-  // 1. Amenities (9 items)
+  // 1. Amenities (9 items - SUP-ASIA)
   {
     code: 'AMEN-TB-01',
     name: 'Bàn chải & Kem đánh răng',
@@ -380,7 +393,7 @@ const demoInventoryItems = [
     supplierCode: 'SUP-ASIA',
   },
 
-  // 2. Linen (4 items)
+  // 2. Linen (4 items - SUP-NAMVIET)
   {
     code: 'LIN-TOW-BATH',
     name: 'Khăn tắm Cotton 70x140cm',
@@ -426,7 +439,7 @@ const demoInventoryItems = [
     supplierCode: 'SUP-NAMVIET',
   },
 
-  // 3. Cleaning & Chemicals (3 items)
+  // 3. Cleaning & Chemicals (3 items - SUP-ECOCLEAN)
   {
     code: 'CHEM-FLR-5L',
     name: 'Nước lau sàn Sunlight Can 5L',
@@ -461,7 +474,7 @@ const demoInventoryItems = [
     supplierCode: 'SUP-ECOCLEAN',
   },
 
-  // 4. Minibar & Snack (2 items)
+  // 4. Minibar & Snack (2 items - SUP-ASIA)
   {
     code: 'MB-COKE-330',
     name: 'Nước ngọt Coca Cola lon 320ml',
@@ -485,7 +498,7 @@ const demoInventoryItems = [
     supplierCode: 'SUP-ASIA',
   },
 
-  // 5. Engineering & Maintenance (2 items)
+  // 5. Engineering & Maintenance (2 items - SUP-TANPHAT)
   {
     code: 'ENG-BULB-9W',
     name: 'Bóng đèn LED Búp tròn 9W Đui E27',
@@ -520,13 +533,6 @@ function addDays(dateStr: string, days: number): string {
 // ----------------------------------------------------
 // MAIN SEED PROCESS (IDEMPOTENT & ENVIRONMENT-AWARE)
 // ----------------------------------------------------
-// Environment:
-//   NODE_ENV=production  → roles + hotel only; demo data is refused.
-//   SEED_DEMO_DATA=false → roles + hotel only (no demo staff/rooms/inventory).
-//   Default (development) → upserts roles + hotel then creates demo data.
-//   SEED_HOTEL_CODE / SEED_HOTEL_NAME → override the default hotel identity
-//     when multiple hotels exist.
-// ----------------------------------------------------
 async function main() {
   const prisma = scriptPrisma();
 
@@ -536,9 +542,7 @@ async function main() {
     const hotelCodeOverride = process.env.SEED_HOTEL_CODE;
     const hotelNameOverride = process.env.SEED_HOTEL_NAME;
 
-    // Determine whether demo data should be seeded.
-    // Production never seeds demo data unless explicitly opted in with SEED_DEMO_DATA=true
-    // (but that is still blocked below for safety).
+    // Safety guard: Demo data must never be seeded into production!
     const shouldSeedDemo = (() => {
       if (nodeEnv === 'production') {
         if (seedDemoFlag === 'true') {
@@ -549,7 +553,6 @@ async function main() {
         }
         return false;
       }
-      // Non-production: default is true unless explicitly set to 'false'.
       if (seedDemoFlag === 'false') return false;
       return true;
     })();
@@ -560,14 +563,13 @@ async function main() {
       } | Hotel=${hotelCodeOverride ?? 'MAIN'}`,
     );
 
-    // 1. SEED ROLES (always: indempotent upsert)
+    // 1. SEED ROLES (Idempotent upsert)
     for (const [code, name] of roles) {
       await prisma.role.upsert({ where: { code }, create: { code, name }, update: {} });
     }
     console.info('✅ Đã đồng bộ 6 Roles phân quyền.');
 
-    // 2. SEED HOTEL (always: indempotent upsert)
-    // If hotel code/name overrides are provided, both must be present (per README policy).
+    // 2. SEED HOTEL (Idempotent upsert)
     if (Boolean(hotelCodeOverride) !== Boolean(hotelNameOverride)) {
       throw new Error(
         'Supply both SEED_HOTEL_CODE and SEED_HOTEL_NAME to target a specific hotel, or neither.',
@@ -590,11 +592,39 @@ async function main() {
       return;
     }
 
-    // 3. SEED STAFF (17 accounts, upsert by username — never overwrites passwords)
+    // ----------------------------------------------------
+    // CLEANUP EXISTING DEMO OPERATIONAL RECORDS FOR HOTEL
+    // Ensures clean idempotency across re-runs without FK constraint errors.
+    // ----------------------------------------------------
+    await prisma.roomOccupancy.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.roomTransfer.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.billingAuditLog.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.folioItem.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.payment.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.folio.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.serviceOrderItem.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.serviceOrder.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stay.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.reservationRoomNight.deleteMany({ where: { reservationRoom: { hotelId: hotel.id } } });
+    await prisma.reservationRoom.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.reservation.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.operationsAuditLog.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.housekeepingTask.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.maintenanceBlock.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.maintenanceTicket.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.inventoryMovement.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stockAdjustment.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stockIssueItem.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stockIssue.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stockReceiptItem.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.stockReceipt.deleteMany({ where: { hotelId: hotel.id } });
+    await prisma.guest.deleteMany({ where: { hotelId: hotel.id } });
+
+    // 3. SEED STAFF (18 accounts across shifts, upsert by username — preserves existing password hashes)
     const demoPassword = process.env.SEED_STAFF_PASSWORD || 'Innvyra@Demo2026!';
     const passwordHash = await hashPassword(demoPassword);
 
-    const staffMap = new Map<string, any>();
+    const staffMap = new Map<string, StaffUserModel>();
     for (const [roleCode, username, fullName] of staffAccounts) {
       const role = await prisma.role.findUniqueOrThrow({ where: { code: roleCode } });
       const staff = await prisma.staffUser.upsert({
@@ -608,14 +638,20 @@ async function main() {
           email: `${username}@innvyra.com`,
           isActive: true,
         },
-        update: {},
+        update: {
+          hotelId: hotel.id,
+          roleId: role.id,
+          fullName,
+          email: `${username}@innvyra.com`,
+          isActive: true,
+        },
       });
       staffMap.set(username, staff);
     }
     console.info(`✅ Đã đồng bộ ${staffMap.size} nhân sự trải đều các ca trực 24/7.`);
 
     // 4. SEED ROOM TYPES (upsert by hotel+code)
-    const roomTypeMap = new Map<string, any>();
+    const roomTypeMap = new Map<string, RoomTypeModel>();
     for (const rt of roomTypesConfig) {
       const createdRt = await prisma.roomType.upsert({
         where: { hotelId_code: { hotelId: hotel.id, code: rt.code } },
@@ -630,16 +666,23 @@ async function main() {
           isActive: true,
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
-        update: {},
+        update: {
+          name: rt.name,
+          description: rt.description,
+          maxAdults: rt.maxAdults,
+          maxChildren: rt.maxChildren,
+          basePrice: rt.basePrice,
+          isActive: true,
+        },
       });
       roomTypeMap.set(rt.code, createdRt);
     }
     console.info(`✅ Đã đồng bộ 6 Hạng phòng phân cấp kim tự tháp chuẩn.`);
 
-    // 5. SEED PHYSICAL ROOMS (upsert by hotel+roomNumber)
-    const roomMap = new Map<string, any>();
+    // 5. SEED PHYSICAL ROOMS (upsert by hotel+roomNumber, resetting physical & housekeeping status)
+    const roomMap = new Map<string, RoomModel>();
     for (const [roomNumber, floorNumber, roomTypeCode, physicalStatus, housekeepingStatus] of roomsConfig) {
-      const rt = roomTypeMap.get(roomTypeCode);
+      const rt = roomTypeMap.get(roomTypeCode)!;
       const room = await prisma.room.upsert({
         where: { hotelId_roomNumber: { hotelId: hotel.id, roomNumber } },
         create: {
@@ -652,14 +695,20 @@ async function main() {
           notes: `Phòng ${roomNumber} - Tầng ${floorNumber} (${rt.name})`,
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
         },
-        update: {},
+        update: {
+          roomTypeId: rt.id,
+          floorNumber,
+          physicalStatus,
+          housekeepingStatus,
+          notes: `Phòng ${roomNumber} - Tầng ${floorNumber} (${rt.name})`,
+        },
       });
       roomMap.set(roomNumber, room);
     }
     console.info(`✅ Đã đồng bộ 40 Phòng vật lý (Tầng 1–4, mỗi tầng 10 phòng: 101–410).`);
 
     // 6. SEED SERVICES (upsert by hotel+code)
-    const serviceMap = new Map<string, any>();
+    const serviceMap = new Map<string, ServiceModel>();
     for (const srv of servicesConfig) {
       const s = await prisma.service.upsert({
         where: { hotelId_code: { hotelId: hotel.id, code: srv.code } },
@@ -671,13 +720,18 @@ async function main() {
           price: srv.price,
           isActive: true,
         },
-        update: {},
+        update: {
+          name: srv.name,
+          unit: srv.unit,
+          price: srv.price,
+          isActive: true,
+        },
       });
       serviceMap.set(srv.code, s);
     }
     console.info(`✅ Đã đồng bộ 5 Dịch vụ khách sạn (Nước suối, bia, giặt ủi, buffet, xe đưa đón).`);
 
-    // 7. SEED GUESTS (35 guests with encrypted document numbers)
+    // 7. SEED GUESTS (35 demo guests with encrypted/hashed document numbers)
     const crypto =
       process.env.GUEST_ENCRYPTION_KEY && process.env.GUEST_HASH_KEY
         ? new GuestCrypto({
@@ -686,7 +740,7 @@ async function main() {
           })
         : null;
 
-    const guestList: any[] = [];
+    const guestList: GuestModel[] = [];
     for (const g of demoGuests) {
       const createdGuest = await prisma.guest.create({
         data: {
@@ -707,7 +761,7 @@ async function main() {
     }
     console.info(`✅ Đã mã hóa và tạo 35 Hồ sơ khách hàng lưu trú.`);
 
-    // 8. SEED OPERATIONAL DATA (Relative to Hotel Today)
+    // 8. OPERATIONAL DATA (Relative to Hotel Reference Date)
     const today = hotelToday(hotel.timezone);
     console.info(`📅 Ngày tham chiếu khách sạn hôm nay: ${today}`);
 
@@ -720,37 +774,41 @@ async function main() {
     const hkTuan = staffMap.get('hk_tuan')!;
     const hkCuc = staffMap.get('hk_cuc')!;
 
-    // A. 20 IN-HOUSE STAYS (Occupied Rooms)
     const validBookingSources = ['DIRECT', 'PHONE', 'EMAIL', 'WALK_IN', 'AGENT', 'OTHER'] as const;
-    // List of 20 occupied rooms from our config
+
+    // A. 20 IN-HOUSE STAYS (Active Occupied Rooms)
+    // Distributed realistically across all 6 room types
     const occupiedRoomNumbers = [
-      '101', '105', '106', '109',
-      '201', '202', '204', '205', '207', '210',
-      '301', '302', '305', '306', '308', '309',
-      '401', '402', '404', '405', '407', '409',
-    ].slice(0, 20); // 20 occupied rooms
+      '101',               // STD-SGL (1)
+      '105', '106', '109', '201', '202', // STD-DBL (5)
+      '205', '207', '210', // SUP-TWN (3)
+      '204',               // STD-DBL (transferred from 203)
+      '301', '302', '305', '306', '308', // SUP-DBL (5)
+      '309', '401', '402', '404', '405', // DLX-BALCONY (5)
+      '407', '409',        // SUITE-EXEC (2)
+    ].slice(0, 20); // Exactly 20 rooms
 
     let guestIdx = 0;
     for (let i = 0; i < occupiedRoomNumbers.length; i++) {
       const roomNum = occupiedRoomNumbers[i]!;
       const room = roomMap.get(roomNum)!;
-      const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: room.roomTypeId } });
+      const rt = roomTypeMap.get(room.roomTypeId ? (Array.from(roomTypeMap.values()).find(t => t.id === room.roomTypeId)?.code ?? 'STD-DBL') : 'STD-DBL')!;
       const guest = guestList[guestIdx++ % guestList.length]!;
 
-      // Check-in dates: 1-3 days ago, check-out: 1-3 days in future
-      const stayDaysAgo = (i % 3) + 1;
-      const stayDaysAhead = (i % 2) + 2;
+      // Realistic past check-in and future checkout relative to hotelToday
+      const stayDaysAgo = (i % 3) + 1; // 1 to 3 days ago
+      const stayDaysAhead = (i % 2) + 2; // 2 to 3 days in future
       const checkInDate = addDays(today, -stayDaysAgo);
       const checkOutDate = addDays(today, stayDaysAhead);
       const totalNights = stayDaysAgo + stayDaysAhead;
       const totalRate = parseFloat(rt.basePrice.toString()) * totalNights;
       const bookingCreatedAt = new Date(`${addDays(checkInDate, -3)}T10:00:00.000Z`);
 
-      // 1. Reservation
+      // 1. Reservation (CHECKED_IN)
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-IN${roomNum}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-IN-${roomNum}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
@@ -762,20 +820,21 @@ async function main() {
         },
       });
 
-      // 2. ReservationRoom
+      // 2. ReservationRoom (Capacity invariant: adults clamped to maxAdults)
+      const adultsCount = Math.min(2, rt.maxAdults);
       const resRoom = await prisma.reservationRoom.create({
         data: {
           hotelId: hotel.id,
           reservationId: res.id,
           roomTypeId: rt.id,
           roomId: room.id,
-          adults: 2,
+          adults: adultsCount,
           children: 0,
           createdAt: bookingCreatedAt,
         },
       });
 
-      // 3. ReservationRoomNights
+      // 3. ReservationRoomNights (Full nightly price snapshots for entire booking)
       const nightRecords = [];
       for (let n = 0; n < totalNights; n++) {
         const stayDate = addDays(checkInDate, n);
@@ -789,7 +848,7 @@ async function main() {
         nightRecords.push(night);
       }
 
-      // 4. Stay
+      // 4. Stay (CHECKED_IN)
       const stay = await prisma.stay.create({
         data: {
           hotelId: hotel.id,
@@ -814,7 +873,26 @@ async function main() {
         },
       });
 
-      // 6. Folio
+      // 5b. Room Transfer demonstration (Room 204 transferred from Room 203 yesterday)
+      if (roomNum === '204') {
+        const previousRoom = roomMap.get('203')!;
+        const transferTime = new Date(`${addDays(today, -1)}T10:00:00.000Z`);
+        await prisma.roomTransfer.create({
+          data: {
+            hotelId: hotel.id,
+            roomTypeId: rt.id,
+            stayId: stay.id,
+            fromRoomId: previousRoom.id,
+            toRoomId: room.id,
+            transferredBy: receptionist.id,
+            transferredAt: transferTime,
+            reason: 'Khách muốn đổi sang phòng yên tĩnh hơn hướng vườn',
+            createdAt: transferTime,
+          },
+        });
+      }
+
+      // 6. Folio (OPEN)
       const folio = await prisma.folio.create({
         data: {
           hotelId: hotel.id,
@@ -825,12 +903,22 @@ async function main() {
         },
       });
 
-      // 7. Folio Item: Room Nights (Debit)
-      const nightsBilled = stayDaysAgo; // nights up to today billed
-      let roomChargesAmount = 0;
-      for (let n = 0; n < nightsBilled; n++) {
+      await prisma.billingAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: receptionist.id,
+          action: 'FOLIO_OPENED',
+          entityId: folio.id,
+          createdAt: new Date(`${checkInDate}T14:30:00.000Z`),
+        },
+      });
+
+      // 7. Folio Items: Upfront room night debits matching BillingService.openFolio()
+      let totalFolioDebit = 0;
+      for (let n = 0; n < totalNights; n++) {
         const night = nightRecords[n]!;
-        roomChargesAmount += parseFloat(rt.basePrice.toString());
+        const nightCost = parseFloat(rt.basePrice.toString());
+        totalFolioDebit += nightCost;
         await prisma.folioItem.create({
           data: {
             hotelId: hotel.id,
@@ -840,20 +928,19 @@ async function main() {
             roomNightId: night.id,
             sourceId: night.id,
             amount: rt.basePrice,
-            description: `Tiền phòng ${roomNum} (Đêm ${n + 1})`,
+            description: `Tiền phòng ${roomNum} (${night.stayDate.toISOString().slice(0, 10)})`,
             createdBy: accountant.id,
-            createdAt: new Date(`${addDays(checkInDate, n)}T23:59:00.000Z`),
+            createdAt: new Date(`${checkInDate}T14:30:00.000Z`),
           },
         });
       }
 
-      // 8. Service charges for some rooms via real ServiceOrder
+      // 8. Service charges and orders for active stays
       let extraServiceAmount = 0;
       if (i % 2 === 0) {
         const beerService = serviceMap.get('SRV-BEER')!;
         extraServiceAmount = 90000; // 2 beers
 
-        // A. Create ServiceOrder (COMPLETED)
         const srvOrder = await prisma.serviceOrder.create({
           data: {
             hotelId: hotel.id,
@@ -868,7 +955,6 @@ async function main() {
           },
         });
 
-        // B. Create ServiceOrderItem
         const srvItem = await prisma.serviceOrderItem.create({
           data: {
             hotelId: hotel.id,
@@ -883,7 +969,6 @@ async function main() {
           },
         });
 
-        // C. FolioItem linked to ServiceOrderItem
         await prisma.folioItem.create({
           data: {
             hotelId: hotel.id,
@@ -898,6 +983,17 @@ async function main() {
             createdAt: new Date(`${today}T10:00:00.000Z`),
           },
         });
+
+        await prisma.billingAuditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorId: receptionist.id,
+            action: 'ORDER_COMPLETED',
+            entityId: srvOrder.id,
+            createdAt: new Date(`${today}T10:00:00.000Z`),
+          },
+        });
+        totalFolioDebit += extraServiceAmount;
       } else if (i === 1) {
         // Pending request: 2 Lavie waters for Room 105
         const waterService = serviceMap.get('SRV-WATER')!;
@@ -1009,83 +1105,99 @@ async function main() {
             createdAt: new Date(`${today}T08:00:00.000Z`),
           },
         });
+        await prisma.billingAuditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorId: receptionist.id,
+            action: 'ORDER_CANCELLED',
+            entityId: cancelledOrder.id,
+            reason: 'Khách tự bắt taxi đi cùng bạn nên không dùng xe khách sạn',
+            createdAt: new Date(`${today}T09:00:00.000Z`),
+          },
+        });
       }
 
-      // 9. Payments
-      // Scenario A (Balanced): 12 folios fully paid
-      // Scenario B (Debit / Nợ): 5 folios owe money
-      // Scenario C (Credit / Trả thừa): 3 folios have excess deposit
-      if (i < 12) {
-        // Balanced
-        const paidAmount = roomChargesAmount + extraServiceAmount;
-        if (paidAmount > 0) {
-          await prisma.payment.create({
-            data: {
-              hotelId: hotel.id,
-              folioId: folio.id,
-              paymentType: 'PAYMENT',
-              paymentMethod: i % 2 === 0 ? 'BANK_TRANSFER' : 'CASH',
-              amount: paidAmount.toFixed(2),
-              status: 'CONFIRMED',
-              referenceNumber: `PAY-REC-${roomNum}-${i}`,
-              processedBy: receptionist.id,
-              processedAt: new Date(`${checkInDate}T14:45:00.000Z`),
-            },
-          });
-        }
-      } else if (i < 17) {
-        // Debit: Customer still owes money
-        const partialPaid = 500000;
-        await prisma.payment.create({
+      // 9. Payments (Invariants: Payment/Deposit amount must NOT exceed outstanding balance)
+      if (i < 10) {
+        // Scenario A (Balanced - Full Payment): Guest fully paid at check-in
+        const payment = await prisma.payment.create({
           data: {
             hotelId: hotel.id,
             folioId: folio.id,
             paymentType: 'PAYMENT',
-            paymentMethod: 'CASH',
-            amount: partialPaid.toFixed(2),
+            paymentMethod: i % 2 === 0 ? 'BANK_TRANSFER' : 'CASH',
+            amount: totalFolioDebit.toFixed(2),
             status: 'CONFIRMED',
-            referenceNumber: `PAY-PARTIAL-${roomNum}`,
+            referenceNumber: `PAY-REC-${roomNum}`,
             processedBy: receptionist.id,
-            processedAt: new Date(`${checkInDate}T15:00:00.000Z`),
+            processedAt: new Date(`${checkInDate}T14:45:00.000Z`),
           },
         });
-      } else {
-        // Credit: Customer paid excess deposit
-        const depositAmount = roomChargesAmount + extraServiceAmount + 1000000;
-        await prisma.payment.create({
+        await prisma.billingAuditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorId: receptionist.id,
+            action: 'PAYMENT_RECORDED',
+            entityId: payment.id,
+            createdAt: new Date(`${checkInDate}T14:45:00.000Z`),
+          },
+        });
+      } else if (i < 16) {
+        // Scenario B (Partial Payment / Deposit): Guest paid a partial deposit, outstanding debt remains
+        const partialAmount = Math.min(500000, totalFolioDebit);
+        const payment = await prisma.payment.create({
           data: {
             hotelId: hotel.id,
             folioId: folio.id,
             paymentType: 'DEPOSIT',
-            paymentMethod: 'BANK_TRANSFER',
-            amount: depositAmount.toFixed(2),
+            paymentMethod: 'CASH',
+            amount: partialAmount.toFixed(2),
             status: 'CONFIRMED',
-            referenceNumber: `DEP-EXCESS-${roomNum}`,
-            processedBy: accountant.id,
-            processedAt: new Date(`${checkInDate}T12:00:00.000Z`),
+            referenceNumber: `DEP-PARTIAL-${roomNum}`,
+            processedBy: receptionist.id,
+            processedAt: new Date(`${checkInDate}T15:00:00.000Z`),
+          },
+        });
+        await prisma.billingAuditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorId: receptionist.id,
+            action: 'DEPOSIT_RECORDED',
+            entityId: payment.id,
+            createdAt: new Date(`${checkInDate}T15:00:00.000Z`),
           },
         });
       }
+      // Scenario C (Unpaid): Folios 16-19 have 0 payments, customer owes full amount upon checkout
     }
-    console.info(`✅ Đã tạo 20 Ca lưu trú đang ở thực tế (In-House Stays) kèm hóa đơn Folio.`);
+    console.info(`✅ Đã tạo 20 Ca lưu trú đang ở thực tế (In-House Stays) kèm hóa đơn Folio hợp lệ.`);
 
-    // B. 6 EXPECTED ARRIVALS (TODAY CONFIRMED)
-    const arrivalRooms = ['102', '107', '203', '208', '303', '403'];
+    // B. 6 EXPECTED ARRIVALS (TODAY CONFIRMED BOOKINGS)
+    // Physical room is NOT assigned before check-in (roomId: null). Room type is booked.
+    const arrivalRooms = [
+      { targetRoom: '102', rtCode: 'STD-SGL' },
+      { targetRoom: '107', rtCode: 'STD-DBL' },
+      { targetRoom: '203', rtCode: 'STD-DBL' },
+      { targetRoom: '208', rtCode: 'SUP-TWN' },
+      { targetRoom: '303', rtCode: 'SUP-DBL' },
+      { targetRoom: '403', rtCode: 'DLX-BALCONY' },
+    ];
+
     for (let i = 0; i < arrivalRooms.length; i++) {
-      const roomNum = arrivalRooms[i]!;
-      const room = roomMap.get(roomNum)!;
-      const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: room.roomTypeId } });
-      const guest = guestList[guestIdx++ % guestList.length];
+      const arr = arrivalRooms[i]!;
+      const rt = roomTypeMap.get(arr.rtCode)!;
+      const guest = guestList[guestIdx++ % guestList.length]!;
 
       const checkInDate = today;
       const checkOutDate = addDays(today, 2);
-      const totalRate = parseFloat(rt.basePrice.toString()) * 2;
+      const totalNights = 2;
+      const totalRate = parseFloat(rt.basePrice.toString()) * totalNights;
       const bookingCreatedAt = new Date(`${addDays(today, -2)}T09:30:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-ARR${roomNum}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-ARR-${arr.targetRoom}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
@@ -1097,36 +1209,48 @@ async function main() {
         },
       });
 
-      await prisma.reservationRoom.create({
+      const resRoom = await prisma.reservationRoom.create({
         data: {
           hotelId: hotel.id,
           reservationId: res.id,
           roomTypeId: rt.id,
-          roomId: room.id,
-          adults: 2,
+          roomId: null, // roomId is null until actual check-in!
+          adults: Math.min(2, rt.maxAdults),
           children: 0,
           createdAt: bookingCreatedAt,
         },
       });
-    }
-    console.info(`✅ Đã tạo 6 Đơn đặt phòng dự kiến đến hôm nay (Expected Arrivals).`);
 
-    // C. 4 UNASSIGNED RESERVATIONS (RoomId is null)
+      for (let n = 0; n < totalNights; n++) {
+        const stayDate = addDays(checkInDate, n);
+        await prisma.reservationRoomNight.create({
+          data: {
+            reservationRoomId: resRoom.id,
+            stayDate: new Date(`${stayDate}T00:00:00.000Z`),
+            nightlyRate: rt.basePrice,
+          },
+        });
+      }
+    }
+    console.info(`✅ Đã tạo 6 Đơn đặt phòng dự kiến đến hôm nay (Expected Arrivals, roomId: null).`);
+
+    // C. 4 UNASSIGNED FUTURE RESERVATIONS
     const unassignedTypes = ['STD-DBL', 'SUP-DBL', 'DLX-BALCONY', 'SUITE-EXEC'];
     for (let i = 0; i < unassignedTypes.length; i++) {
       const rtCode = unassignedTypes[i]!;
       const rt = roomTypeMap.get(rtCode)!;
-      const guest = guestList[guestIdx++ % guestList.length];
+      const guest = guestList[guestIdx++ % guestList.length]!;
 
       const checkInDate = addDays(today, 1);
       const checkOutDate = addDays(today, 3);
-      const totalRate = parseFloat(rt.basePrice.toString()) * 2;
+      const totalNights = 2;
+      const totalRate = parseFloat(rt.basePrice.toString()) * totalNights;
       const bookingCreatedAt = new Date(`${addDays(today, -1)}T11:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-UNASSIGN-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-UNASSIGN-0${i + 1}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
@@ -1138,39 +1262,50 @@ async function main() {
         },
       });
 
-      await prisma.reservationRoom.create({
+      const resRoom = await prisma.reservationRoom.create({
         data: {
           hotelId: hotel.id,
           reservationId: res.id,
           roomTypeId: rt.id,
           roomId: null, // UNASSIGNED!
-          adults: 2,
+          adults: Math.min(2, rt.maxAdults),
           children: 0,
           createdAt: bookingCreatedAt,
         },
       });
+
+      for (let n = 0; n < totalNights; n++) {
+        const stayDate = addDays(checkInDate, n);
+        await prisma.reservationRoomNight.create({
+          data: {
+            reservationRoomId: resRoom.id,
+            stayDate: new Date(`${stayDate}T00:00:00.000Z`),
+            nightlyRate: rt.basePrice,
+          },
+        });
+      }
     }
     console.info(`✅ Đã tạo 4 Đặt phòng chưa gán phòng (Unassigned Bookings) để test Matrix.`);
 
     // D. 10 PAST CHECKED-OUT STAYS (Distributed across past 11 days for natural reporting)
     const pastStaysConfig = [
-      { roomNum: '103', checkInDaysAgo: 5, stayNights: 4 }, // -5 to -1
-      { roomNum: '110', checkInDaysAgo: 6, stayNights: 4 }, // -6 to -2
-      { roomNum: '307', checkInDaysAgo: 7, stayNights: 4 }, // -7 to -3
-      { roomNum: '410', checkInDaysAgo: 4, stayNights: 3 }, // -4 to -1
-      { roomNum: '102', checkInDaysAgo: 9, stayNights: 3 }, // -9 to -6
-      { roomNum: '107', checkInDaysAgo: 10, stayNights: 3 }, // -10 to -7
-      { roomNum: '203', checkInDaysAgo: 8, stayNights: 4 }, // -8 to -4
-      { roomNum: '208', checkInDaysAgo: 11, stayNights: 3 }, // -11 to -8
-      { roomNum: '303', checkInDaysAgo: 7, stayNights: 3 }, // -7 to -4
-      { roomNum: '403', checkInDaysAgo: 6, stayNights: 4 }, // -6 to -2
+      { roomNum: '103', checkInDaysAgo: 5, stayNights: 4 },
+      { roomNum: '110', checkInDaysAgo: 6, stayNights: 4 },
+      { roomNum: '307', checkInDaysAgo: 7, stayNights: 4 },
+      { roomNum: '410', checkInDaysAgo: 4, stayNights: 3 },
+      { roomNum: '102', checkInDaysAgo: 9, stayNights: 3 },
+      { roomNum: '107', checkInDaysAgo: 10, stayNights: 3 },
+      { roomNum: '203', checkInDaysAgo: 8, stayNights: 4 },
+      { roomNum: '208', checkInDaysAgo: 11, stayNights: 3 },
+      { roomNum: '303', checkInDaysAgo: 7, stayNights: 3 },
+      { roomNum: '403', checkInDaysAgo: 6, stayNights: 4 },
     ];
 
     for (let i = 0; i < pastStaysConfig.length; i++) {
       const item = pastStaysConfig[i]!;
-      const guest = guestList[guestIdx++ % guestList.length];
+      const guest = guestList[guestIdx++ % guestList.length]!;
       const targetRoom = roomMap.get(item.roomNum)!;
-      const rt = await prisma.roomType.findUniqueOrThrow({ where: { id: targetRoom.roomTypeId } });
+      const rt = roomTypeMap.get(targetRoom.roomTypeId ? (Array.from(roomTypeMap.values()).find(t => t.id === targetRoom.roomTypeId)?.code ?? 'STD-DBL') : 'STD-DBL')!;
       const checkInDate = addDays(today, -item.checkInDaysAgo);
       const checkOutDate = addDays(checkInDate, item.stayNights);
       const pastTotalAmount = (parseFloat(rt.basePrice.toString()) * item.stayNights).toFixed(2);
@@ -1179,7 +1314,7 @@ async function main() {
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-PAST-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-PAST-0${i + 1}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
@@ -1197,7 +1332,7 @@ async function main() {
           reservationId: res.id,
           roomTypeId: rt.id,
           roomId: targetRoom.id,
-          adults: rt.maxAdults,
+          adults: Math.min(2, rt.maxAdults),
           children: 0,
           createdAt: bookingCreatedAt,
         },
@@ -1230,6 +1365,16 @@ async function main() {
         },
       });
 
+      await prisma.billingAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: receptionist.id,
+          action: 'FOLIO_OPENED',
+          entityId: folio.id,
+          createdAt: new Date(`${checkInDate}T14:15:00.000Z`),
+        },
+      });
+
       for (let n = 0; n < item.stayNights; n++) {
         const pastNight = await prisma.reservationRoomNight.create({
           data: {
@@ -1247,14 +1392,14 @@ async function main() {
             roomNightId: pastNight.id,
             sourceId: pastNight.id,
             amount: rt.basePrice,
-            description: `Tiền phòng ${item.roomNum} (Đêm ${n + 1})`,
+            description: `Tiền phòng ${item.roomNum} (${pastNight.stayDate.toISOString().slice(0, 10)})`,
             createdBy: accountant.id,
             createdAt: new Date(`${addDays(checkInDate, n)}T23:59:00.000Z`),
           },
         });
       }
 
-      await prisma.payment.create({
+      const pastPayment = await prisma.payment.create({
         data: {
           hotelId: hotel.id,
           folioId: folio.id,
@@ -1262,13 +1407,33 @@ async function main() {
           paymentMethod: i % 2 === 0 ? 'BANK_TRANSFER' : 'CASH',
           amount: pastTotalAmount,
           status: 'CONFIRMED',
-          referenceNumber: `PAST-SETTLED-${i + 1}`,
+          referenceNumber: `PAST-SETTLED-0${i + 1}`,
           processedBy: accountant.id,
           processedAt: new Date(`${checkOutDate}T11:25:00.000Z`),
         },
       });
+
+      await prisma.billingAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: accountant.id,
+          action: 'PAYMENT_RECORDED',
+          entityId: pastPayment.id,
+          createdAt: new Date(`${checkOutDate}T11:25:00.000Z`),
+        },
+      });
+
+      await prisma.billingAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: accountant.id,
+          action: 'FOLIO_CLOSED',
+          entityId: folio.id,
+          createdAt: new Date(`${checkOutDate}T11:30:00.000Z`),
+        },
+      });
     }
-    console.info(`✅ Đã tạo 10 Lịch sử lưu trú quá khứ đã trả phòng và tất toán trải đều các ngày.`);
+    console.info(`✅ Đã tạo 10 Lịch sử lưu trú quá khứ đã trả phòng và tất toán hoàn tất.`);
 
     // E. 3 CANCELLED RESERVATIONS
     const cancelledConfig = [
@@ -1278,25 +1443,25 @@ async function main() {
     ];
     for (let i = 0; i < cancelledConfig.length; i++) {
       const cfg = cancelledConfig[i]!;
-      const rt = roomTypesConfig[i % roomTypesConfig.length]!;
-      const rtRecord = roomTypeMap.get(rt.code)!;
-      const guest = guestList[guestIdx++ % guestList.length];
+      const rtDef = roomTypesConfig[i % roomTypesConfig.length]!;
+      const rtRecord = roomTypeMap.get(rtDef.code)!;
+      const guest = guestList[guestIdx++ % guestList.length]!;
       const checkInDate = addDays(today, 2 + i);
       const checkOutDate = addDays(checkInDate, 2);
-      const totalAmount = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
+      const totalRate = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
       const createdDate = new Date(`${addDays(today, -cfg.daysAgoCreated)}T09:00:00.000Z`);
       const cancelledDate = new Date(`${addDays(today, -cfg.daysAgoCancelled)}T14:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-CANC-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-CANC-0${i + 1}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'CANCELLED',
           bookingSource: cfg.source,
-          totalAmount,
+          totalAmount: totalRate,
           createdBy: receptionist.id,
           createdAt: createdDate,
           cancelledAt: cancelledDate,
@@ -1305,17 +1470,28 @@ async function main() {
         },
       });
 
-      await prisma.reservationRoom.create({
+      const resRoom = await prisma.reservationRoom.create({
         data: {
           hotelId: hotel.id,
           reservationId: res.id,
           roomTypeId: rtRecord.id,
           roomId: null,
-          adults: 2,
+          adults: Math.min(2, rtRecord.maxAdults),
           children: 0,
           createdAt: createdDate,
         },
       });
+
+      for (let n = 0; n < 2; n++) {
+        const stayDate = addDays(checkInDate, n);
+        await prisma.reservationRoomNight.create({
+          data: {
+            reservationRoomId: resRoom.id,
+            stayDate: new Date(`${stayDate}T00:00:00.000Z`),
+            nightlyRate: rtRecord.basePrice,
+          },
+        });
+      }
     }
     console.info(`✅ Đã tạo 3 Đơn đặt phòng đã hủy (Cancelled Reservations).`);
 
@@ -1326,49 +1502,60 @@ async function main() {
     ];
     for (let i = 0; i < noShowConfig.length; i++) {
       const cfg = noShowConfig[i]!;
-      const rt = roomTypesConfig[(i + 2) % roomTypesConfig.length]!;
-      const rtRecord = roomTypeMap.get(rt.code)!;
-      const guest = guestList[guestIdx++ % guestList.length];
+      const rtDef = roomTypesConfig[(i + 2) % roomTypesConfig.length]!;
+      const rtRecord = roomTypeMap.get(rtDef.code)!;
+      const guest = guestList[guestIdx++ % guestList.length]!;
       const checkInDate = addDays(today, -cfg.checkInDaysAgo);
       const checkOutDate = addDays(checkInDate, 2);
-      const totalAmount = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
+      const totalRate = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
       const createdDate = new Date(`${addDays(today, -cfg.daysAgoCreated)}T11:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
           hotelId: hotel.id,
-          confirmationCode: `RES-NOSHOW-${i + 1}-${randomUUID().slice(0, 4).toUpperCase()}`,
+          confirmationCode: `RES-NOSHOW-0${i + 1}`,
           bookerGuestId: guest.id,
           checkInDate: new Date(`${checkInDate}T00:00:00.000Z`),
           checkOutDate: new Date(`${checkOutDate}T00:00:00.000Z`),
           status: 'NO_SHOW',
           bookingSource: cfg.source,
-          totalAmount,
+          totalAmount: totalRate,
           createdBy: receptionist.id,
           createdAt: createdDate,
         },
       });
 
-      await prisma.reservationRoom.create({
+      const resRoom = await prisma.reservationRoom.create({
         data: {
           hotelId: hotel.id,
           reservationId: res.id,
           roomTypeId: rtRecord.id,
           roomId: null,
-          adults: 2,
+          adults: Math.min(2, rtRecord.maxAdults),
           children: 0,
           createdAt: createdDate,
         },
       });
+
+      for (let n = 0; n < 2; n++) {
+        const stayDate = addDays(checkInDate, n);
+        await prisma.reservationRoomNight.create({
+          data: {
+            reservationRoomId: resRoom.id,
+            stayDate: new Date(`${stayDate}T00:00:00.000Z`),
+            nightlyRate: rtRecord.basePrice,
+          },
+        });
+      }
     }
     console.info(`✅ Đã tạo 2 Đơn đặt phòng khách không đến (No-Show Reservations).`);
 
-    // E. HOUSEKEEPING TASKS
+    // G. HOUSEKEEPING TASKS & OPERATIONS AUDIT LOGS
     // 1. DIRTY rooms -> PENDING tasks
     const dirtyRooms = ['103', '110', '307', '410'];
     for (const rNum of dirtyRooms) {
       const room = roomMap.get(rNum)!;
-      await prisma.housekeepingTask.create({
+      const task = await prisma.housekeepingTask.create({
         data: {
           hotelId: hotel.id,
           roomId: room.id,
@@ -1379,11 +1566,22 @@ async function main() {
           createdBy: hkLead.id,
         },
       });
+
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkLead.id,
+          taskId: task.id,
+          action: 'TASK_CREATED',
+          toStatus: 'PENDING',
+          notes: task.notes,
+        },
+      });
     }
 
     // 2. CLEANING rooms -> IN_PROGRESS tasks
     const cleaningRoom1 = roomMap.get('108')!;
-    await prisma.housekeepingTask.create({
+    const taskCleaning1 = await prisma.housekeepingTask.create({
       data: {
         hotelId: hotel.id,
         roomId: cleaningRoom1.id,
@@ -1397,8 +1595,42 @@ async function main() {
       },
     });
 
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskCleaning1.id,
+        action: 'TASK_CREATED',
+        toStatus: 'PENDING',
+        notes: taskCleaning1.notes,
+        createdAt: new Date(`${today}T08:00:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskCleaning1.id,
+        action: 'TASK_ASSIGNED',
+        toStatus: 'PENDING',
+        notes: `Assigned to staff ${hkMai.id}`,
+        createdAt: new Date(`${today}T08:15:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkMai.id,
+        taskId: taskCleaning1.id,
+        action: 'TASK_START',
+        fromStatus: 'PENDING',
+        toStatus: 'IN_PROGRESS',
+        createdAt: new Date(`${today}T08:30:00.000Z`),
+      },
+    });
+
     const cleaningRoom2 = roomMap.get('304')!;
-    await prisma.housekeepingTask.create({
+    const taskCleaning2 = await prisma.housekeepingTask.create({
       data: {
         hotelId: hotel.id,
         roomId: cleaningRoom2.id,
@@ -1412,9 +1644,43 @@ async function main() {
       },
     });
 
-    // 3. INSPECTION room -> AWAITING_INSPECTION task
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskCleaning2.id,
+        action: 'TASK_CREATED',
+        toStatus: 'PENDING',
+        notes: taskCleaning2.notes,
+        createdAt: new Date(`${today}T08:45:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskCleaning2.id,
+        action: 'TASK_ASSIGNED',
+        toStatus: 'PENDING',
+        notes: `Assigned to staff ${hkTuan.id}`,
+        createdAt: new Date(`${today}T08:50:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkTuan.id,
+        taskId: taskCleaning2.id,
+        action: 'TASK_START',
+        fromStatus: 'PENDING',
+        toStatus: 'IN_PROGRESS',
+        createdAt: new Date(`${today}T09:00:00.000Z`),
+      },
+    });
+
+    // 3. INSPECTION room -> AWAITING_INSPECTION task (must have completedAt set before inspection!)
     const inspectionRoom = roomMap.get('209')!;
-    await prisma.housekeepingTask.create({
+    const taskInspection = await prisma.housekeepingTask.create({
       data: {
         hotelId: hotel.id,
         roomId: inspectionRoom.id,
@@ -1423,35 +1689,148 @@ async function main() {
         priority: 'NORMAL',
         assignedTo: hkCuc.id,
         startedAt: new Date(`${today}T08:00:00.000Z`),
+        completedAt: new Date(`${today}T08:45:00.000Z`),
         notes: 'Đã dọn xong, chờ Trưởng nhóm nghiệm thu chất lượng',
         createdBy: hkLead.id,
       },
     });
 
-    // 4. COMPLETED tasks (past performance)
-    for (let c = 0; c < 6; c++) {
-      await prisma.housekeepingTask.create({
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskInspection.id,
+        action: 'TASK_CREATED',
+        toStatus: 'PENDING',
+        notes: taskInspection.notes,
+        createdAt: new Date(`${today}T07:45:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkLead.id,
+        taskId: taskInspection.id,
+        action: 'TASK_ASSIGNED',
+        toStatus: 'PENDING',
+        notes: `Assigned to staff ${hkCuc.id}`,
+        createdAt: new Date(`${today}T07:50:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkCuc.id,
+        taskId: taskInspection.id,
+        action: 'TASK_START',
+        fromStatus: 'PENDING',
+        toStatus: 'IN_PROGRESS',
+        createdAt: new Date(`${today}T08:00:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkCuc.id,
+        taskId: taskInspection.id,
+        action: 'TASK_COMPLETE',
+        fromStatus: 'IN_PROGRESS',
+        toStatus: 'AWAITING_INSPECTION',
+        createdAt: new Date(`${today}T08:45:00.000Z`),
+      },
+    });
+
+    // 4. COMPLETED tasks (Turnover history distributed across past checkouts)
+    const completedTaskRooms = ['102', '107', '203', '208', '303', '403'];
+    for (let c = 0; c < completedTaskRooms.length; c++) {
+      const rNum = completedTaskRooms[c]!;
+      const room = roomMap.get(rNum)!;
+      const started = new Date(`${addDays(today, -1)}T08:00:00.000Z`);
+      const completed = new Date(`${addDays(today, -1)}T09:00:00.000Z`);
+      const inspected = new Date(`${addDays(today, -1)}T09:15:00.000Z`);
+
+      const compTask = await prisma.housekeepingTask.create({
         data: {
           hotelId: hotel.id,
-          roomId: roomMap.get('102')!.id,
-          activeRoomId: null, // COMPLETED tasks have activeRoomId = null
+          roomId: room.id,
+          activeRoomId: null, // COMPLETED tasks release activeRoomId
           status: 'COMPLETED',
           priority: 'NORMAL',
           assignedTo: hkMai.id,
-          startedAt: new Date(`${addDays(today, -1)}T08:00:00.000Z`),
-          completedAt: new Date(`${addDays(today, -1)}T09:00:00.000Z`),
-          inspectedAt: new Date(`${addDays(today, -1)}T09:15:00.000Z`),
+          startedAt: started,
+          completedAt: completed,
+          inspectedAt: inspected,
           inspectedBy: hkLead.id,
-          notes: 'Hoàn thành đạt chuẩn 5 sao',
+          notes: `Hoàn thành dọn phòng ${rNum} đạt chuẩn 5 sao`,
           createdBy: hkLead.id,
         },
       });
-    }
-    console.info(`✅ Đã tạo các nhiệm vụ Buồng phòng ở cả 4 cột Kanban.`);
 
-    // F. MAINTENANCE TICKETS & BLOCKS
-    // Block 1: Room 104 (Plumbing leak)
+      // Populate operations_audit_logs so reports compute accurate completed and inspected task metrics
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkLead.id,
+          taskId: compTask.id,
+          action: 'TASK_CREATED',
+          toStatus: 'PENDING',
+          createdAt: new Date(`${addDays(today, -1)}T07:45:00.000Z`),
+        },
+      });
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkLead.id,
+          taskId: compTask.id,
+          action: 'TASK_ASSIGNED',
+          toStatus: 'PENDING',
+          notes: `Assigned to staff ${hkMai.id}`,
+          createdAt: new Date(`${addDays(today, -1)}T07:50:00.000Z`),
+        },
+      });
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkMai.id,
+          taskId: compTask.id,
+          action: 'TASK_START',
+          fromStatus: 'PENDING',
+          toStatus: 'IN_PROGRESS',
+          createdAt: started,
+        },
+      });
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkMai.id,
+          taskId: compTask.id,
+          action: 'TASK_COMPLETE',
+          fromStatus: 'IN_PROGRESS',
+          toStatus: 'AWAITING_INSPECTION',
+          createdAt: completed,
+        },
+      });
+      await prisma.operationsAuditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorId: hkLead.id,
+          taskId: compTask.id,
+          action: 'INSPECTION_PASSED',
+          fromStatus: 'AWAITING_INSPECTION',
+          toStatus: 'COMPLETED',
+          notes: 'Nghiệm thu đạt chuẩn 5 sao',
+          createdAt: inspected,
+        },
+      });
+    }
+    console.info(`✅ Đã tạo các nhiệm vụ Buồng phòng ở cả 4 cột Kanban và ghi nhận audit log.`);
+
+    // H. MAINTENANCE TICKETS & BLOCKS
+    // Block 1: Room 104 (Plumbing leak) - reportedAt precedes startedAt
     const room104 = roomMap.get('104')!;
+    const ticket104ReportedAt = new Date(`${addDays(today, -2)}T14:00:00.000Z`);
+    const ticket104StartedAt = new Date(`${addDays(today, -1)}T16:00:00.000Z`);
+
     const ticket104 = await prisma.maintenanceTicket.create({
       data: {
         hotelId: hotel.id,
@@ -1462,11 +1841,47 @@ async function main() {
         status: 'IN_PROGRESS',
         reportedBy: receptionist.id,
         assignedTo: technician.id,
-        startedAt: new Date(`${addDays(today, -1)}T16:00:00.000Z`),
+        reportedAt: ticket104ReportedAt,
+        startedAt: ticket104StartedAt,
+        createdAt: ticket104ReportedAt,
       },
     });
 
-    await prisma.maintenanceBlock.create({
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: receptionist.id,
+        ticketId: ticket104.id,
+        action: 'TICKET_REPORTED',
+        toStatus: 'OPEN',
+        createdAt: ticket104ReportedAt,
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: staffMap.get('manager')!.id,
+        ticketId: ticket104.id,
+        action: 'TICKET_ASSIGNED',
+        fromStatus: 'OPEN',
+        toStatus: 'ASSIGNED',
+        notes: `Assigned to staff ${technician.id}`,
+        createdAt: new Date(`${addDays(today, -1)}T15:00:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: technician.id,
+        ticketId: ticket104.id,
+        action: 'TICKET_START',
+        fromStatus: 'ASSIGNED',
+        toStatus: 'IN_PROGRESS',
+        createdAt: ticket104StartedAt,
+      },
+    });
+
+    const block104 = await prisma.maintenanceBlock.create({
       data: {
         hotelId: hotel.id,
         roomId: room104.id,
@@ -1476,11 +1891,27 @@ async function main() {
         status: 'ACTIVE',
         reason: 'Sửa chữa và thay thế đường ống nước phòng tắm',
         createdBy: technician.id,
+        createdAt: ticket104StartedAt,
       },
     });
 
-    // Block 2: Room 206 (Air conditioner repair)
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: technician.id,
+        blockId: block104.id,
+        action: 'BLOCK_CREATED',
+        toStatus: 'ACTIVE',
+        notes: block104.reason,
+        createdAt: ticket104StartedAt,
+      },
+    });
+
+    // Block 2: Room 206 (Air conditioner repair) - reportedAt precedes startedAt
     const room206 = roomMap.get('206')!;
+    const ticket206ReportedAt = new Date(`${addDays(today, -1)}T17:00:00.000Z`);
+    const ticket206StartedAt = new Date(`${today}T08:00:00.000Z`);
+
     const ticket206 = await prisma.maintenanceTicket.create({
       data: {
         hotelId: hotel.id,
@@ -1491,11 +1922,47 @@ async function main() {
         status: 'IN_PROGRESS',
         reportedBy: hkMai.id,
         assignedTo: techLong.id,
-        startedAt: new Date(`${today}T08:00:00.000Z`),
+        reportedAt: ticket206ReportedAt,
+        startedAt: ticket206StartedAt,
+        createdAt: ticket206ReportedAt,
       },
     });
 
-    await prisma.maintenanceBlock.create({
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkMai.id,
+        ticketId: ticket206.id,
+        action: 'TICKET_REPORTED',
+        toStatus: 'OPEN',
+        createdAt: ticket206ReportedAt,
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: staffMap.get('manager')!.id,
+        ticketId: ticket206.id,
+        action: 'TICKET_ASSIGNED',
+        fromStatus: 'OPEN',
+        toStatus: 'ASSIGNED',
+        notes: `Assigned to staff ${techLong.id}`,
+        createdAt: new Date(`${today}T07:30:00.000Z`),
+      },
+    });
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: techLong.id,
+        ticketId: ticket206.id,
+        action: 'TICKET_START',
+        fromStatus: 'ASSIGNED',
+        toStatus: 'IN_PROGRESS',
+        createdAt: ticket206StartedAt,
+      },
+    });
+
+    const block206 = await prisma.maintenanceBlock.create({
       data: {
         hotelId: hotel.id,
         roomId: room206.id,
@@ -1505,11 +1972,25 @@ async function main() {
         status: 'ACTIVE',
         reason: 'Bảo dưỡng cục nóng và nạp gas máy lạnh',
         createdBy: techLong.id,
+        createdAt: ticket206StartedAt,
+      },
+    });
+
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: techLong.id,
+        blockId: block206.id,
+        action: 'BLOCK_CREATED',
+        toStatus: 'ACTIVE',
+        notes: block206.reason,
+        createdAt: ticket206StartedAt,
       },
     });
 
     // Open ticket: Room 307
-    await prisma.maintenanceTicket.create({
+    const ticket307ReportedAt = new Date(`${today}T09:00:00.000Z`);
+    const ticket307 = await prisma.maintenanceTicket.create({
       data: {
         hotelId: hotel.id,
         roomId: roomMap.get('307')!.id,
@@ -1518,11 +1999,25 @@ async function main() {
         priority: 'LOW',
         status: 'OPEN',
         reportedBy: hkCuc.id,
+        reportedAt: ticket307ReportedAt,
+        createdAt: ticket307ReportedAt,
+      },
+    });
+
+    await prisma.operationsAuditLog.create({
+      data: {
+        hotelId: hotel.id,
+        actorId: hkCuc.id,
+        ticketId: ticket307.id,
+        action: 'TICKET_REPORTED',
+        toStatus: 'OPEN',
+        createdAt: ticket307ReportedAt,
       },
     });
     console.info(`✅ Đã tạo các phiếu sự cố kỹ thuật và 2 Lệnh khóa phòng bảo trì (Room 104 & 206).`);
-    // G. SEED INVENTORY MODULE
-    console.info('📦 Bắt đầu khởi tạo dữ liệu mẫu Module Inventory (20 vật tư, phiếu nhập, xuất, kiểm kê)...');
+
+    // I. SEED INVENTORY MODULE
+    console.info('📦 Bắt đầu khởi tạo dữ liệu mẫu Module Inventory...');
     const categoryMap = new Map<string, bigint>();
     for (const cat of demoInventoryCategories) {
       const category = await prisma.inventoryCategory.upsert({
@@ -1534,7 +2029,11 @@ async function main() {
           description: cat.description,
           isActive: true,
         },
-        update: {},
+        update: {
+          name: cat.name,
+          description: cat.description,
+          isActive: true,
+        },
       });
       categoryMap.set(cat.code, category.id);
     }
@@ -1554,12 +2053,20 @@ async function main() {
           notes: sup.notes,
           isActive: true,
         },
-        update: {},
+        update: {
+          name: sup.name,
+          contactPerson: sup.contactPerson,
+          phone: sup.phone,
+          email: sup.email,
+          address: sup.address,
+          notes: sup.notes,
+          isActive: true,
+        },
       });
       supplierMap.set(sup.code, supplier.id);
     }
 
-    const itemMap = new Map<string, { id: bigint; code: string; name: string }>();
+    const itemMap = new Map<string, { id: bigint; code: string; name: string; supplierCode: string; unitPrice: string; initialStock: string }>();
     for (const it of demoInventoryItems) {
       const categoryId = categoryMap.get(it.categoryCode);
       if (!categoryId) continue;
@@ -1577,40 +2084,60 @@ async function main() {
           currentStock: new Prisma.Decimal('0.00'),
           isActive: true,
         },
-        update: {},
+        update: {
+          categoryId,
+          name: it.name,
+          unit: it.unit,
+          description: it.description,
+          minStockLevel: new Prisma.Decimal(it.minStockLevel),
+          currentStock: new Prisma.Decimal('0.00'),
+          isActive: true,
+        },
       });
-      itemMap.set(it.code, { id: item.id, code: item.code, name: item.name });
+      itemMap.set(it.code, {
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        supplierCode: it.supplierCode,
+        unitPrice: it.unitPrice,
+        initialStock: it.initialStock,
+      });
     }
 
     const staffActor = staffMap.get('admin') ?? receptionist;
-    const receiptNumber = 'REC-INIT-SEED01';
-    const existingReceipt = await prisma.stockReceipt.findFirst({
-      where: { hotelId: hotel.id, receiptNumber },
-    });
 
-    if (!existingReceipt) {
-      const supplierId = supplierMap.get('SUP-ASIA') ?? null;
-      let totalAmount = new Prisma.Decimal(0);
-      for (const it of demoInventoryItems) {
+    // 1. Initial Stock Receipts (Split per supplier)
+    const supplierList = [
+      { code: 'SUP-ASIA', receiptNumber: 'REC-INIT-ASIA', notes: 'Nhập kho ban đầu amenities và minibar' },
+      { code: 'SUP-NAMVIET', receiptNumber: 'REC-INIT-NAMVIET', notes: 'Nhập kho ban đầu đồ vải và giặt là' },
+      { code: 'SUP-ECOCLEAN', receiptNumber: 'REC-INIT-ECOCLEAN', notes: 'Nhập kho ban đầu hóa chất vệ sinh' },
+      { code: 'SUP-TANPHAT', receiptNumber: 'REC-INIT-TANPHAT', notes: 'Nhập kho ban đầu vật tư kỹ thuật tòa nhà' },
+    ];
+
+    for (const supCfg of supplierList) {
+      const supplierId = supplierMap.get(supCfg.code) ?? null;
+      const itemsForSupplier = Array.from(itemMap.values()).filter(it => it.supplierCode === supCfg.code);
+      if (itemsForSupplier.length === 0) continue;
+
+      let receiptTotal = new Prisma.Decimal(0);
+      for (const it of itemsForSupplier) {
         const lineTotal = new Prisma.Decimal(it.initialStock).mul(new Prisma.Decimal(it.unitPrice));
-        totalAmount = totalAmount.add(lineTotal);
+        receiptTotal = receiptTotal.add(lineTotal);
       }
 
       const receipt = await prisma.stockReceipt.create({
         data: {
           hotelId: hotel.id,
           supplierId,
-          receiptNumber,
-          receiptDate: new Date(),
-          totalAmount,
-          notes: 'Phiếu nhập kho ban đầu thiết lập số dư tồn đầu kỳ cho hệ thống',
+          receiptNumber: supCfg.receiptNumber,
+          receiptDate: new Date(`${addDays(today, -7)}T08:00:00.000Z`),
+          totalAmount: receiptTotal,
+          notes: supCfg.notes,
           createdBy: staffActor.id,
         },
       });
 
-      for (const it of demoInventoryItems) {
-        const itemMeta = itemMap.get(it.code);
-        if (!itemMeta) continue;
+      for (const it of itemsForSupplier) {
         const qty = new Prisma.Decimal(it.initialStock);
         const price = new Prisma.Decimal(it.unitPrice);
         const lineTotal = qty.mul(price);
@@ -1619,7 +2146,7 @@ async function main() {
           data: {
             hotelId: hotel.id,
             receiptId: receipt.id,
-            itemId: itemMeta.id,
+            itemId: it.id,
             quantity: qty,
             unitPrice: price,
             lineTotal,
@@ -1628,20 +2155,20 @@ async function main() {
         });
 
         const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
-          where: { id: itemMeta.id },
+          where: { id: it.id },
         });
         const prevStock = currentItem.currentStock;
         const newStock = prevStock.add(qty);
 
         await prisma.inventoryItem.update({
-          where: { id: itemMeta.id },
+          where: { id: it.id },
           data: { currentStock: newStock },
         });
 
         await prisma.inventoryMovement.create({
           data: {
             hotelId: hotel.id,
-            itemId: itemMeta.id,
+            itemId: it.id,
             type: 'RECEIPT',
             quantity: qty,
             previousStock: prevStock,
@@ -1649,105 +2176,101 @@ async function main() {
             referenceType: 'STOCK_RECEIPT',
             referenceId: receipt.id,
             referenceNumber: receipt.receiptNumber,
-            notes: 'Nhập kho ban đầu',
+            notes: `Stock Receipt ${receipt.receiptNumber}`,
             createdBy: staffActor.id,
+            createdAt: receipt.receiptDate,
           },
         });
       }
     }
 
-    const issueNumber = 'ISS-DEMO-HK01';
-    const existingIssue = await prisma.stockIssue.findFirst({
-      where: { hotelId: hotel.id, issueNumber },
-    });
+    // 2. Stock Issue to Housekeeping
+    const soapItem = itemMap.get('AMEN-SG-40ML');
+    const toothBrushItem = itemMap.get('AMEN-TB-01');
 
-    if (!existingIssue) {
-      const soapItem = itemMap.get('AMEN-SG-40ML');
-      const toothBrushItem = itemMap.get('AMEN-TB-01');
+    if (soapItem && toothBrushItem) {
+      const issueDate = new Date(`${today}T07:30:00.000Z`);
+      const issue = await prisma.stockIssue.create({
+        data: {
+          hotelId: hotel.id,
+          issueNumber: 'ISS-DEMO-HK01',
+          issueDate,
+          department: 'Housekeeping',
+          purpose: 'Cấp phát vật tư phòng khách tầng 3 & tầng 4',
+          notes: 'Xuất kho ca sáng',
+          createdBy: staffActor.id,
+        },
+      });
 
-      if (soapItem && toothBrushItem) {
-        const issue = await prisma.stockIssue.create({
+      const issueLines = [
+        { meta: soapItem, qty: new Prisma.Decimal('30.00') },
+        { meta: toothBrushItem, qty: new Prisma.Decimal('50.00') },
+      ];
+
+      for (const line of issueLines) {
+        await prisma.stockIssueItem.create({
           data: {
             hotelId: hotel.id,
-            issueNumber,
-            issueDate: new Date(),
-            department: 'Housekeeping',
-            purpose: 'Cấp phát vật tư phòng khách tầng 3 & tầng 4',
-            notes: 'Xuất kho ca sáng',
-            createdBy: staffActor.id,
+            issueId: issue.id,
+            itemId: line.meta.id,
+            quantity: line.qty,
+            notes: 'Xuất cấp phát phòng',
           },
         });
 
-        const issueLines = [
-          { meta: soapItem, qty: new Prisma.Decimal('30.00') },
-          { meta: toothBrushItem, qty: new Prisma.Decimal('50.00') },
-        ];
+        const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
+          where: { id: line.meta.id },
+        });
+        const prevStock = currentItem.currentStock;
+        const newStock = prevStock.sub(line.qty);
 
-        for (const line of issueLines) {
-          await prisma.stockIssueItem.create({
-            data: {
-              hotelId: hotel.id,
-              issueId: issue.id,
-              itemId: line.meta.id,
-              quantity: line.qty,
-              notes: 'Xuất cấp phát phòng',
-            },
-          });
+        await prisma.inventoryItem.update({
+          where: { id: line.meta.id },
+          data: { currentStock: newStock },
+        });
 
-          const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
-            where: { id: line.meta.id },
-          });
-          const prevStock = currentItem.currentStock;
-          const newStock = prevStock.sub(line.qty);
-
-          await prisma.inventoryItem.update({
-            where: { id: line.meta.id },
-            data: { currentStock: newStock },
-          });
-
-          await prisma.inventoryMovement.create({
-            data: {
-              hotelId: hotel.id,
-              itemId: line.meta.id,
-              type: 'ISSUE',
-              quantity: line.qty,
-              previousStock: prevStock,
-              currentStock: newStock,
-              referenceType: 'STOCK_ISSUE',
-              referenceId: issue.id,
-              referenceNumber: issue.issueNumber,
-              notes: 'Xuất kho cho Housekeeping',
-              createdBy: staffActor.id,
-            },
-          });
-        }
+        // Quantity in InventoryMovement for ISSUE must be negative to match InventoryService.createIssue()
+        await prisma.inventoryMovement.create({
+          data: {
+            hotelId: hotel.id,
+            itemId: line.meta.id,
+            type: 'ISSUE',
+            quantity: line.qty.negated(),
+            previousStock: prevStock,
+            currentStock: newStock,
+            referenceType: 'STOCK_ISSUE',
+            referenceId: issue.id,
+            referenceNumber: issue.issueNumber,
+            notes: `Issued to Housekeeping (Cấp phát vật tư phòng khách tầng 3 & tầng 4)`,
+            createdBy: staffActor.id,
+            createdAt: issueDate,
+          },
+        });
       }
     }
 
-    const adjNumber = 'ADJ-DEMO-CHK01';
+    // 3. Stock Adjustment
     const waterItem = itemMap.get('AMEN-WATER');
-    const existingAdj = await prisma.stockAdjustment.findFirst({
-      where: { hotelId: hotel.id, adjustmentNumber: adjNumber },
-    });
-
-    if (!existingAdj && waterItem) {
+    if (waterItem) {
       const currentItem = await prisma.inventoryItem.findUniqueOrThrow({
         where: { id: waterItem.id },
       });
       const systemQty = currentItem.currentStock;
       const actualQty = systemQty.add(new Prisma.Decimal('5.00'));
       const diff = actualQty.sub(systemQty);
+      const adjDate = new Date(`${today}T08:15:00.000Z`);
 
       const adj = await prisma.stockAdjustment.create({
         data: {
           hotelId: hotel.id,
-          adjustmentNumber: adjNumber,
+          adjustmentNumber: 'ADJ-DEMO-CHK01',
           itemId: waterItem.id,
           systemQuantity: systemQty,
           actualQuantity: actualQty,
           difference: diff,
           reason: 'Kiểm kê định kỳ phát hiện thừa 5 chai nước đóng thùng nguyên vẹn',
           createdBy: staffActor.id,
+          createdAt: adjDate,
         },
       });
 
@@ -1767,26 +2290,120 @@ async function main() {
           referenceType: 'STOCK_ADJUSTMENT',
           referenceId: adj.id,
           referenceNumber: adj.adjustmentNumber,
-          notes: 'Điều chỉnh sau kiểm kê',
+          notes: `Adjustment: ${adj.reason}`,
           createdBy: staffActor.id,
+          createdAt: adjDate,
         },
       });
     }
-    console.info('✅ Đã tạo 20 vật tư kho, phiếu nhập ban đầu, phiếu xuất và phiếu kiểm kê.');
+    console.info('✅ Đã tạo 20 vật tư kho, phiếu nhập theo nhà cung cấp, phiếu xuất và phiếu kiểm kê.');
 
+    // ----------------------------------------------------
+    // J. PREFLIGHT ASSERTIONS (VALIDATE BUSINESS INVARIANTS)
+    // ----------------------------------------------------
+    const totalStaff = await prisma.staffUser.count({ where: { hotelId: hotel.id } });
+    if (totalStaff !== 18) throw new Error(`Assertion failed: Expected 18 staff, got ${totalStaff}`);
+
+    const totalRooms = await prisma.room.count({ where: { hotelId: hotel.id } });
+    if (totalRooms !== 40) throw new Error(`Assertion failed: Expected 40 rooms, got ${totalRooms}`);
+
+    const activeOccupancies = await prisma.roomOccupancy.count({ where: { hotelId: hotel.id } });
+    if (activeOccupancies !== 20) throw new Error(`Assertion failed: Expected 20 active occupancies, got ${activeOccupancies}`);
+
+    const preassignedArrivals = await prisma.reservationRoom.count({
+      where: {
+        hotelId: hotel.id,
+        reservation: { status: 'CONFIRMED' },
+        roomId: { not: null },
+      },
+    });
+    if (preassignedArrivals > 0) throw new Error(`Assertion failed: Found ${preassignedArrivals} un-checked-in rooms with preassigned physical roomId`);
+
+    const missingRoomNights = await prisma.reservationRoom.count({
+      where: {
+        hotelId: hotel.id,
+        nights: { none: {} },
+      },
+    });
+    if (missingRoomNights > 0) throw new Error(`Assertion failed: Found ${missingRoomNights} reservation rooms without price snapshots`);
+
+    const awaitingWithoutCompleted = await prisma.housekeepingTask.count({
+      where: {
+        hotelId: hotel.id,
+        status: 'AWAITING_INSPECTION',
+        completedAt: null,
+      },
+    });
+    if (awaitingWithoutCompleted > 0) throw new Error(`Assertion failed: Found awaiting inspection tasks without completedAt`);
+
+    const positiveIssues = await prisma.inventoryMovement.count({
+      where: {
+        hotelId: hotel.id,
+        type: 'ISSUE',
+        quantity: { gt: 0 },
+      },
+    });
+    if (positiveIssues > 0) throw new Error(`Assertion failed: Found ${positiveIssues} ISSUE inventory movements with positive quantity`);
+
+    console.info('✅ Toàn bộ 7 Preflight Invariant Assertions đã vượt qua thành công!');
+
+    // ----------------------------------------------------
+    // K. DYNAMIC SUMMARY LOGGING (COMPUTED DIRECTLY FROM DB)
+    // ----------------------------------------------------
+    const [
+      actualRoomCount,
+      actualRoomTypeCount,
+      actualStaffCount,
+      actualGuestCount,
+      actualOccupiedCount,
+      actualArrivalsCount,
+      actualUnassignedCount,
+      actualPastCount,
+      actualCancelledCount,
+      actualNoShowCount,
+      actualTasksCount,
+      actualBlocksCount,
+      actualTicketsCount,
+      actualItemsCount,
+      actualReceiptsCount,
+      actualIssuesCount,
+      actualAdjustmentsCount,
+      actualMovementsCount,
+    ] = await Promise.all([
+      prisma.room.count({ where: { hotelId: hotel.id } }),
+      prisma.roomType.count({ where: { hotelId: hotel.id } }),
+      prisma.staffUser.count({ where: { hotelId: hotel.id } }),
+      prisma.guest.count({ where: { hotelId: hotel.id } }),
+      prisma.roomOccupancy.count({ where: { hotelId: hotel.id } }),
+      prisma.reservation.count({ where: { hotelId: hotel.id, status: 'CONFIRMED', confirmationCode: { startsWith: 'RES-ARR' } } }),
+      prisma.reservation.count({ where: { hotelId: hotel.id, status: 'CONFIRMED', confirmationCode: { startsWith: 'RES-UNASSIGN' } } }),
+      prisma.reservation.count({ where: { hotelId: hotel.id, status: 'CHECKED_OUT' } }),
+      prisma.reservation.count({ where: { hotelId: hotel.id, status: 'CANCELLED' } }),
+      prisma.reservation.count({ where: { hotelId: hotel.id, status: 'NO_SHOW' } }),
+      prisma.housekeepingTask.count({ where: { hotelId: hotel.id } }),
+      prisma.maintenanceBlock.count({ where: { hotelId: hotel.id, status: 'ACTIVE' } }),
+      prisma.maintenanceTicket.count({ where: { hotelId: hotel.id } }),
+      prisma.inventoryItem.count({ where: { hotelId: hotel.id } }),
+      prisma.stockReceipt.count({ where: { hotelId: hotel.id } }),
+      prisma.stockIssue.count({ where: { hotelId: hotel.id } }),
+      prisma.stockAdjustment.count({ where: { hotelId: hotel.id } }),
+      prisma.inventoryMovement.count({ where: { hotelId: hotel.id } }),
+    ]);
 
     console.info('\n🎉 ========================================================');
     console.info('🎉 ĐỒNG BỘ CƠ SỞ DỮ LIỆU INNVYRA PMS 40 PHÒNG THÀNH CÔNG!');
     console.info('🎉 ========================================================');
-    console.info(`• Khách sạn: ${hotel.name}`);
-    console.info(`• Tổng số phòng: 40 phòng (4 tầng, 101–410) | 6 Hạng phòng phân cấp`);
-    console.info(`• Tổng nhân sự: ${staffMap.size} nhân viên (đủ ca trực) | Mật khẩu chung: ${demoPassword}`);
-    console.info(`• Hồ sơ khách: 35 khách hàng`);
-    console.info(`• Lưu trú thực tế: 20 phòng đang ở (In-House Stays) - Phòng Matrix hiển thị xanh`);
-    console.info(`• Khóa bảo trì: 2 phòng (104, 206) - Phòng Matrix hiển thị đỏ`);
-    console.info(`• Dự kiến đến hôm nay: 6 đơn | Chưa gán phòng: 4 đơn`);
-    console.info(`• Buồng phòng: Đầy đủ 4 cột Kanban | Sổ công nợ: Đầy đủ Debit & Credit`);
-    console.info(`• Kho vật tư: 20 mặt hàng, 5 danh mục, 4 nhà cung cấp, đủ lịch sử nhập/xuất/kiểm kê`);
+    console.info(`• Khách sạn: ${hotel.name} (Code: ${hotel.code}, ID: ${hotel.id})`);
+    console.info(`• Tổng số phòng: ${actualRoomCount} phòng | ${actualRoomTypeCount} Hạng phòng phân cấp`);
+    console.info(`• Tổng nhân sự: ${actualStaffCount} tài khoản (đủ ca trực) | Mật khẩu chung: ${demoPassword}`);
+    console.info(`• Hồ sơ khách: ${actualGuestCount} khách hàng (đã mã hóa hồ sơ)`);
+    console.info(`• Lưu trú thực tế: ${actualOccupiedCount} phòng đang ở (In-House Stays) - Phòng Matrix hiển thị xanh`);
+    console.info(`• Khóa bảo trì: ${actualBlocksCount} phòng đang khóa (104, 206) - ${actualTicketsCount} phiếu kỹ thuật`);
+    console.info(`• Đặt phòng dự kiến đến hôm nay: ${actualArrivalsCount} đơn (chưa gán phòng vật lý)`);
+    console.info(`• Đặt phòng tương lai chưa gán: ${actualUnassignedCount} đơn`);
+    console.info(`• Lịch sử trả phòng & tất toán: ${actualPastCount} đơn | Đã hủy: ${actualCancelledCount} đơn | No-show: ${actualNoShowCount} đơn`);
+    console.info(`• Buồng phòng: ${actualTasksCount} nhiệm vụ (đủ 4 cột Kanban + audit log hoàn thành/nghiệm thu)`);
+    console.info(`• Kho vật tư: ${actualItemsCount} mặt hàng | ${actualReceiptsCount} phiếu nhập | ${actualIssuesCount} phiếu xuất | ${actualAdjustmentsCount} phiếu kiểm kê | ${actualMovementsCount} biến động kho`);
     console.info('========================================================\n');
   } finally {
     await prisma.$disconnect();
