@@ -469,10 +469,17 @@ export const HousekeepingPage: React.FC = () => {
       appMessage.success('Đã bắt đầu dọn phòng! Trạng thái phòng: CLEANING.');
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['dirty-rooms'] });
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu dọn phòng.');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        'Không thể bắt đầu dọn phòng.';
+      appMessage.error(msg);
+      queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 
@@ -836,8 +843,12 @@ export const HousekeepingPage: React.FC = () => {
                     type="primary"
                     icon={<PlayCircleOutlined />}
                     style={{ background: '#1b4d3e', borderColor: '#1b4d3e' }}
-                    loading={startMutation.isPending}
-                    onClick={() => startMutation.mutate(task.id)}
+                    loading={startMutation.isPending && startMutation.variables === task.id}
+                    disabled={startMutation.isPending}
+                    onClick={() => {
+                      if (startMutation.isPending) return;
+                      startMutation.mutate(task.id);
+                    }}
                   >
                     Bắt đầu
                   </Button>

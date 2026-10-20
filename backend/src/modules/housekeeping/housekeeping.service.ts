@@ -34,15 +34,21 @@ export class HousekeepingService {
     return task;
   }
   private async usable(repo: HousekeepingRepository, scope: OperationsScope, roomId: bigint) {
-    const room = await repo.room(scope.hotelId, roomId);
+    let room = await repo.room(scope.hotelId, roomId);
     if (!room) throw new AppError(404, 'ROOM_NOT_FOUND', 'Room not found');
     if (room.occupancy)
       conflict('ROOM_CURRENTLY_OCCUPIED', 'Turnover cleaning requires a vacant room');
-    if (
-      !room.isActive ||
-      room.physicalStatus !== 'ACTIVE' ||
-      (await repo.currentBlock(scope.hotelId, roomId))
-    )
+    const activeBlock = await repo.currentBlock(scope.hotelId, roomId);
+    if (activeBlock)
+      conflict('ROOM_UNDER_MAINTENANCE', 'Room must be active and free of current maintenance');
+    if (room.physicalStatus === 'MAINTENANCE') {
+      await repo.roomState(scope.hotelId, roomId, {
+        physicalStatus: 'ACTIVE',
+        maintenanceManaged: false,
+      });
+      room = { ...room, physicalStatus: 'ACTIVE', maintenanceManaged: false };
+    }
+    if (!room.isActive || room.physicalStatus !== 'ACTIVE')
       conflict('ROOM_UNDER_MAINTENANCE', 'Room must be active and free of current maintenance');
     return room;
   }

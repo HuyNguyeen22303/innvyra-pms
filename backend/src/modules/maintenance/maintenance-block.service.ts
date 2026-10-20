@@ -145,7 +145,6 @@ export class MaintenanceBlockService {
       });
       if (action === 'release') {
         if (
-          room.maintenanceManaged &&
           room.physicalStatus === 'MAINTENANCE' &&
           !(await repo.currentBlock(scope.hotelId, room.id))
         )
