@@ -38,28 +38,28 @@ response:
           "id": "301",
           "hotelId": "301",
           "roomId": "301",
-          "createdAt": "2008-09-01T07:03:44.749Z",
-          "updatedAt": "1966-06-29T19:52:36.746Z",
+          "createdAt": "2024-06-05T18:29:05.472Z",
+          "updatedAt": "2023-06-11T14:48:34.676Z",
           "room": {
             "id": "301",
             "roomNumber": "string",
-            "floorNumber": 3063,
+            "floorNumber": 2018,
             "roomTypeId": "301",
-            "physicalStatus": "ACTIVE",
-            "housekeepingStatus": "DIRTY",
-            "isActive": true
+            "physicalStatus": "OUT_OF_SERVICE",
+            "housekeepingStatus": "CLEANING",
+            "isActive": false
           },
           "title": "string",
           "description": "string",
-          "priority": "CRITICAL",
-          "status": "OPEN",
+          "priority": "NORMAL",
+          "status": "RESOLVED",
           "reportedBy": "301",
           "assignedTo": "301",
           "resolvedBy": "301",
-          "reportedAt": "1983-02-17T04:02:27.968Z",
-          "startedAt": "1978-06-03T00:33:28.620Z",
-          "resolvedAt": "2000-02-08T08:58:18.371Z",
-          "closedAt": "2003-06-23T00:18:12.282Z",
+          "reportedAt": "1958-04-29T07:06:33.336Z",
+          "startedAt": "2005-08-26T00:08:26.186Z",
+          "resolvedAt": "1995-10-06T17:16:23.413Z",
+          "closedAt": "1982-05-06T23:16:41.231Z",
           "resolutionNotes": "string",
           "history": [
             {
@@ -73,7 +73,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "1963-09-06T22:33:15.239Z"
+              "createdAt": "1967-06-30T12:09:13.029Z"
             },
             {
               "id": "301",
@@ -86,7 +86,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "2015-08-22T01:25:35.713Z"
+              "createdAt": "2005-11-30T03:37:46.461Z"
             }
           ]
         }

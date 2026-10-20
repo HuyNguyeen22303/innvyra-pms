@@ -223,4 +223,116 @@ export class PrismaReportRepository {
       UNION ALL SELECT 'activeMaintenanceBlocks', COUNT(*) FROM maintenance_blocks
         WHERE hotel_id = ${hotelId} AND status IN ('ACTIVE', 'SCHEDULED') AND start_date <= CAST(${today} AS DATE)`);
   }
+  async procurementSeries(
+    hotelId: bigint,
+    days: ReportDay[],
+    supplierId?: string,
+    categoryId?: string,
+  ) {
+    return this.db.$queryRaw<{ date: string; totalExpense: Prisma.Decimal; receiptCount: DbNumber }[]>(
+      Prisma.sql`
+      WITH days AS (${dayTable(days)})
+      SELECT /*+ MAX_EXECUTION_TIME(10000) */ d.date,
+        COALESCE(SUM(sr.total_amount), 0) AS totalExpense,
+        COUNT(sr.id) AS receiptCount
+      FROM days d
+      LEFT JOIN stock_receipts sr ON sr.hotel_id = ${hotelId}
+        AND sr.receipt_date >= d.starts AND sr.receipt_date < d.ends
+        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
+        ${
+          categoryId
+            ? Prisma.sql`AND EXISTS(SELECT 1 FROM stock_receipt_items sri
+                JOIN inventory_items ii ON ii.id = sri.item_id
+                WHERE sri.receipt_id = sr.id AND ii.category_id = ${BigInt(categoryId)})`
+            : Prisma.empty
+        }
+      GROUP BY d.date
+      ORDER BY d.date ASC`,
+    );
+  }
+  async procurementByCategory(
+    hotelId: bigint,
+    from: Date,
+    until: Date,
+    supplierId?: string,
+  ) {
+    return this.db.$queryRaw<
+      { categoryId: DbNumber; categoryName: string; totalAmount: Prisma.Decimal; totalQuantity: Prisma.Decimal }[]
+    >(Prisma.sql`
+      SELECT /*+ MAX_EXECUTION_TIME(10000) */ c.id AS categoryId,
+        c.name AS categoryName,
+        SUM(sri.line_total) AS totalAmount,
+        SUM(sri.quantity) AS totalQuantity
+      FROM stock_receipt_items sri
+      JOIN stock_receipts sr ON sr.id = sri.receipt_id
+      JOIN inventory_items ii ON ii.id = sri.item_id
+      JOIN inventory_categories c ON c.id = ii.category_id
+      WHERE sr.hotel_id = ${hotelId}
+        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
+        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
+      GROUP BY c.id, c.name
+      ORDER BY totalAmount DESC`);
+  }
+  async procurementBySupplier(
+    hotelId: bigint,
+    from: Date,
+    until: Date,
+    categoryId?: string,
+  ) {
+    return this.db.$queryRaw<
+      {
+        supplierId: DbNumber;
+        supplierName: string;
+        receiptCount: DbNumber;
+        totalAmount: Prisma.Decimal;
+      }[]
+    >(Prisma.sql`
+      SELECT /*+ MAX_EXECUTION_TIME(10000) */ s.id AS supplierId,
+        s.name AS supplierName,
+        COUNT(DISTINCT sr.id) AS receiptCount,
+        SUM(sr.total_amount) AS totalAmount
+      FROM stock_receipts sr
+      LEFT JOIN suppliers s ON s.id = sr.supplier_id AND s.hotel_id = ${hotelId}
+      WHERE sr.hotel_id = ${hotelId}
+        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
+        ${
+          categoryId
+            ? Prisma.sql`AND EXISTS(SELECT 1 FROM stock_receipt_items sri
+                JOIN inventory_items ii ON ii.id = sri.item_id
+                WHERE sri.receipt_id = sr.id AND ii.category_id = ${BigInt(categoryId)})`
+            : Prisma.empty
+        }
+      GROUP BY s.id, s.name
+      ORDER BY totalAmount DESC`);
+  }
+  async procurementTopItems(hotelId: bigint, from: Date, until: Date, supplierId?: string) {
+    return this.db.$queryRaw<
+      {
+        itemId: DbNumber;
+        sku: string;
+        name: string;
+        categoryName: string;
+        unit: string;
+        totalQuantity: Prisma.Decimal;
+        totalAmount: Prisma.Decimal;
+      }[]
+    >(Prisma.sql`
+      SELECT /*+ MAX_EXECUTION_TIME(10000) */ ii.id AS itemId,
+        ii.code AS sku,
+        ii.name,
+        c.name AS categoryName,
+        ii.unit,
+        SUM(sri.quantity) AS totalQuantity,
+        SUM(sri.line_total) AS totalAmount
+      FROM stock_receipt_items sri
+      JOIN stock_receipts sr ON sr.id = sri.receipt_id
+      JOIN inventory_items ii ON ii.id = sri.item_id
+      JOIN inventory_categories c ON c.id = ii.category_id
+      WHERE sr.hotel_id = ${hotelId}
+        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
+        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
+      GROUP BY ii.id, ii.code, ii.name, c.name, ii.unit
+      ORDER BY totalAmount DESC
+      LIMIT 10`);
+  }
 }

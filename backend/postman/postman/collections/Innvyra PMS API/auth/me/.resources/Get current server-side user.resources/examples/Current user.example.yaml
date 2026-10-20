@@ -27,7 +27,7 @@ response:
           "fullName": "System Administrator",
           "username": "admin",
           "email": "string",
-          "role": "ACCOUNTANT",
+          "role": "ADMIN",
           "hotelId": "1",
           "isActive": true
         }

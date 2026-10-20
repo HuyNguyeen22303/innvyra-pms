@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=ASSIGNED&priority=NORMAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=CANCELLED&priority=CRITICAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
   method: GET
   headers:
     - key: Accept
@@ -26,11 +26,11 @@ request:
       disabled: false
       description: ""
     - key: status
-      value: ASSIGNED
+      value: CANCELLED
       disabled: false
       description: ""
     - key: priority
-      value: NORMAL
+      value: CRITICAL
       disabled: false
       description: ""
     - key: roomId
@@ -73,64 +73,64 @@ response:
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1968-02-10T22:35:37.279Z",
-              "updatedAt": "1961-11-02T03:49:39.040Z",
+              "createdAt": "1989-07-20T16:41:38.615Z",
+              "updatedAt": "1998-08-31T15:10:28.293Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 5559,
+                "floorNumber": 6409,
                 "roomTypeId": "301",
-                "physicalStatus": "MAINTENANCE",
-                "housekeepingStatus": "DIRTY",
-                "isActive": true
+                "physicalStatus": "OUT_OF_SERVICE",
+                "housekeepingStatus": "READY",
+                "isActive": false
               },
               "title": "string",
               "description": "string",
-              "priority": "LOW",
-              "status": "OPEN",
+              "priority": "CRITICAL",
+              "status": "CLOSED",
               "reportedBy": "301",
               "assignedTo": "301",
               "resolvedBy": "301",
-              "reportedAt": "2011-01-13T00:17:42.670Z",
-              "startedAt": "1948-09-09T09:51:37.396Z",
-              "resolvedAt": "2005-07-03T04:17:44.459Z",
-              "closedAt": "1983-08-08T19:59:06.005Z",
-              "resolutionNotes": "string"
+              "reportedAt": "2016-04-25T19:20:46.140Z",
+              "startedAt": "2007-05-06T00:51:06.657Z",
+              "resolvedAt": "1966-09-20T09:33:23.148Z",
+              "closedAt": "2014-02-07T05:28:04.742Z",
+              "resolutionNotes": "st"
             },
             {
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1971-10-29T17:31:12.526Z",
-              "updatedAt": "2019-11-03T09:24:05.871Z",
+              "createdAt": "1987-07-09T09:38:19.000Z",
+              "updatedAt": "2009-12-19T00:08:37.234Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 6033,
+                "floorNumber": 4199,
                 "roomTypeId": "301",
-                "physicalStatus": "MAINTENANCE",
-                "housekeepingStatus": "DIRTY",
-                "isActive": true
+                "physicalStatus": "OUT_OF_SERVICE",
+                "housekeepingStatus": "CLEANING",
+                "isActive": false
               },
               "title": "string",
               "description": "string",
-              "priority": "NORMAL",
-              "status": "ASSIGNED",
+              "priority": "HIGH",
+              "status": "IN_PROGRESS",
               "reportedBy": "301",
               "assignedTo": "301",
               "resolvedBy": "301",
-              "reportedAt": "1977-05-21T14:26:09.305Z",
-              "startedAt": "1975-10-01T22:11:53.429Z",
-              "resolvedAt": "2002-02-02T22:25:09.732Z",
-              "closedAt": "2023-07-17T10:40:32.835Z",
+              "reportedAt": "1948-04-22T23:53:32.302Z",
+              "startedAt": "2010-06-05T16:51:42.245Z",
+              "resolvedAt": "2025-05-06T13:20:43.523Z",
+              "closedAt": "1953-07-04T22:21:21.550Z",
               "resolutionNotes": "string"
             }
           ],
           "pagination": {
-            "page": 6776,
-            "limit": 9938,
-            "total": 1885,
-            "totalPages": 5030
+            "page": 7045,
+            "limit": 93,
+            "total": 7413,
+            "totalPages": 5600
           }
         }
       }

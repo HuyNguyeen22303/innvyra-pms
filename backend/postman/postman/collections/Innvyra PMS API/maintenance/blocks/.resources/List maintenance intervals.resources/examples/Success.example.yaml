@@ -65,15 +65,39 @@ response:
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1959-11-17T09:07:17.389Z",
-              "updatedAt": "2023-12-22T03:43:23.695Z",
+              "createdAt": "1969-03-14T10:01:57.638Z",
+              "updatedAt": "1948-12-05T22:16:35.043Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 1615,
+                "floorNumber": 471,
                 "roomTypeId": "301",
                 "physicalStatus": "ACTIVE",
-                "housekeepingStatus": "READY",
+                "housekeepingStatus": "CLEANING",
+                "isActive": false
+              },
+              "maintenanceTicketId": "301",
+              "startDate": "2026-11-01",
+              "endDate": "2026-11-01",
+              "status": "SCHEDULED",
+              "reason": "string",
+              "createdBy": "301",
+              "releasedBy": "301",
+              "releasedAt": "1989-07-01T01:10:55.138Z"
+            },
+            {
+              "id": "301",
+              "hotelId": "301",
+              "roomId": "301",
+              "createdAt": "1976-06-10T23:48:39.126Z",
+              "updatedAt": "2025-12-13T20:17:32.933Z",
+              "room": {
+                "id": "301",
+                "roomNumber": "string",
+                "floorNumber": 5393,
+                "roomTypeId": "301",
+                "physicalStatus": "ACTIVE",
+                "housekeepingStatus": "CLEANING",
                 "isActive": false
               },
               "maintenanceTicketId": "301",
@@ -83,38 +107,14 @@ response:
               "reason": "string",
               "createdBy": "301",
               "releasedBy": "301",
-              "releasedAt": "2026-03-03T23:08:28.527Z"
-            },
-            {
-              "id": "301",
-              "hotelId": "301",
-              "roomId": "301",
-              "createdAt": "1977-08-29T23:02:03.583Z",
-              "updatedAt": "1972-09-06T21:51:00.338Z",
-              "room": {
-                "id": "301",
-                "roomNumber": "string",
-                "floorNumber": 1452,
-                "roomTypeId": "301",
-                "physicalStatus": "MAINTENANCE",
-                "housekeepingStatus": "READY",
-                "isActive": true
-              },
-              "maintenanceTicketId": "301",
-              "startDate": "2026-11-01",
-              "endDate": "2026-11-01",
-              "status": "CANCELLED",
-              "reason": "string",
-              "createdBy": "301",
-              "releasedBy": "301",
-              "releasedAt": "1958-07-31T19:40:38.377Z"
+              "releasedAt": "1971-06-27T09:06:30.250Z"
             }
           ],
           "pagination": {
-            "page": 8286,
-            "limit": 3882,
-            "total": 7611,
-            "totalPages": 226
+            "page": 5585,
+            "limit": 9263,
+            "total": 701,
+            "totalPages": 7306
           }
         }
       }

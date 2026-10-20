@@ -12,6 +12,7 @@ import {
   outstandingQuery,
   paymentQuery,
   periodQuery,
+  procurementQuery,
 } from './report.schema.js';
 import { reportController } from './report.controller.js';
 import { ExportService } from './export.service.js';
@@ -27,6 +28,7 @@ export function reportRoutes(service: ReportService, auth: AuthService, env: Env
     occupancy: occupancyQuery,
     reservations: periodQuery,
     payments: paymentQuery,
+    procurement: procurementQuery,
     operations: periodQuery,
     outstanding: outstandingQuery,
   };

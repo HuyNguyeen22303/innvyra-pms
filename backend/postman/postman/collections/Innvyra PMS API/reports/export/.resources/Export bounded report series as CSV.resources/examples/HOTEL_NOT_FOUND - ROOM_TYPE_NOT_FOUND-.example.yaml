@@ -1,7 +1,7 @@
 $kind: http-example
 name: HOTEL_NOT_FOUND / ROOM_TYPE_NOT_FOUND.
 request:
-  url: "{{baseUrl}}/reports/export?type=payments&startDate=1965-07-06&endDate=1965-07-06&groupBy=day&roomTypeId=10646658400037829&paymentMethod=BANK_TRANSFER"
+  url: "{{baseUrl}}/reports/export?type=reservations&startDate=1995-05-14&endDate=1995-05-14&groupBy=day&roomTypeId=91953479665283783&paymentMethod=CASH"
   method: GET
   headers:
     - key: Accept
@@ -11,15 +11,15 @@ request:
       description: "Added as a part of security scheme: bearer"
   queryParams:
     - key: type
-      value: payments
+      value: reservations
       disabled: false
       description: ""
     - key: startDate
-      value: 1965-07-06
+      value: 1995-05-14
       disabled: false
       description: Inclusive hotel business date.
     - key: endDate
-      value: 1965-07-06
+      value: 1995-05-14
       disabled: false
       description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
     - key: groupBy
@@ -27,11 +27,11 @@ request:
       disabled: false
       description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
     - key: roomTypeId
-      value: "10646658400037829"
+      value: "91953479665283783"
       disabled: false
       description: Must belong to authenticated hotel; foreign IDs return 404.
     - key: paymentMethod
-      value: BANK_TRANSFER
+      value: CASH
       disabled: false
       description: Filters cash activity only. Cumulative balance always includes ALL methods.
   body:

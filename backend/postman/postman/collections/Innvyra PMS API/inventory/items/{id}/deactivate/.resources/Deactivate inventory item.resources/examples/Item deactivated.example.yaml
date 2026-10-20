@@ -46,8 +46,8 @@ response:
           "isLowStock": false,
           "isOutOfStock": false,
           "isActive": true,
-          "createdAt": "2021-01-07T11:53:07.045Z",
-          "updatedAt": "1985-01-11T01:17:15.838Z",
+          "createdAt": "1979-02-13T03:26:11.735Z",
+          "updatedAt": "2004-08-25T06:35:09.552Z",
           "description": "string"
         }
       }

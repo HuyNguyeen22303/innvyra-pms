@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/inventory/receipts?page=1&limit=20&supplierId=1&startDate=1965-07-06&endDate=1965-07-06"
+  url: "{{baseUrl}}/inventory/receipts?page=1&limit=20&supplierId=1&startDate=1995-05-14&endDate=1995-05-14"
   method: GET
   headers:
     - key: Accept
@@ -12,8 +12,8 @@ request:
     page: "1"
     limit: "20"
     supplierId: "1"
-    startDate: 1965-07-06
-    endDate: 1965-07-06
+    startDate: 1995-05-14
+    endDate: 1995-05-14
   body:
     type: text
     content: ""
@@ -34,7 +34,7 @@ response:
               "id": "1",
               "hotelId": "1",
               "receiptNumber": "REC-20261018-001",
-              "receiptDate": "1957-04-17T22:41:28.643Z",
+              "receiptDate": "1996-06-10T19:59:01.687Z",
               "totalAmount": "1500000.00",
               "createdBy": "1",
               "items": [
@@ -50,7 +50,7 @@ response:
                   "quantity": "100.00",
                   "unitPrice": "15000.00",
                   "lineTotal": "1500000.00",
-                  "createdAt": "2007-04-04T13:10:25.449Z",
+                  "createdAt": "1979-08-22T04:29:18.127Z",
                   "notes": "string"
                 },
                 {
@@ -65,11 +65,11 @@ response:
                   "quantity": "100.00",
                   "unitPrice": "15000.00",
                   "lineTotal": "1500000.00",
-                  "createdAt": "2002-07-22T08:30:13.858Z",
+                  "createdAt": "1983-08-22T06:30:23.726Z",
                   "notes": "string"
                 }
               ],
-              "createdAt": "2012-02-07T02:05:28.512Z",
+              "createdAt": "2014-08-18T03:49:38.795Z",
               "supplierId": "string",
               "supplier": {
                 "id": "1",
@@ -82,13 +82,13 @@ response:
                 "fullName": "string",
                 "username": "string"
               },
-              "updatedAt": "1979-10-31T02:21:20.346Z"
+              "updatedAt": "1988-05-17T04:50:57.459Z"
             },
             {
               "id": "1",
               "hotelId": "1",
               "receiptNumber": "REC-20261018-001",
-              "receiptDate": "2005-12-30T22:01:25.230Z",
+              "receiptDate": "1981-07-30T07:22:04.828Z",
               "totalAmount": "1500000.00",
               "createdBy": "1",
               "items": [
@@ -104,7 +104,7 @@ response:
                   "quantity": "100.00",
                   "unitPrice": "15000.00",
                   "lineTotal": "1500000.00",
-                  "createdAt": "1970-02-20T16:41:29.635Z",
+                  "createdAt": "1981-03-31T08:28:23.888Z",
                   "notes": "string"
                 },
                 {
@@ -119,11 +119,11 @@ response:
                   "quantity": "100.00",
                   "unitPrice": "15000.00",
                   "lineTotal": "1500000.00",
-                  "createdAt": "2020-10-09T13:28:58.310Z",
+                  "createdAt": "2007-12-30T15:07:57.420Z",
                   "notes": "string"
                 }
               ],
-              "createdAt": "1998-11-23T01:49:25.892Z",
+              "createdAt": "1955-02-03T15:45:37.547Z",
               "supplierId": "string",
               "supplier": {
                 "id": "1",
@@ -136,14 +136,14 @@ response:
                 "fullName": "string",
                 "username": "string"
               },
-              "updatedAt": "2014-03-11T02:10:07.289Z"
+              "updatedAt": "1994-10-12T05:11:41.353Z"
             }
           ],
           "pagination": {
-            "page": 4508,
-            "limit": 2828,
-            "total": 2608,
-            "totalPages": 9679
+            "page": 9280,
+            "limit": 2675,
+            "total": 4882,
+            "totalPages": 1075
           }
         }
       }

@@ -8,6 +8,7 @@ import type {
   OutstandingQuery,
   PaymentQuery,
   PeriodQuery,
+  ProcurementQuery,
 } from './report.schema.js';
 import type { ReportService } from './report.service.js';
 
@@ -31,6 +32,7 @@ export function reportController(service: ReportService, exporter: ExportService
     payments: handle<PaymentQuery>((s, q) => service.payments(s, q)),
     operations: handle<PeriodQuery>((s, q) => service.operations(s, q)),
     outstanding: handle<OutstandingQuery>((s, q) => service.outstanding(s, q)),
+    procurement: handle<ProcurementQuery>((s, q) => service.procurement(s, q)),
     export: (async (req, res) => {
       const result = await exporter.export(
         scope(req),

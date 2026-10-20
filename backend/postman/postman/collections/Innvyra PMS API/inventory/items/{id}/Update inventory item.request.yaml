@@ -51,7 +51,7 @@ body:
   type: json
   content: |-
     {
-      "code": "string",
+      "code": "stri",
       "name": "string",
       "categoryId": "string",
       "unit": "string",
