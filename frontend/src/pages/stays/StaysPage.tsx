@@ -114,7 +114,9 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
         (r) =>
           r.roomType.id === selectedRoomItem.roomType.id &&
           r.housekeepingStatus === 'READY' &&
-          r.physicalStatus === 'ACTIVE'
+          r.physicalStatus === 'ACTIVE' &&
+          r.occupancyStatus === 'VACANT' &&
+          r.isActive !== false
       );
     }, [allRoomsList, selectedRoomItem]);
 
@@ -236,7 +238,7 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
                 onChange={(val) => setSelectedRoomId(val)}
                 options={eligibleRoomsForCheckin.map((r) => ({
                   value: r.id,
-                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
+                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ & Trống]`,
                 }))}
               />
             )}
@@ -437,7 +439,7 @@ const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
                 onChange={(val) => setToRoomId(val)}
                 options={eligibleRooms.map((r) => ({
                   value: r.id,
-                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ]`,
+                  label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber}) — [READY: Sạch sẽ & Trống]`,
                 }))}
               />
             )}
@@ -738,7 +740,7 @@ export const StaysPage: React.FC = () => {
     return { total, inHouse, checkedOut };
   }, [stays]);
 
-  // Eligible READY rooms for Transfer (must match transferStay.roomType.id, different room, and be READY & ACTIVE)
+  // Eligible READY & VACANT rooms for Transfer (must match transferStay.roomType.id, different room, and be READY, ACTIVE & VACANT)
   const eligibleRoomsForTransfer = useMemo(() => {
     if (!transferStay) return [];
     return allRoomsList.filter(
@@ -746,7 +748,9 @@ export const StaysPage: React.FC = () => {
         r.roomType.id === transferStay.roomType.id &&
         r.id !== transferStay.room.id &&
         r.housekeepingStatus === 'READY' &&
-        r.physicalStatus === 'ACTIVE'
+        r.physicalStatus === 'ACTIVE' &&
+        r.occupancyStatus === 'VACANT' &&
+        r.isActive !== false
     );
   }, [allRoomsList, transferStay]);
 
