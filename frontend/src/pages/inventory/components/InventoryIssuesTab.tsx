@@ -585,19 +585,23 @@ export const InventoryIssuesTab: React.FC = () => {
                   </Col>
 
                   <Col xs={12} sm={5}>
-                    <InputNumber
-                      min={0.01}
-                      step={1}
-                      precision={2}
-                      placeholder="Số lượng"
-                      value={line.quantity}
-                      onChange={(val) =>
-                        handleLineChange(idx, 'quantity', val !== null ? Number(val) : 0)
-                      }
-                      status={isOverStock ? 'warning' : ''}
-                      style={{ width: '100%' }}
-                      addonAfter={selectedItem?.unit || 'ĐVT'}
-                    />
+                    <Space.Compact style={{ width: '100%' }}>
+                      <InputNumber
+                        min={0.01}
+                        step={1}
+                        precision={2}
+                        placeholder="Số lượng"
+                        value={line.quantity}
+                        onChange={(val) =>
+                          handleLineChange(idx, 'quantity', val !== null ? Number(val) : 0)
+                        }
+                        status={isOverStock ? 'warning' : ''}
+                        style={{ width: '100%' }}
+                      />
+                      <Button style={{ pointerEvents: 'none', background: '#fafafa', color: '#64748b' }}>
+                        {selectedItem?.unit || 'ĐVT'}
+                      </Button>
+                    </Space.Compact>
                   </Col>
 
                   <Col xs={12} sm={4}>

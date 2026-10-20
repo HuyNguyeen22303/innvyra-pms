@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -121,18 +121,23 @@ export const InventorySuppliersTab: React.FC = () => {
 
   const handleOpenEdit = (sup: SupplierView) => {
     setEditingSupplier(sup);
-    editForm.setFieldsValue({
-      code: sup.code,
-      name: sup.name,
-      contactPerson: sup.contactPerson,
-      phone: sup.phone,
-      email: sup.email,
-      address: sup.address,
-      notes: sup.notes,
-      isActive: sup.isActive,
-    });
     setIsEditModalOpen(true);
   };
+
+  useEffect(() => {
+    if (isEditModalOpen && editingSupplier) {
+      editForm.setFieldsValue({
+        code: editingSupplier.code,
+        name: editingSupplier.name,
+        contactPerson: editingSupplier.contactPerson,
+        phone: editingSupplier.phone,
+        email: editingSupplier.email,
+        address: editingSupplier.address,
+        notes: editingSupplier.notes,
+        isActive: editingSupplier.isActive,
+      });
+    }
+  }, [isEditModalOpen, editingSupplier, editForm]);
 
   const handleCreateSubmit = async () => {
     try {

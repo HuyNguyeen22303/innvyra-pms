@@ -24,16 +24,26 @@ export const DebouncedSearchInput: React.FC<DebouncedSearchInputProps> = React.m
   ...restProps
 }) => {
   const [innerValue, setInnerValue] = useState<string>(externalValue);
+  const [prevExternalValue, setPrevExternalValue] = useState<string>(externalValue);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestCallbackRef = useRef(onChange);
-  latestCallbackRef.current = onChange;
 
-  // Keep innerValue in sync if externalValue changes from outside (e.g., reset filters)
+  // Update latest callback ref in an effect (not during render)
+  useEffect(() => {
+    latestCallbackRef.current = onChange;
+  });
+
+  // Keep innerValue in sync if externalValue changes from outside without cascading effect
+  if (externalValue !== prevExternalValue) {
+    setPrevExternalValue(externalValue);
+    setInnerValue(externalValue);
+  }
+
+  // Cancel any pending debounce timer if external value changed
   useEffect(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
-    setInnerValue(externalValue);
   }, [externalValue]);
 
   // Clean up timer on unmount

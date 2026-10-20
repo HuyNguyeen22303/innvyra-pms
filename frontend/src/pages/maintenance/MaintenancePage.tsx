@@ -78,12 +78,14 @@ const ResolveTicketModal: React.FC<ResolveTicketModalProps> = React.memo(
   ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setNotes('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!notes.trim()) {
@@ -147,12 +149,14 @@ const CancelTicketModal: React.FC<CancelTicketModalProps> = React.memo(
   ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setReason('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!reason.trim()) {
@@ -210,12 +214,14 @@ const ReleaseBlockModal: React.FC<ReleaseBlockModalProps> = React.memo(
   ({ open, block, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setNotes('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!notes.trim()) {
@@ -279,12 +285,14 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
   ({ open, block, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setReason('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!reason.trim()) {

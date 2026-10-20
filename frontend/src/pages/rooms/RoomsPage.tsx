@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -183,40 +183,55 @@ export const RoomsPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingRoom(null);
-    form.resetFields();
-    form.setFieldsValue({
-      floorNumber: 1,
-      physicalStatus: 'ACTIVE',
-      housekeepingStatus: 'DIRTY',
-      isActive: true,
-    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (record: RoomItem) => {
     setEditingRoom(record);
-    form.setFieldsValue({
-      roomNumber: record.roomNumber,
-      floorNumber: record.floorNumber,
-      roomTypeId: record.roomTypeId,
-      physicalStatus: record.physicalStatus,
-      housekeepingStatus: record.housekeepingStatus,
-      notes: record.notes,
-      isActive: record.isActive,
-    });
     setIsModalOpen(true);
   };
 
   const handleOpenQuickStatus = (record: RoomItem) => {
     if (!canManage) return;
     setStatusTargetRoom(record);
-    statusForm.setFieldsValue({
-      physicalStatus: record.physicalStatus,
-      housekeepingStatus: record.housekeepingStatus,
-      notes: record.notes,
-    });
     setIsStatusModalOpen(true);
   };
+
+  // Populate room form when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      if (editingRoom) {
+        form.setFieldsValue({
+          roomNumber: editingRoom.roomNumber,
+          floorNumber: editingRoom.floorNumber,
+          roomTypeId: editingRoom.roomTypeId,
+          physicalStatus: editingRoom.physicalStatus,
+          housekeepingStatus: editingRoom.housekeepingStatus,
+          notes: editingRoom.notes,
+          isActive: editingRoom.isActive,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          floorNumber: 1,
+          physicalStatus: 'ACTIVE',
+          housekeepingStatus: 'DIRTY',
+          isActive: true,
+        });
+      }
+    }
+  }, [isModalOpen, editingRoom, form]);
+
+  // Populate quick status form when modal opens
+  useEffect(() => {
+    if (isStatusModalOpen && statusTargetRoom) {
+      statusForm.setFieldsValue({
+        physicalStatus: statusTargetRoom.physicalStatus,
+        housekeepingStatus: statusTargetRoom.housekeepingStatus,
+        notes: statusTargetRoom.notes,
+      });
+    }
+  }, [isStatusModalOpen, statusTargetRoom, statusForm]);
 
   const handleSubmit = (values: any) => {
     if (editingRoom) {
@@ -473,7 +488,7 @@ export const RoomsPage: React.FC = () => {
 
       {/* Filter Toolbar */}
       <Card
-        bordered
+        variant="outlined"
         style={{
           borderRadius: 12,
           borderColor: '#e2e8f0',
@@ -605,7 +620,7 @@ export const RoomsPage: React.FC = () => {
                     return (
                       <Col xs={12} sm={8} md={6} lg={4} key={room.id}>
                         <Card
-                          bordered
+                          variant="outlined"
                           hoverable
                           onClick={() => handleOpenQuickStatus(room)}
                           style={{
@@ -707,7 +722,7 @@ export const RoomsPage: React.FC = () => {
       {/* VIEW MODE 2: TABLE VIEW */}
       {viewMode === 'table' && (
         <Card
-          bordered
+          variant="outlined"
           style={{
             borderRadius: 12,
             borderColor: '#cbd5e1',

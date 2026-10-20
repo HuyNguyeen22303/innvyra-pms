@@ -23,7 +23,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeesApi } from '../../../api/employees.api.ts';
 import { ROLE_CONFIG, type EmployeeItem } from '../../../types/employees.types.ts';
-import { generateSecurePassword } from './CreateEmployeeModal.tsx';
+import { generateSecurePassword } from '../../../utils/password.ts';
 
 const { Text, Paragraph } = Typography;
 
@@ -50,11 +50,18 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   const isPasswordLengthValid = passwordValue.length >= 15 && passwordValue.length <= 128;
   const isPasswordDistinctValid = passwordDistinctChars >= 8;
 
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setErrorMessage(null);
+      setSuccessNewPassword(null);
+    }
+  }
+
   useEffect(() => {
     if (open && employee) {
       form.resetFields();
-      setErrorMessage(null);
-      setSuccessNewPassword(null);
       // Pre-generate a strong password by default for convenience
       const initialPass = generateSecurePassword(16);
       form.setFieldsValue({ password: initialPass });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Layout,
   Menu,
@@ -198,10 +198,12 @@ export const MainLayout: React.FC = () => {
   const useDrawerNavigation = !screens.xl;
   const isTablet = screens.md && !screens.lg;
 
-  // Automatically close mobile drawer whenever route changes
-  useEffect(() => {
+  // Automatically close mobile drawer whenever route changes without cascading render effect
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
     setMobileDrawerOpen(false);
-  }, [location.pathname]);
+  }
 
   // Globally preload and subscribe to hotel staff directory for all pages
   useStaffDirectory();

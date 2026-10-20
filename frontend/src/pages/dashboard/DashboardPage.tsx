@@ -81,10 +81,11 @@ export const DashboardPage: React.FC = () => {
     staleTime: 30000,
   });
 
-  const arrivalsList: ReservationSummaryItem[] = Array.isArray(arrivalsRes?.data)
-    ? arrivalsRes.data
-    : Array.isArray((arrivalsRes?.data as any)?.items)
-    ? (arrivalsRes?.data as any).items
+  const rawArrivals = arrivalsRes?.data as any;
+  const arrivalsList: ReservationSummaryItem[] = Array.isArray(rawArrivals)
+    ? rawArrivals
+    : Array.isArray(rawArrivals?.items)
+    ? rawArrivals.items
     : [];
 
   // Real In-House Stays List (Checked-in Stays)

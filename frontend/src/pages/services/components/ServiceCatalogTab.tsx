@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -60,6 +60,19 @@ export const ServiceCatalogTab: React.FC = () => {
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
+
+  useEffect(() => {
+    if (isEditModalOpen && editingService) {
+      editForm.setFieldsValue({
+        code: editingService.code,
+        name: editingService.name,
+        unit: editingService.unit,
+        price: parseFloat(editingService.price),
+        description: editingService.description,
+        isActive: editingService.isActive,
+      });
+    }
+  }, [isEditModalOpen, editingService, editForm]);
 
   // Query Services
   const {
@@ -218,14 +231,6 @@ export const ServiceCatalogTab: React.FC = () => {
                   icon={<EditOutlined />}
                   onClick={() => {
                     setEditingService(record);
-                    editForm.setFieldsValue({
-                      code: record.code,
-                      name: record.name,
-                      unit: record.unit,
-                      price: parseFloat(record.price),
-                      description: record.description,
-                      isActive: record.isActive,
-                    });
                     setIsEditModalOpen(true);
                   }}
                 >

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Tabs, Typography, Space } from 'antd';
 import {
   InboxOutlined,
@@ -29,6 +29,13 @@ export const InventoryPage: React.FC = () => {
   // Determine allowed tabs based on user role
   const isManagementOrAccountant = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
   const isStaffRole = ['HOUSEKEEPING', 'TECHNICIAN'].includes(userRole);
+
+  const handleTabChange = useCallback(
+    (key: string) => {
+      setSearchParams({ tab: key }, { replace: true });
+    },
+    [setSearchParams]
+  );
 
   const availableTabItems = useMemo(() => {
     const tabs = [];
@@ -126,7 +133,7 @@ export const InventoryPage: React.FC = () => {
     }
 
     return tabs;
-  }, [userRole, isManagementOrAccountant, isStaffRole]);
+  }, [isManagementOrAccountant, handleTabChange]);
 
   // Valid tab keys
   const validKeys = useMemo(
@@ -137,10 +144,6 @@ export const InventoryPage: React.FC = () => {
   const defaultKey = isStaffRole ? 'items' : 'overview';
   const paramTab = searchParams.get('tab');
   const activeTab = paramTab && validKeys.includes(paramTab) ? paramTab : defaultKey;
-
-  const handleTabChange = (key: string) => {
-    setSearchParams({ tab: key }, { replace: true });
-  };
 
   return (
     <div style={{ padding: '0 0 24px 0' }}>

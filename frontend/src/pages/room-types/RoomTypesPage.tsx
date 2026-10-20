@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -125,28 +125,37 @@ export const RoomTypesPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingItem(null);
-    form.resetFields();
-    form.setFieldsValue({
-      maxAdults: 2,
-      maxChildren: 0,
-      isActive: true,
-    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (record: RoomTypeItem) => {
     setEditingItem(record);
-    form.setFieldsValue({
-      code: record.code,
-      name: record.name,
-      description: record.description,
-      maxAdults: record.maxAdults,
-      maxChildren: record.maxChildren,
-      basePrice: Number(record.basePrice),
-      isActive: record.isActive,
-    });
     setIsModalOpen(true);
   };
+
+  // Populate form fields after modal mounts and form instance connects
+  useEffect(() => {
+    if (isModalOpen) {
+      if (editingItem) {
+        form.setFieldsValue({
+          code: editingItem.code,
+          name: editingItem.name,
+          description: editingItem.description,
+          maxAdults: editingItem.maxAdults,
+          maxChildren: editingItem.maxChildren,
+          basePrice: Number(editingItem.basePrice),
+          isActive: editingItem.isActive,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          maxAdults: 2,
+          maxChildren: 0,
+          isActive: true,
+        });
+      }
+    }
+  }, [isModalOpen, editingItem, form]);
 
   const handleSubmit = async (values: any) => {
     if (editingItem) {
@@ -355,7 +364,7 @@ export const RoomTypesPage: React.FC = () => {
 
       {/* Main Table */}
       <Card
-        bordered
+        variant="outlined"
         style={{
           borderRadius: 12,
           borderColor: '#cbd5e1',
@@ -460,14 +469,18 @@ export const RoomTypesPage: React.FC = () => {
             label={<Text strong>Giá cơ bản niêm yết (VNĐ / đêm)</Text>}
             rules={[{ required: true, message: 'Vui lòng nhập giá phòng!' }]}
           >
-            <InputNumber
-              min={100000}
-              step={50000}
-              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
-              style={{ width: '100%' }}
-              addonAfter="₫"
-            />
+            <Space.Compact style={{ width: '100%' }}>
+              <InputNumber
+                min={100000}
+                step={50000}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0) as any}
+                style={{ width: '100%' }}
+              />
+              <Button style={{ pointerEvents: 'none', background: '#fafafa', color: '#64748b' }}>
+                ₫
+              </Button>
+            </Space.Compact>
           </Form.Item>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>

@@ -74,12 +74,14 @@ interface CompleteTaskModalProps {
 const CompleteTaskModal: React.FC<CompleteTaskModalProps> = React.memo(
   ({ open, task, confirmLoading, onCancel, onConfirm }) => {
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setNotes('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       onConfirm(notes.trim() ? notes.trim() : undefined);
@@ -140,13 +142,15 @@ const InspectTaskModal: React.FC<InspectTaskModalProps> = React.memo(
     const { message: appMessage } = AntdApp.useApp();
     const [passed, setPassed] = useState<boolean>(true);
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setPassed(true);
-        setNotes('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setPassed(true);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!passed && !notes.trim()) {
@@ -237,12 +241,14 @@ const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
   ({ open, task, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setReason('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!reason.trim()) {

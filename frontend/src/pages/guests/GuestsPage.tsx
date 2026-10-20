@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -99,11 +99,11 @@ export const GuestsPage: React.FC = () => {
   });
 
   const rawData = guestsRes?.data;
-  const rawGuests: GuestSummary[] = Array.isArray(rawData)
-    ? rawData
-    : Array.isArray((rawData as any)?.items)
-    ? (rawData as any).items
-    : [];
+  const rawGuests: GuestSummary[] = useMemo(() => {
+    if (Array.isArray(rawData)) return rawData;
+    if (Array.isArray((rawData as any)?.items)) return (rawData as any).items;
+    return [];
+  }, [rawData]);
 
   const guests: GuestSummary[] = useMemo(() => {
     if (!selectedNationality || selectedNationality === 'ALL') {
@@ -196,11 +196,6 @@ export const GuestsPage: React.FC = () => {
   // Open Create Modal
   const handleOpenCreate = () => {
     setEditingGuest(null);
-    form.resetFields();
-    form.setFieldsValue({
-      nationality: 'Việt Nam',
-      gender: 'UNSPECIFIED',
-    });
     setIsModalOpen(true);
   };
 
@@ -208,25 +203,38 @@ export const GuestsPage: React.FC = () => {
   const handleOpenEdit = async (record: GuestSummary) => {
     try {
       const res = await guestsApi.getById(record.id);
-      const detail = res.data;
-      setEditingGuest(detail);
-      form.setFieldsValue({
-        fullName: detail.fullName,
-        phone: detail.phone,
-        email: detail.email,
-        dateOfBirth: detail.dateOfBirth ? dayjs(detail.dateOfBirth) : null,
-        gender: detail.gender || 'UNSPECIFIED',
-        nationality: detail.nationality || 'Việt Nam',
-        documentType: detail.documentType,
-        documentNumber: detail.documentNumber,
-        address: detail.address,
-        notes: detail.notes,
-      });
+      setEditingGuest(res.data);
       setIsModalOpen(true);
     } catch {
       appMessage.error('Không thể lấy thông tin chi tiết để chỉnh sửa.');
     }
   };
+
+  // Populate form fields after modal mounts and form instance connects
+  useEffect(() => {
+    if (isModalOpen) {
+      if (editingGuest) {
+        form.setFieldsValue({
+          fullName: editingGuest.fullName,
+          phone: editingGuest.phone,
+          email: editingGuest.email,
+          dateOfBirth: editingGuest.dateOfBirth ? dayjs(editingGuest.dateOfBirth) : null,
+          gender: editingGuest.gender || 'UNSPECIFIED',
+          nationality: editingGuest.nationality || 'Việt Nam',
+          documentType: editingGuest.documentType,
+          documentNumber: editingGuest.documentNumber,
+          address: editingGuest.address,
+          notes: editingGuest.notes,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          nationality: 'Việt Nam',
+          gender: 'UNSPECIFIED',
+        });
+      }
+    }
+  }, [isModalOpen, editingGuest, form]);
 
   // Open Detail Drawer
   const handleOpenDetail = (record: GuestSummary) => {

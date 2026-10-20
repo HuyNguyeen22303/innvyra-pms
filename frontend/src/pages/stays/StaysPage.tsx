@@ -99,15 +99,17 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
     const [selectedRoomItem, setSelectedRoomItem] = useState<any>(null);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open && reservation) {
-        const firstUnchecked = reservation.rooms.find((r) => !r.stay);
-        setSelectedRoomItem(firstUnchecked || reservation.rooms[0] || null);
-        setSelectedRoomId(null);
-        setNotes('');
-      }
-    }, [open, reservation]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      const firstUnchecked = reservation?.rooms.find((r) => !r.stay);
+      setSelectedRoomItem(firstUnchecked || reservation?.rooms[0] || null);
+      setSelectedRoomId(null);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const eligibleRoomsForCheckin = useMemo(() => {
       if (!selectedRoomItem) return [];
@@ -291,12 +293,14 @@ interface CheckoutStayModalProps {
 const CheckoutStayModal: React.FC<CheckoutStayModalProps> = React.memo(
   ({ open, stay, confirmLoading, onCancel, onConfirm }) => {
     const [notes, setNotes] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setNotes('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setNotes('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!stay) return;
@@ -376,13 +380,15 @@ const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
     const { message: appMessage } = AntdApp.useApp();
     const [toRoomId, setToRoomId] = useState<string | null>(null);
     const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setToRoomId(null);
-        setReason('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setToRoomId(null);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!stay) return;
@@ -475,18 +481,7 @@ export const StaysPage: React.FC = () => {
   const tabParam = searchParams.get('tab');
   const reservationIdParam = searchParams.get('reservationId');
 
-  const [activeTab, setActiveTab] = useState<'stays' | 'arrivals'>(() => {
-    return tabParam === 'arrivals' ? 'arrivals' : 'stays';
-  });
-
-  // Sync activeTab when query param changes
-  useEffect(() => {
-    if (tabParam === 'arrivals' && activeTab !== 'arrivals') {
-      setActiveTab('arrivals');
-    } else if (tabParam === 'stays' && activeTab !== 'stays') {
-      setActiveTab('stays');
-    }
-  }, [tabParam, activeTab]);
+  const activeTab: 'stays' | 'arrivals' = tabParam === 'arrivals' ? 'arrivals' : 'stays';
 
   // RBAC permissions
   // read: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT']
@@ -540,9 +535,11 @@ export const StaysPage: React.FC = () => {
   });
 
   const rawStaysData = staysRes?.data;
-  const stays: StaySummaryItem[] = Array.isArray(rawStaysData)
-    ? rawStaysData
-    : rawStaysData?.items || [];
+  const stays: StaySummaryItem[] = useMemo(() => {
+    return Array.isArray(rawStaysData)
+      ? rawStaysData
+      : rawStaysData?.items || [];
+  }, [rawStaysData]);
 
   // 2. Fetch Stay Detail for Drawer
   const { data: stayDetailRes, isLoading: isLoadingStayDetail } = useQuery({
@@ -558,9 +555,12 @@ export const StaysPage: React.FC = () => {
     queryFn: () => roomsApi.getAll({ limit: 100 }),
     enabled: canWrite,
   });
-  const allRoomsList: RoomItem[] = Array.isArray(allRoomsRes?.data)
-    ? allRoomsRes.data
-    : allRoomsRes?.data?.items || [];
+  const rawRoomsData = allRoomsRes?.data;
+  const allRoomsList: RoomItem[] = useMemo(() => {
+    return Array.isArray(rawRoomsData)
+      ? rawRoomsData
+      : rawRoomsData?.items || [];
+  }, [rawRoomsData]);
 
   // 4. Fetch Pending Arrivals (Reservations with status CONFIRMED or PARTIALLY_CHECKED_IN)
   const {
@@ -682,13 +682,33 @@ export const StaysPage: React.FC = () => {
 
   // Auto-open checkin modal if reservationId is passed in URL
   useEffect(() => {
-    if (reservationIdParam && canWrite) {
-      handleOpenCheckinModal({ id: reservationIdParam } as ReservationSummaryItem);
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete('reservationId');
-      setSearchParams(nextParams, { replace: true });
-    }
-  }, [reservationIdParam, canWrite]);
+    if (!reservationIdParam || !canWrite) return;
+    let isMounted = true;
+    reservationsApi
+      .getById(reservationIdParam)
+      .then((res) => {
+        if (isMounted) {
+          setCheckinReservation(res.data);
+          setIsCheckinModalOpen(true);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          appMessage.error('Không thể lấy chi tiết đơn đặt phòng!');
+        }
+      });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('reservationId');
+        return next;
+      },
+      { replace: true }
+    );
+    return () => {
+      isMounted = false;
+    };
+  }, [reservationIdParam, canWrite, setSearchParams, appMessage]);
 
   const handleConfirmCheckin = (payload: {
     reservationId: string;
@@ -1082,7 +1102,6 @@ export const StaysPage: React.FC = () => {
       <Tabs
         activeKey={activeTab}
         onChange={(key) => {
-          setActiveTab(key as 'stays' | 'arrivals');
           setSearchParams({ tab: key });
         }}
         items={[

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Table,
   Button,
@@ -46,34 +46,39 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 
 interface BookingNotesInputProps {
-  notesRef: React.MutableRefObject<string>;
+  initialValue?: string;
   resetKey: number;
+  onChange: (val: string) => void;
 }
 
-const BookingNotesInput: React.FC<BookingNotesInputProps> = React.memo(({ notesRef, resetKey }) => {
-  const [value, setValue] = useState<string>(notesRef.current || '');
+const BookingNotesInput: React.FC<BookingNotesInputProps> = React.memo(
+  ({ initialValue = '', resetKey, onChange }) => {
+    const [value, setValue] = useState<string>(initialValue);
+    const [prevResetKey, setPrevResetKey] = useState<number>(resetKey);
 
-  useEffect(() => {
-    setValue(notesRef.current || '');
-  }, [resetKey, notesRef]);
+    if (resetKey !== prevResetKey) {
+      setPrevResetKey(resetKey);
+      setValue(initialValue);
+    }
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newVal = e.target.value;
-    setValue(newVal);
-    notesRef.current = newVal;
-  };
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newVal = e.target.value;
+      setValue(newVal);
+      onChange(newVal);
+    };
 
-  return (
-    <Input.TextArea
-      rows={3}
-      value={value}
-      onChange={handleChange}
-      placeholder="VD: Khách yêu cầu tầng cao, check-in muộn sau 19:00, xuất hóa đơn công ty..."
-      maxLength={1000}
-      showCount
-    />
-  );
-});
+    return (
+      <Input.TextArea
+        rows={3}
+        value={value}
+        onChange={handleChange}
+        placeholder="VD: Khách yêu cầu tầng cao, check-in muộn sau 19:00, xuất hóa đơn công ty..."
+        maxLength={1000}
+        showCount
+      />
+    );
+  }
+);
 
 interface CancelReservationModalProps {
   open: boolean;
@@ -87,12 +92,14 @@ const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo
   ({ open, reservation, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-      if (open) {
-        setReason('');
-      }
-    }, [open]);
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
 
     const handleOk = () => {
       if (!reason.trim()) {
@@ -261,9 +268,11 @@ export const ReservationsPage: React.FC = () => {
   });
 
   const rawResData = reservationsRes?.data;
-  const reservations: ReservationSummaryItem[] = Array.isArray(rawResData)
-    ? rawResData
-    : rawResData?.items || [];
+  const reservations: ReservationSummaryItem[] = useMemo(() => {
+    return Array.isArray(rawResData)
+      ? rawResData
+      : rawResData?.items || [];
+  }, [rawResData]);
 
   // Fetch Reservation Details when drawer opens
   const { data: reservationDetailRes, isLoading: isLoadingDetail } = useQuery({
@@ -391,7 +400,10 @@ export const ReservationsPage: React.FC = () => {
     enabled: false, // Triggered on manual click
   });
 
-  const availableRoomsList: RoomAvailabilityItem[] = availabilityRes?.data || [];
+  const rawAvailability = availabilityRes?.data;
+  const availableRoomsList: RoomAvailabilityItem[] = useMemo(() => {
+    return Array.isArray(rawAvailability) ? rawAvailability : [];
+  }, [rawAvailability]);
 
   const handleSearchAvailability = () => {
     if (!availDateRange || !availDateRange[0] || !availDateRange[1]) {
@@ -466,7 +478,7 @@ export const ReservationsPage: React.FC = () => {
     }
 
     const roomsPayload = Object.entries(selectedRoomsMap)
-      .filter(([_, config]) => config.quantity > 0)
+      .filter(([, config]) => config.quantity > 0)
       .map(([roomTypeId, config]) => ({
         roomTypeId,
         quantity: config.quantity,
@@ -1052,7 +1064,7 @@ export const ReservationsPage: React.FC = () => {
                                   <Col xs={24} md={12} lg={8} key={item.roomTypeId}>
                                     <Card
                                       size="small"
-                                      bordered
+                                      variant="outlined"
                                       style={{
                                         borderRadius: 8,
                                         borderColor: selected.quantity > 0 ? '#1677ff' : '#f0f0f0',
@@ -1255,7 +1267,13 @@ export const ReservationsPage: React.FC = () => {
                                 <Text strong style={{ display: 'block', marginBottom: 6 }}>
                                   Ghi chú đặt phòng (Yêu cầu đặc biệt):
                                 </Text>
-                                <BookingNotesInput notesRef={bookingNotesRef} resetKey={bookingNotesResetKey} />
+                                <BookingNotesInput
+                                  initialValue=""
+                                  resetKey={bookingNotesResetKey}
+                                  onChange={(val) => {
+                                    bookingNotesRef.current = val;
+                                  }}
+                                />
                               </div>
                             </Col>
 

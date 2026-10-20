@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -123,14 +123,19 @@ export const InventoryCategoriesTab: React.FC = () => {
 
   const handleOpenEdit = (category: InventoryCategoryView) => {
     setEditingCategory(category);
-    editForm.setFieldsValue({
-      code: category.code,
-      name: category.name,
-      description: category.description,
-      isActive: category.isActive,
-    });
     setIsEditModalOpen(true);
   };
+
+  useEffect(() => {
+    if (isEditModalOpen && editingCategory) {
+      editForm.setFieldsValue({
+        code: editingCategory.code,
+        name: editingCategory.name,
+        description: editingCategory.description,
+        isActive: editingCategory.isActive,
+      });
+    }
+  }, [isEditModalOpen, editingCategory, editForm]);
 
   const handleCreateSubmit = async () => {
     try {

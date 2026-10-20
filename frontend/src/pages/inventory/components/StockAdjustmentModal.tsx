@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Modal,
   Form,
@@ -34,7 +34,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   const { message: appMessage } = AntdApp.useApp();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
-  const [actualQty, setActualQty] = useState<number | null>(null);
+  const watchedActualQty = Form.useWatch('actualQuantity', form);
 
   useEffect(() => {
     if (open && item) {
@@ -45,15 +45,17 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
         reason: '',
         adjustmentNumber: '',
       });
-      setActualQty(currentStockNum);
     } else {
       form.resetFields();
-      setActualQty(null);
     }
   }, [open, item, form]);
 
   const currentSystemStock = item ? parseFloat(item.currentStock) || 0 : 0;
-  const diff = actualQty !== null ? actualQty - currentSystemStock : 0;
+  const actualQtyNum =
+    watchedActualQty !== undefined && watchedActualQty !== null && watchedActualQty !== ''
+      ? Number(watchedActualQty)
+      : null;
+  const diff = actualQtyNum !== null && !isNaN(actualQtyNum) ? actualQtyNum - currentSystemStock : 0;
 
   const adjustmentMutation = useMutation({
     mutationFn: (dto: CreateAdjustmentDto) => inventoryApi.createAdjustment(dto),
@@ -189,7 +191,6 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                 step={1}
                 precision={2}
                 placeholder="Nhập số lượng đếm được thực tế trong kho"
-                onChange={(val) => setActualQty(val !== null ? Number(val) : null)}
               />
             </Form.Item>
 

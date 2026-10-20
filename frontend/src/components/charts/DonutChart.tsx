@@ -39,40 +39,48 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   const outerR = size * 0.44;
   const innerR = size * 0.28;
 
-  let accumulatedAngle = -Math.PI / 2; // Start from 12 o'clock
+  const { slices } = data.reduce<{
+    accumulatedAngle: number;
+    slices: Array<(typeof data)[0] & { path: string; percent: string }>;
+  }>(
+    (acc, d) => {
+      const angle = (d.value / total) * 2 * Math.PI;
+      const startAngle = acc.accumulatedAngle;
+      const endAngle = startAngle + angle;
 
-  const slices = data.map((d) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    const startAngle = accumulatedAngle;
-    const endAngle = accumulatedAngle + angle;
-    accumulatedAngle += angle;
+      const x1 = cx + outerR * Math.cos(startAngle);
+      const y1 = cy + outerR * Math.sin(startAngle);
+      const x2 = cx + outerR * Math.cos(endAngle);
+      const y2 = cy + outerR * Math.sin(endAngle);
 
-    const x1 = cx + outerR * Math.cos(startAngle);
-    const y1 = cy + outerR * Math.sin(startAngle);
-    const x2 = cx + outerR * Math.cos(endAngle);
-    const y2 = cy + outerR * Math.sin(endAngle);
+      const x3 = cx + innerR * Math.cos(endAngle);
+      const y3 = cy + innerR * Math.sin(endAngle);
+      const x4 = cx + innerR * Math.cos(startAngle);
+      const y4 = cy + innerR * Math.sin(startAngle);
 
-    const x3 = cx + innerR * Math.cos(endAngle);
-    const y3 = cy + innerR * Math.sin(endAngle);
-    const x4 = cx + innerR * Math.cos(startAngle);
-    const y4 = cy + innerR * Math.sin(startAngle);
+      const largeArc = angle > Math.PI ? 1 : 0;
 
-    const largeArc = angle > Math.PI ? 1 : 0;
+      // Handle full circle edge case
+      const path =
+        d.value === total
+          ? `M ${cx} ${cy - outerR} A ${outerR} ${outerR} 0 1 1 ${cx - 0.001} ${cy - outerR} L ${cx - 0.001} ${cy - innerR} A ${innerR} ${innerR} 0 1 0 ${cx} ${cy - innerR} Z`
+          : `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`;
 
-    // Handle full circle edge case
-    const path =
-      d.value === total
-        ? `M ${cx} ${cy - outerR} A ${outerR} ${outerR} 0 1 1 ${cx - 0.001} ${cy - outerR} L ${cx - 0.001} ${cy - innerR} A ${innerR} ${innerR} 0 1 0 ${cx} ${cy - innerR} Z`
-        : `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+      const percent = ((d.value / total) * 100).toFixed(1);
 
-    const percent = ((d.value / total) * 100).toFixed(1);
+      acc.slices.push({
+        ...d,
+        path,
+        percent,
+      });
 
-    return {
-      ...d,
-      path,
-      percent,
-    };
-  });
+      return {
+        accumulatedAngle: endAngle,
+        slices: acc.slices,
+      };
+    },
+    { accumulatedAngle: -Math.PI / 2, slices: [] },
+  );
 
   return (
     <Row gutter={[24, 16]} align="middle">

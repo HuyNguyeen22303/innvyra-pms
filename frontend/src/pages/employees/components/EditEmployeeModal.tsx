@@ -47,6 +47,14 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
 
   const assignableRoles = getAssignableRoles(user?.role);
 
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setErrorMessage(null);
+    }
+  }
+
   useEffect(() => {
     if (employee && open) {
       form.setFieldsValue({
@@ -55,7 +63,6 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
         email: employee.email || '',
         role: employee.role,
       });
-      setErrorMessage(null);
     }
   }, [employee, open, form]);
 

@@ -73,12 +73,14 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
 }) => {
   const { message: appMessage } = AntdApp.useApp();
   const [reason, setReason] = useState<string>('');
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (open) {
-      setReason('');
-    }
-  }, [open]);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setReason('');
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleOk = () => {
     if (!reason.trim()) {
@@ -192,18 +194,22 @@ export const ServiceOrdersTab: React.FC = () => {
   const activeServices = activeServicesRes?.data?.items || [];
 
   const rawStays = activeStaysRes?.data;
-  const activeStays: any[] = Array.isArray(rawStays)
-    ? rawStays
-    : Array.isArray((rawStays as any)?.items)
-    ? (rawStays as any).items
-    : [];
+  const activeStays: any[] = useMemo(() => {
+    return Array.isArray(rawStays)
+      ? rawStays
+      : Array.isArray((rawStays as any)?.items)
+      ? (rawStays as any).items
+      : [];
+  }, [rawStays]);
 
   const rawReservations = activeReservationsRes?.data;
-  const allReservations: any[] = Array.isArray(rawReservations)
-    ? rawReservations
-    : Array.isArray((rawReservations as any)?.items)
-    ? (rawReservations as any).items
-    : [];
+  const allReservations: any[] = useMemo(() => {
+    return Array.isArray(rawReservations)
+      ? rawReservations
+      : Array.isArray((rawReservations as any)?.items)
+      ? (rawReservations as any).items
+      : [];
+  }, [rawReservations]);
 
   // Lookup maps for fast access in table rows
   const staysMap = useMemo(() => {
