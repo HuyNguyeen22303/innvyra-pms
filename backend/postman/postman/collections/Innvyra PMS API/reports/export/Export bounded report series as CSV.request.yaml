@@ -1,12 +1,12 @@
 $kind: http-request
 description: "ADMIN/MANAGER: all four types; ACCOUNTANT: revenue/payments only. UTF-8 BOM, quoted cells, exact Decimal strings, formula-prefix protection. No temporary files. Same scope/filters/definitions/limitations as JSON. Maximum REPORT_EXPORT_MAX_ROWS (default 366), in addition to REPORT_MAX_DAYS. Null metrics become blank, never zero. CSV contains period/grouping/quality metadata on every row; it exports series, not cumulative folio balances."
-url: "{{baseUrl}}/reports/export?type=payments&startDate=1965-07-06&endDate=1965-07-06&groupBy=day&roomTypeId=10646658400037829&paymentMethod=BANK_TRANSFER"
+url: "{{baseUrl}}/reports/export?type=reservations&startDate=1995-05-14&endDate=1995-05-14&groupBy=day&roomTypeId=91953479665283783&paymentMethod=CASH"
 method: GET
 headers:
   Accept: text/csv
 queryParams:
   - key: type
-    value: payments
+    value: reservations
     disabled: false
     description: ""
     $type: |-
@@ -28,7 +28,7 @@ queryParams:
         ]
       }
   - key: startDate
-    value: 1965-07-06
+    value: 1995-05-14
     disabled: false
     description: Inclusive hotel business date.
     $type: |-
@@ -45,7 +45,7 @@ queryParams:
         ]
       }
   - key: endDate
-    value: 1965-07-06
+    value: 1995-05-14
     disabled: false
     description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
     $type: |-
@@ -80,7 +80,7 @@ queryParams:
         }
       }
   - key: roomTypeId
-    value: "10646658400037829"
+    value: "91953479665283783"
     disabled: false
     description: Must belong to authenticated hotel; foreign IDs return 404.
     $type: |-
@@ -94,7 +94,7 @@ queryParams:
         }
       }
   - key: paymentMethod
-    value: BANK_TRANSFER
+    value: CASH
     disabled: false
     description: Filters cash activity only. Cumulative balance always includes ALL methods.
     $type: |-

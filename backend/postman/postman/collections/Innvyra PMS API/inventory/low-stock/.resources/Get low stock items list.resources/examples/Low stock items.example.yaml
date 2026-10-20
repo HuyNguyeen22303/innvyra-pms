@@ -36,7 +36,7 @@ response:
                 "id": "1",
                 "code": "string",
                 "name": "string",
-                "isActive": false
+                "isActive": true
               },
               "code": "ITEM-SHAMPOO",
               "name": "Dầu gội mini 30ml",
@@ -46,8 +46,8 @@ response:
               "isLowStock": false,
               "isOutOfStock": false,
               "isActive": true,
-              "createdAt": "2013-12-10T04:14:26.207Z",
-              "updatedAt": "2004-02-08T01:45:58.446Z",
+              "createdAt": "2021-06-04T08:56:17.434Z",
+              "updatedAt": "1964-07-02T03:47:46.424Z",
               "description": "string"
             },
             {
@@ -68,16 +68,16 @@ response:
               "isLowStock": false,
               "isOutOfStock": false,
               "isActive": true,
-              "createdAt": "1970-01-21T15:52:32.946Z",
-              "updatedAt": "1986-06-30T17:17:08.844Z",
+              "createdAt": "2021-08-31T21:04:47.940Z",
+              "updatedAt": "1951-09-09T08:51:23.038Z",
               "description": "string"
             }
           ],
           "pagination": {
-            "page": 7378,
-            "limit": 7308,
-            "total": 7564,
-            "totalPages": 9967
+            "page": 7883,
+            "limit": 469,
+            "total": 7682,
+            "totalPages": 5152
           }
         }
       }

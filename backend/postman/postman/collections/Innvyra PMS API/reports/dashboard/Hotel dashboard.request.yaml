@@ -1,12 +1,12 @@
 $kind: http-request
 description: "date defaults to hotel-local today. Rooms are a current snapshot only; another date returns rooms=null. Occupancy derives from active occupancy/Stay, not housekeeping. Receptionist response omits finance. currentGuestsCount=null because no actual guest-count history exists. Required roles: ADMIN, MANAGER, RECEPTIONIST. Hotel scope comes from the authenticated session; hotelId/role query fields are rejected. Read-only consistent snapshot, no guest PII."
-url: "{{baseUrl}}/reports/dashboard?date=1965-07-06"
+url: "{{baseUrl}}/reports/dashboard?date=1995-05-14"
 method: GET
 headers:
   Accept: application/json
 queryParams:
   - key: date
-    value: 1965-07-06
+    value: 1995-05-14
     disabled: false
     description: ""
     $type: |-

@@ -7,6 +7,7 @@ localResources:
     - ../postman/specs/Innvyra PMS API-2/index.json
     - ../postman/specs/Innvyra PMS API-3/index.json
     - ../postman/specs/Innvyra PMS API-4/index.json
+    - ../postman/specs/Innvyra PMS API-5/index.json
 resourceNameMappings:
   specs:
     - ../postman/specs/Innvyra PMS API/index.json: Innvyra PMS API
@@ -14,3 +15,4 @@ resourceNameMappings:
     - ../postman/specs/Innvyra PMS API-2/index.json: Innvyra PMS API
     - ../postman/specs/Innvyra PMS API-3/index.json: Innvyra PMS API
     - ../postman/specs/Innvyra PMS API-4/index.json: Innvyra PMS API
+    - ../postman/specs/Innvyra PMS API-5/index.json: Innvyra PMS API

@@ -1,7 +1,7 @@
 $kind: http-example
 name: Room, task, ticket or block not found in the current hotel / assigned scope
 request:
-  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=ASSIGNED&priority=NORMAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=CANCELLED&priority=CRITICAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
   method: GET
   headers:
     - key: Accept
@@ -27,11 +27,11 @@ request:
       disabled: false
       description: ""
     - key: status
-      value: ASSIGNED
+      value: CANCELLED
       disabled: false
       description: ""
     - key: priority
-      value: NORMAL
+      value: CRITICAL
       disabled: false
       description: ""
     - key: roomId

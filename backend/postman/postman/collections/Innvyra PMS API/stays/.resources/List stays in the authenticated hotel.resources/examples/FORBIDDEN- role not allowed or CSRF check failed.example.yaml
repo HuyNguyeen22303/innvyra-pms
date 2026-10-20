@@ -1,7 +1,7 @@
 $kind: http-example
 name: "FORBIDDEN: role not allowed or CSRF check failed"
 request:
-  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1965-07-06&checkOutDate=1965-07-06&search=string&sortBy=actualCheckinAt&sortOrder=desc"
+  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1995-05-14&checkOutDate=1995-05-14&search=strin&sortBy=actualCheckinAt&sortOrder=desc"
   method: GET
   headers:
     - key: Accept
@@ -31,15 +31,15 @@ request:
       disabled: false
       description: Exact current or last room number
     - key: checkInDate
-      value: 1965-07-06
+      value: 1995-05-14
       disabled: false
       description: Actual check-in hotel-local date
     - key: checkOutDate
-      value: 1965-07-06
+      value: 1995-05-14
       disabled: false
       description: Actual checkout hotel-local date
     - key: search
-      value: string
+      value: strin
       disabled: false
       description: Confirmation code substring
     - key: sortBy

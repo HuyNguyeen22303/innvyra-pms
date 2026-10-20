@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Hotel scoped. search matches confirmation code; guestSearch matches guest name and is forbidden for ACCOUNTANT. Date filters are exact dates. Summary excludes nightly rows, private notes and identity documents. Pagination follows the existing data.items/data.pagination convention."
-url: "{{baseUrl}}/reservations?page=1&limit=20&search=string&guestId=12&guestSearch=string&status=CANCELLED&checkInDate=2026-10-20&checkOutDate=2026-10-20&bookingSource=DIRECT&sortBy=createdAt&sortOrder=desc"
+url: "{{baseUrl}}/reservations?page=1&limit=20&search=string&guestId=12&guestSearch=string&status=CHECKED_OUT&checkInDate=2026-10-20&checkOutDate=2026-10-20&bookingSource=DIRECT&sortBy=createdAt&sortOrder=desc"
 method: GET
 headers:
   Accept: application/json
@@ -82,7 +82,7 @@ queryParams:
         }
       }
   - key: status
-    value: CANCELLED
+    value: CHECKED_OUT
     disabled: false
     description: Reservation status
     $type: |-

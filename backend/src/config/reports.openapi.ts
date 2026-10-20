@@ -210,6 +210,60 @@ export const reportSchemas = {
     },
     [...Object.keys(common), 'snapshotAt'],
   ),
+  ProcurementReport: obj({
+    hotelId: text,
+    timezone: common.timezone,
+    currency: common.currency,
+    startDate: date,
+    endDate: date,
+    groupBy: common.groupBy,
+    generatedAt: timestamp,
+    summary: obj({
+      totalExpense: amount,
+      receiptCount: integer,
+      averageReceiptValue: amount,
+      totalItemsPurchased: integer,
+      topSupplier: obj(
+        { id: text, name: text, totalAmount: amount },
+        ['id', 'name', 'totalAmount'],
+      ),
+    }),
+    series: {
+      type: 'array',
+      items: obj({ date, totalExpense: amount, receiptCount: integer }),
+    },
+    byCategory: {
+      type: 'array',
+      items: obj({
+        categoryId: text,
+        categoryName: text,
+        totalAmount: amount,
+        percentage: { type: 'number', minimum: 0, maximum: 100 },
+      }),
+    },
+    bySupplier: {
+      type: 'array',
+      items: obj({
+        supplierId: text,
+        supplierName: text,
+        receiptCount: integer,
+        totalAmount: amount,
+        percentage: { type: 'number', minimum: 0, maximum: 100 },
+      }),
+    },
+    topItems: {
+      type: 'array',
+      items: obj({
+        itemId: text,
+        sku: text,
+        name: text,
+        categoryName: text,
+        unit: text,
+        totalQuantity: integer,
+        totalAmount: amount,
+      }),
+    },
+  }),
 };
 
 const param = (name: string, schema: object, required = false, description = '') => ({
@@ -479,6 +533,38 @@ export const reportPaths = {
       summary: emptyBalance,
       items: [],
       pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    },
+  ),
+  '/reports/procurement': get(
+    'procurement',
+    'ProcurementReport',
+    'Procurement expense summary',
+    'Total purchase costs from stock receipts, aggregated by category, supplier, and top items. Charts/groups by category, supplier share, and top 10 highest-cost items. startDate inclusive, endDate exclusive hotel-local dates. Optional supplierId or categoryId filters refine all sections. Summary includes total expense, receipt count, average receipt value, total items purchased and top supplier. Percentages use exact Money arithmetic rounded to 2 decimal places.',
+    [
+      ...periodParams,
+      param('supplierId', { ...text, pattern: '^[1-9]\\d{0,19}$' }, false, 'Filter by supplier; applies to series, category breakdown and top items.'),
+      param('categoryId', { ...text, pattern: '^[1-9]\\d{0,19}$' }, false, 'Filter by inventory category; applies to series and supplier breakdown.'),
+    ],
+    {
+      ...exampleCommon,
+      hotelId: '1',
+      summary: {
+        totalExpense: '45200000.00',
+        receiptCount: 12,
+        averageReceiptValue: '3766666.67',
+        totalItemsPurchased: 1450,
+        topSupplier: { id: '5', name: 'Công ty TNHH Cung Ứng Khách Sạn Việt', totalAmount: '24000000.00' },
+      },
+      series: [{ date: '2026-10-01', totalExpense: '5000000.00', receiptCount: 1 }],
+      byCategory: [
+        { categoryId: '1', categoryName: 'Đồ dùng Buồng phòng', totalAmount: '22000000.00', percentage: 48.67 },
+      ],
+      bySupplier: [
+        { supplierId: '5', supplierName: 'Công ty TNHH Cung Ứng Khách Sạn Việt', receiptCount: 6, totalAmount: '24000000.00', percentage: 53.10 },
+      ],
+      topItems: [
+        { itemId: '10', sku: 'LIN-TWL-01', name: 'Khăn tắm cao cấp', categoryName: 'Đồ dùng Buồng phòng', unit: 'Cái', totalQuantity: 200, totalAmount: '16000000.00' },
+      ],
     },
   ),
   '/reports/export': {

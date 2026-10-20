@@ -22,7 +22,7 @@ request:
         "name": "Vinamilk Supply Corp",
         "contactPerson": "string",
         "phone": "string",
-        "email": "roDQn@IaH.esxs",
+        "email": "pu9@yH.nq",
         "address": "string",
         "notes": "string"
       }
@@ -43,8 +43,8 @@ response:
           "code": "SUP-001",
           "name": "Vinamilk Supply Corp",
           "isActive": true,
-          "createdAt": "1970-08-07T14:51:58.417Z",
-          "updatedAt": "1993-12-31T23:58:10.768Z",
+          "createdAt": "1980-05-31T05:15:55.365Z",
+          "updatedAt": "1972-03-01T09:35:56.820Z",
           "contactPerson": "Nguyễn Văn Nam",
           "phone": "0901234567",
           "email": "contact@vinamilk.test",

@@ -39,6 +39,13 @@ export const exportQuery = z
         message: 'Only payments accepts paymentMethod',
       });
   });
+export const procurementQuery = z
+  .object({
+    ...period,
+    supplierId: idSchema.optional(),
+    categoryId: idSchema.optional(),
+  })
+  .strict();
 export const outstandingQuery = z
   .object({
     startDate: dateOnly,
@@ -50,6 +57,7 @@ export const outstandingQuery = z
   })
   .strict();
 export type PeriodQuery = z.infer<typeof periodQuery>;
+export type ProcurementQuery = z.infer<typeof procurementQuery>;
 export type OccupancyQuery = z.infer<typeof occupancyQuery>;
 export type PaymentQuery = z.infer<typeof paymentQuery>;
 export type ExportQuery = z.infer<typeof exportQuery>;

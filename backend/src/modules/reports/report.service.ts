@@ -20,9 +20,20 @@ import type {
   OutstandingQuery,
   PaymentQuery,
   PeriodQuery,
+  ProcurementQuery,
   ReportType,
 } from './report.schema.js';
-import type { DataQuality, ReportRepository, ReportScope } from './report.types.js';
+import type {
+  DataQuality,
+  ProcurementCategoryItem,
+  ProcurementReportDto,
+  ProcurementSeriesItem,
+  ProcurementSummary,
+  ProcurementSupplierItem,
+  ReportRepository,
+  ReportScope,
+} from './report.types.js';
+import { Money } from '../billing/billing.money.js';
 
 const managers: RoleCode[] = ['ADMIN', 'MANAGER'];
 const frontDesk: RoleCode[] = [...managers, 'RECEPTIONIST'];
@@ -32,6 +43,7 @@ export const reportRoles = {
   revenue: financial,
   payments: financial,
   outstanding: financial,
+  procurement: financial,
   occupancy: frontDesk,
   reservations: frontDesk,
   operations: [...frontDesk, 'HOUSEKEEPING', 'TECHNICIAN'] as RoleCode[],
@@ -364,6 +376,121 @@ export class ReportService {
           ],
         } satisfies DataQuality,
       };
+    });
+  }
+  procurement(scope: ReportScope, query: ProcurementQuery) {
+    reportAccess(scope, 'procurement');
+    return this.repository.snapshot(async (repo) => {
+      const ctx = await this.context(repo, scope, query);
+      const from = ctx.days[0]!.from;
+      const until = ctx.days.at(-1)!.until;
+      const [seriesRows, byCategory, bySupplier, topItems] = await Promise.all([
+        repo.procurementSeries(scope.hotelId, ctx.days, query.supplierId, query.categoryId),
+        repo.procurementByCategory(scope.hotelId, from, until, query.supplierId),
+        repo.procurementBySupplier(scope.hotelId, from, until, query.categoryId),
+        repo.procurementTopItems(scope.hotelId, from, until, query.supplierId),
+      ]);
+
+      // Aggregate series by groupBy
+      const key = (date: string) =>
+        query.groupBy === 'month' ? date.slice(0, 7) + '-01' : date;
+      const seriesBuckets = new Map<string, ProcurementSeriesItem>();
+      for (const day of ctx.days) {
+        const dk = key(day.date);
+        if (!seriesBuckets.has(dk))
+          seriesBuckets.set(dk, { date: dk, totalExpense: '0.00', receiptCount: 0 });
+      }
+      for (const row of seriesRows) {
+        const bucket = seriesBuckets.get(key(row.date));
+        if (!bucket) continue;
+        bucket.totalExpense = new Money(bucket.totalExpense)
+          .add(String(row.totalExpense))
+          .toFixed(2);
+        bucket.receiptCount += count(row.receiptCount);
+      }
+      const series = [...seriesBuckets.values()];
+
+      // Summary calculations
+      let totalExpense = new Money(0);
+      let totalReceipts = 0;
+      let totalItems = 0;
+      for (const row of series) {
+        totalExpense = totalExpense.add(row.totalExpense);
+        totalReceipts += row.receiptCount;
+      }
+      for (const item of byCategory) {
+        totalItems += count(item.totalQuantity);
+      }
+
+      // Top supplier
+      const bySupplierMapped: ProcurementSupplierItem[] = bySupplier.map((s) => ({
+        supplierId: String(s.supplierId),
+        supplierName: s.supplierName,
+        receiptCount: count(s.receiptCount),
+        totalAmount: money(String(s.totalAmount)),
+        percentage: 0,
+      }));
+      const topSupplier =
+        bySupplierMapped.length > 0
+          ? {
+              id: bySupplierMapped[0]!.supplierId,
+              name: bySupplierMapped[0]!.supplierName,
+              totalAmount: bySupplierMapped[0]!.totalAmount,
+            }
+          : null;
+
+      // Compute percentages
+      const totalStr = totalExpense.toFixed(2);
+      const pct = (value: string) =>
+        totalExpense.isZero()
+          ? 0
+          : new Money(value).div(totalExpense).mul(100).toDecimalPlaces(2).toNumber();
+
+      const byCategoryMapped: ProcurementCategoryItem[] = byCategory.map((c) => ({
+        categoryId: String(c.categoryId),
+        categoryName: c.categoryName,
+        totalAmount: money(String(c.totalAmount)),
+        percentage: pct(money(String(c.totalAmount))),
+      }));
+      for (const s of bySupplierMapped) {
+        s.percentage = pct(s.totalAmount);
+      }
+
+      const avg =
+        totalReceipts > 0
+          ? new Money(totalExpense).div(totalReceipts).toFixed(2)
+          : '0.00';
+
+      const summary: ProcurementSummary = {
+        totalExpense: totalStr,
+        receiptCount: totalReceipts,
+        averageReceiptValue: avg,
+        totalItemsPurchased: totalItems,
+        topSupplier,
+      };
+
+      return {
+        hotelId: String(scope.hotelId),
+        timezone: ctx.timezone,
+        currency: ctx.meta.currency,
+        startDate: query.startDate,
+        endDate: query.endDate,
+        groupBy: query.groupBy,
+        generatedAt: ctx.now.toISOString(),
+        summary,
+        series,
+        byCategory: byCategoryMapped,
+        bySupplier: bySupplierMapped,
+        topItems: topItems.map((item) => ({
+          itemId: String(item.itemId),
+          sku: item.sku,
+          name: item.name,
+          categoryName: item.categoryName,
+          unit: item.unit,
+          totalQuantity: count(item.totalQuantity),
+          totalAmount: money(String(item.totalAmount)),
+        })),
+      } satisfies ProcurementReportDto;
     });
   }
   report(type: ReportType, scope: ReportScope, query: OccupancyQuery & PaymentQuery) {

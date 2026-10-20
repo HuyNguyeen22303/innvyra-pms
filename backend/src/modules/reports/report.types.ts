@@ -34,6 +34,10 @@ export type ReportRepository = Pick<
   | 'roomSnapshot'
   | 'operations'
   | 'maintenanceRoomNights'
+  | 'procurementSeries'
+  | 'procurementByCategory'
+  | 'procurementBySupplier'
+  | 'procurementTopItems'
 >;
 export type MetricValue = string | number | null;
 export type MetricRecord = Record<string, MetricValue>;
@@ -42,3 +46,51 @@ export type DataQuality = {
   status: 'complete' | 'estimated' | 'incomplete';
   limitations: string[];
 };
+export interface ProcurementSummary {
+  totalExpense: string;
+  receiptCount: number;
+  averageReceiptValue: string;
+  totalItemsPurchased: number;
+  topSupplier: { id: string; name: string; totalAmount: string } | null;
+}
+export interface ProcurementSeriesItem {
+  date: string;
+  totalExpense: string;
+  receiptCount: number;
+}
+export interface ProcurementCategoryItem {
+  categoryId: string;
+  categoryName: string;
+  totalAmount: string;
+  percentage: number;
+}
+export interface ProcurementSupplierItem {
+  supplierId: string;
+  supplierName: string;
+  receiptCount: number;
+  totalAmount: string;
+  percentage: number;
+}
+export interface ProcurementTopItem {
+  itemId: string;
+  sku: string;
+  name: string;
+  categoryName: string;
+  unit: string;
+  totalQuantity: number;
+  totalAmount: string;
+}
+export interface ProcurementReportDto {
+  hotelId: string;
+  timezone: string;
+  currency: string;
+  startDate: string;
+  endDate: string;
+  groupBy: 'day' | 'month';
+  generatedAt: string;
+  summary: ProcurementSummary;
+  series: ProcurementSeriesItem[];
+  byCategory: ProcurementCategoryItem[];
+  bySupplier: ProcurementSupplierItem[];
+  topItems: ProcurementTopItem[];
+}

@@ -1,7 +1,7 @@
 $kind: http-example
 name: VALIDATION_ERROR, INVALID_REPORT_DATE_RANGE, REPORT_RANGE_TOO_LARGE. Strict query whitelist rejects invalid dates, filters, sorting and unsupported types.
 request:
-  url: "{{baseUrl}}/reports/dashboard?date=1965-07-06"
+  url: "{{baseUrl}}/reports/dashboard?date=1995-05-14"
   method: GET
   headers:
     - key: Accept
@@ -10,7 +10,7 @@ request:
       value: Bearer <token>
       description: "Added as a part of security scheme: bearer"
   queryParams:
-    date: 1965-07-06
+    date: 1995-05-14
   body:
     type: text
     content: ""

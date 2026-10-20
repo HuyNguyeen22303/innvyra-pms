@@ -222,6 +222,10 @@ describe('Reports validation, money and calendar policies', () => {
       roomSnapshot: async () => ({}),
       operations: async () => [],
       maintenanceRoomNights: async () => 0,
+      procurementSeries: async () => [],
+      procurementByCategory: async () => [],
+      procurementBySupplier: async () => [],
+      procurementTopItems: async () => [],
     };
     const exporter = new ExportService(new ReportService(repo, testEnv), {
       ...testEnv,
@@ -238,6 +242,7 @@ describe('Reports validation, money and calendar policies', () => {
       'occupancy',
       'reservations',
       'payments',
+      'procurement',
       'operations',
       'outstanding',
       'export',

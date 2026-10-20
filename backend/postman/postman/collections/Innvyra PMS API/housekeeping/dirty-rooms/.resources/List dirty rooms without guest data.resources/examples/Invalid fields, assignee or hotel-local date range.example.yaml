@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=3201&sortBy=roomNumber"
+  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=-22976&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -12,7 +12,7 @@ request:
     page: "1"
     limit: "20"
     sortOrder: asc
-    floorNumber: "3201"
+    floorNumber: "-22976"
     sortBy: roomNumber
   body:
     type: text
