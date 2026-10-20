@@ -19,7 +19,7 @@ import {
   Timeline,
   Alert,
   Tooltip,
-  message,
+  App as AntdApp,
   Empty,
   Spin,
   Table,
@@ -100,7 +100,7 @@ const CompleteTaskModal: React.FC<CompleteTaskModalProps> = React.memo(
         cancelText="Hủy"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
@@ -137,6 +137,7 @@ interface InspectTaskModalProps {
 
 const InspectTaskModal: React.FC<InspectTaskModalProps> = React.memo(
   ({ open, task, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [passed, setPassed] = useState<boolean>(true);
     const [notes, setNotes] = useState<string>('');
 
@@ -149,7 +150,7 @@ const InspectTaskModal: React.FC<InspectTaskModalProps> = React.memo(
 
     const handleOk = () => {
       if (!passed && !notes.trim()) {
-        message.error('Khi từ chối nghiệm thu, bắt buộc phải nhập lý do/yêu cầu dọn lại!');
+        appMessage.error('Khi từ chối nghiệm thu, bắt buộc phải nhập lý do/yêu cầu dọn lại!');
         return;
       }
       onConfirm({ passed, notes: notes.trim() || undefined });
@@ -171,7 +172,7 @@ const InspectTaskModal: React.FC<InspectTaskModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type={passed ? 'success' : 'warning'}
             showIcon
@@ -234,6 +235,7 @@ interface CancelTaskModalProps {
 
 const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
   ({ open, task, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
 
     useEffect(() => {
@@ -244,7 +246,7 @@ const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
 
     const handleOk = () => {
       if (!reason.trim()) {
-        message.error('Vui lòng nhập lý do hủy nhiệm vụ!');
+        appMessage.error('Vui lòng nhập lý do hủy nhiệm vụ!');
         return;
       }
       onConfirm(reason.trim());
@@ -266,7 +268,7 @@ const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="warning"
             showIcon
@@ -296,6 +298,7 @@ const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
 // Dynamic Housekeeping Staff Options loaded from employeesApi
 
 export const HousekeepingPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -370,6 +373,7 @@ export const HousekeepingPage: React.FC = () => {
   } = useQuery({
     queryKey: ['dirty-rooms'],
     queryFn: () => housekeepingApi.getDirtyRooms({ limit: 100 }),
+    enabled: canCreateTask,
     staleTime: 10000,
   });
 
@@ -427,14 +431,14 @@ export const HousekeepingPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateHousekeepingTaskDto) => housekeepingApi.create(dto),
     onSuccess: () => {
-      message.success('Đã tạo nhiệm vụ dọn phòng thành công!');
+      appMessage.success('Đã tạo nhiệm vụ dọn phòng thành công!');
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['dirty-rooms'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo nhiệm vụ dọn phòng.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo nhiệm vụ dọn phòng.');
     },
   });
 
@@ -442,27 +446,27 @@ export const HousekeepingPage: React.FC = () => {
     mutationFn: ({ id, staffId }: { id: string; staffId: string }) =>
       housekeepingApi.assign(id, { staffId }),
     onSuccess: () => {
-      message.success('Phân công nhân viên buồng phòng thành công!');
+      appMessage.success('Phân công nhân viên buồng phòng thành công!');
       setIsAssignModalOpen(false);
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công nhân viên.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công nhân viên.');
     },
   });
 
   const startMutation = useMutation({
     mutationFn: (id: string) => housekeepingApi.start(id),
     onSuccess: () => {
-      message.success('Đã bắt đầu dọn phòng! Trạng thái phòng: CLEANING.');
+      appMessage.success('Đã bắt đầu dọn phòng! Trạng thái phòng: CLEANING.');
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu dọn phòng.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu dọn phòng.');
     },
   });
 
@@ -470,7 +474,7 @@ export const HousekeepingPage: React.FC = () => {
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
       housekeepingApi.complete(id, notes),
     onSuccess: () => {
-      message.success('Đã gửi yêu cầu nghiệm thu! Trạng thái phòng: INSPECTION.');
+      appMessage.success('Đã gửi yêu cầu nghiệm thu! Trạng thái phòng: INSPECTION.');
       setIsCompleteModalOpen(false);
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
@@ -478,7 +482,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hoàn thành dọn phòng.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hoàn thành dọn phòng.');
     },
   });
 
@@ -487,9 +491,9 @@ export const HousekeepingPage: React.FC = () => {
       housekeepingApi.inspect(id, dto),
     onSuccess: (_, variables) => {
       if (variables.dto.passed) {
-        message.success('Nghiệm thu ĐẠT! Phòng đã chuyển sang trạng thái READY (Sạch sẽ).');
+        appMessage.success('Nghiệm thu ĐẠT! Phòng đã chuyển sang trạng thái READY (Sạch sẽ).');
       } else {
-        message.warning('Đã từ chối nghiệm thu. Nhiệm vụ quay về PENDING và phòng về DIRTY.');
+        appMessage.warning('Đã từ chối nghiệm thu. Nhiệm vụ quay về PENDING và phòng về DIRTY.');
       }
       setIsInspectModalOpen(false);
       setActionTask(null);
@@ -499,7 +503,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể ghi nhận kết quả nghiệm thu.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể ghi nhận kết quả nghiệm thu.');
     },
   });
 
@@ -507,7 +511,7 @@ export const HousekeepingPage: React.FC = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       housekeepingApi.cancel(id, { reason }),
     onSuccess: () => {
-      message.info('Đã hủy nhiệm vụ dọn phòng. Phòng giữ nguyên trạng thái DIRTY.');
+      appMessage.info('Đã hủy nhiệm vụ dọn phòng. Phòng giữ nguyên trạng thái DIRTY.');
       setIsCancelModalOpen(false);
       setActionTask(null);
       queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
@@ -515,7 +519,7 @@ export const HousekeepingPage: React.FC = () => {
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy nhiệm vụ.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy nhiệm vụ.');
     },
   });
 
@@ -943,8 +947,8 @@ export const HousekeepingPage: React.FC = () => {
             icon={<ReloadOutlined />}
             onClick={() => {
               refetchTasks();
-              refetchDirtyRooms();
-              message.info('Đã làm mới dữ liệu buồng phòng.');
+              if (canCreateTask) refetchDirtyRooms();
+              appMessage.info('Đã làm mới dữ liệu buồng phòng.');
             }}
           >
             Làm mới
@@ -1157,33 +1161,38 @@ export const HousekeepingPage: React.FC = () => {
               </div>
             ),
           },
-          {
-            key: 'dirtyQueue',
-            label: (
-              <span>
-                <WarningOutlined style={{ color: '#cf1322' }} /> Hàng đợi phòng bẩn ({dirtyRoomList.length})
-              </span>
-            ),
-            children: (
-              <Card style={{ borderRadius: 8 }}>
-                <Alert
-                  type="info"
-                  showIcon
-                  title="Danh sách các phòng vật lý đang ở trạng thái DIRTY trên hệ thống"
-                  description="Phòng tự động chuyển sang DIRTY sau khi khách Check-out, Đổi phòng (Transfer), hoặc khi Lệnh bảo trì được giải phóng. Bạn có thể bấm 'Tạo việc dọn' để kích hoạt chu trình dọn dẹp cho phòng."
-                  style={{ marginBottom: 16 }}
-                />
-                <Table
-                  columns={dirtyRoomColumns}
-                  dataSource={dirtyRoomList}
-                  rowKey="id"
-                  loading={isDirtyLoading}
-                  scroll={{ x: 1100 }}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
-                />
-              </Card>
-            ),
-          },
+          ...(canCreateTask
+            ? [
+                {
+                  key: 'dirtyQueue',
+                  label: (
+                    <span>
+                      <WarningOutlined style={{ color: '#cf1322' }} /> Hàng đợi phòng bẩn (
+                      {dirtyRoomList.length})
+                    </span>
+                  ),
+                  children: (
+                    <Card style={{ borderRadius: 8 }}>
+                      <Alert
+                        type="info"
+                        showIcon
+                        title="Danh sách các phòng vật lý đang ở trạng thái DIRTY trên hệ thống"
+                        description="Phòng tự động chuyển sang DIRTY sau khi khách Check-out, Đổi phòng (Transfer), hoặc khi Lệnh bảo trì được giải phóng. Bạn có thể bấm 'Tạo việc dọn' để kích hoạt chu trình dọn dẹp cho phòng."
+                        style={{ marginBottom: 16 }}
+                      />
+                      <Table
+                        columns={dirtyRoomColumns}
+                        dataSource={dirtyRoomList}
+                        rowKey="id"
+                        loading={isDirtyLoading}
+                        scroll={{ x: 1100 }}
+                        pagination={{ pageSize: 10, showSizeChanger: true }}
+                      />
+                    </Card>
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
 

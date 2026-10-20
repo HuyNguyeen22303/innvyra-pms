@@ -9,7 +9,7 @@ import {
   Select,
   Modal,
   Form,
-  message,
+  App as AntdApp,
   Popconfirm,
   Typography,
   Card,
@@ -41,6 +41,7 @@ import type {
 const { Text, Paragraph } = Typography;
 
 export const InventorySuppliersTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -83,13 +84,13 @@ export const InventorySuppliersTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateSupplierDto) => inventoryApi.createSupplier(dto),
     onSuccess: () => {
-      message.success('Đã thêm nhà cung cấp mới thành công!');
+      appMessage.success('Đã thêm nhà cung cấp mới thành công!');
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['inventory', 'suppliers'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể tạo nhà cung cấp.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể tạo nhà cung cấp.'));
     },
   });
 
@@ -97,24 +98,24 @@ export const InventorySuppliersTab: React.FC = () => {
     mutationFn: ({ id, dto }: { id: string; dto: UpdateSupplierDto }) =>
       inventoryApi.updateSupplier(id, dto),
     onSuccess: () => {
-      message.success('Đã cập nhật nhà cung cấp thành công!');
+      appMessage.success('Đã cập nhật nhà cung cấp thành công!');
       setIsEditModalOpen(false);
       setEditingSupplier(null);
       queryClient.invalidateQueries({ queryKey: ['inventory', 'suppliers'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể cập nhật nhà cung cấp.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể cập nhật nhà cung cấp.'));
     },
   });
 
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => inventoryApi.deactivateSupplier(id),
     onSuccess: () => {
-      message.success('Đã ngừng hoạt động nhà cung cấp!');
+      appMessage.success('Đã ngừng hoạt động nhà cung cấp!');
       queryClient.invalidateQueries({ queryKey: ['inventory', 'suppliers'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động nhà cung cấp.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động nhà cung cấp.'));
     },
   });
 

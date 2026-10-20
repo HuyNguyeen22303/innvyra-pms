@@ -11,7 +11,7 @@ import {
   Form,
   InputNumber,
   DatePicker,
-  message,
+  App as AntdApp,
   Typography,
   Card,
   Row,
@@ -62,6 +62,7 @@ const COMMON_DEPARTMENTS = [
 ];
 
 export const InventoryIssuesTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -122,7 +123,7 @@ export const InventoryIssuesTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateIssueDto) => inventoryApi.createIssue(dto),
     onSuccess: () => {
-      message.success('Đã xuất kho và cập nhật tồn kho thành công!');
+      appMessage.success('Đã xuất kho và cập nhật tồn kho thành công!');
       setIsCreateOpen(false);
       setErrorMessage(null);
       createForm.resetFields();
@@ -132,7 +133,7 @@ export const InventoryIssuesTab: React.FC = () => {
     onError: (err: any) => {
       const msg = getInventoryErrorMessage(err, 'Không thể lập phiếu xuất kho.');
       setErrorMessage(msg);
-      message.error(msg);
+      appMessage.error(msg);
       // NOTE: DO NOT close modal or reset form, so the user can easily adjust quantities!
     },
   });
@@ -148,7 +149,7 @@ export const InventoryIssuesTab: React.FC = () => {
       updated[existingIndex].quantity = (Number(updated[existingIndex].quantity) || 0) + currentLineQty;
       updated.splice(index, 1);
       setIssueLines(updated);
-      message.info(`Vật tư "${targetItem?.name || ''}" đã có trong phiếu, đã tự động gộp số lượng!`);
+      appMessage.info(`Vật tư "${targetItem?.name || ''}" đã có trong phiếu, đã tự động gộp số lượng!`);
       return;
     }
 
@@ -177,7 +178,7 @@ export const InventoryIssuesTab: React.FC = () => {
 
   const handleRemoveLine = (index: number) => {
     if (issueLines.length === 1) {
-      message.warning('Phiếu xuất kho phải có ít nhất 1 mặt hàng.');
+      appMessage.warning('Phiếu xuất kho phải có ít nhất 1 mặt hàng.');
       return;
     }
     const updated = [...issueLines];
@@ -191,18 +192,18 @@ export const InventoryIssuesTab: React.FC = () => {
       const values = await createForm.validateFields();
 
       if (issueLines.length === 0) {
-        message.error('Vui lòng thêm ít nhất một mặt hàng xuất kho');
+        appMessage.error('Vui lòng thêm ít nhất một mặt hàng xuất kho');
         return;
       }
 
       for (let i = 0; i < issueLines.length; i++) {
         const line = issueLines[i];
         if (!line.itemId) {
-          message.error(`Dòng ${i + 1}: Vui lòng chọn mặt hàng vật tư`);
+          appMessage.error(`Dòng ${i + 1}: Vui lòng chọn mặt hàng vật tư`);
           return;
         }
         if (!line.quantity || Number(line.quantity) <= 0) {
-          message.error(`Dòng ${i + 1}: Số lượng xuất phải lớn hơn 0`);
+          appMessage.error(`Dòng ${i + 1}: Số lượng xuất phải lớn hơn 0`);
           return;
         }
 
@@ -211,7 +212,7 @@ export const InventoryIssuesTab: React.FC = () => {
         if (itemInfo) {
           const availableStock = parseFloat(itemInfo.currentStock) || 0;
           if (line.quantity > availableStock) {
-            message.warning(
+            appMessage.warning(
               `Cảnh báo: Dòng ${i + 1} (${itemInfo.name}) yêu cầu xuất ${line.quantity} trong khi tồn kho hiện tại chỉ có ${availableStock} ${itemInfo.unit}`,
             );
           }

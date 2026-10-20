@@ -17,7 +17,7 @@ import {
   Timeline,
   Alert,
   Tooltip,
-  message,
+  App as AntdApp,
   Table,
   DatePicker,
   Spin,
@@ -76,6 +76,7 @@ interface ResolveTicketModalProps {
 
 const ResolveTicketModal: React.FC<ResolveTicketModalProps> = React.memo(
   ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [notes, setNotes] = useState<string>('');
 
     useEffect(() => {
@@ -86,7 +87,7 @@ const ResolveTicketModal: React.FC<ResolveTicketModalProps> = React.memo(
 
     const handleOk = () => {
       if (!notes.trim()) {
-        message.error('Vui lòng nhập ghi chú kết quả sửa chữa!');
+        appMessage.error('Vui lòng nhập ghi chú kết quả sửa chữa!');
         return;
       }
       onConfirm(notes.trim());
@@ -107,7 +108,7 @@ const ResolveTicketModal: React.FC<ResolveTicketModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
@@ -144,6 +145,7 @@ interface CancelTicketModalProps {
 
 const CancelTicketModal: React.FC<CancelTicketModalProps> = React.memo(
   ({ open, ticket, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
 
     useEffect(() => {
@@ -154,7 +156,7 @@ const CancelTicketModal: React.FC<CancelTicketModalProps> = React.memo(
 
     const handleOk = () => {
       if (!reason.trim()) {
-        message.error('Vui lòng nhập lý do hủy phiếu sự cố!');
+        appMessage.error('Vui lòng nhập lý do hủy phiếu sự cố!');
         return;
       }
       onConfirm(reason.trim());
@@ -176,7 +178,7 @@ const CancelTicketModal: React.FC<CancelTicketModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <div style={{ paddingBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
               Lý do hủy phiếu: <span style={{ color: '#ff4d4f' }}>*</span>
@@ -206,6 +208,7 @@ interface ReleaseBlockModalProps {
 
 const ReleaseBlockModal: React.FC<ReleaseBlockModalProps> = React.memo(
   ({ open, block, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [notes, setNotes] = useState<string>('');
 
     useEffect(() => {
@@ -216,7 +219,7 @@ const ReleaseBlockModal: React.FC<ReleaseBlockModalProps> = React.memo(
 
     const handleOk = () => {
       if (!notes.trim()) {
-        message.error('Vui lòng nhập ghi chú xác nhận an toàn kỹ thuật!');
+        appMessage.error('Vui lòng nhập ghi chú xác nhận an toàn kỹ thuật!');
         return;
       }
       onConfirm(notes.trim());
@@ -237,7 +240,7 @@ const ReleaseBlockModal: React.FC<ReleaseBlockModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
@@ -274,6 +277,7 @@ interface CancelBlockModalProps {
 
 const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
   ({ open, block, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
 
     useEffect(() => {
@@ -284,7 +288,7 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
 
     const handleOk = () => {
       if (!reason.trim()) {
-        message.error('Vui lòng nhập lý do hủy lệnh bảo trì!');
+        appMessage.error('Vui lòng nhập lý do hủy lệnh bảo trì!');
         return;
       }
       onConfirm(reason.trim());
@@ -306,7 +310,7 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
         cancelText="Đóng"
         confirmLoading={confirmLoading}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%', marginTop: 8 }}>
           <div style={{ paddingBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 6 }}>
               Lý do hủy lệnh bảo trì: <span style={{ color: '#ff4d4f' }}>*</span>
@@ -329,6 +333,7 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
 // Dynamic Technician Options loaded from employeesApi
 
 export const MaintenancePage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -520,13 +525,13 @@ export const MaintenancePage: React.FC = () => {
   const createTicketMutation = useMutation({
     mutationFn: (dto: CreateMaintenanceTicketDto) => maintenanceApi.createTicket(dto),
     onSuccess: () => {
-      message.success('Đã báo cáo sự cố kỹ thuật thành công!');
+      appMessage.success('Đã báo cáo sự cố kỹ thuật thành công!');
       setIsCreateTicketModalOpen(false);
       createTicketForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo phiếu sự cố.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo phiếu sự cố.');
     },
   });
 
@@ -534,26 +539,26 @@ export const MaintenancePage: React.FC = () => {
     mutationFn: ({ id, staffId }: { id: string; staffId: string }) =>
       maintenanceApi.assignTicket(id, { staffId }),
     onSuccess: () => {
-      message.success('Phân công kỹ thuật viên thành công!');
+      appMessage.success('Phân công kỹ thuật viên thành công!');
       setIsAssignTicketModalOpen(false);
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công kỹ thuật viên.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể phân công kỹ thuật viên.');
     },
   });
 
   const startRepairMutation = useMutation({
     mutationFn: (id: string) => maintenanceApi.startRepair(id),
     onSuccess: () => {
-      message.success('Đã bắt đầu sửa chữa! Trạng thái phiếu: IN_PROGRESS.');
+      appMessage.success('Đã bắt đầu sửa chữa! Trạng thái phiếu: IN_PROGRESS.');
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu sửa chữa.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể bắt đầu sửa chữa.');
     },
   });
 
@@ -561,28 +566,28 @@ export const MaintenancePage: React.FC = () => {
     mutationFn: ({ id, notes }: { id: string; notes: string }) =>
       maintenanceApi.resolveTicket(id, { resolutionNotes: notes }),
     onSuccess: () => {
-      message.success('Đã báo cáo hoàn thành sửa chữa! Trạng thái phiếu: RESOLVED.');
+      appMessage.success('Đã báo cáo hoàn thành sửa chữa! Trạng thái phiếu: RESOLVED.');
       setIsResolveTicketModalOpen(false);
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể báo cáo hoàn thành.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể báo cáo hoàn thành.');
     },
   });
 
   const closeTicketMutation = useMutation({
     mutationFn: (id: string) => maintenanceApi.closeTicket(id),
     onSuccess: () => {
-      message.success('Nghiệm thu & Đóng phiếu sự cố thành công! Trạng thái: CLOSED.');
+      appMessage.success('Nghiệm thu & Đóng phiếu sự cố thành công! Trạng thái: CLOSED.');
       setIsCloseTicketModalOpen(false);
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể đóng phiếu sự cố.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể đóng phiếu sự cố.');
     },
   });
 
@@ -590,14 +595,14 @@ export const MaintenancePage: React.FC = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       maintenanceApi.cancelTicket(id, { cancellationReason: reason }),
     onSuccess: () => {
-      message.info('Đã hủy phiếu sự cố.');
+      appMessage.info('Đã hủy phiếu sự cố.');
       setIsCancelTicketModalOpen(false);
       setActionTicket(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-tickets'] });
       if (selectedTicketForDetail) refetchTicketDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy phiếu sự cố.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy phiếu sự cố.');
     },
   });
 
@@ -608,7 +613,7 @@ export const MaintenancePage: React.FC = () => {
   const createBlockMutation = useMutation({
     mutationFn: (dto: CreateMaintenanceBlockDto) => maintenanceApi.createBlock(dto),
     onSuccess: () => {
-      message.success('Đã tạo lệnh khóa phòng bảo trì thành công!');
+      appMessage.success('Đã tạo lệnh khóa phòng bảo trì thành công!');
       setIsCreateBlockModalOpen(false);
       createBlockForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['maintenance-blocks'] });
@@ -620,7 +625,7 @@ export const MaintenancePage: React.FC = () => {
       if (detailMsg === 'Use a half-open interval of 1–365 nights') {
         detailMsg = 'Khoảng thời gian khóa phòng phải từ 1 đến 365 đêm (Ngày kết thúc phải sau Ngày bắt đầu ít nhất 1 ngày).';
       }
-      message.error(detailMsg || err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
+      appMessage.error(detailMsg || err.response?.data?.message || err.response?.data?.error?.message || 'Không thể tạo lệnh khóa phòng.');
     },
   });
 
@@ -628,7 +633,7 @@ export const MaintenancePage: React.FC = () => {
     mutationFn: ({ id, notes }: { id: string; notes: string }) =>
       maintenanceApi.releaseBlock(id, { notes }),
     onSuccess: () => {
-      message.success('Mở khóa phòng thành công! Phòng đã chuyển sang DIRTY và tạo việc dọn dẹp buồng phòng.');
+      appMessage.success('Mở khóa phòng thành công! Phòng đã chuyển sang DIRTY và tạo việc dọn dẹp buồng phòng.');
       setIsReleaseBlockModalOpen(false);
       setActionBlock(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-blocks'] });
@@ -638,7 +643,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedBlockForDetail) refetchBlockDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể mở khóa phòng.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể mở khóa phòng.');
     },
   });
 
@@ -646,7 +651,7 @@ export const MaintenancePage: React.FC = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       maintenanceApi.cancelBlock(id, { reason }),
     onSuccess: () => {
-      message.info('Đã hủy lệnh bảo trì đã lên lịch tương lai.');
+      appMessage.info('Đã hủy lệnh bảo trì đã lên lịch tương lai.');
       setIsCancelBlockModalOpen(false);
       setActionBlock(null);
       queryClient.invalidateQueries({ queryKey: ['maintenance-blocks'] });
@@ -654,7 +659,7 @@ export const MaintenancePage: React.FC = () => {
       if (selectedBlockForDetail) refetchBlockDetail();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy lệnh bảo trì.');
+      appMessage.error(err.response?.data?.message || err.response?.data?.error?.message || 'Không thể hủy lệnh bảo trì.');
     },
   });
 
@@ -787,19 +792,25 @@ export const MaintenancePage: React.FC = () => {
         if (!staffId) return <Tag color="orange" style={{ whiteSpace: 'nowrap' }}>Chưa phân công</Tag>;
         const staff = getStaffDisplay(staffId, user);
         return (
-          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-            <Space size={4} style={{ whiteSpace: 'nowrap' }}>
-              <UserOutlined style={{ color: '#1b4d3e' }} />
-              <Text strong style={{ color: '#1b4d3e' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, minWidth: 0, width: '100%', maxWidth: '100%' }}>
+            <Space size={4} style={{ minWidth: 0, maxWidth: '100%' }}>
+              <UserOutlined style={{ color: '#1b4d3e', flexShrink: 0 }} />
+              <Text
+                strong
+                ellipsis={{ tooltip: staff.fullName }}
+                style={{ color: '#1b4d3e', display: 'block', minWidth: 0, maxWidth: 160 }}
+              >
                 {staff.fullName}
               </Text>
             </Space>
-            <Tag
-              color={staff.color}
-              style={{ fontSize: 10, margin: 0, padding: '0 4px', lineHeight: '18px' }}
-            >
-              {staff.roleTitle}
-            </Tag>
+            <Tooltip title={staff.roleTitle}>
+              <Tag
+                color={staff.color}
+                style={{ fontSize: 10, margin: 0, padding: '0 4px', lineHeight: '18px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >
+                {staff.roleTitle}
+              </Tag>
+            </Tooltip>
           </div>
         );
       },
@@ -1083,7 +1094,7 @@ export const MaintenancePage: React.FC = () => {
             onClick={() => {
               refetchTickets();
               refetchBlocks();
-              message.info('Đã làm mới dữ liệu bảo trì.');
+              appMessage.info('Đã làm mới dữ liệu bảo trì.');
             }}
           >
             Làm mới

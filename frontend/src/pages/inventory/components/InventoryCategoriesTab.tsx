@@ -9,7 +9,7 @@ import {
   Select,
   Modal,
   Form,
-  message,
+  App as AntdApp,
   Popconfirm,
   Typography,
   Card,
@@ -40,6 +40,7 @@ import type {
 const { Text, Paragraph } = Typography;
 
 export const InventoryCategoriesTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -82,14 +83,14 @@ export const InventoryCategoriesTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateCategoryDto) => inventoryApi.createCategory(dto),
     onSuccess: () => {
-      message.success('Tạo danh mục vật tư mới thành công!');
+      appMessage.success('Tạo danh mục vật tư mới thành công!');
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['inventory', 'categories'] });
       queryClient.invalidateQueries({ queryKey: ['inventory', 'summary'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể tạo danh mục vật tư.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể tạo danh mục vật tư.'));
     },
   });
 
@@ -97,26 +98,26 @@ export const InventoryCategoriesTab: React.FC = () => {
     mutationFn: ({ id, dto }: { id: string; dto: UpdateCategoryDto }) =>
       inventoryApi.updateCategory(id, dto),
     onSuccess: () => {
-      message.success('Cập nhật thông tin danh mục thành công!');
+      appMessage.success('Cập nhật thông tin danh mục thành công!');
       setIsEditModalOpen(false);
       setEditingCategory(null);
       queryClient.invalidateQueries({ queryKey: ['inventory', 'categories'] });
       queryClient.invalidateQueries({ queryKey: ['inventory', 'summary'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể cập nhật danh mục.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể cập nhật danh mục.'));
     },
   });
 
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => inventoryApi.deactivateCategory(id),
     onSuccess: () => {
-      message.success('Đã ngừng hoạt động danh mục thành công!');
+      appMessage.success('Đã ngừng hoạt động danh mục thành công!');
       queryClient.invalidateQueries({ queryKey: ['inventory', 'categories'] });
       queryClient.invalidateQueries({ queryKey: ['inventory', 'summary'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động danh mục.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động danh mục.'));
     },
   });
 

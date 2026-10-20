@@ -10,7 +10,7 @@ import {
   Modal,
   Form,
   InputNumber,
-  message,
+  App as AntdApp,
   Typography,
   Card,
   Row,
@@ -71,6 +71,7 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
   onCancel,
   onConfirm,
 }) => {
+  const { message: appMessage } = AntdApp.useApp();
   const [reason, setReason] = useState<string>('');
 
   useEffect(() => {
@@ -81,7 +82,7 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
 
   const handleOk = () => {
     if (!reason.trim()) {
-      message.error('Vui lòng nhập lý do hủy yêu cầu dịch vụ!');
+      appMessage.error('Vui lòng nhập lý do hủy yêu cầu dịch vụ!');
       return;
     }
     onConfirm(reason.trim());
@@ -103,7 +104,7 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
       okButtonProps={{ danger: true }}
       confirmLoading={confirmLoading}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+      <Space orientation="vertical" style={{ width: '100%' }} size={12}>
         <Text>
           Bạn có chắc chắn muốn hủy yêu cầu dịch vụ này? Hành động này không thể hoàn tác.
         </Text>
@@ -127,6 +128,7 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
 CancelOrderModal.displayName = 'CancelOrderModal';
 
 export const ServiceOrdersTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const canManageOrders = ['ADMIN', 'MANAGER', 'RECEPTIONIST'].includes(user?.role || '');
@@ -250,27 +252,27 @@ export const ServiceOrdersTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateServiceOrderDto) => billingApi.createServiceOrder(dto),
     onSuccess: () => {
-      message.success('Đã tạo yêu cầu dịch vụ thành công!');
+      appMessage.success('Đã tạo yêu cầu dịch vụ thành công!');
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['billing-orders'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể tạo yêu cầu dịch vụ.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể tạo yêu cầu dịch vụ.'));
     },
   });
 
   const completeMutation = useMutation({
     mutationFn: (id: string) => billingApi.completeServiceOrder(id),
     onSuccess: () => {
-      message.success('Đã hoàn thành yêu cầu dịch vụ! Tiền dịch vụ đã được ghi nợ vào Folio.');
+      appMessage.success('Đã hoàn thành yêu cầu dịch vụ! Tiền dịch vụ đã được ghi nợ vào Folio.');
       queryClient.invalidateQueries({ queryKey: ['billing-orders'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể hoàn thành dịch vụ.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể hoàn thành dịch vụ.'));
     },
   });
 
@@ -278,13 +280,13 @@ export const ServiceOrdersTab: React.FC = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       billingApi.cancelServiceOrder(id, { reason }),
     onSuccess: () => {
-      message.info('Đã hủy yêu cầu dịch vụ.');
+      appMessage.info('Đã hủy yêu cầu dịch vụ.');
       setIsCancelModalOpen(false);
       setSelectedOrderForCancel(null);
       queryClient.invalidateQueries({ queryKey: ['billing-orders'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể hủy yêu cầu dịch vụ.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể hủy yêu cầu dịch vụ.'));
     },
   });
 

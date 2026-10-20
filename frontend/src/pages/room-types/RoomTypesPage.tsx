@@ -9,7 +9,7 @@ import {
   Input,
   InputNumber,
   Typography,
-  message,
+  App as AntdApp,
   Popconfirm,
   Card,
   Tooltip,
@@ -32,6 +32,7 @@ import type { RoomTypeItem, CreateRoomTypeDto } from '../../types/rooms.types.ts
 const { Title, Text, Paragraph } = Typography;
 
 export const RoomTypesPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -66,7 +67,7 @@ export const RoomTypesPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: CreateRoomTypeDto) => roomTypesApi.create(data),
     onSuccess: () => {
-      message.success('Tạo hạng phòng mới thành công!');
+      appMessage.success('Tạo hạng phòng mới thành công!');
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['roomTypes'] });
@@ -76,7 +77,7 @@ export const RoomTypesPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Không thể tạo hạng phòng.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 
@@ -85,7 +86,7 @@ export const RoomTypesPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateRoomTypeDto> }) =>
       roomTypesApi.update(id, data),
     onSuccess: () => {
-      message.success('Cập nhật hạng phòng thành công!');
+      appMessage.success('Cập nhật hạng phòng thành công!');
       setIsModalOpen(false);
       setEditingItem(null);
       form.resetFields();
@@ -96,7 +97,7 @@ export const RoomTypesPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Cập nhật thất bại.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 
@@ -107,7 +108,7 @@ export const RoomTypesPage: React.FC = () => {
         ? roomTypesApi.deactivate(id)
         : roomTypesApi.update(id, { isActive: true }),
     onSuccess: (_, vars) => {
-      message.success(
+      appMessage.success(
         vars.currentActive ? 'Đã vô hiệu hóa loại phòng!' : 'Đã kích hoạt lại loại phòng!'
       );
       queryClient.invalidateQueries({ queryKey: ['roomTypes'] });
@@ -117,7 +118,7 @@ export const RoomTypesPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Thao tác không thành công.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 

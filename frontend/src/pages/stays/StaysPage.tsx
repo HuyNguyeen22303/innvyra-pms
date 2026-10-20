@@ -9,7 +9,7 @@ import {
   Input,
   Select,
   Typography,
-  message,
+  App as AntdApp,
   Card,
   Tooltip,
   Row,
@@ -95,6 +95,7 @@ interface CheckinStayModalProps {
 
 const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
   ({ open, reservation, allRoomsList, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [selectedRoomItem, setSelectedRoomItem] = useState<any>(null);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [notes, setNotes] = useState<string>('');
@@ -123,7 +124,7 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
     const handleOk = () => {
       if (!reservation || !selectedRoomItem) return;
       if (!selectedRoomId) {
-        message.warning('Vui lòng chọn phòng vật lý sẵn sàng (READY) để gán cho khách!');
+        appMessage.warning('Vui lòng chọn phòng vật lý sẵn sàng (READY) để gán cho khách!');
         return;
       }
       onConfirm({
@@ -152,7 +153,7 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
         cancelText="Đóng"
         width={650}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           {/* Reservation Summary */}
           <Card size="small" style={{ borderRadius: 8, background: '#f8fafc' }}>
             <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered={false}>
@@ -320,7 +321,7 @@ const CheckoutStayModal: React.FC<CheckoutStayModalProps> = React.memo(
         cancelText="Đóng"
         okButtonProps={{ danger: true }}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="warning"
             showIcon
@@ -372,6 +373,7 @@ interface TransferRoomModalProps {
 
 const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
   ({ open, stay, eligibleRooms, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [toRoomId, setToRoomId] = useState<string | null>(null);
     const [reason, setReason] = useState<string>('');
 
@@ -385,11 +387,11 @@ const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
     const handleOk = () => {
       if (!stay) return;
       if (!toRoomId) {
-        message.warning('Vui lòng chọn phòng vật lý đích để chuyển khách!');
+        appMessage.warning('Vui lòng chọn phòng vật lý đích để chuyển khách!');
         return;
       }
       if (!reason.trim()) {
-        message.warning('Vui lòng nhập lý do chuyển phòng!');
+        appMessage.warning('Vui lòng nhập lý do chuyển phòng!');
         return;
       }
       onConfirm(stay.stayId, toRoomId, reason.trim());
@@ -412,7 +414,7 @@ const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
         okText="Xác nhận Đổi phòng"
         cancelText="Đóng"
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="info"
             showIcon
@@ -465,6 +467,7 @@ const TransferRoomModal: React.FC<TransferRoomModalProps> = React.memo(
 );
 
 export const StaysPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -600,7 +603,7 @@ export const StaysPage: React.FC = () => {
     }) => staysApi.checkin(reservationId, reservationRoomId, data),
     onSuccess: (res) => {
       const roomNum = res.data?.room?.roomNumber || '';
-      message.success(`Check-in thành công cho phòng #${roomNum}!`, 5);
+      appMessage.success(`Check-in thành công cho phòng #${roomNum}!`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['arrivalReservations'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
@@ -613,7 +616,7 @@ export const StaysPage: React.FC = () => {
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể thực hiện check-in. Vui lòng kiểm tra lại trạng thái phòng.';
-      message.error(errorMsg);
+      appMessage.error(errorMsg);
     },
   });
 
@@ -623,7 +626,7 @@ export const StaysPage: React.FC = () => {
       staysApi.checkout(id, data),
     onSuccess: (res) => {
       const roomNum = res.data?.room?.roomNumber || '';
-      message.success(`Trả phòng #${roomNum} thành công! Phòng đã chuyển sang trạng thái DIRTY chờ dọn dẹp.`, 5);
+      appMessage.success(`Trả phòng #${roomNum} thành công! Phòng đã chuyển sang trạng thái DIRTY chờ dọn dẹp.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['stayDetail', checkoutStay?.stayId] });
       queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
@@ -636,7 +639,7 @@ export const StaysPage: React.FC = () => {
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể thực hiện trả phòng. Vui lòng kiểm tra lại.';
-      message.error(errorMsg);
+      appMessage.error(errorMsg);
     },
   });
 
@@ -646,7 +649,7 @@ export const StaysPage: React.FC = () => {
       staysApi.transfer(id, data),
     onSuccess: (res) => {
       const newRoom = res.data?.room?.roomNumber || '';
-      message.success(`Đổi phòng sang #${newRoom} thành công! Phòng cũ đã chuyển sang trạng thái DIRTY.`, 5);
+      appMessage.success(`Đổi phòng sang #${newRoom} thành công! Phòng cũ đã chuyển sang trạng thái DIRTY.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['stayDetail', transferStay?.stayId] });
       queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
@@ -658,7 +661,7 @@ export const StaysPage: React.FC = () => {
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể chuyển phòng. Vui lòng kiểm tra lại trạng thái phòng đích.';
-      message.error(errorMsg);
+      appMessage.error(errorMsg);
     },
   });
 
@@ -673,7 +676,7 @@ export const StaysPage: React.FC = () => {
       setCheckinReservation(res.data);
       setIsCheckinModalOpen(true);
     } catch {
-      message.error('Không thể lấy chi tiết đơn đặt phòng!');
+      appMessage.error('Không thể lấy chi tiết đơn đặt phòng!');
     }
   };
 

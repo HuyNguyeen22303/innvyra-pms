@@ -10,7 +10,7 @@ import {
   Select,
   DatePicker,
   Typography,
-  message,
+  App as AntdApp,
   Card,
   Tooltip,
   Row,
@@ -85,6 +85,7 @@ interface CancelReservationModalProps {
 
 const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo(
   ({ open, reservation, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
 
     useEffect(() => {
@@ -95,7 +96,7 @@ const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo
 
     const handleOk = () => {
       if (!reason.trim()) {
-        message.warning('Vui lòng nhập lý do hủy đặt phòng!');
+        appMessage.warning('Vui lòng nhập lý do hủy đặt phòng!');
         return;
       }
       onConfirm(reason.trim());
@@ -117,7 +118,7 @@ const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo
         cancelText="Đóng"
         okButtonProps={{ danger: true }}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           <Alert
             type="warning"
             showIcon
@@ -200,6 +201,7 @@ const STATUS_CONFIG: Record<
 };
 
 export const ReservationsPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -276,7 +278,7 @@ export const ReservationsPage: React.FC = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       reservationsApi.cancel(id, { reason }),
     onSuccess: () => {
-      message.success('Đã hủy đơn đặt phòng thành công!');
+      appMessage.success('Đã hủy đơn đặt phòng thành công!');
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['reservationDetail', cancellingReservation?.id] });
       setCancelModalVisible(false);
@@ -287,7 +289,7 @@ export const ReservationsPage: React.FC = () => {
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể hủy đơn đặt phòng. Vui lòng kiểm tra lại.';
-      message.error(errorMsg);
+      appMessage.error(errorMsg);
     },
   });
 
@@ -393,11 +395,11 @@ export const ReservationsPage: React.FC = () => {
 
   const handleSearchAvailability = () => {
     if (!availDateRange || !availDateRange[0] || !availDateRange[1]) {
-      message.warning('Vui lòng chọn khoảng thời gian nhận và trả phòng!');
+      appMessage.warning('Vui lòng chọn khoảng thời gian nhận và trả phòng!');
       return;
     }
     if (availDateRange[1].isSame(availDateRange[0], 'day') || availDateRange[1].isBefore(availDateRange[0])) {
-      message.error('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm!');
+      appMessage.error('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm!');
       return;
     }
     setHasSearchedAvail(true);
@@ -434,7 +436,7 @@ export const ReservationsPage: React.FC = () => {
     mutationFn: (data: CreateReservationDto) => reservationsApi.create(data),
     onSuccess: (res) => {
       const code = res?.data?.confirmationCode || 'Thành công';
-      message.success(`Đặt phòng thành công! Mã xác nhận: ${code}`, 6);
+      appMessage.success(`Đặt phòng thành công! Mã xác nhận: ${code}`, 6);
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       // Reset form
       setSelectedRoomsMap({});
@@ -449,17 +451,17 @@ export const ReservationsPage: React.FC = () => {
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể tạo đặt phòng. Vui lòng kiểm tra lại tính khả dụng của phòng.';
-      message.error(errorMsg);
+      appMessage.error(errorMsg);
     },
   });
 
   const handleCreateReservation = () => {
     if (!selectedGuestId) {
-      message.warning('Vui lòng chọn khách hàng đặt phòng!');
+      appMessage.warning('Vui lòng chọn khách hàng đặt phòng!');
       return;
     }
     if (totalSelectedRoomsCount === 0) {
-      message.warning('Vui lòng chọn ít nhất 1 phòng còn trống!');
+      appMessage.warning('Vui lòng chọn ít nhất 1 phòng còn trống!');
       return;
     }
 
@@ -473,7 +475,7 @@ export const ReservationsPage: React.FC = () => {
       }));
 
     if (roomsPayload.length === 0) {
-      message.warning('Vui lòng chọn phòng để đặt!');
+      appMessage.warning('Vui lòng chọn phòng để đặt!');
       return;
     }
 

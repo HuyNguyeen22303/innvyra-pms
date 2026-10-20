@@ -13,7 +13,7 @@ import {
   Popconfirm,
   Tooltip,
   Badge,
-  message,
+  App as AntdApp,
   Empty,
   Skeleton,
   Grid,
@@ -54,6 +54,7 @@ const { Title, Text, Paragraph } = Typography;
 const ALL_ROLES: Role[] = ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN'];
 
 export const EmployeesPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -163,7 +164,7 @@ export const EmployeesPage: React.FC = () => {
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => employeesApi.deactivate(id),
     onSuccess: (res) => {
-      message.success(`Đã vô hiệu hóa tài khoản ${res.data.fullName} và thu hồi mọi phiên đăng nhập!`);
+      appMessage.success(`Đã vô hiệu hóa tài khoản ${res.data.fullName} và thu hồi mọi phiên đăng nhập!`);
       // Invalidate queries to refresh table and KPIs
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
@@ -173,13 +174,13 @@ export const EmployeesPage: React.FC = () => {
       const msg = err.response?.data?.error?.message || err.response?.data?.message;
 
       if (code === 'LAST_ADMIN') {
-        message.error('Không thể vô hiệu hóa Quản trị viên (ADMIN) cuối cùng còn lại trong khách sạn!');
+        appMessage.error('Không thể vô hiệu hóa Quản trị viên (ADMIN) cuối cùng còn lại trong khách sạn!');
       } else if (code === 'ALREADY_DEACTIVATED') {
-        message.warning('Tài khoản nhân viên này đã bị vô hiệu hóa từ trước.');
+        appMessage.warning('Tài khoản nhân viên này đã bị vô hiệu hóa từ trước.');
       } else if (code === 'FORBIDDEN') {
-        message.error('Bạn không có quyền vô hiệu hóa nhân viên có cấp bậc bằng hoặc cao hơn (Role Hierarchy).');
+        appMessage.error('Bạn không có quyền vô hiệu hóa nhân viên có cấp bậc bằng hoặc cao hơn (Role Hierarchy).');
       } else {
-        message.error(msg || 'Thao tác vô hiệu hóa thất bại. Vui lòng thử lại.');
+        appMessage.error(msg || 'Thao tác vô hiệu hóa thất bại. Vui lòng thử lại.');
       }
     },
   });
@@ -188,7 +189,7 @@ export const EmployeesPage: React.FC = () => {
   const activateMutation = useMutation({
     mutationFn: (id: string) => employeesApi.activate(id),
     onSuccess: (res) => {
-      message.success(`Đã mở lại tài khoản cho nhân viên ${res.data.fullName} thành công!`);
+      appMessage.success(`Đã mở lại tài khoản cho nhân viên ${res.data.fullName} thành công!`);
       // Invalidate queries to refresh table and KPIs
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
@@ -198,11 +199,11 @@ export const EmployeesPage: React.FC = () => {
       const msg = err.response?.data?.error?.message || err.response?.data?.message;
 
       if (code === 'ALREADY_ACTIVE') {
-        message.warning('Tài khoản nhân viên này đang hoạt động.');
+        appMessage.warning('Tài khoản nhân viên này đang hoạt động.');
       } else if (code === 'FORBIDDEN') {
-        message.error('Bạn không có quyền mở lại tài khoản cho nhân viên có cấp bậc bằng hoặc cao hơn (Role Hierarchy).');
+        appMessage.error('Bạn không có quyền mở lại tài khoản cho nhân viên có cấp bậc bằng hoặc cao hơn (Role Hierarchy).');
       } else {
-        message.error(msg || 'Thao tác mở lại tài khoản thất bại. Vui lòng thử lại.');
+        appMessage.error(msg || 'Thao tác mở lại tài khoản thất bại. Vui lòng thử lại.');
       }
     },
   });

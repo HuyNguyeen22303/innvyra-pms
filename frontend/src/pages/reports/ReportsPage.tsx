@@ -15,7 +15,7 @@ import {
   Select,
   Radio,
   Statistic,
-  message,
+  App as AntdApp,
   Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -51,6 +51,7 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export const ReportsPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const screens = Grid.useBreakpoint();
@@ -236,7 +237,7 @@ export const ReportsPage: React.FC = () => {
   // ----------------------------------------------------
   const handleExportCsv = async () => {
     if (!canExportCsv) {
-      message.warning('Tài khoản của bạn không có quyền trích xuất dữ liệu báo cáo sang CSV.');
+      appMessage.warning('Tài khoản của bạn không có quyền trích xuất dữ liệu báo cáo sang CSV.');
       return;
     }
 
@@ -247,13 +248,13 @@ export const ReportsPage: React.FC = () => {
     else if (activeTab === 'reservations') exportType = 'reservations';
 
     if (!exportType) {
-      message.info('Báo cáo hiện tại không hỗ trợ tải file CSV trực tiếp.');
+      appMessage.info('Báo cáo hiện tại không hỗ trợ tải file CSV trực tiếp.');
       return;
     }
 
     // Role check for Accountant
     if (userRole === 'ACCOUNTANT' && (exportType === 'occupancy' || exportType === 'reservations')) {
-      message.warning('Kế toán chỉ được phép xuất dữ liệu Báo cáo Doanh thu và Dòng tiền.');
+      appMessage.warning('Kế toán chỉ được phép xuất dữ liệu Báo cáo Doanh thu và Dòng tiền.');
       return;
     }
 
@@ -277,9 +278,9 @@ export const ReportsPage: React.FC = () => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      message.success(`Đã xuất báo cáo ${filename} thành công!`);
+      appMessage.success(`Đã xuất báo cáo ${filename} thành công!`);
     } catch (err: any) {
-      message.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xuất file CSV.');
+      appMessage.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xuất file CSV.');
     } finally {
       setExporting(false);
     }
@@ -1917,11 +1918,11 @@ export const ReportsPage: React.FC = () => {
                   if (dates && dates[0] && dates[1]) {
                     const diffDays = dates[1].diff(dates[0], 'day');
                     if (diffDays > 366) {
-                      message.error('Khoảng thời gian báo cáo không được vượt quá 366 ngày (1 năm).');
+                      appMessage.error('Khoảng thời gian báo cáo không được vượt quá 366 ngày (1 năm).');
                       return;
                     }
                     if (diffDays < 1) {
-                      message.error('Ngày bắt đầu phải trước ngày kết thúc ít nhất 1 ngày.');
+                      appMessage.error('Ngày bắt đầu phải trước ngày kết thúc ít nhất 1 ngày.');
                       return;
                     }
                     setDateRange([dates[0], dates[1]]);

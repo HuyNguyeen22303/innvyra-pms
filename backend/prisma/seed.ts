@@ -173,8 +173,8 @@ const roomsConfig: RoomSeedDef[] = [
 // 4. SERVICES
 // ----------------------------------------------------
 const servicesConfig = [
-  { code: 'SRV-WATER', name: 'Nước khoáng Lavie 500ml', unit: 'Chai', price: '25000.00' },
-  { code: 'SRV-BEER', name: 'Bia Heineken lon 330ml', unit: 'Lon', price: '45000.00' },
+  { code: 'SRV-MASSAGE', name: 'Massage thư giãn toàn thân 60 phút', unit: 'Suất', price: '350000.00' },
+  { code: 'SRV-MOTORBIKE', name: 'Dịch vụ cho thuê xe máy tay ga', unit: 'Ngày', price: '150000.00' },
   { code: 'SRV-LAUNDRY', name: 'Dịch vụ Giặt ủi cao cấp', unit: 'Kg', price: '50000.00' },
   { code: 'SRV-BREAKFAST', name: 'Buffet sáng quốc tế', unit: 'Suất', price: '180000.00' },
   { code: 'SRV-AIRPORT', name: 'Xe đưa đón sân bay 4 chỗ', unit: 'Chuyến', price: '350000.00' },
@@ -474,7 +474,7 @@ const demoInventoryItems = [
     supplierCode: 'SUP-ECOCLEAN',
   },
 
-  // 4. Minibar & Snack (2 items - SUP-ASIA)
+  // 4. Minibar & Snack (4 items - SUP-ASIA)
   {
     code: 'MB-COKE-330',
     name: 'Nước ngọt Coca Cola lon 320ml',
@@ -484,6 +484,28 @@ const demoInventoryItems = [
     minStockLevel: '48.00',
     initialStock: '144.00',
     unitPrice: '9200.00',
+    supplierCode: 'SUP-ASIA',
+  },
+  {
+    code: 'MB-BEER-HK',
+    name: 'Bia Heineken lon 330ml',
+    categoryCode: 'MINIBAR',
+    unit: 'lon',
+    description: 'Bia Heineken lon 330ml ướp lạnh phục vụ minibar có thu phí',
+    minStockLevel: '48.00',
+    initialStock: '120.00',
+    unitPrice: '19000.00',
+    supplierCode: 'SUP-ASIA',
+  },
+  {
+    code: 'MB-WATER-LAV',
+    name: 'Nước khoáng Lavie 500ml',
+    categoryCode: 'MINIBAR',
+    unit: 'chai',
+    description: 'Nước khoáng thiên nhiên đóng chai Lavie 500ml minibar',
+    minStockLevel: '50.00',
+    initialStock: '180.00',
+    unitPrice: '6500.00',
     supplierCode: 'SUP-ASIA',
   },
   {
@@ -729,7 +751,7 @@ async function main() {
       });
       serviceMap.set(srv.code, s);
     }
-    console.info(`✅ Đã đồng bộ 5 Dịch vụ khách sạn (Nước suối, bia, giặt ủi, buffet, xe đưa đón).`);
+    console.info(`✅ Đã đồng bộ 5 Dịch vụ khách sạn (Massage thư giãn, thuê xe máy, giặt ủi, buffet, xe đưa đón).`);
 
     // 7. SEED GUESTS (35 demo guests with encrypted/hashed document numbers)
     const crypto =
@@ -938,8 +960,8 @@ async function main() {
       // 8. Service charges and orders for active stays
       let extraServiceAmount = 0;
       if (i % 2 === 0) {
-        const beerService = serviceMap.get('SRV-BEER')!;
-        extraServiceAmount = 90000; // 2 beers
+        const motorbikeService = serviceMap.get('SRV-MOTORBIKE')!;
+        extraServiceAmount = 150000; // 1 ngày thuê xe máy
 
         const srvOrder = await prisma.serviceOrder.create({
           data: {
@@ -947,7 +969,7 @@ async function main() {
             reservationId: res.id,
             stayId: stay.id,
             status: 'COMPLETED',
-            notes: `Phụ thu minibar phòng ${roomNum}`,
+            notes: `Khách thuê xe máy tay ga di chuyển trong ngày (Phòng ${roomNum})`,
             createdBy: receptionist.id,
             completedBy: receptionist.id,
             createdAt: new Date(`${today}T09:30:00.000Z`),
@@ -959,12 +981,12 @@ async function main() {
           data: {
             hotelId: hotel.id,
             serviceOrderId: srvOrder.id,
-            serviceId: beerService.id,
-            nameSnapshot: beerService.name,
-            unitSnapshot: beerService.unit,
-            quantity: 2,
-            unitPriceSnapshot: beerService.price,
-            lineTotal: '90000.00',
+            serviceId: motorbikeService.id,
+            nameSnapshot: motorbikeService.name,
+            unitSnapshot: motorbikeService.unit,
+            quantity: 1,
+            unitPriceSnapshot: motorbikeService.price,
+            lineTotal: '150000.00',
             createdAt: new Date(`${today}T09:30:00.000Z`),
           },
         });
@@ -977,7 +999,7 @@ async function main() {
             sourceType: 'SERVICE_ORDER_ITEM',
             sourceId: srvItem.id,
             serviceOrderItemId: srvItem.id,
-            amount: '90000.00',
+            amount: '150000.00',
             description: `${srvItem.nameSnapshot} (${srvItem.quantity} ${srvItem.unitSnapshot})`,
             createdBy: receptionist.id,
             createdAt: new Date(`${today}T10:00:00.000Z`),
@@ -995,15 +1017,15 @@ async function main() {
         });
         totalFolioDebit += extraServiceAmount;
       } else if (i === 1) {
-        // Pending request: 2 Lavie waters for Room 105
-        const waterService = serviceMap.get('SRV-WATER')!;
+        // Pending request: 1 Massage thư giãn cho Phòng 105
+        const massageService = serviceMap.get('SRV-MASSAGE')!;
         const pendingOrder = await prisma.serviceOrder.create({
           data: {
             hotelId: hotel.id,
             reservationId: res.id,
             stayId: stay.id,
             status: 'REQUESTED',
-            notes: `Khách gọi mang 2 chai nước khoáng lên phòng ${roomNum}`,
+            notes: `Khách đăng ký 1 liệu trình massage thư giãn toàn thân tại phòng ${roomNum}`,
             createdBy: receptionist.id,
             createdAt: new Date(`${today}T11:15:00.000Z`),
           },
@@ -1012,12 +1034,12 @@ async function main() {
           data: {
             hotelId: hotel.id,
             serviceOrderId: pendingOrder.id,
-            serviceId: waterService.id,
-            nameSnapshot: waterService.name,
-            unitSnapshot: waterService.unit,
-            quantity: 2,
-            unitPriceSnapshot: waterService.price,
-            lineTotal: '50000.00',
+            serviceId: massageService.id,
+            nameSnapshot: massageService.name,
+            unitSnapshot: massageService.unit,
+            quantity: 1,
+            unitPriceSnapshot: massageService.price,
+            lineTotal: '350000.00',
             createdAt: new Date(`${today}T11:15:00.000Z`),
           },
         });
@@ -2296,7 +2318,7 @@ async function main() {
         },
       });
     }
-    console.info('✅ Đã tạo 20 vật tư kho, phiếu nhập theo nhà cung cấp, phiếu xuất và phiếu kiểm kê.');
+    console.info(`✅ Đã tạo ${itemMap.size} vật tư kho, phiếu nhập theo nhà cung cấp, phiếu xuất và phiếu kiểm kê.`);
 
     // ----------------------------------------------------
     // J. PREFLIGHT ASSERTIONS (VALIDATE BUSINESS INVARIANTS)

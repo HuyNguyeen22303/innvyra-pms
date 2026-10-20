@@ -11,7 +11,7 @@ import {
   Form,
   InputNumber,
   DatePicker,
-  message,
+  App as AntdApp,
   Typography,
   Card,
   Row,
@@ -51,6 +51,7 @@ interface FormLineItem {
 }
 
 export const InventoryReceiptsTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -115,14 +116,14 @@ export const InventoryReceiptsTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateReceiptDto) => inventoryApi.createReceipt(dto),
     onSuccess: () => {
-      message.success('Đã lập phiếu nhập kho và cập nhật tồn kho thành công!');
+      appMessage.success('Đã lập phiếu nhập kho và cập nhật tồn kho thành công!');
       setIsCreateOpen(false);
       createForm.resetFields();
       setReceiptLines([{ key: 'line-1', itemId: '', quantity: 1, unitPrice: 0, notes: '' }]);
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể lập phiếu nhập kho.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể lập phiếu nhập kho.'));
     },
   });
 
@@ -146,7 +147,7 @@ export const InventoryReceiptsTab: React.FC = () => {
       // remove current duplicate line
       updated.splice(index, 1);
       setReceiptLines(updated);
-      message.info(`Vật tư "${targetItem?.name || ''}" đã có trong phiếu, đã tự động gộp số lượng!`);
+      appMessage.info(`Vật tư "${targetItem?.name || ''}" đã có trong phiếu, đã tự động gộp số lượng!`);
       return;
     }
 
@@ -176,7 +177,7 @@ export const InventoryReceiptsTab: React.FC = () => {
 
   const handleRemoveLine = (index: number) => {
     if (receiptLines.length === 1) {
-      message.warning('Phiếu nhập kho phải có ít nhất 1 mặt hàng.');
+      appMessage.warning('Phiếu nhập kho phải có ít nhất 1 mặt hàng.');
       return;
     }
     const updated = [...receiptLines];
@@ -190,18 +191,18 @@ export const InventoryReceiptsTab: React.FC = () => {
 
       // Validate lines
       if (receiptLines.length === 0) {
-        message.error('Vui lòng thêm ít nhất một mặt hàng nhập kho');
+        appMessage.error('Vui lòng thêm ít nhất một mặt hàng nhập kho');
         return;
       }
 
       for (let i = 0; i < receiptLines.length; i++) {
         const line = receiptLines[i];
         if (!line.itemId) {
-          message.error(`Dòng ${i + 1}: Vui lòng chọn mặt hàng vật tư`);
+          appMessage.error(`Dòng ${i + 1}: Vui lòng chọn mặt hàng vật tư`);
           return;
         }
         if (!line.quantity || Number(line.quantity) <= 0) {
-          message.error(`Dòng ${i + 1}: Số lượng nhập phải lớn hơn 0`);
+          appMessage.error(`Dòng ${i + 1}: Số lượng nhập phải lớn hơn 0`);
           return;
         }
       }

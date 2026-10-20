@@ -8,7 +8,7 @@ import {
   Space,
   Typography,
   Alert,
-  message,
+  App as AntdApp,
 } from 'antd';
 import {
   EditOutlined,
@@ -39,6 +39,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
   employee,
   onClose,
 }) => {
+  const { message: appMessage } = AntdApp.useApp();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -64,7 +65,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
       return employeesApi.update(employee.id, values);
     },
     onSuccess: (res) => {
-      message.success(`Cập nhật thông tin nhân viên ${res.data.fullName} thành công!`);
+      appMessage.success(`Cập nhật thông tin nhân viên ${res.data.fullName} thành công!`);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
       handleClose();
@@ -109,7 +110,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
     }
 
     if (Object.keys(payload).length === 0) {
-      message.info('Không có thông tin nào thay đổi.');
+      appMessage.info('Không có thông tin nào thay đổi.');
       handleClose();
       return;
     }

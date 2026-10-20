@@ -9,7 +9,7 @@ import {
   Typography,
   Alert,
   Tooltip,
-  message,
+  App as AntdApp,
 } from 'antd';
 import {
   KeyOutlined,
@@ -58,6 +58,7 @@ export const generateSecurePassword = (length = 16): string => {
 };
 
 export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, onClose }) => {
+  const { message: appMessage } = AntdApp.useApp();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -75,7 +76,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
   const createMutation = useMutation({
     mutationFn: (values: CreateEmployeeDto) => employeesApi.create(values),
     onSuccess: (res) => {
-      message.success(`Tạo tài khoản nhân viên ${res.data.fullName} thành công!`);
+      appMessage.success(`Tạo tài khoản nhân viên ${res.data.fullName} thành công!`);
       // Invalidate all employees queries
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
@@ -103,17 +104,17 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
     const pwd = generateSecurePassword(16);
     setGeneratedPassword(pwd);
     form.setFieldsValue({ password: pwd });
-    message.info('Đã tạo mật khẩu an toàn ngẫu nhiên (16 ký tự).');
+    appMessage.info('Đã tạo mật khẩu an toàn ngẫu nhiên (16 ký tự).');
   };
 
   const handleCopyPassword = () => {
     const currentPwd = form.getFieldValue('password') || generatedPassword;
     if (!currentPwd) {
-      message.warning('Chưa có mật khẩu để sao chép.');
+      appMessage.warning('Chưa có mật khẩu để sao chép.');
       return;
     }
     navigator.clipboard.writeText(currentPwd);
-    message.success('Đã sao chép mật khẩu vào bộ nhớ tạm (Clipboard)!');
+    appMessage.success('Đã sao chép mật khẩu vào bộ nhớ tạm (Clipboard)!');
   };
 
   const handleClose = () => {

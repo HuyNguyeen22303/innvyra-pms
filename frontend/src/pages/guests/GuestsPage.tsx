@@ -11,7 +11,7 @@ import {
   Select,
   DatePicker,
   Typography,
-  message,
+  App as AntdApp,
   Popconfirm,
   Card,
   Tooltip,
@@ -56,6 +56,7 @@ import type {
 const { Title, Text, Paragraph } = Typography;
 
 export const GuestsPage: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -137,7 +138,7 @@ export const GuestsPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: CreateGuestDto) => guestsApi.create(data),
     onSuccess: () => {
-      message.success('Thêm hồ sơ khách hàng thành công!');
+      appMessage.success('Thêm hồ sơ khách hàng thành công!');
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['guests'] });
@@ -147,7 +148,7 @@ export const GuestsPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Không thể thêm khách hàng.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 
@@ -156,7 +157,7 @@ export const GuestsPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateGuestDto> }) =>
       guestsApi.update(id, data),
     onSuccess: () => {
-      message.success('Cập nhật hồ sơ thành công!');
+      appMessage.success('Cập nhật hồ sơ thành công!');
       setIsModalOpen(false);
       setEditingGuest(null);
       form.resetFields();
@@ -170,7 +171,7 @@ export const GuestsPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Cập nhật thất bại.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 
@@ -178,7 +179,7 @@ export const GuestsPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => guestsApi.delete(id),
     onSuccess: () => {
-      message.success('Đã lưu trữ / xóa hồ sơ khách hàng!');
+      appMessage.success('Đã lưu trữ / xóa hồ sơ khách hàng!');
       setIsDrawerOpen(false);
       setSelectedGuestId(null);
       queryClient.invalidateQueries({ queryKey: ['guests'] });
@@ -188,7 +189,7 @@ export const GuestsPage: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error?.message ||
         'Không thể xóa hồ sơ.';
-      message.error(msg);
+      appMessage.error(msg);
     },
   });
 
@@ -223,7 +224,7 @@ export const GuestsPage: React.FC = () => {
       });
       setIsModalOpen(true);
     } catch {
-      message.error('Không thể lấy thông tin chi tiết để chỉnh sửa.');
+      appMessage.error('Không thể lấy thông tin chi tiết để chỉnh sửa.');
     }
   };
 

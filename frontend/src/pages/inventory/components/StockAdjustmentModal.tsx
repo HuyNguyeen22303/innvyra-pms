@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Typography, Space, Alert, Tag, Descriptions, message } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Typography,
+  Space,
+  Alert,
+  Tag,
+  Descriptions,
+  App as AntdApp,
+} from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormOutlined, AlertOutlined } from '@ant-design/icons';
 import { inventoryApi, getInventoryErrorMessage } from '../../../api/inventory.api.ts';
@@ -20,6 +31,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { message: appMessage } = AntdApp.useApp();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [actualQty, setActualQty] = useState<number | null>(null);
@@ -46,14 +58,14 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   const adjustmentMutation = useMutation({
     mutationFn: (dto: CreateAdjustmentDto) => inventoryApi.createAdjustment(dto),
     onSuccess: () => {
-      message.success('Đã cập nhật biên bản kiểm kê và điều chỉnh tồn kho thành công!');
+      appMessage.success('Đã cập nhật biên bản kiểm kê và điều chỉnh tồn kho thành công!');
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       form.resetFields();
       onClose();
       onSuccess?.();
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, 'Không thể thực hiện điều chỉnh tồn kho.'));
+      appMessage.error(getInventoryErrorMessage(err, 'Không thể thực hiện điều chỉnh tồn kho.'));
     },
   });
 

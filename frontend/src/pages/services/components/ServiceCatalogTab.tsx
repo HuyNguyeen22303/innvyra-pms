@@ -11,7 +11,7 @@ import {
   Form,
   InputNumber,
   Switch,
-  message,
+  App as AntdApp,
   Popconfirm,
   Typography,
   Card,
@@ -41,6 +41,7 @@ import type {
 const { Text, Paragraph } = Typography;
 
 export const ServiceCatalogTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -85,7 +86,7 @@ export const ServiceCatalogTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateServiceDto) => billingApi.createService(dto),
     onSuccess: () => {
-      message.success('Đã tạo dịch vụ mới thành công!');
+      appMessage.success('Đã tạo dịch vụ mới thành công!');
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['billing-services'] });
@@ -93,7 +94,7 @@ export const ServiceCatalogTab: React.FC = () => {
     onError: (err: any) => {
       const details = err.response?.data?.details;
       const detailMsg = Array.isArray(details) && details.length > 0 ? details[0].message : null;
-      message.error(detailMsg || err.response?.data?.message || 'Không thể tạo dịch vụ.');
+      appMessage.error(detailMsg || err.response?.data?.message || 'Không thể tạo dịch vụ.');
     },
   });
 
@@ -101,7 +102,7 @@ export const ServiceCatalogTab: React.FC = () => {
     mutationFn: ({ id, dto }: { id: string; dto: UpdateServiceDto }) =>
       billingApi.updateService(id, dto),
     onSuccess: () => {
-      message.success('Đã cập nhật dịch vụ thành công!');
+      appMessage.success('Đã cập nhật dịch vụ thành công!');
       setIsEditModalOpen(false);
       setEditingService(null);
       editForm.resetFields();
@@ -110,18 +111,18 @@ export const ServiceCatalogTab: React.FC = () => {
     onError: (err: any) => {
       const details = err.response?.data?.details;
       const detailMsg = Array.isArray(details) && details.length > 0 ? details[0].message : null;
-      message.error(detailMsg || err.response?.data?.message || 'Không thể cập nhật dịch vụ.');
+      appMessage.error(detailMsg || err.response?.data?.message || 'Không thể cập nhật dịch vụ.');
     },
   });
 
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => billingApi.deactivateService(id),
     onSuccess: () => {
-      message.success('Đã ngưng kích hoạt dịch vụ thành công!');
+      appMessage.success('Đã ngưng kích hoạt dịch vụ thành công!');
       queryClient.invalidateQueries({ queryKey: ['billing-services'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Không thể ngưng kích hoạt dịch vụ.');
+      appMessage.error(err.response?.data?.message || 'Không thể ngưng kích hoạt dịch vụ.');
     },
   });
 

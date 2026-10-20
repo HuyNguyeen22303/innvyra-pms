@@ -10,7 +10,7 @@ import {
   Modal,
   Form,
   InputNumber,
-  message,
+  App as AntdApp,
   Popconfirm,
   Typography,
   Card,
@@ -49,6 +49,7 @@ import { DebouncedSearchInput } from "../../../components/DebouncedSearchInput.t
 const { Text, Paragraph } = Typography;
 
 export const InventoryItemsTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -125,13 +126,13 @@ export const InventoryItemsTab: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (dto: CreateItemDto) => inventoryApi.createItem(dto),
     onSuccess: () => {
-      message.success("Đã thêm mặt hàng vật tư mới thành công!");
+      appMessage.success("Đã thêm mặt hàng vật tư mới thành công!");
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (err: any) => {
-      message.error(getInventoryErrorMessage(err, "Không thể tạo vật tư mới."));
+      appMessage.error(getInventoryErrorMessage(err, "Không thể tạo vật tư mới."));
     },
   });
 
@@ -139,13 +140,13 @@ export const InventoryItemsTab: React.FC = () => {
     mutationFn: ({ id, dto }: { id: string; dto: UpdateItemDto }) =>
       inventoryApi.updateItem(id, dto),
     onSuccess: () => {
-      message.success("Đã cập nhật thông tin vật tư thành công!");
+      appMessage.success("Đã cập nhật thông tin vật tư thành công!");
       setIsEditModalOpen(false);
       setEditingItem(null);
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (err: any) => {
-      message.error(
+      appMessage.error(
         getInventoryErrorMessage(err, "Không thể cập nhật vật tư."),
       );
     },
@@ -154,11 +155,11 @@ export const InventoryItemsTab: React.FC = () => {
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => inventoryApi.deactivateItem(id),
     onSuccess: () => {
-      message.success("Đã ngừng hoạt động vật tư thành công!");
+      appMessage.success("Đã ngừng hoạt động vật tư thành công!");
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (err: any) => {
-      message.error(
+      appMessage.error(
         getInventoryErrorMessage(err, "Không thể ngừng hoạt động vật tư."),
       );
     },

@@ -8,7 +8,7 @@ import {
   Typography,
   Alert,
   Tooltip,
-  message,
+  App as AntdApp,
   Avatar,
   Tag,
 } from 'antd';
@@ -38,6 +38,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   employee,
   onClose,
 }) => {
+  const { message: appMessage } = AntdApp.useApp();
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       return employeesApi.resetPassword(employee.id, values.password);
     },
     onSuccess: (_, variables) => {
-      message.success(`Đã cấp lại mật khẩu cho ${employee?.fullName} thành công!`);
+      appMessage.success(`Đã cấp lại mật khẩu cho ${employee?.fullName} thành công!`);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['staff-directory-global'] });
       // Keep password visible so admin/manager can copy and send
@@ -90,17 +91,17 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
     const newPass = generateSecurePassword(16);
     form.setFieldsValue({ password: newPass });
     navigator.clipboard.writeText(newPass);
-    message.success('Đã sinh mật khẩu mạnh 16 ký tự và sao chép vào clipboard!');
+    appMessage.success('Đã sinh mật khẩu mạnh 16 ký tự và sao chép vào clipboard!');
   };
 
   const handleCopyPassword = (textToCopy?: string) => {
     const pass = textToCopy || form.getFieldValue('password');
     if (!pass) {
-      message.warning('Chưa có mật khẩu để sao chép.');
+      appMessage.warning('Chưa có mật khẩu để sao chép.');
       return;
     }
     navigator.clipboard.writeText(pass);
-    message.success('Đã sao chép mật khẩu vào bộ nhớ tạm (clipboard)!');
+    appMessage.success('Đã sao chép mật khẩu vào bộ nhớ tạm (clipboard)!');
   };
 
   const handleClose = () => {

@@ -20,7 +20,7 @@ import {
   Tabs,
   Alert,
   Tooltip,
-  message,
+  App as AntdApp,
   Spin,
   Grid,
 } from 'antd';
@@ -68,6 +68,7 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
 };
 
 export const FolioTab: React.FC = () => {
+  const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -327,12 +328,12 @@ export const FolioTab: React.FC = () => {
   const openFolioMutation = useMutation({
     mutationFn: (resId: string) => billingApi.openFolio(resId),
     onSuccess: () => {
-      message.success('Đã mở Sổ công nợ Folio thành công! Toàn bộ tiền phòng đã được ghi nợ.');
+      appMessage.success('Đã mở Sổ công nợ Folio thành công! Toàn bộ tiền phòng đã được ghi nợ.');
       queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể mở Sổ công nợ Folio.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể mở Sổ công nợ Folio.'));
     },
   });
 
@@ -341,14 +342,14 @@ export const FolioTab: React.FC = () => {
     mutationFn: ({ folioId, dto }: { folioId: string; dto: CreatePaymentDto }) =>
       billingApi.createPayment(folioId, dto, createIdempotencyKey('pay')),
     onSuccess: () => {
-      message.success('Ghi nhận giao dịch thu tiền thành công!');
+      appMessage.success('Ghi nhận giao dịch thu tiền thành công!');
       setIsPaymentModalOpen(false);
       paymentForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể ghi nhận thu tiền.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể ghi nhận thu tiền.'));
     },
   });
 
@@ -357,14 +358,14 @@ export const FolioTab: React.FC = () => {
     mutationFn: ({ folioId, dto }: { folioId: string; dto: CreateAdjustmentDto }) =>
       billingApi.createAdjustment(folioId, dto, createIdempotencyKey('adj')),
     onSuccess: () => {
-      message.success('Điều chỉnh công nợ Folio thành công!');
+      appMessage.success('Điều chỉnh công nợ Folio thành công!');
       setIsAdjustmentModalOpen(false);
       adjustmentForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể điều chỉnh công nợ.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể điều chỉnh công nợ.'));
     },
   });
 
@@ -373,7 +374,7 @@ export const FolioTab: React.FC = () => {
     mutationFn: ({ paymentId, dto }: { paymentId: string; dto: CreateRefundDto }) =>
       billingApi.createRefund(paymentId, dto, createIdempotencyKey('ref')),
     onSuccess: () => {
-      message.success('Ghi nhận hoàn tiền thành công! Số dư nợ đã được cập nhật.');
+      appMessage.success('Ghi nhận hoàn tiền thành công! Số dư nợ đã được cập nhật.');
       setIsRefundModalOpen(false);
       setTargetPaymentForRefund(null);
       refundForm.resetFields();
@@ -381,7 +382,7 @@ export const FolioTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
-      message.error(getApiErrorMessage(err, 'Không thể ghi nhận hoàn tiền.'));
+      appMessage.error(getApiErrorMessage(err, 'Không thể ghi nhận hoàn tiền.'));
     },
   });
 
@@ -389,12 +390,12 @@ export const FolioTab: React.FC = () => {
   const closeFolioMutation = useMutation({
     mutationFn: (folioId: string) => billingApi.closeFolio(folioId),
     onSuccess: () => {
-      message.success('Đã đóng quyết toán Sổ công nợ Folio thành công! Trạng thái: CLOSED.');
+      appMessage.success('Đã đóng quyết toán Sổ công nợ Folio thành công! Trạng thái: CLOSED.');
       setIsCloseFolioModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
     },
     onError: (err: any) => {
-      message.error(
+      appMessage.error(
         getApiErrorMessage(
           err,
           'Không thể đóng Folio. Vui lòng kiểm tra: số dư phải bằng 0, không còn order requested và khách đã check-out.'
