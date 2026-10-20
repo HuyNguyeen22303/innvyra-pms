@@ -288,6 +288,20 @@ export const FolioTab: React.FC = () => {
     (folioError as any)?.response?.status === 404 ||
     (folioError as any)?.response?.data?.error?.code === 'FOLIO_NOT_FOUND';
 
+  // Synchronize billing-folio-check cache whenever detailed Folio query is fetched or refetched
+  useEffect(() => {
+    if (folioRes?.data?.reservationId) {
+      const resId = String(folioRes.data.reservationId);
+      queryClient.setQueryData(['billing-folio-check', resId], {
+        resId,
+        status: folioRes.data.status,
+        folioId: folioRes.data.id,
+        closedAt: folioRes.data.closedAt ?? null,
+        balanceAmount: folioRes.data.outstandingBalance,
+      });
+    }
+  }, [folioRes?.data, queryClient]);
+
   // 4. Folio Items (Ledger) Query
   const {
     data: folioItemsRes,
@@ -327,9 +341,24 @@ export const FolioTab: React.FC = () => {
   // 1. Open Folio
   const openFolioMutation = useMutation({
     mutationFn: (resId: string) => billingApi.openFolio(resId),
-    onSuccess: () => {
+    onSuccess: (response, resId) => {
       appMessage.success('Đã mở Sổ công nợ Folio thành công! Toàn bộ tiền phòng đã được ghi nợ.');
-      queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
+      const targetResId = String(resId);
+      const openedFolio = response?.data;
+      if (openedFolio) {
+        // Immediately update batch check cache so the list displays OPEN, folioId, and balance instantly
+        queryClient.setQueryData(['billing-folio-check', targetResId], {
+          resId: targetResId,
+          status: openedFolio.status,
+          folioId: openedFolio.id,
+          closedAt: openedFolio.closedAt ?? null,
+          balanceAmount: openedFolio.outstandingBalance,
+        });
+        // Immediately update detailed folio query cache
+        queryClient.setQueryData(['billing-folio', targetResId], response);
+      }
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
@@ -345,7 +374,13 @@ export const FolioTab: React.FC = () => {
       appMessage.success('Ghi nhận giao dịch thu tiền thành công!');
       setIsPaymentModalOpen(false);
       paymentForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
+      const targetResId = folio?.reservationId
+        ? String(folio.reservationId)
+        : (selectedReservationId ? String(selectedReservationId) : undefined);
+      if (targetResId) {
+        queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
+        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
@@ -361,7 +396,13 @@ export const FolioTab: React.FC = () => {
       appMessage.success('Điều chỉnh công nợ Folio thành công!');
       setIsAdjustmentModalOpen(false);
       adjustmentForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
+      const targetResId = folio?.reservationId
+        ? String(folio.reservationId)
+        : (selectedReservationId ? String(selectedReservationId) : undefined);
+      if (targetResId) {
+        queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
+        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
@@ -378,7 +419,13 @@ export const FolioTab: React.FC = () => {
       setIsRefundModalOpen(false);
       setTargetPaymentForRefund(null);
       refundForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
+      const targetResId = folio?.reservationId
+        ? String(folio.reservationId)
+        : (selectedReservationId ? String(selectedReservationId) : undefined);
+      if (targetResId) {
+        queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
+        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
@@ -389,10 +436,27 @@ export const FolioTab: React.FC = () => {
   // 5. Close Folio
   const closeFolioMutation = useMutation({
     mutationFn: (folioId: string) => billingApi.closeFolio(folioId),
-    onSuccess: () => {
+    onSuccess: (response) => {
       appMessage.success('Đã đóng quyết toán Sổ công nợ Folio thành công! Trạng thái: CLOSED.');
       setIsCloseFolioModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['billing-folio', selectedReservationId] });
+      const closedFolio = response?.data;
+      const targetResId = closedFolio?.reservationId
+        ? String(closedFolio.reservationId)
+        : (selectedReservationId ? String(selectedReservationId) : undefined);
+
+      if (targetResId && closedFolio) {
+        // Immediately update batch check cache so the list displays CLOSED, folioId, and closedAt instantly
+        queryClient.setQueryData(['billing-folio-check', targetResId], {
+          resId: targetResId,
+          status: closedFolio.status,
+          folioId: closedFolio.id,
+          closedAt: closedFolio.closedAt ?? null,
+          balanceAmount: closedFolio.outstandingBalance ?? '0',
+        });
+        queryClient.setQueryData(['billing-folio', targetResId], response);
+        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+        queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
+      }
     },
     onError: (err: any) => {
       appMessage.error(
