@@ -30,7 +30,7 @@ const defaultFormatNumber = (num: number): string => {
   return num.toLocaleString('vi-VN');
 };
 
-export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
+export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(({
   data,
   series1Label,
   series2Label,
@@ -280,4 +280,4 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = ({
       </div>
     </div>
   );
-};
+});

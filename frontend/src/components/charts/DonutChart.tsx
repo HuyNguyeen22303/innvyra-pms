@@ -18,7 +18,7 @@ export interface DonutChartProps {
   valueFormatter?: (val: number) => string;
 }
 
-export const DonutChart: React.FC<DonutChartProps> = ({
+export const DonutChart: React.FC<DonutChartProps> = React.memo(({
   data,
   totalLabel = 'Lượt đặt',
   size = 200,
@@ -194,4 +194,4 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       </Col>
     </Row>
   );
-};
+});
