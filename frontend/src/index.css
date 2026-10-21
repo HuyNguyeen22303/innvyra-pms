@@ -4,14 +4,34 @@
   padding: 0;
 }
 
-html,
+/*
+ * IMPORTANT: never set `overflow-x` (or any overflow) on <html>.
+ * Doing so turns <html> into the page scroll container, and the browser then
+ * stops propagating <body>'s overflow to the viewport. Ant Design (and every
+ * other modal/drawer library) locks background scrolling by injecting
+ * `html body { overflow-y: hidden }`; with <html> as the scroller that rule has
+ * no effect, so the page kept scrolling behind open dialogs.
+ *
+ * The horizontal clipping therefore lives on <body> only, and uses `clip`
+ * instead of `hidden`: `hidden` turns <body> into a scroll container, which
+ * breaks the sticky header and can swallow the scroll lock, while `clip`
+ * just clips the overflow.
+ */
+html {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  max-width: 100vw;
+}
+
 body,
 #root {
   width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 
@@ -62,6 +82,17 @@ body {
 
 .ant-drawer-content-wrapper {
   max-width: calc(100vw - 12px);
+}
+
+/*
+ * While a dialog/drawer is open the page behind it is locked by Ant Design
+ * (see the note at the top of this file). `overscroll-behavior: contain`
+ * additionally stops wheel/trackpad momentum from chaining out of the overlay
+ * once the user reaches the end of the overlay's own scrollable area.
+ */
+.ant-modal-wrap,
+.ant-drawer-body {
+  overscroll-behavior: contain;
 }
 
 /* Custom crisp scrollbar */
@@ -189,10 +220,6 @@ body {
     padding: 16px 14px !important;
   }
 
-  .ant-modal-wrap {
-    overscroll-behavior: contain;
-  }
-
   .ant-modal .ant-modal-body {
     max-height: calc(100dvh - 190px);
     overflow-y: auto;
@@ -253,9 +280,5 @@ body {
   .ant-select,
   .ant-input-number {
     max-width: 100%;
-  }
-
-  .ant-drawer-body {
-    overscroll-behavior: contain;
   }
 }
