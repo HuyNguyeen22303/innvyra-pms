@@ -238,8 +238,8 @@ export const stayPaths = {
         ),
         query(
           'search',
-          { type: 'string', minLength: 1, maxLength: 32 },
-          'Confirmation code substring',
+          { type: 'string', minLength: 1, maxLength: 100 },
+          'Confirmation code, guest full name or room number substring',
         ),
         query(
           'sortBy',

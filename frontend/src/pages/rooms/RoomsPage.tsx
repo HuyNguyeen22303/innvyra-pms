@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useDeferredValue } from 'react';
 import {
   Table,
   Button,
@@ -31,7 +31,7 @@ import {
   ReloadOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
@@ -600,6 +600,9 @@ export const RoomsPage: React.FC = () => {
         physicalStatus: selectedPhysical,
         search: searchNumber.trim() || undefined,
       }),
+    // Keep the current grid on screen while the new search/filter request is in
+    // flight, instead of blanking the rows out and remounting them.
+    placeholderData: keepPreviousData,
   });
 
   const rawRooms = roomsRes?.data;
@@ -608,6 +611,10 @@ export const RoomsPage: React.FC = () => {
     : Array.isArray((rawRooms as any)?.items)
     ? (rawRooms as any).items
     : [];
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredRooms = useDeferredValue(rooms);
+  const tableRooms = deferredRooms.length > 0 ? deferredRooms : rooms;
 
 
   // Create Mutation
@@ -1052,7 +1059,7 @@ export const RoomsPage: React.FC = () => {
 
       {/* VIEW MODE 2: TABLE VIEW */}
       {viewMode === 'table' && (
-        <RoomTable rooms={rooms} columns={columns} loading={isLoading} />
+        <RoomTable rooms={tableRooms} columns={columns} loading={isLoading} />
       )}
 
       <RoomModals

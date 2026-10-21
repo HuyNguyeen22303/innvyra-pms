@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo, useCallback, useDeferredValue } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Table,
   Button,
@@ -74,10 +74,18 @@ export const InventoryCategoriesTab: React.FC = () => {
         search: search.trim() || undefined,
         isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
       }),
+    // Keep the current page while the next search request is in flight so the
+    // table never blanks out and remounts its rows mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   const categoryList = categoriesRes?.data?.items || [];
   const total = categoriesRes?.data?.pagination?.total || 0;
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredCategoryList = useDeferredValue(categoryList);
+  const tableCategoryList =
+    deferredCategoryList.length > 0 ? deferredCategoryList : categoryList;
 
   // Mutations
   const createMutation = useMutation({
@@ -332,7 +340,7 @@ export const InventoryCategoriesTab: React.FC = () => {
       {/* Categories Table */}
       <Table<InventoryCategoryView>
         columns={columns}
-        dataSource={categoryList}
+        dataSource={tableCategoryList}
         rowKey="id"
         loading={isLoading}
         scroll={{ x: 1100 }}

@@ -23,6 +23,43 @@ export const staysApi = {
   },
 
   /**
+   * Lấy TOÀN BỘ lượt lưu trú khớp bộ lọc, không chỉ trang đầu.
+   *
+   * Backend giới hạn `limit` tối đa 100 mỗi request (stayListQuery -> paginationFields),
+   * nên một lần gọi không thể trả hết dữ liệu. Hàm này đi lần lượt các trang cho tới
+   * khi phủ đủ `pagination.total`, để trang Stays có đủ dữ liệu mà lọc theo tên khách
+   * ngay trên client (không cần đổi backend).
+   */
+  getAllPages: async (
+    params?: StayFilterParams,
+    pageSize = 100
+  ): Promise<StaySummaryItem[]> => {
+    const first = await staysApi.getAll({ ...params, page: 1, limit: pageSize });
+    const firstItems: StaySummaryItem[] = Array.isArray(first.data)
+      ? first.data
+      : first.data?.items || [];
+    const total = Array.isArray(first.data)
+      ? firstItems.length
+      : first.data?.pagination?.total ?? firstItems.length;
+
+    if (firstItems.length >= total) return firstItems;
+
+    // Remaining pages are independent, so fetch them in parallel.
+    const loadedPages = Math.ceil(firstItems.length / pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(totalPages - loadedPages, 0) }, (_, idx) =>
+        staysApi.getAll({ ...params, page: loadedPages + idx + 1, limit: pageSize })
+      )
+    );
+
+    return rest.reduce<StaySummaryItem[]>((acc, res) => {
+      const items = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      return acc.concat(items);
+    }, firstItems);
+  },
+
+  /**
    * Xem chi tiết lượt lưu trú (thông tin checkin, checkout, nhân viên thực hiện, lịch sử chuyển phòng)
    */
   getById: async (id: string): Promise<ApiResponse<StayDetailItem>> => {

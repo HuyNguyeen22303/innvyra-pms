@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect, useMemo, useDeferredValue } from "react";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   Typography,
   Card,
@@ -551,6 +551,9 @@ export const MaintenancePage: React.FC = () => {
         sortBy: "reportedAt",
       }),
     staleTime: 10000,
+    // Keep the current rows while the new search is in flight instead of
+    // blanking the table and remounting every row on each debounce tick.
+    placeholderData: keepPreviousData,
   });
 
   // 2. Maintenance Blocks list
@@ -618,6 +621,11 @@ export const MaintenancePage: React.FC = () => {
         : (rawTickets as any)?.items || [],
     [rawTickets]
   );
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredTickets = useDeferredValue(ticketList);
+  const tableTickets =
+    deferredTickets.length > 0 ? deferredTickets : ticketList;
 
   const rawBlocks = blocksRes?.data;
   const blockList: MaintenanceBlockItem[] = useMemo(
@@ -1465,7 +1473,7 @@ export const MaintenancePage: React.FC = () => {
                   <Card style={{ borderRadius: 8 }}>
                     <Table
                       columns={ticketColumns}
-                      dataSource={ticketList}
+                      dataSource={tableTickets}
                       rowKey="id"
                       loading={isTicketsLoading}
                       scroll={{ x: 1320 }}
@@ -1474,7 +1482,7 @@ export const MaintenancePage: React.FC = () => {
                   </Card>
                 </div>
     ),
-    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, ticketColumns, ticketList, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
+    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, tableTickets, ticketColumns, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
   );
 
   // Memoized tab pane: the element identity only changes when the values it

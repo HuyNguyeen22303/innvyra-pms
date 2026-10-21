@@ -164,7 +164,20 @@ export class PrismaStayRepository {
       ...(query.roomId ? { currentRoomId: BigInt(query.roomId) } : {}),
       ...(query.roomNumber ? { currentRoom: { roomNumber: query.roomNumber } } : {}),
       ...(query.search
-        ? { reservationRoom: { reservation: { confirmationCode: { contains: query.search } } } }
+        ? {
+            // The list search box is shared by reception staff: they look a stay
+            // up by confirmation code, by the guest's name or by room number.
+            // All three are compared with LIKE '%term%' (MySQL collation
+            // utf8mb4_unicode_ci makes this case- and accent-insensitive, so
+            // "nguyen" also matches "Nguyễn"). These are alternatives, so they
+            // must be wrapped in OR - a plain object would AND them and return
+            // no rows at all.
+            OR: [
+              { reservationRoom: { reservation: { confirmationCode: { contains: query.search } } } },
+              { reservationRoom: { reservation: { bookerGuest: { fullName: { contains: query.search } } } } },
+              { currentRoom: { roomNumber: { contains: query.search } } },
+            ],
+          }
         : {}),
       ...(query.checkInDate
         ? { actualCheckinAt: localDateRange(query.checkInDate, timezone) }

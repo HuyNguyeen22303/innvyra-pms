@@ -48,7 +48,7 @@ export interface DebouncedSearchInputProps extends Omit<InputProps, 'onChange'> 
 export const DebouncedSearchInput: React.FC<DebouncedSearchInputProps> = React.memo(({
   value: externalValue = '',
   onChange,
-  debounceMs = 350,
+  debounceMs = 100,
   deferUpdate = true,
   clearImmediately = false,
   onPendingChange,

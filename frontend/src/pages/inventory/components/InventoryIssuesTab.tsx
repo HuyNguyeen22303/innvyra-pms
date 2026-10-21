@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useDeferredValue } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Table,
   Button,
@@ -114,10 +114,18 @@ export const InventoryIssuesTab: React.FC = () => {
         startDate,
         endDate,
       }),
+    // Keep the current page while the next search request is in flight so the
+    // table never blanks out and remounts its rows mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   const issueList = issuesRes?.data?.items || [];
   const total = issuesRes?.data?.pagination?.total || 0;
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredIssueList = useDeferredValue(issueList);
+  const tableIssueList =
+    deferredIssueList.length > 0 ? deferredIssueList : issueList;
 
   // Create Mutation
   const createMutation = useMutation({
@@ -397,7 +405,7 @@ export const InventoryIssuesTab: React.FC = () => {
       {/* Issues Table */}
       <Table<StockIssueView>
         columns={columns}
-        dataSource={issueList}
+        dataSource={tableIssueList}
         rowKey="id"
         loading={isLoading}
         scroll={{ x: 1080 }}

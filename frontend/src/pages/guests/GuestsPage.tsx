@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useDeferredValue } from 'react';
 import {
   Table,
   Button,
@@ -40,7 +40,7 @@ import {
   SafetyCertificateOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { guestsApi } from '../../api/guests.api.ts';
@@ -96,6 +96,10 @@ export const GuestsPage: React.FC = () => {
         sortBy,
         sortOrder: 'asc',
       }),
+    // Keep the current rows while the new search is in flight: without this the
+    // grid blanks out, shows the loading mask, then remounts every row — a long
+    // main-thread task that swallows the keystrokes of a held Backspace.
+    placeholderData: keepPreviousData,
   });
 
   const rawData = guestsRes?.data;
@@ -121,6 +125,10 @@ export const GuestsPage: React.FC = () => {
     }
     return rawGuests;
   }, [rawGuests, selectedNationality]);
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredGuests = useDeferredValue(guests);
+  const tableGuests = deferredGuests.length > 0 ? deferredGuests : guests;
 
   // Fetch Single Guest Detail for Drawer / Edit
   const {
@@ -688,7 +696,7 @@ export const GuestsPage: React.FC = () => {
         }}
       >
         <Table
-          dataSource={guests}
+          dataSource={tableGuests}
           columns={columns}
           rowKey="id"
           loading={isLoading}

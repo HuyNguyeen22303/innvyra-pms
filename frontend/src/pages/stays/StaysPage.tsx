@@ -90,6 +90,18 @@ const formatStayTimestamp = (iso: string): FormattedTimestamp => {
 };
 
 /**
+ * Lowercase + strip Vietnamese diacritics, so typing "nguyen van an" still finds
+ * "Nguyễn Văn An" (and "đ" is folded to "d").
+ */
+const normalizeForSearch = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .trim();
+
+/**
  * Table row enriched with pre-formatted date strings, so cell renderers never
  * touch dayjs. Built once per API payload instead of once per render.
  */
@@ -550,35 +562,44 @@ export const StaysPage: React.FC = () => {
 
   // 1. Fetch Stays List
   const {
-    data: staysRes,
+    data: staysData,
     isLoading: isLoadingStays,
     refetch: refetchStays,
   } = useQuery({
-    queryKey: ['stays', searchKeyword, statusFilter],
+    // The whole list is fetched once and filtered in the browser, so typing in
+    // the search box never issues a request: no round-trip, no spinner, and
+    // nothing blocking the main thread while a key is held down.
+    queryKey: ['stays', statusFilter],
     queryFn: () =>
-      staysApi.getAll({
-        search: searchKeyword.trim() || undefined,
+      staysApi.getAllPages({
         status: statusFilter,
         sortBy: 'actualCheckinAt',
         sortOrder: 'desc',
       }),
-    // Keep the previous rows on screen while the new search is in flight.
-    // Without this the table blanks out (rows unmount, loading mask + blur
-    // repaint of the whole grid) and then remounts every row, which is the
-    // expensive frame you see when typing fast or holding Backspace.
+    // Status changes still refetch; keep the previous rows on screen meanwhile
+    // instead of blanking the grid and remounting every row.
     placeholderData: keepPreviousData,
   });
 
-  const rawStaysData = staysRes?.data;
-  const stays: StaySummaryItem[] = useMemo(() => {
-    return Array.isArray(rawStaysData)
-      ? rawStaysData
-      : rawStaysData?.items || [];
-  }, [rawStaysData]);
+  const stays: StaySummaryItem[] = useMemo(() => staysData ?? [], [staysData]);
+
+  // Match by guest name, room number or confirmation code in one box.
+  const filteredStays = useMemo(() => {
+    const query = normalizeForSearch(searchKeyword);
+    if (!query) return stays;
+
+    return stays.filter((stay) =>
+      normalizeForSearch(
+        [stay.bookerGuest?.fullName, stay.room?.roomNumber, stay.confirmationCode]
+          .filter(Boolean)
+          .join(' ')
+      ).includes(query)
+    );
+  }, [stays, searchKeyword]);
 
   const stayRows = useMemo<StayRow[]>(
     () =>
-      stays.map((stay) => {
+      filteredStays.map((stay) => {
         const checkin = formatStayTimestamp(stay.actualCheckinAt);
         const checkout = stay.actualCheckoutAt
           ? formatStayTimestamp(stay.actualCheckoutAt)
@@ -591,7 +612,7 @@ export const StaysPage: React.FC = () => {
           checkoutWeekday: checkout?.weekday ?? '',
         };
       }),
-    [stays]
+    [filteredStays]
   );
 
   // Rendering the grid is by far the most expensive part of a search. Keeping
@@ -822,11 +843,11 @@ export const StaysPage: React.FC = () => {
   // COMPUTED STATS & FILTERED LISTS
   // ----------------------------------------------------
   const stats = useMemo(() => {
-    const total = stays.length;
-    const inHouse = stays.filter((s) => s.status === 'CHECKED_IN').length;
-    const checkedOut = stays.filter((s) => s.status === 'CHECKED_OUT').length;
+    const total = filteredStays.length;
+    const inHouse = filteredStays.filter((s) => s.status === 'CHECKED_IN').length;
+    const checkedOut = filteredStays.filter((s) => s.status === 'CHECKED_OUT').length;
     return { total, inHouse, checkedOut };
-  }, [stays]);
+  }, [filteredStays]);
 
   // Eligible READY & VACANT rooms for Transfer (must match transferStay.roomType.id, different room, and be READY, ACTIVE & VACANT)
   const eligibleRoomsForTransfer = useMemo(() => {
@@ -1224,11 +1245,14 @@ export const StaysPage: React.FC = () => {
                     <Row gutter={[12, 12]} align="middle">
                       <Col xs={24} sm={14} md={10}>
                         <DebouncedSearchInput
-                          placeholder="Tìm theo số phòng, mã đơn đặt phòng..."
+                          placeholder="Tìm theo tên khách, số phòng hoặc mã đơn đặt phòng..."
                           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                           value={searchKeyword}
                           onChange={(val) => setSearchKeyword(val)}
                           allowClear
+                          // Filtering is local now, so the search can feel snappy
+                          // without any network round-trip.
+                          debounceMs={180}
                         />
                       </Col>
                       <Col xs={24} sm={10} md={6}>

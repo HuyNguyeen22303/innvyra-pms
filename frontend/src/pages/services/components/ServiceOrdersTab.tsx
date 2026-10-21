@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Table,
   Button,
@@ -183,6 +183,9 @@ export const ServiceOrdersTab: React.FC = () => {
         sortBy: 'createdAt',
         sortOrder: 'desc',
       }),
+    // Keep the current page while the next search request is in flight so the
+    // table never blanks out and remounts its rows mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   // Query Active Services for Order Creation
@@ -209,6 +212,11 @@ export const ServiceOrdersTab: React.FC = () => {
   });
 
   const orderList: ServiceOrderItem[] = ordersRes?.data?.items || [];
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredOrderList = useDeferredValue(orderList);
+  const tableOrderList =
+    deferredOrderList.length > 0 ? deferredOrderList : orderList;
   const total = ordersRes?.data?.pagination?.total || 0;
   const activeServices = activeServicesRes?.data?.items || [];
 
@@ -591,7 +599,7 @@ export const ServiceOrdersTab: React.FC = () => {
       {/* Orders Table */}
       <Table
         columns={columns}
-        dataSource={orderList}
+        dataSource={tableOrderList}
         rowKey="id"
         loading={isLoading}
         scroll={{ x: canManageOrders ? 1250 : 1080 }}

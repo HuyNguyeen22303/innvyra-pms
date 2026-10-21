@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo, useCallback, useDeferredValue } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Table,
   Button,
@@ -121,6 +121,9 @@ export const ServiceCatalogTab: React.FC = () => {
         sortBy: 'name',
         sortOrder: 'asc',
       }),
+    // Keep the current page while the next search request is in flight so the
+    // table never blanks out and remounts its rows mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   const serviceList: ServiceItem[] = useMemo(
@@ -128,6 +131,11 @@ export const ServiceCatalogTab: React.FC = () => {
     [servicesRes]
   );
   const total = servicesRes?.data?.pagination?.total || 0;
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredServiceList = useDeferredValue(serviceList);
+  const tableServiceList =
+    deferredServiceList.length > 0 ? deferredServiceList : serviceList;
 
   // Mutations
   const createMutation = useMutation({
@@ -361,7 +369,7 @@ export const ServiceCatalogTab: React.FC = () => {
       {/* Services Table */}
       <ServiceCatalogTable
         columns={columns}
-        data={serviceList}
+        data={tableServiceList}
         loading={isLoading}
         page={page}
         pageSize={pageSize}

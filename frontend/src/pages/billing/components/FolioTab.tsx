@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Card,
   Row,
@@ -167,6 +167,9 @@ export const FolioTab: React.FC = () => {
         sortBy: 'createdAt',
         sortOrder: 'desc',
       }),
+    // Server-paginated list: keep the current page on screen while the next
+    // request is in flight so the table never blanks out mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   const reservationList = useMemo(
@@ -174,6 +177,12 @@ export const FolioTab: React.FC = () => {
     [reservationsRes]
   );
   const reservationTotal = reservationsRes?.data?.pagination?.total || 0;
+
+  // Defer only the grid payload (not the folio lookups below) so a keydown
+  // arriving mid-render can interrupt the table render.
+  const deferredReservationList = useDeferredValue(reservationList);
+  const tableReservationList =
+    deferredReservationList.length > 0 ? deferredReservationList : reservationList;
 
   // Fetch physical rooms to map roomId to real physical roomNumber
   const { data: allRoomsRes } = useQuery({
@@ -1056,7 +1065,7 @@ export const FolioTab: React.FC = () => {
 
           <Table
             columns={reservationColumns}
-            dataSource={reservationList}
+            dataSource={tableReservationList}
             rowKey="id"
             loading={isReservationsLoading}
             scroll={{ x: 1050 }}

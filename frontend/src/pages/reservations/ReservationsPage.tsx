@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 import {
   Table,
   Button,
@@ -427,6 +427,13 @@ export const ReservationsPage: React.FC = () => {
       ? rawResData
       : rawResData?.items || [];
   }, [rawResData]);
+
+  // Defer only the grid payload (the KPI counters below use the fresh rows) so a
+  // keydown arriving mid-render can interrupt the table. The fallback keeps the
+  // very first payload from flashing the empty state.
+  const deferredReservations = useDeferredValue(reservations);
+  const tableReservations =
+    deferredReservations.length > 0 ? deferredReservations : reservations;
 
   // True from the first keystroke (or filter change) until the refreshed rows
   // are on screen: the debounce wait plus the request plus the re-render.
@@ -1383,13 +1390,13 @@ export const ReservationsPage: React.FC = () => {
                   {/* Reservations Table */}
                   <ReservationsTable
                     columns={columns}
-                    data={reservations}
+                    data={tableReservations}
                     loading={isLoadingReservations}
                     canWrite={canWrite}
                   />
                 </>
     ),
-    [canWrite, columns, dateRangeFilter, guestSearch, handleCodePendingChange, handleGuestPendingChange, isAccountant, isLoadingReservations, reservations, searchCode, setDateRangeFilter, setGuestSearch, setSearchCode, setSourceFilter, setStatusFilter, sourceFilter, stats, statusFilter]
+    [canWrite, columns, dateRangeFilter, guestSearch, handleCodePendingChange, handleGuestPendingChange, isAccountant, isLoadingReservations, searchCode, setDateRangeFilter, setGuestSearch, setSearchCode, setSourceFilter, setStatusFilter, sourceFilter, stats, statusFilter, tableReservations]
   );
 
   return (

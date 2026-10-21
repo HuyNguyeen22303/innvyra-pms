@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useMemo, useCallback, useDeferredValue } from "react";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   Table,
   Button,
@@ -117,10 +117,17 @@ export const InventoryItemsTab: React.FC = () => {
           activeFilter === "all" ? undefined : activeFilter === "active",
         stockStatus: stockStatusFilter,
       }),
+    // Keep the current page while the next search request is in flight so the
+    // table never blanks out and remounts its rows mid-typing.
+    placeholderData: keepPreviousData,
   });
 
   const itemList = itemsRes?.data?.items || [];
   const total = itemsRes?.data?.pagination?.total || 0;
+
+  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
+  const deferredItemList = useDeferredValue(itemList);
+  const tableItemList = deferredItemList.length > 0 ? deferredItemList : itemList;
 
   // Mutations
   const createMutation = useMutation({
@@ -500,7 +507,7 @@ export const InventoryItemsTab: React.FC = () => {
       {/* Items Table */}
       <Table<InventoryItemView>
         columns={columns}
-        dataSource={itemList}
+        dataSource={tableItemList}
         rowKey="id"
         loading={isLoading}
         scroll={{ x: 1150 }}

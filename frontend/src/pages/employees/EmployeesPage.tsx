@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useDeferredValue } from 'react';
 import {
   Card,
   Table,
@@ -153,6 +153,12 @@ export const EmployeesPage: React.FC = () => {
   });
 
   const employeeItems = useMemo(() => employeesRes?.data?.items ?? [], [employeesRes]);
+
+  // Defer only the grid payload so a keydown arriving mid-render can interrupt
+  // the table. The fallback keeps the very first payload from flashing empty.
+  const deferredEmployeeItems = useDeferredValue(employeeItems);
+  const tableEmployees =
+    deferredEmployeeItems.length > 0 ? deferredEmployeeItems : employeeItems;
   const pagination = employeesRes?.data?.pagination;
   const paginationTotal = pagination?.total ?? 0;
 
@@ -847,7 +853,7 @@ export const EmployeesPage: React.FC = () => {
       <Card styles={{ body: { padding: 0 } }} style={{ borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <EmployeeTable
           columns={columns}
-          dataSource={employeeItems}
+          dataSource={tableEmployees}
           loading={isLoading}
           scroll={TABLE_SCROLL}
           locale={tableLocale}
