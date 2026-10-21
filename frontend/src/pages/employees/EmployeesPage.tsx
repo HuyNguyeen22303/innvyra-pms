@@ -213,41 +213,63 @@ export const EmployeesPage: React.FC = () => {
     {
       title: 'Họ và tên & Username',
       key: 'nameAndUser',
-      width: 250,
+      width: 320,
       render: (_, record) => {
         const initial = record.fullName.trim().charAt(0).toUpperCase();
         const config = ROLE_CONFIG[record.role] || ROLE_CONFIG.RECEPTIONIST;
         const isSelf = String(record.id) === String(user?.id);
+        const usernameLabel = `@${record.username}`;
 
         return (
-          <Space size={12}>
+          // minWidth: 0 là bắt buộc để flex item co lại được; thiếu nó thì chữ nowrap
+          // sẽ tràn khỏi ô và vẽ đè lên cột Vai trò (bảng dùng table-layout: fixed).
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minWidth: 0 }}>
             <Avatar
               style={{
                 backgroundColor: config.badgeBg,
                 color: '#ffffff',
                 fontWeight: 700,
                 fontSize: 14,
+                flexShrink: 0,
               }}
             >
               {initial}
             </Avatar>
-            <div style={{ whiteSpace: 'nowrap' }}>
-              <Space size={4}>
-                <Text strong style={{ color: '#0f172a', fontSize: 14 }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                <Text
+                  strong
+                  // Typography.Text của antd chỉ hỗ trợ ellipsis 1 dòng (props `rows` bị bỏ qua),
+                  // nên luôn kèm tooltip để vẫn đọc được họ tên đầy đủ.
+                  ellipsis={{ tooltip: record.fullName }}
+                  style={{ color: '#0f172a', fontSize: 14, minWidth: 0, maxWidth: '100%' }}
+                >
                   {record.fullName}
                 </Text>
                 {isSelf && (
-                  <Tag color="cyan" style={{ fontSize: 10, lineHeight: '18px', padding: '0 4px', margin: 0 }}>
+                  <Tag
+                    color="cyan"
+                    style={{ flexShrink: 0, fontSize: 10, lineHeight: '18px', padding: '0 4px', margin: 0 }}
+                  >
                     Bạn
                   </Tag>
                 )}
-              </Space>
-              <br />
-              <Text type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>
-                @{record.username}
+              </div>
+              <Text
+                type="secondary"
+                ellipsis={{ tooltip: usernameLabel }}
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                }}
+              >
+                {usernameLabel}
               </Text>
             </div>
-          </Space>
+          </div>
         );
       },
     },
@@ -255,7 +277,7 @@ export const EmployeesPage: React.FC = () => {
       title: 'Vai trò & Cấp bậc',
       dataIndex: 'role',
       key: 'role',
-      width: 170,
+      width: 180,
       render: (role: Role) => {
         const config = ROLE_CONFIG[role];
         return (
@@ -278,10 +300,15 @@ export const EmployeesPage: React.FC = () => {
       title: 'Địa chỉ Email',
       dataIndex: 'email',
       key: 'email',
-      width: 200,
+      width: 220,
       render: (email: string | null) =>
         email ? (
-          <Text style={{ fontSize: 13, color: '#334155', whiteSpace: 'nowrap' }}>{email}</Text>
+          <Text
+            ellipsis={{ tooltip: email }}
+            style={{ display: 'block', fontSize: 13, color: '#334155', maxWidth: '100%' }}
+          >
+            {email}
+          </Text>
         ) : (
           <Text type="secondary" italic style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             Chưa có email
@@ -722,7 +749,7 @@ export const EmployeesPage: React.FC = () => {
           dataSource={employeeItems}
           rowKey="id"
           loading={isLoading}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1200 }}
           locale={{
             emptyText: isError ? (
               <div style={{ padding: '30px 0' }}>

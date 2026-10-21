@@ -1410,3 +1410,55 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 
 
 
+
+
+---
+
+## 📅 Ngày: 21/10/2026
+
+### 🎯 Mục tiêu trong ngày:
+- Khắc phục lỗi giao diện tại màn hình **Quản lý Nhân sự & Phân quyền Tài khoản** (`/employees`): họ tên nhân viên dài (kèm chức danh trong ngoặc) tràn ra khỏi ô và vẽ đè lên cột **Vai trò & Cấp bậc** kế bên.
+
+---
+
+### 💻 Công việc kỹ thuật đã hoàn thành:
+
+#### 1. Phân tích Nguyên nhân Gốc (Root Cause Analysis):
+- **Hiện tượng**: Cột **Họ và tên & Username** hiển thị chuỗi dài như `Nguyễn Hoàng Bảo Châu (Nhân viên Buồng phòng Ca Đêm Khu Vực Tầng 5 đến Tầng 8)` bị tràn sang phải, chữ đè lên tag vai trò (`Buồng phòng`) của cột bên cạnh.
+- **Nguyên nhân kỹ thuật**:
+  1. Ant Design `Table` render `<table>` với `table-layout: fixed`, nên mọi nội dung vượt quá `width` khai báo của cột sẽ **tràn ra ngoài ô** thay vì tự co lại.
+  2. Ô họ tên trước đây dùng `<Space size={12}>` (flex container) chứa `<div style={{ whiteSpace: 'nowrap' }}>`.
+  3. Phần tử flex mặc định có `min-width: auto` — tức **không được phép nhỏ hơn kích thước nội dung (intrinsic width)**. Kết hợp với `whiteSpace: 'nowrap'`, khối chữ dài bị "khóa cứng" độ rộng, không thể co lại theo cột và tràn sang cột kế tiếp.
+  4. Vì vậy đây **không chỉ** là vấn đề thiếu độ rộng cột, mà là thiếu khả năng **co giãn (flex shrink)** của ô dữ liệu.
+
+#### 2. Giải pháp Triển khai (`frontend/src/pages/employees/EmployeesPage.tsx`):
+1. **Cấu trúc lại ô Họ tên theo chuẩn Flexbox co giãn được**:
+   - Container ngoài: `display: flex; align-items: center; gap: 12; width: 100%; minWidth: 0` — `minWidth: 0` là mấu chốt cho phép flex item co nhỏ hơn nội dung.
+   - `Avatar`: thêm `flexShrink: 0` để không bị bóp méo.
+   - Khối text trung gian: `flex: 1; minWidth: 0; overflow: hidden` — tạo "hàng rào" chặn mọi tràn ngang ra ngoài ô.
+   - Họ tên: `<Text strong ellipsis={{ tooltip: record.fullName }}>` — tự cắt ngắn bằng dấu `...` và hiển thị **tooltip đầy đủ** khi rê chuột.
+   - Username (`@username`): xuống dòng riêng, `display: block` + `ellipsis={{ tooltip }}` để không tranh chỗ với họ tên.
+   - Tag **"Bạn"** (đánh dấu tài khoản đang đăng nhập): `flexShrink: 0` để luôn hiển thị trọn vẹn.
+   - *Lưu ý kỹ thuật*: `Typography.Text` của Ant Design v6 **không hỗ trợ** `ellipsis.rows` (bị omit khỏi props, kèm cảnh báo dev) nên họ tên dùng ellipsis 1 dòng + tooltip thay vì clamp 2 dòng.
+2. **Cột Địa chỉ Email**: bỏ `whiteSpace: 'nowrap'`, chuyển sang `Text ellipsis={{ tooltip }}` + `display: block` + `maxWidth: '100%'`.
+3. **Cân chỉnh lại độ rộng cột & scroll ngang**:
+   - `Họ và tên & Username`: `250 → 320`.
+   - `Vai trò & Cấp bậc`: `170 → 180`.
+   - `Địa chỉ Email`: `200 → 220`.
+   - `Table scroll`: `{ x: 1100 } → { x: 1200 }` để các cột giữ nguyên kích thước và cuộn ngang nội bộ trên màn hình hẹp thay vì bị bóp nghẹt.
+4. **Không thay đổi** dữ liệu, API, phân quyền, trạng thái nút thao tác hay bất kỳ mã Backend/CSDL nào.
+
+#### 3. Kiểm thử Trực quan & Đo đạc Tự động (Visual Verification):
+- Dựng harness tạm thời mount **chính `EmployeesPage` thật** với dữ liệu nhân sự giả lập (gồm tên dài thực tế `Bùi Thu Phương (Buồng phòng Ca Chiều)` và 1 trường hợp cực đoan dài ~80 ký tự), chạy Chrome headless ở các breakpoint **1568 / 1024 / 798 px**.
+- **Đo đạc trong trang (self-measuring bằng `getBoundingClientRect`)** trên cả 12 dòng:
+  - `overflowsCell = false` cho **100% các dòng** — không còn ô nào tràn khỏi vùng nội dung của cột.
+  - Khoảng cách từ mép phải khối họ tên đến tag vai trò luôn **32px** — không còn hiện tượng đè chữ.
+  - `pageHorizontalOverflow = false` ở mọi kích thước — không phát sinh thanh cuộn ngang toàn trang.
+  - Ở 798px: `tableScrollWidth = 1200 > clientWidth = 748` → bảng cuộn ngang nội bộ đúng thiết kế.
+- **Kiểm tra tooltip**: rê chuột vào tên bị cắt ngắn, tooltip hiển thị đúng họ tên đầy đủ.
+- **Console sạch**: 0 warning/error React & Ant Design (đã loại bỏ cả cảnh báo `Typography.Text ellipsis rows`).
+
+#### 4. Kết quả Kiểm thử Chất lượng:
+- `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript** (3.271 modules transformed).
+- `npm run lint` (`oxlint`): **0 warning / 0 error** (82 files, 116 rules).
+- Đã xóa toàn bộ file harness tạm (`visual-check.html`, `visual-check.tsx`) sau khi xác minh; mã nguồn chỉ còn thay đổi duy nhất trong `EmployeesPage.tsx`.
