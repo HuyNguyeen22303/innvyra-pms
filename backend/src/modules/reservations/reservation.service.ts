@@ -10,6 +10,7 @@ import {
   reservationPermissions,
   type CancelReservationInput,
   type CreateReservationInput,
+  type NoShowReservationInput,
   type ReservationQuery,
   type ReservationRepository,
   type ReservationScope,
@@ -114,6 +115,22 @@ export class ReservationService {
         );
       const cancelled = await repository.cancel(scope.hotelId, id, scope.actorId, input.reason);
       return { id: cancelled.id.toString(), status: cancelled.status };
+    });
+  }
+  async noShow(scope: ReservationScope, id: bigint, input: NoShowReservationInput) {
+    this.authorize(scope, 'write');
+    return this.repository.withHotelLock(scope.hotelId, async (repository) => {
+      const record = await repository.findById(scope.hotelId, id);
+      if (!record) throw new AppError(404, 'RESERVATION_NOT_FOUND', 'Reservation not found');
+      if (record.status === 'NO_SHOW') return { id: record.id.toString(), status: record.status };
+      if (record.status !== 'CONFIRMED')
+        throw new AppError(
+          409,
+          'RESERVATION_CANNOT_BE_NO_SHOW',
+          'Only confirmed reservations can be marked as no-show',
+        );
+      const updated = await repository.noShow(scope.hotelId, id, scope.actorId, input.reason);
+      return { id: updated.id.toString(), status: updated.status };
     });
   }
 }

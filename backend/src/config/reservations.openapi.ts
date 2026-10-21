@@ -397,4 +397,29 @@ export const reservationPaths = {
       },
     },
   },
+  '/reservations/{id}/no-show': {
+    post: {
+      ...operation(
+        'Mark a confirmed reservation as no-show',
+        write,
+        'CONFIRMED -> NO_SHOW only. Repeating no-show returns 200 with original audit information retained. PARTIALLY_CHECKED_IN/CHECKED_IN/CHECKED_OUT/CANCELLED return 409. Inventory is released exactly once in the same transaction — identical to cancel. Nightly snapshots are retained; refund policy belongs to Payments/Billing. No arbitrary status/date/room PATCH endpoint.',
+      ),
+      parameters: [idParam, csrf],
+      requestBody: {
+        required: true,
+        content: json(ref('CancelReservation'), { reason: 'Guest did not arrive' }),
+      },
+      responses: {
+        200: response(
+          {
+            type: 'object',
+            required: ['id', 'status'],
+            properties: { id, status: { type: 'string', enum: ['NO_SHOW'] } },
+          },
+          { id: '101', status: 'NO_SHOW' },
+        ),
+        ...errors,
+      },
+    },
+  },
 };

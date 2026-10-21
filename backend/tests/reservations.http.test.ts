@@ -46,6 +46,12 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
       .auth(token, { type: 'bearer' })
       .set('X-CSRF-Protection', '1')
       .send({ reason });
+  const noShow = (id: string, reason = 'Guest did not arrive') =>
+    request(app)
+      .post(`/api/v1/reservations/${id}/no-show`)
+      .auth(token, { type: 'bearer' })
+      .set('X-CSRF-Protection', '1')
+      .send({ reason });
   const available = (extra: object = {}) =>
     get('/rooms/availability').query({
       checkInDate: futureDay(10),
@@ -74,6 +80,10 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
       expect((await available()).status).toBe(write ? 200 : 403);
       expect((await post()).status).toBe(write ? 201 : 403);
       expect((await cancel(created.body.data.id)).status).toBe(write ? 200 : 403);
+      if (write) {
+        const freshForNoShow = await post();
+        expect((await noShow(freshForNoShow.body.data.id)).status).toBe(200);
+      }
     },
   );
   it('requires CSRF and rejects arbitrary PATCH, assignment and status/price writes', async () => {
@@ -220,6 +230,80 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
       );
     },
   );
+  it('marks no-show successfully, releases rooms and preserves audit', async () => {
+    const created = await post();
+    const id = created.body.data.id;
+    expect((await available({ roomTypeId: '2' })).body.data[0].availableRooms).toBe(2);
+    const res = await noShow(id, 'Guest never arrived');
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('NO_SHOW');
+    const detail = (await get(`/reservations/${id}`)).body.data;
+    expect(detail.status).toBe('NO_SHOW');
+    expect(detail.cancellation).toBeTruthy();
+    expect(detail.cancellation.reason).toBe('Guest never arrived');
+    expect(detail.totalAmount).toEqual(created.body.data.totalAmount);
+    expect(detail.rooms).toEqual(created.body.data.rooms);
+    // Rooms released — same as cancel
+    expect((await available({ roomTypeId: '2' })).body.data[0].availableRooms).toBe(3);
+  });
+  it('no-show is idempotent', async () => {
+    const created = await post();
+    const id = created.body.data.id;
+    expect((await noShow(id)).status).toBe(200);
+    const first = (await get(`/reservations/${id}`)).body.data;
+    expect((await noShow(id, 'Different second reason')).status).toBe(200);
+    const second = (await get(`/reservations/${id}`)).body.data;
+    expect(second.cancellation).toEqual(first.cancellation);
+    expect(second.status).toBe('NO_SHOW');
+    // Rooms released exactly once
+    expect((await available({ roomTypeId: '2' })).body.data[0].availableRooms).toBe(3);
+  });
+  it.each(['CHECKED_IN', 'CHECKED_OUT', 'CANCELLED', 'PARTIALLY_CHECKED_IN'] as const)(
+    'rejects no-show for %s',
+    async (status) => {
+      const created = await post();
+      store.records.get(BigInt(created.body.data.id))!.status = status;
+      expect((await noShow(created.body.data.id)).body.error.code).toBe(
+        'RESERVATION_CANNOT_BE_NO_SHOW',
+      );
+    },
+  );
+  it('no-show requires auth and CSRF', async () => {
+    const created = await post();
+    const id = created.body.data.id;
+    expect(
+      (await request(app).post(`/api/v1/reservations/${id}/no-show`).send({ reason: 'x' })).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(app)
+          .post(`/api/v1/reservations/${id}/no-show`)
+          .auth(token, { type: 'bearer' })
+          .send({ reason: 'x' })
+      ).status,
+    ).toBe(403);
+  });
+  it('no-show rejects invalid id and not found', async () => {
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/reservations/abc/no-show')
+          .auth(token, { type: 'bearer' })
+          .set('X-CSRF-Protection', '1')
+          .send({ reason: 'x' })
+      ).status,
+    ).toBe(422);
+    expect((await noShow('9999')).status).toBe(404);
+  });
+  it('cancel still works after no-show change', async () => {
+    const created1 = await post();
+    const created2 = await post();
+    // Cancel one, no-show the other
+    expect((await cancel(created1.body.data.id)).status).toBe(200);
+    expect((await noShow(created2.body.data.id)).status).toBe(200);
+    // Verify both released correctly
+    expect((await available({ roomTypeId: '2' })).body.data[0].availableRooms).toBe(3);
+  });
   it('hides foreign reservations, notes and restricted guest search', async () => {
     const created = await post({ ...reservationInput(), notes: 'Private preference' });
     auth.users.get('admin')!.role.code = 'ACCOUNTANT';
@@ -230,13 +314,14 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
     store.records.get(BigInt(created.body.data.id))!.hotelId = 999n;
     expect((await get(`/reservations/${created.body.data.id}`)).status).toBe(404);
     expect((await cancel(created.body.data.id)).status).toBe(404);
+    expect((await noShow(created.body.data.id)).status).toBe(404);
     expect((await get()).body.data.items).toEqual([]);
   });
-  it('serves Swagger UI/JSON with 110 operations, complete reservation contracts and valid refs', async () => {
+  it('serves Swagger UI/JSON with 112 operations, complete reservation contracts and valid refs', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = (await request(app).get('/api-docs/openapi.json')).body;
     expect(Object.values(spec.paths).flatMap((path) => Object.keys(path as object))).toHaveLength(
-      110,
+      112,
     );
     const visit = (value: unknown) => {
       if (!value || typeof value !== 'object') return;
@@ -252,6 +337,7 @@ describe('reservations HTTP: auth, roles, dates, availability and lifecycle', ()
       '/reservations',
       '/reservations/{id}',
       '/reservations/{id}/cancel',
+      '/reservations/{id}/no-show',
     ])
       for (const op of Object.values(spec.paths[path]) as {
         security: unknown;

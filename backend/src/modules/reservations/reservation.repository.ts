@@ -170,4 +170,17 @@ export class PrismaReservationRepository {
       include: detailInclude,
     });
   }
+  async noShow(hotelId: bigint, id: bigint, actorId: bigint, reason: string) {
+    // Same atomic inventory release as cancel; records NO_SHOW instead and preserves audit trail.
+    return this.db.reservation.update({
+      where: { id, hotelId, status: 'CONFIRMED' },
+      data: {
+        status: 'NO_SHOW',
+        cancellationReason: reason,
+        cancelledAt: new Date(),
+        cancelledBy: actorId,
+      },
+      include: detailInclude,
+    });
+  }
 }

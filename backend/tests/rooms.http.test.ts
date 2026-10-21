@@ -416,7 +416,7 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
       paths: Record<string, Record<string, unknown>>;
       components: { schemas: Record<string, unknown> };
     };
-    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(110);
+    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(112);
     const text = JSON.stringify(spec);
     for (const match of text.matchAll(/"\$ref":"#\/components\/schemas\/([^"]+)"/g))
       expect(spec.components.schemas).toHaveProperty(match[1]!);

@@ -79,6 +79,11 @@ export const cancelReservationSchema = z.object({
   params: idParams,
   query: emptyQuery,
 });
+export const noShowReservationSchema = z.object({
+  body: cancelReservationBody,
+  params: idParams,
+  query: emptyQuery,
+});
 export const reservationIdSchema = z.object({ params: idParams, query: emptyQuery });
 export const listReservationsSchema = z.object({ query: reservationListQuery });
 export const availabilitySchema = z.object({ query: availabilityQuery });

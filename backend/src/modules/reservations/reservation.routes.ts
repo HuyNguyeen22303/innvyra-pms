@@ -13,6 +13,7 @@ import {
   cancelReservationSchema,
   createReservationSchema,
   listReservationsSchema,
+  noShowReservationSchema,
   reservationIdSchema,
 } from './reservation.schema.js';
 
@@ -58,6 +59,13 @@ export function reservationRoutes(service: ReservationService, auth: AuthService
     csrfProtection(env),
     validate(cancelReservationSchema),
     controller.cancel,
+  );
+  router.post(
+    '/reservations/:id/no-show',
+    authorizeRoles(...reservationPermissions.write),
+    csrfProtection(env),
+    validate(noShowReservationSchema),
+    controller.noShow,
   );
   return router;
 }

@@ -136,6 +136,20 @@ export function memoryReservations(hotelId = 9007199254740995n) {
       records.set(id, updated);
       return updated;
     },
+    noShow: async (hid, id, actorId, reason) => {
+      const record = records.get(id)!;
+      if (record.hotelId !== hid) throw new Error('Unscoped noShow');
+      const updated: ReservationRecord = {
+        ...record,
+        status: 'NO_SHOW',
+        cancelledAt: new Date(),
+        cancelledBy: actorId,
+        cancellationReason: reason,
+        canceller: { id: actorId, fullName: 'Staff' },
+      };
+      records.set(id, updated);
+      return updated;
+    },
   };
   return { repository, types, capacities, records, guests };
 }

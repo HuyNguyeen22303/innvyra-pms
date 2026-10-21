@@ -5,6 +5,7 @@ import type {
   AvailabilityQuery,
   CancelReservationInput,
   CreateReservationInput,
+  NoShowReservationInput,
   ReservationQuery,
   ReservationScope,
 } from './reservation.types.js';
@@ -59,5 +60,16 @@ export function reservationController(service: ReservationService) {
       data: await service.cancel(scope(req), BigInt(params.id), body),
     });
   };
-  return { availability, create, list, detail, cancel };
+  const noShow: RequestHandler = async (req, res) => {
+    const { params, body } = res.locals.validated as {
+      params: { id: string };
+      body: NoShowReservationInput;
+    };
+    res.json({
+      success: true,
+      message: 'Reservation marked as no-show',
+      data: await service.noShow(scope(req), BigInt(params.id), body),
+    });
+  };
+  return { availability, create, list, detail, cancel, noShow };
 }

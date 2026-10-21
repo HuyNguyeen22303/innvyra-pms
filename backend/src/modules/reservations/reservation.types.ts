@@ -13,6 +13,7 @@ export type CreateReservationInput = z.infer<typeof createReservationBody>;
 export type AvailabilityQuery = z.infer<typeof availabilityQuery>;
 export type ReservationQuery = z.infer<typeof reservationListQuery>;
 export type CancelReservationInput = z.infer<typeof cancelReservationBody>;
+export type NoShowReservationInput = z.infer<typeof cancelReservationBody>;
 export type ReservationScope = { hotelId: bigint; actorId: bigint; role: RoleCode };
 export const reservationPermissions = {
   read: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
