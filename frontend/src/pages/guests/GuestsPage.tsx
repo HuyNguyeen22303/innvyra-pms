@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -196,52 +196,51 @@ export const GuestsPage: React.FC = () => {
   // Open Create Modal
   const handleOpenCreate = () => {
     setEditingGuest(null);
+    // Populate the form before the modal opens: the form instance keeps the
+    // values, so the modal renders filled in a single pass instead of first
+    // showing an empty form and then updating it in a second render.
+    form.resetFields();
+    form.setFieldsValue({
+      nationality: 'Việt Nam',
+      gender: 'UNSPECIFIED',
+    });
     setIsModalOpen(true);
   };
 
   // Open Edit Modal (fetches detail first if not in memory)
-  const handleOpenEdit = async (record: GuestSummary) => {
+  const handleOpenEdit = useCallback(async (record: GuestSummary) => {
     try {
       const res = await guestsApi.getById(record.id);
-      setEditingGuest(res.data);
+      const detail = res.data;
+      form.resetFields();
+      form.setFieldsValue({
+        fullName: detail.fullName,
+        phone: detail.phone,
+        email: detail.email,
+        dateOfBirth: detail.dateOfBirth ? dayjs(detail.dateOfBirth) : null,
+        gender: detail.gender || 'UNSPECIFIED',
+        nationality: detail.nationality || 'Việt Nam',
+        documentType: detail.documentType,
+        documentNumber: detail.documentNumber,
+        address: detail.address,
+        notes: detail.notes,
+      });
+      setEditingGuest(detail);
       setIsModalOpen(true);
     } catch {
       appMessage.error('Không thể lấy thông tin chi tiết để chỉnh sửa.');
     }
-  };
-
-  // Populate form fields after modal mounts and form instance connects
-  useEffect(() => {
-    if (isModalOpen) {
-      if (editingGuest) {
-        form.setFieldsValue({
-          fullName: editingGuest.fullName,
-          phone: editingGuest.phone,
-          email: editingGuest.email,
-          dateOfBirth: editingGuest.dateOfBirth ? dayjs(editingGuest.dateOfBirth) : null,
-          gender: editingGuest.gender || 'UNSPECIFIED',
-          nationality: editingGuest.nationality || 'Việt Nam',
-          documentType: editingGuest.documentType,
-          documentNumber: editingGuest.documentNumber,
-          address: editingGuest.address,
-          notes: editingGuest.notes,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          nationality: 'Việt Nam',
-          gender: 'UNSPECIFIED',
-        });
-      }
-    }
-  }, [isModalOpen, editingGuest, form]);
+  }, [appMessage, form]);
 
   // Open Detail Drawer
-  const handleOpenDetail = (record: GuestSummary) => {
+  const handleOpenDetail = useCallback((record: GuestSummary) => {
     setSelectedGuestId(record.id);
     setShowDocumentNumber(false);
     setIsDrawerOpen(true);
-  };
+  }, []);
+
+  // Stable mutate handle keeps the memoized table columns from being rebuilt.
+  const { mutate: deleteGuest } = deleteMutation;
 
   // Submit Create / Edit Form
   const handleSubmit = (values: any) => {
@@ -307,7 +306,7 @@ export const GuestsPage: React.FC = () => {
   };
 
   // Table Columns Definition
-  const columns: ColumnsType<GuestSummary> = [
+  const columns = useMemo<ColumnsType<GuestSummary>>(() => [
     {
       title: 'Mã khách',
       dataIndex: 'id',
@@ -455,7 +454,7 @@ export const GuestsPage: React.FC = () => {
             <Popconfirm
               title="Lưu trữ / Xóa hồ sơ này?"
               description="Hồ sơ sẽ được đánh dấu xóa mềm và lưu lại lịch sử kiểm toán (Audit Log)."
-              onConfirm={() => deleteMutation.mutate(record.id)}
+              onConfirm={() => deleteGuest(record.id)}
               okText="Đồng ý xóa"
               cancelText="Hủy"
               okButtonProps={{ danger: true }}
@@ -468,7 +467,7 @@ export const GuestsPage: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  ], [canDelete, canWrite, deleteGuest, handleOpenDetail, handleOpenEdit, isAccountant]);
 
   // Quick stats calculation
   const totalGuests = rawGuests.length;

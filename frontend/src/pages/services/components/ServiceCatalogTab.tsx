@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -32,6 +32,7 @@ import dayjs from 'dayjs';
 import { billingApi } from '../../../api/billing.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
 import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
+import { useIdlePreload } from '../../../hooks/useIdlePreload.ts';
 import type {
   ServiceItem,
   CreateServiceDto,
@@ -96,21 +97,13 @@ export const ServiceCatalogTab: React.FC = () => {
   const [editingService, setEditingService] = useState<ServiceItem | null>(null);
   // Mount the hidden modal forms after the first paint so the first click on
   // "Thêm dịch vụ mới" / "Sửa" does not have to build the whole form tree. The
-  // two forms use separate timers to keep each idle mount below a long task.
-  const [preloadCreate, setPreloadCreate] = useState<boolean>(false);
-  const [preloadEdit, setPreloadEdit] = useState<boolean>(false);
+  // two forms are mounted on separate idle callbacks so each mount stays below
+  // a long task and never competes with typing or scrolling.
+  const preloadCreate = useIdlePreload(900);
+  const preloadEdit = useIdlePreload(1800);
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
-
-  useEffect(() => {
-    const createTimer = window.setTimeout(() => setPreloadCreate(true), 900);
-    const editTimer = window.setTimeout(() => setPreloadEdit(true), 1800);
-    return () => {
-      window.clearTimeout(createTimer);
-      window.clearTimeout(editTimer);
-    };
-  }, []);
 
   // Query Services
   const {

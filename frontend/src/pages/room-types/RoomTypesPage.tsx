@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -57,11 +57,15 @@ export const RoomTypesPage: React.FC = () => {
   });
 
   const rawData = response?.data;
-  const roomTypes: RoomTypeItem[] = Array.isArray(rawData)
-    ? rawData
-    : Array.isArray((rawData as any)?.items)
-    ? (rawData as any).items
-    : [];
+  const roomTypes: RoomTypeItem[] = useMemo(
+    () =>
+      Array.isArray(rawData)
+        ? rawData
+        : Array.isArray((rawData as any)?.items)
+        ? (rawData as any).items
+        : [],
+    [rawData]
+  );
 
   // Create Mutation
   const createMutation = useMutation({
@@ -123,39 +127,36 @@ export const RoomTypesPage: React.FC = () => {
   });
 
 
-  const handleOpenCreate = () => {
-    setEditingItem(null);
-    setIsModalOpen(true);
-  };
+  // Stable mutate handle keeps the memoized table columns from being rebuilt.
+  const { mutate: toggleRoomTypeActive } = toggleActiveMutation;
 
-  const handleOpenEdit = (record: RoomTypeItem) => {
+  const handleOpenCreate = useCallback(() => {
+    setEditingItem(null);
+    // Populate before opening so the modal renders filled in a single pass
+    // instead of an empty form that is filled in a second render.
+    form.resetFields();
+    form.setFieldsValue({
+      maxAdults: 2,
+      maxChildren: 0,
+      isActive: true,
+    });
+    setIsModalOpen(true);
+  }, [form]);
+
+  const handleOpenEdit = useCallback((record: RoomTypeItem) => {
+    form.resetFields();
+    form.setFieldsValue({
+      code: record.code,
+      name: record.name,
+      description: record.description,
+      maxAdults: record.maxAdults,
+      maxChildren: record.maxChildren,
+      basePrice: Number(record.basePrice),
+      isActive: record.isActive,
+    });
     setEditingItem(record);
     setIsModalOpen(true);
-  };
-
-  // Populate form fields after modal mounts and form instance connects
-  useEffect(() => {
-    if (isModalOpen) {
-      if (editingItem) {
-        form.setFieldsValue({
-          code: editingItem.code,
-          name: editingItem.name,
-          description: editingItem.description,
-          maxAdults: editingItem.maxAdults,
-          maxChildren: editingItem.maxChildren,
-          basePrice: Number(editingItem.basePrice),
-          isActive: editingItem.isActive,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          maxAdults: 2,
-          maxChildren: 0,
-          isActive: true,
-        });
-      }
-    }
-  }, [isModalOpen, editingItem, form]);
+  }, [form]);
 
   const handleSubmit = async (values: any) => {
     if (editingItem) {
@@ -183,7 +184,7 @@ export const RoomTypesPage: React.FC = () => {
     }
   };
 
-  const columns: ColumnsType<RoomTypeItem> = [
+  const columns = useMemo<ColumnsType<RoomTypeItem>>(() => [
     {
       title: 'Mã loại',
       dataIndex: 'code',
@@ -298,7 +299,7 @@ export const RoomTypesPage: React.FC = () => {
                   : 'Loại phòng sẽ có thể được dùng để tạo phòng mới.'
               }
               onConfirm={() =>
-                toggleActiveMutation.mutate({
+                toggleRoomTypeActive({
                   id: record.id,
                   currentActive: record.isActive,
                 })
@@ -316,7 +317,7 @@ export const RoomTypesPage: React.FC = () => {
         );
       },
     },
-  ];
+  ], [canManage, handleOpenEdit, toggleRoomTypeActive]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

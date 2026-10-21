@@ -34,6 +34,16 @@ import { OutstandingTab } from './components/OutstandingTab.tsx';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+// Report tabs stay mounted once visited. Memoizing them keeps a change that
+// only affects one tab (for example the room-type filter) from re-rendering
+// every other report chart.
+const MemoRevenueTab = React.memo(RevenueTab);
+const MemoPaymentsTab = React.memo(PaymentsTab);
+const MemoOccupancyTab = React.memo(OccupancyTab);
+const MemoReservationsTab = React.memo(ReservationsTab);
+const MemoOperationsTab = React.memo(OperationsTab);
+const MemoOutstandingTab = React.memo(OutstandingTab);
+
 export const ReportsPage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const { user } = useAuthStore();
@@ -188,7 +198,7 @@ export const ReportsPage: React.FC = () => {
         ),
         children: (
           <div style={{ paddingTop: 8 }}>
-            <RevenueTab startDateStr={startDateStr} endDateStr={endDateStr} groupBy={groupBy} />
+            <MemoRevenueTab startDateStr={startDateStr} endDateStr={endDateStr} groupBy={groupBy} />
           </div>
         ),
       });
@@ -202,7 +212,7 @@ export const ReportsPage: React.FC = () => {
         ),
         children: (
           <div style={{ paddingTop: 8 }}>
-            <PaymentsTab
+            <MemoPaymentsTab
               startDateStr={startDateStr}
               endDateStr={endDateStr}
               groupBy={groupBy}
@@ -225,7 +235,7 @@ export const ReportsPage: React.FC = () => {
         ),
         children: (
           <div style={{ paddingTop: 8 }}>
-            <OccupancyTab
+            <MemoOccupancyTab
               startDateStr={startDateStr}
               endDateStr={endDateStr}
               groupBy={groupBy}
@@ -248,7 +258,7 @@ export const ReportsPage: React.FC = () => {
         ),
         children: (
           <div style={{ paddingTop: 8 }}>
-            <ReservationsTab startDateStr={startDateStr} endDateStr={endDateStr} groupBy={groupBy} />
+            <MemoReservationsTab startDateStr={startDateStr} endDateStr={endDateStr} groupBy={groupBy} />
           </div>
         ),
       });
@@ -264,7 +274,7 @@ export const ReportsPage: React.FC = () => {
       ),
       children: (
         <div style={{ paddingTop: 8 }}>
-          <OperationsTab startDateStr={startDateStr} endDateStr={endDateStr} />
+          <MemoOperationsTab startDateStr={startDateStr} endDateStr={endDateStr} />
         </div>
       ),
     });
@@ -280,7 +290,7 @@ export const ReportsPage: React.FC = () => {
         ),
         children: (
           <div style={{ paddingTop: 8 }}>
-            <OutstandingTab startDateStr={startDateStr} endDateStr={endDateStr} />
+            <MemoOutstandingTab startDateStr={startDateStr} endDateStr={endDateStr} />
           </div>
         ),
       });

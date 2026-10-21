@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useDeferredValue } from 'react';
 import {
   Table,
   Button,
@@ -40,7 +40,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { staysApi } from '../../api/stays.api.ts';
@@ -63,12 +63,42 @@ import type { RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
 
-// Helper: Format Day of Week in Vietnamese
-const formatDayOfWeek = (dateStr: string): string => {
-  const d = dayjs(dateStr).day();
-  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  return days[d] || '';
+// Helper: Vietnamese weekday labels (index matches dayjs().day()).
+const WEEKDAY_LABELS = [
+  'Chủ Nhật',
+  'Thứ Hai',
+  'Thứ Ba',
+  'Thứ Tư',
+  'Thứ Năm',
+  'Thứ Sáu',
+  'Thứ Bảy',
+];
+
+interface FormattedTimestamp {
+  text: string;
+  weekday: string;
+}
+
+/**
+ * Parse a timestamp once and return both the display string and its weekday.
+ * The table used to build two separate dayjs instances per cell (one for the
+ * datetime, one for the weekday) on every single render.
+ */
+const formatStayTimestamp = (iso: string): FormattedTimestamp => {
+  const d = dayjs(iso);
+  return { text: d.format('DD/MM/YYYY HH:mm'), weekday: WEEKDAY_LABELS[d.day()] ?? '' };
 };
+
+/**
+ * Table row enriched with pre-formatted date strings, so cell renderers never
+ * touch dayjs. Built once per API payload instead of once per render.
+ */
+interface StayRow extends StaySummaryItem {
+  checkinText: string;
+  checkinWeekday: string;
+  checkoutText: string;
+  checkoutWeekday: string;
+}
 
 // Helper: Stay Status Mapping
 const STAY_STATUS_CONFIG: Record<
@@ -532,6 +562,11 @@ export const StaysPage: React.FC = () => {
         sortBy: 'actualCheckinAt',
         sortOrder: 'desc',
       }),
+    // Keep the previous rows on screen while the new search is in flight.
+    // Without this the table blanks out (rows unmount, loading mask + blur
+    // repaint of the whole grid) and then remounts every row, which is the
+    // expensive frame you see when typing fast or holding Backspace.
+    placeholderData: keepPreviousData,
   });
 
   const rawStaysData = staysRes?.data;
@@ -540,6 +575,33 @@ export const StaysPage: React.FC = () => {
       ? rawStaysData
       : rawStaysData?.items || [];
   }, [rawStaysData]);
+
+  const stayRows = useMemo<StayRow[]>(
+    () =>
+      stays.map((stay) => {
+        const checkin = formatStayTimestamp(stay.actualCheckinAt);
+        const checkout = stay.actualCheckoutAt
+          ? formatStayTimestamp(stay.actualCheckoutAt)
+          : null;
+        return {
+          ...stay,
+          checkinText: checkin.text,
+          checkinWeekday: checkin.weekday,
+          checkoutText: checkout?.text ?? '',
+          checkoutWeekday: checkout?.weekday ?? '',
+        };
+      }),
+    [stays]
+  );
+
+  // Rendering the grid is by far the most expensive part of a search. Keeping
+  // the data one step behind lets React abandon that render as soon as another
+  // keydown arrives, so a held Backspace never waits for the table to finish.
+  const deferredStayRows = useDeferredValue(stayRows);
+  // While the deferred copy is still empty (first payload, or a filter that just
+  // returned nothing) fall back to the fresh rows: otherwise the table would
+  // paint the empty state for one frame before the deferred render lands.
+  const tableRows = deferredStayRows.length > 0 ? deferredStayRows : stayRows;
 
   // 2. Fetch Stay Detail for Drawer
   const { data: stayDetailRes, isLoading: isLoadingStayDetail } = useQuery({
@@ -584,7 +646,10 @@ export const StaysPage: React.FC = () => {
     },
     enabled: activeTab === 'arrivals' || isCheckinModalOpen,
   });
-  const arrivalReservations: ReservationSummaryItem[] = confirmedReservationsRes || [];
+  const arrivalReservations: ReservationSummaryItem[] = useMemo(
+    () => confirmedReservationsRes || [],
+    [confirmedReservationsRes]
+  );
 
   // ----------------------------------------------------
   // MUTATIONS
@@ -670,7 +735,7 @@ export const StaysPage: React.FC = () => {
   // ----------------------------------------------------
 
   // Open Check-in Modal for a specific room of a reservation
-  const handleOpenCheckinModal = async (reservationSummary: ReservationSummaryItem) => {
+  const handleOpenCheckinModal = useCallback(async (reservationSummary: ReservationSummaryItem) => {
     try {
       const res = await reservationsApi.getById(reservationSummary.id);
       setCheckinReservation(res.data);
@@ -678,7 +743,7 @@ export const StaysPage: React.FC = () => {
     } catch {
       appMessage.error('Không thể lấy chi tiết đơn đặt phòng!');
     }
-  };
+  }, [appMessage]);
 
   // Auto-open checkin modal if reservationId is passed in URL
   useEffect(() => {
@@ -726,10 +791,10 @@ export const StaysPage: React.FC = () => {
     });
   };
 
-  const handleOpenCheckoutModal = (record: StaySummaryItem) => {
+  const handleOpenCheckoutModal = useCallback((record: StaySummaryItem) => {
     setCheckoutStay(record);
     setIsCheckoutModalOpen(true);
-  };
+  }, []);
 
   const handleConfirmCheckout = (stayId: string, notes?: string | null) => {
     checkoutMutation.mutate({
@@ -738,10 +803,10 @@ export const StaysPage: React.FC = () => {
     });
   };
 
-  const handleOpenTransferModal = (record: StaySummaryItem) => {
+  const handleOpenTransferModal = useCallback((record: StaySummaryItem) => {
     setTransferStay(record);
     setIsTransferModalOpen(true);
-  };
+  }, []);
 
   const handleConfirmTransfer = (stayId: string, toRoomId: string, reason: string) => {
     transferMutation.mutate({
@@ -780,7 +845,7 @@ export const StaysPage: React.FC = () => {
   // ----------------------------------------------------
   // TABLE COLUMNS CONFIG
   // ----------------------------------------------------
-  const stayColumns: ColumnsType<StaySummaryItem> = [
+  const stayColumns = useMemo<ColumnsType<StayRow>>(() => [
     {
       title: 'Số phòng',
       key: 'roomNumber',
@@ -857,30 +922,24 @@ export const StaysPage: React.FC = () => {
     },
     {
       title: 'Thời gian nhận phòng',
-      dataIndex: 'actualCheckinAt',
       key: 'actualCheckinAt',
       width: 170,
-      render: (time: string) => (
+      render: (_, record) => (
         <div style={{ whiteSpace: 'nowrap' }}>
-          <Text>{dayjs(time).format('DD/MM/YYYY HH:mm')}</Text>
-          <div style={{ fontSize: 11, color: '#8c8c8c' }}>
-            {formatDayOfWeek(time)}
-          </div>
+          <Text>{record.checkinText}</Text>
+          <div style={{ fontSize: 11, color: '#8c8c8c' }}>{record.checkinWeekday}</div>
         </div>
       ),
     },
     {
       title: 'Thời gian trả phòng',
-      dataIndex: 'actualCheckoutAt',
       key: 'actualCheckoutAt',
       width: 170,
-      render: (time: string | null) =>
-        time ? (
+      render: (_, record) =>
+        record.actualCheckoutAt ? (
           <div style={{ whiteSpace: 'nowrap' }}>
-            <Text>{dayjs(time).format('DD/MM/YYYY HH:mm')}</Text>
-            <div style={{ fontSize: 11, color: '#8c8c8c' }}>
-              {formatDayOfWeek(time)}
-            </div>
+            <Text>{record.checkoutText}</Text>
+            <div style={{ fontSize: 11, color: '#8c8c8c' }}>{record.checkoutWeekday}</div>
           </div>
         ) : (
           <Text type="secondary" italic style={{ whiteSpace: 'nowrap' }}>
@@ -944,10 +1003,10 @@ export const StaysPage: React.FC = () => {
         );
       },
     },
-  ];
+  ], [canWrite, handleOpenCheckoutModal, handleOpenTransferModal, screens, setIsDetailDrawerOpen, setSelectedStayId]);
 
   // Arrival Reservations Columns
-  const arrivalColumns: ColumnsType<ReservationSummaryItem> = [
+  const arrivalColumns = useMemo<ColumnsType<ReservationSummaryItem>>(() => [
     {
       title: 'Mã đơn đặt',
       dataIndex: 'confirmationCode',
@@ -1062,7 +1121,189 @@ export const StaysPage: React.FC = () => {
         </Button>
       ),
     },
-  ];
+  ], [canWrite, handleOpenCheckinModal, screens]);
+
+  // The grid is the expensive subtree of a search: every rerender of <Table>
+  // rebuilds every row and cell (each one wraps Tooltip / copyable / badge
+  // components). It only reads the props below, so it is memoized on its own and
+  // stays untouched while the user is still typing in the search box.
+  const staysTable = useMemo(
+    () => (
+      <Table
+        columns={stayColumns}
+        dataSource={tableRows}
+        rowKey="stayId"
+        loading={isLoadingStays}
+        pagination={{
+          pageSize: 15,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '15', '30', '50'],
+          showTotal: (total) => `Tổng cộng ${total} lượt lưu trú`,
+        }}
+        locale={{
+          emptyText: (
+            <Empty description="Chưa có lượt lưu trú nào phù hợp điều kiện lọc." />
+          ),
+        }}
+        scroll={{ x: 1200 }}
+      />
+    ),
+    [isLoadingStays, stayColumns, tableRows]
+  );
+
+  // Memoized tab pane: the element identity only changes when the values it
+  // actually reads change, so unrelated page state (other tab, filters,
+  // modals) no longer re-renders this subtree.
+  const staysListPane = useMemo(
+    () => (
+                <>
+                  {/* KPI Stat Cards */}
+                  <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 16 }}>
+                    <Col xs={12} sm={8} md={8}>
+                      <Card
+                        size="small"
+                        variant="outlined"
+                        className="pms-kpi-card"
+                        style={{
+                          height: '100%',
+                          borderRadius: 8,
+                          borderColor: '#b7eb8f',
+                          background: '#f6ffed',
+                        }}
+                        styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                      >
+                        <Text style={{ fontSize: 12, color: '#389e0d' }}>
+                          Khách đang lưu trú (In-house)
+                        </Text>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#389e0d', marginTop: 4 }}>
+                          {stats.inHouse}
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={8}>
+                      <Card
+                        size="small"
+                        variant="outlined"
+                        className="pms-kpi-card"
+                        style={{
+                          height: '100%',
+                          borderRadius: 8,
+                          borderColor: '#d3adf7',
+                          background: '#f9f0ff',
+                        }}
+                        styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                      >
+                        <Text style={{ fontSize: 12, color: '#531dab' }}>
+                          Đã trả phòng (Checked-out)
+                        </Text>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#531dab', marginTop: 4 }}>
+                          {stats.checkedOut}
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={8} md={8}>
+                      <Card
+                        size="small"
+                        variant="outlined"
+                        className="pms-kpi-card"
+                        style={{ height: '100%', borderRadius: 8, background: '#fafafa' }}
+                        styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Tổng lượt lưu trú ghi nhận
+                        </Text>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#1f1f1f', marginTop: 4 }}>
+                          {stats.total}
+                        </div>
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  {/* Filter Bar */}
+                  <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
+                    <Row gutter={[12, 12]} align="middle">
+                      <Col xs={24} sm={14} md={10}>
+                        <DebouncedSearchInput
+                          placeholder="Tìm theo số phòng, mã đơn đặt phòng..."
+                          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                          value={searchKeyword}
+                          onChange={(val) => setSearchKeyword(val)}
+                          allowClear
+                        />
+                      </Col>
+                      <Col xs={24} sm={10} md={6}>
+                        <Select
+                          placeholder="Trạng thái lưu trú"
+                          style={{ width: '100%' }}
+                          value={statusFilter}
+                          onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
+                          allowClear
+                          options={[
+                            { label: 'Tất cả trạng thái', value: 'ALL' },
+                            { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
+                            { label: 'Đã trả phòng (CHECKED_OUT)', value: 'CHECKED_OUT' },
+                          ]}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+
+                  {isAccountant && (
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                      title="Quyền Kế toán (ACCOUNTANT)"
+                      description="Bạn đang xem danh sách lượt lưu trú phục vụ đối soát công nợ & tài chính. Quyền check-in nhận phòng, đổi phòng và trả phòng được giới hạn cho bộ phận Lễ tân và Quản lý."
+                    />
+                  )}
+
+                  {/* Stays Table */}
+                  <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
+                    {staysTable}
+                  </Card>
+                </>
+    ),
+    [isAccountant, searchKeyword, setSearchKeyword, setStatusFilter, stats, statusFilter, staysTable]
+  );
+
+  // Memoized tab pane: the element identity only changes when the values it
+  // actually reads change, so unrelated page state (other tab, filters,
+  // modals) no longer re-renders this subtree.
+  const staysArrivalsPane = useMemo(
+    () => (
+                <>
+                  <Alert
+                    type="info"
+                    showIcon
+                    icon={<ClockCircleOutlined />}
+                    style={{ marginBottom: 16 }}
+                    title="Quy trình Nhận phòng (Check-in Arrival SOP)"
+                    description="Khi khách đến nhận phòng, chọn 'Làm thủ tục' để gán phòng vật lý đang ở trạng thái READY (Đã vệ sinh sạch sẽ). Hệ thống chỉ kích hoạt check-in vào đúng ngày nhận phòng đã đăng ký theo chính sách của khách sạn."
+                  />
+
+                  <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
+                    <Table
+                      columns={arrivalColumns}
+                      dataSource={arrivalReservations}
+                      rowKey="id"
+                      loading={isLoadingArrivals}
+                      pagination={{
+                        pageSize: 10,
+                        showTotal: (total) => `Tổng cộng ${total} đơn chờ nhận phòng`,
+                      }}
+                      locale={{
+                        emptyText: (
+                          <Empty description="Hiện không có đơn đặt phòng nào đang chờ check-in." />
+                        ),
+                      }}
+                      scroll={{ x: 1200 }}
+                    />
+                  </Card>
+                </>
+    ),
+    [arrivalColumns, arrivalReservations, isLoadingArrivals]
+  );
 
   return (
     <div style={{ padding: '0 0 24px 0' }}>
@@ -1112,132 +1353,7 @@ export const StaysPage: React.FC = () => {
                 <HomeOutlined /> Danh sách Đang lưu trú & Lịch sử ({stats.inHouse} đang ở)
               </span>
             ),
-            children: (
-              <>
-                {/* KPI Stat Cards */}
-                <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 16 }}>
-                  <Col xs={12} sm={8} md={8}>
-                    <Card
-                      size="small"
-                      variant="outlined"
-                      className="pms-kpi-card"
-                      style={{
-                        height: '100%',
-                        borderRadius: 8,
-                        borderColor: '#b7eb8f',
-                        background: '#f6ffed',
-                      }}
-                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                    >
-                      <Text style={{ fontSize: 12, color: '#389e0d' }}>
-                        Khách đang lưu trú (In-house)
-                      </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#389e0d', marginTop: 4 }}>
-                        {stats.inHouse}
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={8} md={8}>
-                    <Card
-                      size="small"
-                      variant="outlined"
-                      className="pms-kpi-card"
-                      style={{
-                        height: '100%',
-                        borderRadius: 8,
-                        borderColor: '#d3adf7',
-                        background: '#f9f0ff',
-                      }}
-                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                    >
-                      <Text style={{ fontSize: 12, color: '#531dab' }}>
-                        Đã trả phòng (Checked-out)
-                      </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#531dab', marginTop: 4 }}>
-                        {stats.checkedOut}
-                      </div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={8} md={8}>
-                    <Card
-                      size="small"
-                      variant="outlined"
-                      className="pms-kpi-card"
-                      style={{ height: '100%', borderRadius: 8, background: '#fafafa' }}
-                      styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Tổng lượt lưu trú ghi nhận
-                      </Text>
-                      <div style={{ fontSize: 24, fontWeight: 700, color: '#1f1f1f', marginTop: 4 }}>
-                        {stats.total}
-                      </div>
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Filter Bar */}
-                <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
-                  <Row gutter={[12, 12]} align="middle">
-                    <Col xs={24} sm={14} md={10}>
-                      <DebouncedSearchInput
-                        placeholder="Tìm theo số phòng, mã đơn đặt phòng..."
-                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-                        value={searchKeyword}
-                        onChange={(val) => setSearchKeyword(val)}
-                        allowClear
-                      />
-                    </Col>
-                    <Col xs={24} sm={10} md={6}>
-                      <Select
-                        placeholder="Trạng thái lưu trú"
-                        style={{ width: '100%' }}
-                        value={statusFilter}
-                        onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
-                        allowClear
-                        options={[
-                          { label: 'Tất cả trạng thái', value: 'ALL' },
-                          { label: 'Đang lưu trú (CHECKED_IN)', value: 'CHECKED_IN' },
-                          { label: 'Đã trả phòng (CHECKED_OUT)', value: 'CHECKED_OUT' },
-                        ]}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-
-                {isAccountant && (
-                  <Alert
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                    title="Quyền Kế toán (ACCOUNTANT)"
-                    description="Bạn đang xem danh sách lượt lưu trú phục vụ đối soát công nợ & tài chính. Quyền check-in nhận phòng, đổi phòng và trả phòng được giới hạn cho bộ phận Lễ tân và Quản lý."
-                  />
-                )}
-
-                {/* Stays Table */}
-                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
-                  <Table
-                    columns={stayColumns}
-                    dataSource={stays}
-                    rowKey="stayId"
-                    loading={isLoadingStays}
-                    pagination={{
-                      pageSize: 15,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '15', '30', '50'],
-                      showTotal: (total) => `Tổng cộng ${total} lượt lưu trú`,
-                    }}
-                    locale={{
-                      emptyText: (
-                        <Empty description="Chưa có lượt lưu trú nào phù hợp điều kiện lọc." />
-                      ),
-                    }}
-                    scroll={{ x: 1200 }}
-                  />
-                </Card>
-              </>
-            ),
+            children: staysListPane,
           },
           {
             key: 'arrivals',
@@ -1246,37 +1362,7 @@ export const StaysPage: React.FC = () => {
                 <LoginOutlined /> Quầy làm thủ tục Check-in ({arrivalReservations.length} đơn chờ)
               </span>
             ),
-            children: (
-              <>
-                <Alert
-                  type="info"
-                  showIcon
-                  icon={<ClockCircleOutlined />}
-                  style={{ marginBottom: 16 }}
-                  title="Quy trình Nhận phòng (Check-in Arrival SOP)"
-                  description="Khi khách đến nhận phòng, chọn 'Làm thủ tục' để gán phòng vật lý đang ở trạng thái READY (Đã vệ sinh sạch sẽ). Hệ thống chỉ kích hoạt check-in vào đúng ngày nhận phòng đã đăng ký theo chính sách của khách sạn."
-                />
-
-                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
-                  <Table
-                    columns={arrivalColumns}
-                    dataSource={arrivalReservations}
-                    rowKey="id"
-                    loading={isLoadingArrivals}
-                    pagination={{
-                      pageSize: 10,
-                      showTotal: (total) => `Tổng cộng ${total} đơn chờ nhận phòng`,
-                    }}
-                    locale={{
-                      emptyText: (
-                        <Empty description="Hiện không có đơn đặt phòng nào đang chờ check-in." />
-                      ),
-                    }}
-                    scroll={{ x: 1200 }}
-                  />
-                </Card>
-              </>
-            ),
+            children: staysArrivalsPane,
           },
         ]}
       />

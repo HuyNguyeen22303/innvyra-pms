@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
@@ -164,24 +164,25 @@ export const InventoryItemsTab: React.FC = () => {
       );
     },
   });
+  // Stable handles: the mutation observer object changes identity on every
+  // render, which would invalidate memoized table columns.
+  const { mutate: deactivateItem, isPending: deactivateItemPending } = deactivateMutation;
 
-  const handleOpenEdit = (item: InventoryItemView) => {
+
+  const handleOpenEdit = useCallback((item: InventoryItemView) => {
+    // Populate before opening so the modal renders filled in a single pass.
+    editForm.setFieldsValue({
+      code: item.code,
+      name: item.name,
+      categoryId: item.categoryId,
+      unit: item.unit,
+      minStockLevel: parseFloat(item.minStockLevel) || 0,
+      description: item.description,
+    });
     setEditingItem(item);
     setIsEditModalOpen(true);
-  };
+  }, [editForm]);
 
-  useEffect(() => {
-    if (isEditModalOpen && editingItem) {
-      editForm.setFieldsValue({
-        code: editingItem.code,
-        name: editingItem.name,
-        categoryId: editingItem.categoryId,
-        unit: editingItem.unit,
-        minStockLevel: parseFloat(editingItem.minStockLevel) || 0,
-        description: editingItem.description,
-      });
-    }
-  }, [isEditModalOpen, editingItem, editForm]);
 
   const handleCreateSubmit = async () => {
     try {
@@ -222,7 +223,7 @@ export const InventoryItemsTab: React.FC = () => {
     }
   };
 
-  const columns: ColumnsType<InventoryItemView> = [
+  const columns = useMemo<ColumnsType<InventoryItemView>>(() => [
     {
       title: "Mã VT",
       dataIndex: "code",
@@ -388,12 +389,12 @@ export const InventoryItemsTab: React.FC = () => {
                 <Popconfirm
                   title="Ngừng hoạt động vật tư?"
                   description="Vật tư này sẽ không thể dùng cho các phiếu nhập/xuất kho mới."
-                  onConfirm={() => deactivateMutation.mutate(record.id)}
+                  onConfirm={() => deactivateItem(record.id)}
                   okText="Ngừng hoạt động"
                   cancelText="Hủy"
                   okButtonProps={{
                     danger: true,
-                    loading: deactivateMutation.isPending,
+                    loading: deactivateItemPending,
                   }}
                 >
                   <Tooltip title="Ngừng hoạt động">
@@ -411,7 +412,7 @@ export const InventoryItemsTab: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  ], [canManage, deactivateItem, deactivateItemPending, handleOpenEdit, screens]);
 
   return (
     <div>

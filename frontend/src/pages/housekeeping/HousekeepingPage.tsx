@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Typography,
@@ -335,6 +335,46 @@ const CancelTaskModal: React.FC<CancelTaskModalProps> = React.memo(
 
 // Dynamic Housekeeping Staff Options loaded from employeesApi
 
+const renderPriorityTag = (priority: HousekeepingPriority) => {
+  switch (priority) {
+    case "URGENT":
+      return (
+        <Tag color="#ff4d4f" style={{ fontWeight: 600 }}>
+          <ExclamationCircleOutlined /> Khẩn cấp
+        </Tag>
+      );
+    case "HIGH":
+      return (
+        <Tag color="#fa8c16" style={{ fontWeight: 600 }}>
+          Ưu tiên cao
+        </Tag>
+      );
+    case "NORMAL":
+      return <Tag color="#1677ff">Bình thường</Tag>;
+    case "LOW":
+      return <Tag color="#8c8c8c">Ưu tiên thấp</Tag>;
+    default:
+      return <Tag>{priority}</Tag>;
+  }
+};
+
+const renderStatusTag = (status: HousekeepingTaskStatus) => {
+  switch (status) {
+    case "PENDING":
+      return <Tag color="warning">Chờ xử lý (DIRTY)</Tag>;
+    case "IN_PROGRESS":
+      return <Tag color="processing">Đang dọn (CLEANING)</Tag>;
+    case "AWAITING_INSPECTION":
+      return <Tag color="purple">Chờ kiểm tra (INSPECTION)</Tag>;
+    case "COMPLETED":
+      return <Tag color="success">Đã hoàn thành (READY)</Tag>;
+    case "CANCELLED":
+      return <Tag color="default">Đã hủy</Tag>;
+    default:
+      return <Tag>{status}</Tag>;
+  }
+};
+
 export const HousekeepingPage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
@@ -451,9 +491,13 @@ export const HousekeepingPage: React.FC = () => {
   });
 
   const rawTasks = tasksRes?.data;
-  const taskList: HousekeepingTaskItem[] = Array.isArray(rawTasks)
-    ? rawTasks
-    : (rawTasks as any)?.items || [];
+  const taskList: HousekeepingTaskItem[] = useMemo(
+    () =>
+      Array.isArray(rawTasks)
+        ? rawTasks
+        : (rawTasks as any)?.items || [],
+    [rawTasks]
+  );
 
   const rawDirty = dirtyRoomsRes?.data;
   const dirtyRoomList: DirtyRoomItem[] = Array.isArray(rawDirty)
@@ -461,22 +505,26 @@ export const HousekeepingPage: React.FC = () => {
     : (rawDirty as any)?.items || [];
 
   const rawRoomTypes = roomTypesRes?.data;
-  const roomTypesList = Array.isArray(rawRoomTypes)
-    ? rawRoomTypes
-    : (rawRoomTypes as any)?.items || [];
+  const roomTypesList = useMemo(
+    () =>
+      Array.isArray(rawRoomTypes)
+        ? rawRoomTypes
+        : (rawRoomTypes as any)?.items || [],
+    [rawRoomTypes]
+  );
 
-  const getRoomTypeName = (roomTypeId: string) => {
+  const getRoomTypeName = useCallback((roomTypeId: string) => {
     const found = roomTypesList.find(
       (rt: any) => String(rt.id) === String(roomTypeId),
     );
     return found ? found.name : `Hạng #${roomTypeId}`;
-  };
+  }, [roomTypesList]);
 
-  const getStaffName = (staffId: string | number | null | undefined) => {
+  const getStaffName = useCallback((staffId: string | number | null | undefined) => {
     if (!staffId) return null;
     const staff = getStaffDisplay(staffId, user);
     return staff.fullName;
-  };
+  }, [user]);
 
   // ----------------------------------------------------
   // MUTATIONS
@@ -629,52 +677,14 @@ export const HousekeepingPage: React.FC = () => {
   const completedTasks = taskList.filter((t) => t.status === "COMPLETED");
 
   // Priority Tag Renderer
-  const renderPriorityTag = (priority: HousekeepingPriority) => {
-    switch (priority) {
-      case "URGENT":
-        return (
-          <Tag color="#ff4d4f" style={{ fontWeight: 600 }}>
-            <ExclamationCircleOutlined /> Khẩn cấp
-          </Tag>
-        );
-      case "HIGH":
-        return (
-          <Tag color="#fa8c16" style={{ fontWeight: 600 }}>
-            Ưu tiên cao
-          </Tag>
-        );
-      case "NORMAL":
-        return <Tag color="#1677ff">Bình thường</Tag>;
-      case "LOW":
-        return <Tag color="#8c8c8c">Ưu tiên thấp</Tag>;
-      default:
-        return <Tag>{priority}</Tag>;
-    }
-  };
 
   // Status Tag Renderer
-  const renderStatusTag = (status: HousekeepingTaskStatus) => {
-    switch (status) {
-      case "PENDING":
-        return <Tag color="warning">Chờ xử lý (DIRTY)</Tag>;
-      case "IN_PROGRESS":
-        return <Tag color="processing">Đang dọn (CLEANING)</Tag>;
-      case "AWAITING_INSPECTION":
-        return <Tag color="purple">Chờ kiểm tra (INSPECTION)</Tag>;
-      case "COMPLETED":
-        return <Tag color="success">Đã hoàn thành (READY)</Tag>;
-      case "CANCELLED":
-        return <Tag color="default">Đã hủy</Tag>;
-      default:
-        return <Tag>{status}</Tag>;
-    }
-  };
 
   // ----------------------------------------------------
   // DIRTY ROOMS TABLE COLUMNS
   // ----------------------------------------------------
 
-  const dirtyRoomColumns: ColumnsType<DirtyRoomItem> = [
+  const dirtyRoomColumns = useMemo<ColumnsType<DirtyRoomItem>>(() => [
     {
       title: "Số phòng",
       dataIndex: "roomNumber",
@@ -821,7 +831,8 @@ export const HousekeepingPage: React.FC = () => {
         ) : null;
       },
     },
-  ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [canCreateTask, createForm, getRoomTypeName, getStaffName, renderStatusTag, screens, setIsCreateModalOpen, setIsDetailDrawerOpen, setSelectedTaskForDetail, taskList]);
 
   // ----------------------------------------------------
   // TASK CARD COMPONENT FOR KANBAN

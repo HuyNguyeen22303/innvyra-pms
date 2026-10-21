@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -120,22 +120,22 @@ export const InventoryCategoriesTab: React.FC = () => {
       appMessage.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động danh mục.'));
     },
   });
+  // Stable handles: the mutation observer object changes identity on every
+  // render, which would invalidate memoized table columns.
+  const { mutate: deactivateCategory, isPending: deactivateCategoryPending } = deactivateMutation;
 
-  const handleOpenEdit = (category: InventoryCategoryView) => {
+
+  const handleOpenEdit = useCallback((category: InventoryCategoryView) => {
     setEditingCategory(category);
+    editForm.setFieldsValue({
+    code: category.code,
+    name: category.name,
+    description: category.description,
+    isActive: category.isActive,
+    });
     setIsEditModalOpen(true);
-  };
+  }, [editForm]);
 
-  useEffect(() => {
-    if (isEditModalOpen && editingCategory) {
-      editForm.setFieldsValue({
-        code: editingCategory.code,
-        name: editingCategory.name,
-        description: editingCategory.description,
-        isActive: editingCategory.isActive,
-      });
-    }
-  }, [isEditModalOpen, editingCategory, editForm]);
 
   const handleCreateSubmit = async () => {
     try {
@@ -168,7 +168,7 @@ export const InventoryCategoriesTab: React.FC = () => {
     }
   };
 
-  const columns: ColumnsType<InventoryCategoryView> = [
+  const columns = useMemo<ColumnsType<InventoryCategoryView>>(() => [
     {
       title: 'Mã danh mục',
       dataIndex: 'code',
@@ -252,10 +252,10 @@ export const InventoryCategoriesTab: React.FC = () => {
                 <Popconfirm
                   title="Ngừng hoạt động danh mục?"
                   description="Danh mục này sẽ không thể dùng để tạo vật tư mới. Vật tư đang thuộc danh mục phải được di chuyển trước."
-                  onConfirm={() => deactivateMutation.mutate(record.id)}
+                  onConfirm={() => deactivateCategory(record.id)}
                   okText="Ngừng hoạt động"
                   cancelText="Hủy"
-                  okButtonProps={{ danger: true, loading: deactivateMutation.isPending }}
+                  okButtonProps={{ danger: true, loading: deactivateCategoryPending }}
                 >
                   <Tooltip title="Ngừng hoạt động">
                     <Button
@@ -274,7 +274,7 @@ export const InventoryCategoriesTab: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  ], [canManage, deactivateCategory, deactivateCategoryPending, handleOpenEdit, screens]);
 
   return (
     <div>

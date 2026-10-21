@@ -359,6 +359,75 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
 
 // Dynamic Technician Options loaded from employeesApi
 
+const renderPriorityTag = (p: MaintenancePriority) => {
+  switch (p) {
+    case "CRITICAL":
+      return (
+        <Tag color="#ff4d4f" style={{ fontWeight: 700 }}>
+          <ExclamationCircleOutlined /> Khẩn cấp
+        </Tag>
+      );
+    case "HIGH":
+      return (
+        <Tag color="#fa8c16" style={{ fontWeight: 600 }}>
+          Ưu tiên cao
+        </Tag>
+      );
+    case "NORMAL":
+      return <Tag color="#1677ff">Bình thường</Tag>;
+    case "LOW":
+      return <Tag color="#8c8c8c">Thấp</Tag>;
+    default:
+      return <Tag>{p}</Tag>;
+  }
+};
+
+const renderTicketStatusTag = (s: MaintenanceTicketStatus) => {
+  switch (s) {
+    case "OPEN":
+      return <Tag color="error">Mới báo cáo (OPEN)</Tag>;
+    case "ASSIGNED":
+      return <Tag color="warning">Đã phân công (ASSIGNED)</Tag>;
+    case "IN_PROGRESS":
+      return <Tag color="processing">Đang sửa chữa (IN_PROGRESS)</Tag>;
+    case "RESOLVED":
+      return <Tag color="purple">Đã sửa xong (RESOLVED)</Tag>;
+    case "CLOSED":
+      return <Tag color="success">Đã nghiệm thu (CLOSED)</Tag>;
+    case "CANCELLED":
+      return <Tag color="default">Đã hủy</Tag>;
+    default:
+      return <Tag>{s}</Tag>;
+  }
+};
+
+const renderBlockStatusTag = (s: MaintenanceBlockStatus) => {
+  switch (s) {
+    case "ACTIVE":
+      return (
+        <Tag color="error" icon={<LockOutlined />}>
+          Đang khóa sửa chữa (ACTIVE)
+        </Tag>
+      );
+    case "SCHEDULED":
+      return (
+        <Tag color="warning" icon={<ClockCircleOutlined />}>
+          Đã lên lịch (SCHEDULED)
+        </Tag>
+      );
+    case "RELEASED":
+      return (
+        <Tag color="success" icon={<UnlockOutlined />}>
+          Đã mở khóa (RELEASED)
+        </Tag>
+      );
+    case "CANCELLED":
+      return <Tag color="default">Đã hủy</Tag>;
+    default:
+      return <Tag>{s}</Tag>;
+  }
+};
+
 export const MaintenancePage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
@@ -542,14 +611,22 @@ export const MaintenancePage: React.FC = () => {
   });
 
   const rawTickets = ticketsRes?.data;
-  const ticketList: MaintenanceTicketItem[] = Array.isArray(rawTickets)
-    ? rawTickets
-    : (rawTickets as any)?.items || [];
+  const ticketList: MaintenanceTicketItem[] = useMemo(
+    () =>
+      Array.isArray(rawTickets)
+        ? rawTickets
+        : (rawTickets as any)?.items || [],
+    [rawTickets]
+  );
 
   const rawBlocks = blocksRes?.data;
-  const blockList: MaintenanceBlockItem[] = Array.isArray(rawBlocks)
-    ? rawBlocks
-    : (rawBlocks as any)?.items || [];
+  const blockList: MaintenanceBlockItem[] = useMemo(
+    () =>
+      Array.isArray(rawBlocks)
+        ? rawBlocks
+        : (rawBlocks as any)?.items || [],
+    [rawBlocks]
+  );
 
   const rawRooms = roomsRes?.data;
   const roomList = Array.isArray(rawRooms)
@@ -624,6 +701,10 @@ export const MaintenancePage: React.FC = () => {
       );
     },
   });
+
+  // Stable mutate handle: the mutation observer object itself changes identity
+  // on every render, which would invalidate memoized table columns.
+  const { mutate: startRepair, isPending: isStartingRepair } = startRepairMutation;
 
   const resolveTicketMutation = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes: string }) =>
@@ -763,80 +844,14 @@ export const MaintenancePage: React.FC = () => {
   });
 
   // Priority Tag Renderers
-  const renderPriorityTag = (p: MaintenancePriority) => {
-    switch (p) {
-      case "CRITICAL":
-        return (
-          <Tag color="#ff4d4f" style={{ fontWeight: 700 }}>
-            <ExclamationCircleOutlined /> Khẩn cấp
-          </Tag>
-        );
-      case "HIGH":
-        return (
-          <Tag color="#fa8c16" style={{ fontWeight: 600 }}>
-            Ưu tiên cao
-          </Tag>
-        );
-      case "NORMAL":
-        return <Tag color="#1677ff">Bình thường</Tag>;
-      case "LOW":
-        return <Tag color="#8c8c8c">Thấp</Tag>;
-      default:
-        return <Tag>{p}</Tag>;
-    }
-  };
 
-  const renderTicketStatusTag = (s: MaintenanceTicketStatus) => {
-    switch (s) {
-      case "OPEN":
-        return <Tag color="error">Mới báo cáo (OPEN)</Tag>;
-      case "ASSIGNED":
-        return <Tag color="warning">Đã phân công (ASSIGNED)</Tag>;
-      case "IN_PROGRESS":
-        return <Tag color="processing">Đang sửa chữa (IN_PROGRESS)</Tag>;
-      case "RESOLVED":
-        return <Tag color="purple">Đã sửa xong (RESOLVED)</Tag>;
-      case "CLOSED":
-        return <Tag color="success">Đã nghiệm thu (CLOSED)</Tag>;
-      case "CANCELLED":
-        return <Tag color="default">Đã hủy</Tag>;
-      default:
-        return <Tag>{s}</Tag>;
-    }
-  };
 
-  const renderBlockStatusTag = (s: MaintenanceBlockStatus) => {
-    switch (s) {
-      case "ACTIVE":
-        return (
-          <Tag color="error" icon={<LockOutlined />}>
-            Đang khóa sửa chữa (ACTIVE)
-          </Tag>
-        );
-      case "SCHEDULED":
-        return (
-          <Tag color="warning" icon={<ClockCircleOutlined />}>
-            Đã lên lịch (SCHEDULED)
-          </Tag>
-        );
-      case "RELEASED":
-        return (
-          <Tag color="success" icon={<UnlockOutlined />}>
-            Đã mở khóa (RELEASED)
-          </Tag>
-        );
-      case "CANCELLED":
-        return <Tag color="default">Đã hủy</Tag>;
-      default:
-        return <Tag>{s}</Tag>;
-    }
-  };
 
   // ----------------------------------------------------
   // TABLE COLUMNS - TICKETS
   // ----------------------------------------------------
 
-  const ticketColumns: ColumnsType<MaintenanceTicketItem> = [
+  const ticketColumns = useMemo<ColumnsType<MaintenanceTicketItem>>(() => [
     {
       title: "Mã phiếu",
       dataIndex: "id",
@@ -1026,8 +1041,8 @@ export const MaintenancePage: React.FC = () => {
                     type="primary"
                     icon={<PlayCircleOutlined />}
                     style={{ background: "#1b4d3e", borderColor: "#1b4d3e" }}
-                    loading={startRepairMutation.isPending}
-                    onClick={() => startRepairMutation.mutate(record.id)}
+                    loading={isStartingRepair}
+                    onClick={() => startRepair(record.id)}
                   >
                     Bắt đầu
                   </Button>
@@ -1087,13 +1102,14 @@ export const MaintenancePage: React.FC = () => {
         );
       },
     },
-  ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isAdminOrManager, renderPriorityTag, renderTicketStatusTag, screens, setIsAssignTicketModalOpen, setIsCancelTicketModalOpen, setIsCloseTicketModalOpen, setIsResolveTicketModalOpen, setIsTicketDrawerOpen, setSelectedTicketForDetail, setActionTicket, startRepair, isStartingRepair, technicianOptions, user]);
 
   // ----------------------------------------------------
   // TABLE COLUMNS - BLOCKS
   // ----------------------------------------------------
 
-  const blockColumns: ColumnsType<MaintenanceBlockItem> = [
+  const blockColumns = useMemo<ColumnsType<MaintenanceBlockItem>>(() => [
     {
       title: "Mã lệnh",
       dataIndex: "id",
@@ -1221,7 +1237,8 @@ export const MaintenancePage: React.FC = () => {
         </Space>
       ),
     },
-  ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [canManageBlocks, screens, setIsBlockDrawerOpen, setIsCancelBlockModalOpen, setIsReleaseBlockModalOpen, setSelectedBlockForDetail, setActionBlock]);
 
   // Counts for KPI
   const openTickets = ticketList.filter((t) => t.status === "OPEN").length;
@@ -1240,6 +1257,380 @@ export const MaintenancePage: React.FC = () => {
   const releasedBlocks = blockList.filter(
     (b) => b.status === "RELEASED",
   ).length;
+
+  // Memoized tab pane: the element identity only changes when the values it
+  // actually reads change, so unrelated page state (other tab, filters,
+  // modals) no longer re-renders this subtree.
+  const maintenanceTicketsPane = useMemo(
+    () => (
+                <div>
+                  {/* KPI Cards */}
+                  <Row
+                    gutter={[16, 16]}
+                    className="pms-kpi-row"
+                    style={{ marginBottom: 20 }}
+                  >
+                    <Col xs={12} sm={6}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#fff2f0",
+                          border: "1px solid #ffccc7",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Mới báo cáo (OPEN)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#cf1322" }}
+                        >
+                          {openTickets}
+                        </Title>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#e6f7ff",
+                          border: "1px solid #91d5ff",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đang xử lý (IN_PROGRESS)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#096dd9" }}
+                        >
+                          {inProgressTickets}
+                        </Title>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#f9f0ff",
+                          border: "1px solid #d3adf7",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đã sửa xong (RESOLVED)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#722ed1" }}
+                        >
+                          {resolvedTickets}
+                        </Title>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#f6ffed",
+                          border: "1px solid #b7eb8f",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đã nghiệm thu (CLOSED)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#389e0d" }}
+                        >
+                          {closedTickets}
+                        </Title>
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  {/* Filter Toolbar */}
+                  <Card style={{ marginBottom: 16, borderRadius: 8 }}>
+                    <Row gutter={[12, 12]} align="middle">
+                      <Col xs={24} sm={8}>
+                        <DebouncedSearchInput
+                          placeholder="Tìm theo tiêu đề sự cố..."
+                          prefix={<SearchOutlined />}
+                          value={ticketSearch}
+                          onChange={(val) => setTicketSearch(val)}
+                          allowClear
+                        />
+                      </Col>
+                      <Col xs={12} sm={8}>
+                        <Select
+                          placeholder="Lọc theo trạng thái phiếu..."
+                          style={{ width: "100%" }}
+                          allowClear
+                          value={ticketStatusFilter}
+                          onChange={(v: any) =>
+                            setTicketStatusFilter(
+                              !v || v === "ALL" ? undefined : v,
+                            )
+                          }
+                          options={[
+                            { value: "ALL", label: "Tất cả trạng thái phiếu" },
+                            { value: "OPEN", label: "🔴 Mới báo cáo (OPEN)" },
+                            {
+                              value: "ASSIGNED",
+                              label: "🟠 Đã phân công (ASSIGNED)",
+                            },
+                            {
+                              value: "IN_PROGRESS",
+                              label: "🔵 Đang sửa chữa (IN_PROGRESS)",
+                            },
+                            {
+                              value: "RESOLVED",
+                              label: "🟣 Đã sửa xong (RESOLVED)",
+                            },
+                            {
+                              value: "CLOSED",
+                              label: "🟢 Đã nghiệm thu (CLOSED)",
+                            },
+                            { value: "CANCELLED", label: "⚪ Đã hủy" },
+                          ]}
+                        />
+                      </Col>
+                      <Col xs={12} sm={8}>
+                        <Select
+                          placeholder="Lọc mức độ ưu tiên..."
+                          style={{ width: "100%" }}
+                          allowClear
+                          value={ticketPriorityFilter}
+                          onChange={(v: any) =>
+                            setTicketPriorityFilter(
+                              !v || v === "ALL" ? undefined : v,
+                            )
+                          }
+                          options={[
+                            { value: "ALL", label: "Tất cả mức độ ưu tiên" },
+                            { value: "CRITICAL", label: "🔴 Khẩn cấp" },
+                            { value: "HIGH", label: "🟠 Ưu tiên cao" },
+                            { value: "NORMAL", label: "🔵 Bình thường" },
+                            { value: "LOW", label: "⚪ Thấp" },
+                          ]}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+
+                  {/* Table */}
+                  <Card style={{ borderRadius: 8 }}>
+                    <Table
+                      columns={ticketColumns}
+                      dataSource={ticketList}
+                      rowKey="id"
+                      loading={isTicketsLoading}
+                      scroll={{ x: 1320 }}
+                      pagination={{ pageSize: 10, showSizeChanger: true }}
+                    />
+                  </Card>
+                </div>
+    ),
+    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, ticketColumns, ticketList, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
+  );
+
+  // Memoized tab pane: the element identity only changes when the values it
+  // actually reads change, so unrelated page state (other tab, filters,
+  // modals) no longer re-renders this subtree.
+  const maintenanceBlocksPane = useMemo(
+    () => (
+                <div>
+                  {/* KPI Cards */}
+                  <Row
+                    gutter={[16, 16]}
+                    className="pms-kpi-row"
+                    style={{ marginBottom: 20 }}
+                  >
+                    <Col xs={24} sm={8}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#fff2f0",
+                          border: "1px solid #ffccc7",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đang khóa kỹ thuật (ACTIVE)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#cf1322" }}
+                        >
+                          {activeBlocks}
+                        </Title>
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#fffbe6",
+                          border: "1px solid #ffe58f",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đã lên lịch tương lai (SCHEDULED)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#d48806" }}
+                        >
+                          {scheduledBlocks}
+                        </Title>
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Card
+                        variant="borderless"
+                        className="pms-kpi-card"
+                        style={{
+                          height: "100%",
+                          background: "#f6ffed",
+                          border: "1px solid #b7eb8f",
+                          borderRadius: 8,
+                        }}
+                        styles={{
+                          body: {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          },
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Đã mở khóa an toàn (RELEASED)
+                        </Text>
+                        <Title
+                          level={2}
+                          style={{ margin: "8px 0 0", color: "#389e0d" }}
+                        >
+                          {releasedBlocks}
+                        </Title>
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  {/* Filter Toolbar */}
+                  <Card style={{ marginBottom: 16, borderRadius: 8 }}>
+                    <Row gutter={[12, 12]} align="middle">
+                      <Col xs={24} sm={12}>
+                        <Select
+                          placeholder="Lọc theo trạng thái lệnh khóa..."
+                          style={{ width: "100%" }}
+                          allowClear
+                          value={blockStatusFilter}
+                          onChange={(v: any) =>
+                            setBlockStatusFilter(
+                              !v || v === "ALL" ? undefined : v,
+                            )
+                          }
+                          options={[
+                            { value: "ALL", label: "Tất cả lệnh khóa" },
+                            {
+                              value: "ACTIVE",
+                              label: "🔴 Đang khóa kỹ thuật (ACTIVE)",
+                            },
+                            {
+                              value: "SCHEDULED",
+                              label: "🟠 Đã lên lịch tương lai (SCHEDULED)",
+                            },
+                            {
+                              value: "RELEASED",
+                              label: "🟢 Đã mở khóa an toàn (RELEASED)",
+                            },
+                            { value: "CANCELLED", label: "⚪ Đã hủy" },
+                          ]}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+
+                  {/* Table */}
+                  <Card style={{ borderRadius: 8 }}>
+                    <Table
+                      columns={blockColumns}
+                      dataSource={blockList}
+                      rowKey="id"
+                      loading={isBlocksLoading}
+                      scroll={{ x: 1080 }}
+                      pagination={{ pageSize: 10, showSizeChanger: true }}
+                    />
+                  </Card>
+                </div>
+    ),
+    [activeBlocks, blockColumns, blockList, blockStatusFilter, isBlocksLoading, releasedBlocks, scheduledBlocks, setBlockStatusFilter]
+  );
 
   return (
     <div style={{ padding: "0 8px 32px 8px" }}>
@@ -1323,218 +1714,7 @@ export const MaintenancePage: React.FC = () => {
                 <ToolOutlined /> Phiếu sự cố kỹ thuật ({ticketList.length})
               </span>
             ),
-            children: (
-              <div>
-                {/* KPI Cards */}
-                <Row
-                  gutter={[16, 16]}
-                  className="pms-kpi-row"
-                  style={{ marginBottom: 20 }}
-                >
-                  <Col xs={12} sm={6}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#fff2f0",
-                        border: "1px solid #ffccc7",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Mới báo cáo (OPEN)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#cf1322" }}
-                      >
-                        {openTickets}
-                      </Title>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#e6f7ff",
-                        border: "1px solid #91d5ff",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đang xử lý (IN_PROGRESS)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#096dd9" }}
-                      >
-                        {inProgressTickets}
-                      </Title>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#f9f0ff",
-                        border: "1px solid #d3adf7",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đã sửa xong (RESOLVED)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#722ed1" }}
-                      >
-                        {resolvedTickets}
-                      </Title>
-                    </Card>
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#f6ffed",
-                        border: "1px solid #b7eb8f",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đã nghiệm thu (CLOSED)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#389e0d" }}
-                      >
-                        {closedTickets}
-                      </Title>
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Filter Toolbar */}
-                <Card style={{ marginBottom: 16, borderRadius: 8 }}>
-                  <Row gutter={[12, 12]} align="middle">
-                    <Col xs={24} sm={8}>
-                      <DebouncedSearchInput
-                        placeholder="Tìm theo tiêu đề sự cố..."
-                        prefix={<SearchOutlined />}
-                        value={ticketSearch}
-                        onChange={(val) => setTicketSearch(val)}
-                        allowClear
-                      />
-                    </Col>
-                    <Col xs={12} sm={8}>
-                      <Select
-                        placeholder="Lọc theo trạng thái phiếu..."
-                        style={{ width: "100%" }}
-                        allowClear
-                        value={ticketStatusFilter}
-                        onChange={(v: any) =>
-                          setTicketStatusFilter(
-                            !v || v === "ALL" ? undefined : v,
-                          )
-                        }
-                        options={[
-                          { value: "ALL", label: "Tất cả trạng thái phiếu" },
-                          { value: "OPEN", label: "🔴 Mới báo cáo (OPEN)" },
-                          {
-                            value: "ASSIGNED",
-                            label: "🟠 Đã phân công (ASSIGNED)",
-                          },
-                          {
-                            value: "IN_PROGRESS",
-                            label: "🔵 Đang sửa chữa (IN_PROGRESS)",
-                          },
-                          {
-                            value: "RESOLVED",
-                            label: "🟣 Đã sửa xong (RESOLVED)",
-                          },
-                          {
-                            value: "CLOSED",
-                            label: "🟢 Đã nghiệm thu (CLOSED)",
-                          },
-                          { value: "CANCELLED", label: "⚪ Đã hủy" },
-                        ]}
-                      />
-                    </Col>
-                    <Col xs={12} sm={8}>
-                      <Select
-                        placeholder="Lọc mức độ ưu tiên..."
-                        style={{ width: "100%" }}
-                        allowClear
-                        value={ticketPriorityFilter}
-                        onChange={(v: any) =>
-                          setTicketPriorityFilter(
-                            !v || v === "ALL" ? undefined : v,
-                          )
-                        }
-                        options={[
-                          { value: "ALL", label: "Tất cả mức độ ưu tiên" },
-                          { value: "CRITICAL", label: "🔴 Khẩn cấp" },
-                          { value: "HIGH", label: "🟠 Ưu tiên cao" },
-                          { value: "NORMAL", label: "🔵 Bình thường" },
-                          { value: "LOW", label: "⚪ Thấp" },
-                        ]}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* Table */}
-                <Card style={{ borderRadius: 8 }}>
-                  <Table
-                    columns={ticketColumns}
-                    dataSource={ticketList}
-                    rowKey="id"
-                    loading={isTicketsLoading}
-                    scroll={{ x: 1320 }}
-                    pagination={{ pageSize: 10, showSizeChanger: true }}
-                  />
-                </Card>
-              </div>
-            ),
+            children: maintenanceTicketsPane,
           },
 
           // TAB 2: BLOCKS
@@ -1545,154 +1725,7 @@ export const MaintenancePage: React.FC = () => {
                 <LockOutlined /> Lệnh khóa phòng bảo trì ({blockList.length})
               </span>
             ),
-            children: (
-              <div>
-                {/* KPI Cards */}
-                <Row
-                  gutter={[16, 16]}
-                  className="pms-kpi-row"
-                  style={{ marginBottom: 20 }}
-                >
-                  <Col xs={24} sm={8}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#fff2f0",
-                        border: "1px solid #ffccc7",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đang khóa kỹ thuật (ACTIVE)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#cf1322" }}
-                      >
-                        {activeBlocks}
-                      </Title>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#fffbe6",
-                        border: "1px solid #ffe58f",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đã lên lịch tương lai (SCHEDULED)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#d48806" }}
-                      >
-                        {scheduledBlocks}
-                      </Title>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Card
-                      variant="borderless"
-                      className="pms-kpi-card"
-                      style={{
-                        height: "100%",
-                        background: "#f6ffed",
-                        border: "1px solid #b7eb8f",
-                        borderRadius: 8,
-                      }}
-                      styles={{
-                        body: {
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                        },
-                      }}
-                    >
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        Đã mở khóa an toàn (RELEASED)
-                      </Text>
-                      <Title
-                        level={2}
-                        style={{ margin: "8px 0 0", color: "#389e0d" }}
-                      >
-                        {releasedBlocks}
-                      </Title>
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Filter Toolbar */}
-                <Card style={{ marginBottom: 16, borderRadius: 8 }}>
-                  <Row gutter={[12, 12]} align="middle">
-                    <Col xs={24} sm={12}>
-                      <Select
-                        placeholder="Lọc theo trạng thái lệnh khóa..."
-                        style={{ width: "100%" }}
-                        allowClear
-                        value={blockStatusFilter}
-                        onChange={(v: any) =>
-                          setBlockStatusFilter(
-                            !v || v === "ALL" ? undefined : v,
-                          )
-                        }
-                        options={[
-                          { value: "ALL", label: "Tất cả lệnh khóa" },
-                          {
-                            value: "ACTIVE",
-                            label: "🔴 Đang khóa kỹ thuật (ACTIVE)",
-                          },
-                          {
-                            value: "SCHEDULED",
-                            label: "🟠 Đã lên lịch tương lai (SCHEDULED)",
-                          },
-                          {
-                            value: "RELEASED",
-                            label: "🟢 Đã mở khóa an toàn (RELEASED)",
-                          },
-                          { value: "CANCELLED", label: "⚪ Đã hủy" },
-                        ]}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* Table */}
-                <Card style={{ borderRadius: 8 }}>
-                  <Table
-                    columns={blockColumns}
-                    dataSource={blockList}
-                    rowKey="id"
-                    loading={isBlocksLoading}
-                    scroll={{ x: 1080 }}
-                    pagination={{ pageSize: 10, showSizeChanger: true }}
-                  />
-                </Card>
-              </div>
-            ),
+            children: maintenanceBlocksPane,
           },
         ]}
       />

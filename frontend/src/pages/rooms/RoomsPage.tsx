@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -35,6 +35,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { roomsApi, roomTypesApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
+import { useIdlePreload } from '../../hooks/useIdlePreload.ts';
 import type {
   RoomItem,
   RoomTypeItem,
@@ -468,6 +469,76 @@ const RoomStatusModal: React.FC<RoomStatusModalProps> = React.memo(
   )
 );
 
+interface RoomModalsProps {
+  open: boolean;
+  editingRoom: RoomItem | null;
+  roomTypes: RoomTypeItem[];
+  screensXs: boolean;
+  form: FormInstance;
+  submitting: boolean;
+  onSubmit: (values: any) => void;
+  onCancel: () => void;
+  statusOpen: boolean;
+  statusTargetRoom: RoomItem | null;
+  statusForm: FormInstance;
+  statusSubmitting: boolean;
+  onQuickStatusSubmit: (values: any) => void;
+  onStatusCancel: () => void;
+}
+
+/**
+ * Owns the deferred (idle) mounting of the two room modals. Keeping the
+ * preload flags inside this component means the timer that mounts the hidden
+ * forms never re-renders the page body (grid/table/filters).
+ */
+const RoomModals: React.FC<RoomModalsProps> = React.memo(
+  ({
+    open,
+    editingRoom,
+    roomTypes,
+    screensXs,
+    form,
+    submitting,
+    onSubmit,
+    onCancel,
+    statusOpen,
+    statusTargetRoom,
+    statusForm,
+    statusSubmitting,
+    onQuickStatusSubmit,
+    onStatusCancel,
+  }) => {
+    const preloadForm = useIdlePreload(900);
+    const preloadStatus = useIdlePreload(1800);
+
+    return (
+      <>
+        <RoomFormModal
+          open={open}
+          editingRoom={editingRoom}
+          roomTypes={roomTypes}
+          screensXs={screensXs}
+          form={form}
+          submitting={submitting}
+          forceRender={preloadForm}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+
+        <RoomStatusModal
+          open={statusOpen}
+          statusTargetRoom={statusTargetRoom}
+          form={statusForm}
+          submitting={statusSubmitting}
+          forceRender={preloadStatus}
+          onSubmit={onQuickStatusSubmit}
+          onCancel={onStatusCancel}
+        />
+      </>
+    );
+  }
+);
+
 export const RoomsPage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
@@ -491,22 +562,6 @@ export const RoomsPage: React.FC = () => {
   const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusTargetRoom, setStatusTargetRoom] = useState<RoomItem | null>(null);
-  // Build the hidden modal forms after the first paint so the first click on
-  // "Thêm phòng mới" or a room card does not pay the form-mount cost. The two
-  // forms are mounted on separate timers so one idle render never blocks long
-  // enough to become a long task.
-  const [preloadForm, setPreloadForm] = useState(false);
-  const [preloadStatus, setPreloadStatus] = useState(false);
-
-  useEffect(() => {
-    const formTimer = window.setTimeout(() => setPreloadForm(true), 900);
-    const statusTimer = window.setTimeout(() => setPreloadStatus(true), 1800);
-    return () => {
-      window.clearTimeout(formTimer);
-      window.clearTimeout(statusTimer);
-    };
-  }, []);
-
   // RBAC check: Only ADMIN and MANAGER have write permissions
   const canManage = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
@@ -1000,26 +1055,21 @@ export const RoomsPage: React.FC = () => {
         <RoomTable rooms={rooms} columns={columns} loading={isLoading} />
       )}
 
-      <RoomFormModal
+      <RoomModals
         open={isModalOpen}
         editingRoom={editingRoom}
         roomTypes={roomTypes}
         screensXs={!!screens.xs}
         form={form}
         submitting={createMutation.isPending || updateMutation.isPending}
-        forceRender={preloadForm}
         onSubmit={handleSubmit}
         onCancel={handleCancelRoomForm}
-      />
-
-      <RoomStatusModal
-        open={isStatusModalOpen}
+        statusOpen={isStatusModalOpen}
         statusTargetRoom={statusTargetRoom}
-        form={statusForm}
-        submitting={updateMutation.isPending}
-        forceRender={preloadStatus}
-        onSubmit={handleQuickStatusSubmit}
-        onCancel={handleCancelStatusForm}
+        statusForm={statusForm}
+        statusSubmitting={updateMutation.isPending}
+        onQuickStatusSubmit={handleQuickStatusSubmit}
+        onStatusCancel={handleCancelStatusForm}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -118,26 +118,26 @@ export const InventorySuppliersTab: React.FC = () => {
       appMessage.error(getInventoryErrorMessage(err, 'Không thể ngừng hoạt động nhà cung cấp.'));
     },
   });
+  // Stable handles: the mutation observer object changes identity on every
+  // render, which would invalidate memoized table columns.
+  const { mutate: deactivateSupplier, isPending: deactivateSupplierPending } = deactivateMutation;
 
-  const handleOpenEdit = (sup: SupplierView) => {
+
+  const handleOpenEdit = useCallback((sup: SupplierView) => {
     setEditingSupplier(sup);
+    editForm.setFieldsValue({
+    code: sup.code,
+    name: sup.name,
+    contactPerson: sup.contactPerson,
+    phone: sup.phone,
+    email: sup.email,
+    address: sup.address,
+    notes: sup.notes,
+    isActive: sup.isActive,
+    });
     setIsEditModalOpen(true);
-  };
+  }, [editForm]);
 
-  useEffect(() => {
-    if (isEditModalOpen && editingSupplier) {
-      editForm.setFieldsValue({
-        code: editingSupplier.code,
-        name: editingSupplier.name,
-        contactPerson: editingSupplier.contactPerson,
-        phone: editingSupplier.phone,
-        email: editingSupplier.email,
-        address: editingSupplier.address,
-        notes: editingSupplier.notes,
-        isActive: editingSupplier.isActive,
-      });
-    }
-  }, [isEditModalOpen, editingSupplier, editForm]);
 
   const handleCreateSubmit = async () => {
     try {
@@ -178,7 +178,7 @@ export const InventorySuppliersTab: React.FC = () => {
     }
   };
 
-  const columns: ColumnsType<SupplierView> = [
+  const columns = useMemo<ColumnsType<SupplierView>>(() => [
     {
       title: 'Mã NCC',
       dataIndex: 'code',
@@ -284,10 +284,10 @@ export const InventorySuppliersTab: React.FC = () => {
                 <Popconfirm
                   title="Ngừng hoạt động nhà cung cấp?"
                   description="Nhà cung cấp này sẽ không thể chọn khi lập phiếu nhập kho mới."
-                  onConfirm={() => deactivateMutation.mutate(record.id)}
+                  onConfirm={() => deactivateSupplier(record.id)}
                   okText="Ngừng hoạt động"
                   cancelText="Hủy"
-                  okButtonProps={{ danger: true, loading: deactivateMutation.isPending }}
+                  okButtonProps={{ danger: true, loading: deactivateSupplierPending }}
                 >
                   <Tooltip title="Ngừng hoạt động">
                     <Button
@@ -306,7 +306,7 @@ export const InventorySuppliersTab: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  ], [canManage, deactivateSupplier, deactivateSupplierPending, handleOpenEdit, screens]);
 
   return (
     <div>

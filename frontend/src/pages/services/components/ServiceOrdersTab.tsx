@@ -129,6 +129,25 @@ const CancelOrderModal: React.FC<CancelOrderModalProps> = React.memo(({
 });
 CancelOrderModal.displayName = 'CancelOrderModal';
 
+const formatVND = (amount: string | number | null | undefined): string => {
+  if (!amount) return '0 ₫';
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
+};
+
+const renderStatusTag = (status: ServiceOrderStatus) => {
+  switch (status) {
+    case 'REQUESTED':
+      return <Tooltip title="Yêu cầu đang chờ nhân viên cung cấp dịch vụ"><Tag color="warning">Chờ cung cấp</Tag></Tooltip>;
+    case 'COMPLETED':
+      return <Tooltip title="Dịch vụ đã hoàn thành"><Tag color="success">Đã hoàn thành</Tag></Tooltip>;
+    case 'CANCELLED':
+      return <Tooltip title="Yêu cầu dịch vụ đã bị hủy"><Tag color="default">Đã hủy</Tag></Tooltip>;
+    default:
+      return <Tag>{status}</Tag>;
+  }
+};
+
 export const ServiceOrdersTab: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const queryClient = useQueryClient();
@@ -281,6 +300,10 @@ export const ServiceOrdersTab: React.FC = () => {
       appMessage.error(getApiErrorMessage(err, 'Không thể hoàn thành dịch vụ.'));
     },
   });
+  // Stable handles: the mutation observer object changes identity on every
+  // render, which would invalidate memoized table columns.
+  const { mutate: completeOrder, isPending: completeOrderPending } = completeMutation;
+
 
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
@@ -296,26 +319,9 @@ export const ServiceOrdersTab: React.FC = () => {
     },
   });
 
-  const formatVND = (amount: string | number | null | undefined): string => {
-    if (!amount) return '0 ₫';
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
-  };
 
-  const renderStatusTag = (status: ServiceOrderStatus) => {
-    switch (status) {
-      case 'REQUESTED':
-        return <Tooltip title="Yêu cầu đang chờ nhân viên cung cấp dịch vụ"><Tag color="warning">Chờ cung cấp</Tag></Tooltip>;
-      case 'COMPLETED':
-        return <Tooltip title="Dịch vụ đã hoàn thành"><Tag color="success">Đã hoàn thành</Tag></Tooltip>;
-      case 'CANCELLED':
-        return <Tooltip title="Yêu cầu dịch vụ đã bị hủy"><Tag color="default">Đã hủy</Tag></Tooltip>;
-      default:
-        return <Tag>{status}</Tag>;
-    }
-  };
 
-  const columns: ColumnsType<ServiceOrderItem> = [
+  const columns = useMemo<ColumnsType<ServiceOrderItem>>(() => [
     {
       title: <span style={{ whiteSpace: 'nowrap' }}>Mã yêu cầu</span>,
       dataIndex: 'id',
@@ -497,8 +503,8 @@ export const ServiceOrdersTab: React.FC = () => {
                       type="primary"
                       icon={<CheckOutlined />}
                       style={{ background: '#1b4d3e', borderColor: '#1b4d3e' }}
-                      loading={completeMutation.isPending}
-                      onClick={() => completeMutation.mutate(record.id)}
+                      loading={completeOrderPending}
+                      onClick={() => completeOrder(record.id)}
                     >
                       Xong
                     </Button>
@@ -522,7 +528,8 @@ export const ServiceOrdersTab: React.FC = () => {
           },
         ]
       : []),
-  ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [canManageOrders, completeOrder, completeOrderPending, formatVND, getStaff, renderStatusTag, reservationsMap, staysMap]);
 
   return (
     <div>
