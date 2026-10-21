@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Input } from 'antd';
 import type { InputProps } from 'antd';
 
@@ -9,12 +9,15 @@ export interface DebouncedSearchInputProps extends Omit<InputProps, 'onChange'> 
 }
 
 /**
- * High-performance search input that isolates local typing state from the parent page.
- * Prevents triggering expensive parent re-renders and redundant API queries on every keystroke.
- * - Typing updates local state immediately (0ms UI latency, cursor preserved).
- * - Debounces callback to parent (default 350ms).
- * - Immediately triggers on Enter keypress or clear button click.
- * - Cancels pending debounce when externally reset to prevent race conditions.
+ * Search input that keeps typing/clearing instant locally while debouncing the
+ * expensive parent update (query + table render).
+ *
+ * - The input value is updated immediately.
+ * - Parent callbacks are debounced, including the clear button, so clearing does
+ *   not synchronously re-render the whole page.
+ * - Enter still applies the current value immediately.
+ * - External value changes (filter reset, programmatic navigation) cancel any
+ *   pending debounce and sync the local input.
  */
 export const DebouncedSearchInput: React.FC<DebouncedSearchInputProps> = React.memo(({
   value: externalValue = '',
@@ -24,63 +27,65 @@ export const DebouncedSearchInput: React.FC<DebouncedSearchInputProps> = React.m
   ...restProps
 }) => {
   const [innerValue, setInnerValue] = useState<string>(externalValue);
-  const [prevExternalValue, setPrevExternalValue] = useState<string>(externalValue);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestCallbackRef = useRef(onChange);
+  // The last value emitted to the parent. Used to distinguish the parent echoing
+  // our own change from an external reset while a newer local edit is pending.
+  const lastEmittedValueRef = useRef<string>(externalValue);
 
-  // Update latest callback ref in an effect (not during render)
   useEffect(() => {
     latestCallbackRef.current = onChange;
-  });
+  }, [onChange]);
 
-  // Keep innerValue in sync if externalValue changes from outside without cascading effect
-  if (externalValue !== prevExternalValue) {
-    setPrevExternalValue(externalValue);
-    setInnerValue(externalValue);
-  }
-
-  // Cancel any pending debounce timer if external value changed
-  useEffect(() => {
-    if (timerRef.current) {
+  const clearPendingTimer = useCallback(() => {
+    if (timerRef.current !== null) {
       clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
-  }, [externalValue]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInnerValue(val);
-
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-
-    // If user cleared the input (empty string), notify immediately
-    if (val === '') {
-      latestCallbackRef.current?.('');
+  // Sync only when the parent value did not originate from this input. This
+  // avoids overwriting newer local typing with the previous debounced value.
+  useEffect(() => {
+    if (externalValue === lastEmittedValueRef.current) {
       return;
     }
 
-    timerRef.current = setTimeout(() => {
-      latestCallbackRef.current?.(val);
-    }, debounceMs);
-  };
+    lastEmittedValueRef.current = externalValue;
+    clearPendingTimer();
+    setInnerValue(externalValue);
+  }, [externalValue, clearPendingTimer]);
 
-  const handlePressEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    latestCallbackRef.current?.(innerValue);
+  useEffect(() => {
+    return () => {
+      clearPendingTimer();
+    };
+  }, [clearPendingTimer]);
+
+  const emitChange = useCallback((value: string) => {
+    lastEmittedValueRef.current = value;
+    latestCallbackRef.current?.(value);
+  }, []);
+
+  const scheduleChange = useCallback((value: string) => {
+    clearPendingTimer();
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      emitChange(value);
+    }, debounceMs);
+  }, [clearPendingTimer, debounceMs, emitChange]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInnerValue(val);
+    scheduleChange(val);
+  }, [scheduleChange]);
+
+  const handlePressEnter = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    clearPendingTimer();
+    emitChange(innerValue);
     onPressEnter?.(e);
-  };
+  }, [clearPendingTimer, emitChange, innerValue, onPressEnter]);
 
   return (
     <Input

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   Card,
   Table,
@@ -16,9 +16,10 @@ import {
   App as AntdApp,
   Empty,
   Skeleton,
+  Spin,
   Grid,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, TablePaginationConfig, TableProps } from 'antd/es/table';
 import {
   TeamOutlined,
   UserAddOutlined,
@@ -33,7 +34,7 @@ import {
   FilterOutlined,
   IdcardOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useQueries, keepPreviousData } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { employeesApi } from '../../api/employees.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
@@ -52,6 +53,47 @@ import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx'
 const { Title, Text, Paragraph } = Typography;
 
 const ALL_ROLES: Role[] = ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN'];
+
+const TABLE_SCROLL = { x: 1200 };
+
+const ELLIPSIS_TEXT_STYLE: React.CSSProperties = {
+  display: 'block',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  minWidth: 0,
+  maxWidth: '100%',
+};
+
+interface EmployeeTableProps {
+  columns: ColumnsType<EmployeeItem>;
+  dataSource: EmployeeItem[];
+  loading: boolean;
+  pagination: TablePaginationConfig;
+  locale: TableProps<EmployeeItem>['locale'];
+  scroll: TableProps<EmployeeItem>['scroll'];
+}
+
+const EmployeeTable = React.memo(({
+  columns,
+  dataSource,
+  loading,
+  pagination,
+  locale,
+  scroll,
+}: EmployeeTableProps) => (
+  <Table<EmployeeItem>
+    columns={columns}
+    dataSource={dataSource}
+    rowKey="id"
+    loading={loading}
+    scroll={scroll}
+    locale={locale}
+    pagination={pagination}
+  />
+));
+
+EmployeeTable.displayName = 'EmployeeTable';
 
 export const EmployeesPage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
@@ -105,10 +147,14 @@ export const EmployeesPage: React.FC = () => {
         sortBy,
         sortOrder,
       }),
+    // Keep the previous rows visible while the new search/filter request is in
+    // flight. The search input shows the fetching state separately.
+    placeholderData: keepPreviousData,
   });
 
-  const employeeItems = employeesRes?.data?.items || [];
+  const employeeItems = useMemo(() => employeesRes?.data?.items ?? [], [employeesRes]);
   const pagination = employeesRes?.data?.pagination;
+  const paginationTotal = pagination?.total ?? 0;
 
   // Sync loaded employees with global staff directory cache
   React.useEffect(() => {
@@ -160,6 +206,59 @@ export const EmployeesPage: React.FC = () => {
     return counts;
   }, [roleKpiQueries]);
 
+  const handleSearchChange = useCallback((val: string) => {
+    setDebouncedSearch(val.trim());
+    setCurrentPage(1);
+  }, []);
+
+  const handleRoleTagClick = useCallback((role: Role) => {
+    setRoleFilter((current) => (current === role ? undefined : role));
+    setCurrentPage(1);
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setDebouncedSearch('');
+    setRoleFilter(undefined);
+    setStatusFilter(undefined);
+    setSortBy('fullName');
+    setSortOrder('asc');
+    setCurrentPage(1);
+  }, []);
+
+  const handleTablePageChange = useCallback((page: number, size: number) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const tablePagination = useMemo<TablePaginationConfig>(() => ({
+    current: currentPage,
+    pageSize,
+    total: paginationTotal,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} nhân viên`,
+    onChange: handleTablePageChange,
+  }), [currentPage, pageSize, paginationTotal, handleTablePageChange]);
+
+  const tableLocale = useMemo<TableProps<EmployeeItem>['locale']>(() => ({
+    emptyText: isError ? (
+      <div style={{ padding: '30px 0' }}>
+        <Paragraph type="danger">Có lỗi khi tải danh sách nhân viên từ máy chủ.</Paragraph>
+        <Button onClick={handleRetry} icon={<ReloadOutlined />}>
+          Thử lại
+        </Button>
+      </div>
+    ) : (
+      <Empty description="Không tìm thấy nhân viên nào phù hợp với bộ lọc." style={{ padding: '30px 0' }} />
+    ),
+  }), [isError, handleRetry]);
+
+  const searchPrefix = useMemo(() => <SearchOutlined style={{ color: '#94a3b8' }} />, []);
+
   // Deactivate Mutation
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => employeesApi.deactivate(id),
@@ -208,8 +307,11 @@ export const EmployeesPage: React.FC = () => {
     },
   });
 
+  const { mutate: deactivateEmployee, isPending: isDeactivatePending } = deactivateMutation;
+  const { mutate: activateEmployee, isPending: isActivatePending } = activateMutation;
+
   // Table Columns
-  const columns: ColumnsType<EmployeeItem> = [
+  const columns = useMemo<ColumnsType<EmployeeItem>>(() => [
     {
       title: 'Họ và tên & Username',
       key: 'nameAndUser',
@@ -237,15 +339,18 @@ export const EmployeesPage: React.FC = () => {
             </Avatar>
             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
-                <Text
-                  strong
-                  // Typography.Text của antd chỉ hỗ trợ ellipsis 1 dòng (props `rows` bị bỏ qua),
-                  // nên luôn kèm tooltip để vẫn đọc được họ tên đầy đủ.
-                  ellipsis={{ tooltip: record.fullName }}
-                  style={{ color: '#0f172a', fontSize: 14, minWidth: 0, maxWidth: '100%' }}
+                <span
+                  title={record.fullName}
+                  style={{
+                    ...ELLIPSIS_TEXT_STYLE,
+                    flex: '0 1 auto',
+                    color: '#0f172a',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
                 >
                   {record.fullName}
-                </Text>
+                </span>
                 {isSelf && (
                   <Tag
                     color="cyan"
@@ -255,19 +360,17 @@ export const EmployeesPage: React.FC = () => {
                   </Tag>
                 )}
               </div>
-              <Text
-                type="secondary"
-                ellipsis={{ tooltip: usernameLabel }}
+              <span
+                title={usernameLabel}
                 style={{
-                  display: 'block',
+                  ...ELLIPSIS_TEXT_STYLE,
                   fontSize: 12,
                   fontFamily: 'monospace',
-                  minWidth: 0,
-                  maxWidth: '100%',
+                  color: '#64748b',
                 }}
               >
                 {usernameLabel}
-              </Text>
+              </span>
             </div>
           </div>
         );
@@ -303,16 +406,13 @@ export const EmployeesPage: React.FC = () => {
       width: 220,
       render: (email: string | null) =>
         email ? (
-          <Text
-            ellipsis={{ tooltip: email }}
-            style={{ display: 'block', fontSize: 13, color: '#334155', maxWidth: '100%' }}
-          >
+          <span title={email} style={{ ...ELLIPSIS_TEXT_STYLE, fontSize: 13, color: '#334155' }}>
             {email}
-          </Text>
+          </span>
         ) : (
-          <Text type="secondary" italic style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
             Chưa có email
-          </Text>
+          </span>
         ),
     },
     {
@@ -337,9 +437,9 @@ export const EmployeesPage: React.FC = () => {
       key: 'createdAt',
       width: 160,
       render: (createdAt: string) => (
-        <Text style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
           {dayjs(createdAt).format('DD/MM/YYYY HH:mm')}
-        </Text>
+        </span>
       ),
     },
     {
@@ -370,7 +470,7 @@ export const EmployeesPage: React.FC = () => {
         const canActivate = isAdminOrManager && !record.isActive && !isSelf && canManage;
 
         return (
-          <Space size={4}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {/* 1. Edit Employee */}
             <Tooltip
               title={
@@ -382,6 +482,7 @@ export const EmployeesPage: React.FC = () => {
               <Button
                 type="text"
                 size="small"
+                aria-label={canEdit ? 'Chỉnh sửa nhân viên' : 'Không có quyền chỉnh sửa nhân viên'}
                 icon={<EditOutlined style={{ color: canEdit ? '#1b4d3e' : '#cbd5e1' }} />}
                 disabled={!canEdit}
                 onClick={() => setEditingEmployee(record)}
@@ -399,6 +500,7 @@ export const EmployeesPage: React.FC = () => {
               <Button
                 type="text"
                 size="small"
+                aria-label={canResetPassword ? 'Đặt lại mật khẩu' : 'Không có quyền đặt lại mật khẩu'}
                 icon={<KeyOutlined style={{ color: canResetPassword ? '#d97706' : '#cbd5e1' }} />}
                 disabled={!canResetPassword}
                 onClick={() => setResetPasswordEmployee(record)}
@@ -427,15 +529,16 @@ export const EmployeesPage: React.FC = () => {
                         </Paragraph>
                       </div>
                     }
-                    onConfirm={() => deactivateMutation.mutate(record.id)}
+                    onConfirm={() => deactivateEmployee(record.id)}
                     okText="Xác nhận khóa"
                     cancelText="Hủy"
-                    okButtonProps={{ danger: true, loading: deactivateMutation.isPending }}
+                    okButtonProps={{ danger: true, loading: isDeactivatePending }}
                   >
                     <Button
                       type="text"
                       danger
                       size="small"
+                      aria-label="Vô hiệu hóa tài khoản"
                       icon={<LockOutlined />}
                     />
                   </Popconfirm>
@@ -444,6 +547,7 @@ export const EmployeesPage: React.FC = () => {
                     type="text"
                     disabled
                     size="small"
+                    aria-label="Không thể vô hiệu hóa tài khoản"
                     icon={<LockOutlined style={{ color: '#cbd5e1' }} />}
                   />
                 )}
@@ -468,14 +572,15 @@ export const EmployeesPage: React.FC = () => {
                         </Paragraph>
                       </div>
                     }
-                    onConfirm={() => activateMutation.mutate(record.id)}
+                    onConfirm={() => activateEmployee(record.id)}
                     okText="Mở lại tài khoản"
                     cancelText="Hủy"
-                    okButtonProps={{ style: { backgroundColor: '#15803d', borderColor: '#15803d' }, loading: activateMutation.isPending }}
+                    okButtonProps={{ style: { backgroundColor: '#15803d', borderColor: '#15803d' }, loading: isActivatePending }}
                   >
                     <Button
                       type="text"
                       size="small"
+                      aria-label="Mở lại tài khoản"
                       icon={<UnlockOutlined style={{ color: '#15803d' }} />}
                     />
                   </Popconfirm>
@@ -484,16 +589,26 @@ export const EmployeesPage: React.FC = () => {
                     type="text"
                     disabled
                     size="small"
+                    aria-label="Không thể mở lại tài khoản"
                     icon={<UnlockOutlined style={{ color: '#cbd5e1' }} />}
                   />
                 )}
               </Tooltip>
             )}
-          </Space>
+          </div>
         );
       },
     },
-  ];
+  ], [
+    user?.id,
+    user?.role,
+    screens.xs,
+    isAdminOrManager,
+    isDeactivatePending,
+    isActivatePending,
+    deactivateEmployee,
+    activateEmployee,
+  ]);
 
   return (
     <div style={{ padding: '4px 0' }}>
@@ -637,10 +752,7 @@ export const EmployeesPage: React.FC = () => {
                     cursor: 'pointer',
                     opacity: roleFilter && roleFilter !== role ? 0.4 : 1,
                   }}
-                  onClick={() => {
-                    setRoleFilter(roleFilter === role ? undefined : role);
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => handleRoleTagClick(role)}
                 >
                   <strong>{meta.label}:</strong> {count}
                 </Tag>
@@ -656,13 +768,12 @@ export const EmployeesPage: React.FC = () => {
           <Col xs={24} sm={12} md={7}>
             <DebouncedSearchInput
               placeholder="Tìm theo họ tên, username hoặc email..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              prefix={searchPrefix}
+              suffix={isFetching ? <Spin size="small" /> : undefined}
+              aria-busy={isFetching}
               value={debouncedSearch}
               allowClear
-              onChange={(val) => {
-                setDebouncedSearch(val.trim());
-                setCurrentPage(1);
-              }}
+              onChange={handleSearchChange}
             />
           </Col>
 
@@ -725,17 +836,7 @@ export const EmployeesPage: React.FC = () => {
           </Col>
 
           <Col xs={8} sm={4} md={3} style={{ textAlign: 'right' }}>
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => {
-                setDebouncedSearch('');
-                setRoleFilter(undefined);
-                setStatusFilter(undefined);
-                setSortBy('fullName');
-                setSortOrder('asc');
-                setCurrentPage(1);
-              }}
-            >
+            <Button icon={<FilterOutlined />} onClick={handleResetFilters}>
               Đặt lại
             </Button>
           </Col>
@@ -744,36 +845,13 @@ export const EmployeesPage: React.FC = () => {
 
       {/* Main Table */}
       <Card styles={{ body: { padding: 0 } }} style={{ borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <Table<EmployeeItem>
+        <EmployeeTable
           columns={columns}
           dataSource={employeeItems}
-          rowKey="id"
           loading={isLoading}
-          scroll={{ x: 1200 }}
-          locale={{
-            emptyText: isError ? (
-              <div style={{ padding: '30px 0' }}>
-                <Paragraph type="danger">Có lỗi khi tải danh sách nhân viên từ máy chủ.</Paragraph>
-                <Button onClick={() => refetch()} icon={<ReloadOutlined />}>
-                  Thử lại
-                </Button>
-              </div>
-            ) : (
-              <Empty description="Không tìm thấy nhân viên nào phù hợp với bộ lọc." style={{ padding: '30px 0' }} />
-            ),
-          }}
-          pagination={{
-            current: currentPage,
-            pageSize,
-            total: pagination?.total ?? 0,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} nhân viên`,
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-          }}
+          scroll={TABLE_SCROLL}
+          locale={tableLocale}
+          pagination={tablePagination}
         />
       </Card>
 
