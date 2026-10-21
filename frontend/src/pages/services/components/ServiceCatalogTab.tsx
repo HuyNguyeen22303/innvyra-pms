@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -38,7 +38,44 @@ import type {
   UpdateServiceDto,
 } from '../../../types/billing.types.ts';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
+
+const formatVND = (amount: string | number | null | undefined): string => {
+  if (!amount) return '0 ₫';
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
+};
+
+interface ServiceCatalogTableProps {
+  columns: ColumnsType<ServiceItem>;
+  data: ServiceItem[];
+  loading: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number, pageSize: number) => void;
+}
+
+const ServiceCatalogTable: React.FC<ServiceCatalogTableProps> = React.memo(
+  ({ columns, data, loading, page, pageSize, total, onPageChange }) => (
+    <Table
+      columns={columns}
+      dataSource={data}
+      rowKey="id"
+      loading={loading}
+      scroll={{ x: 1080 }}
+      pagination={{
+        current: page,
+        pageSize,
+        total,
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50'],
+        onChange: onPageChange,
+        showTotal: (tot) => `Tổng cộng ${tot} dịch vụ`,
+      }}
+    />
+  )
+);
 
 export const ServiceCatalogTab: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
@@ -57,22 +94,23 @@ export const ServiceCatalogTab: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+  // Mount the hidden modal forms after the first paint so the first click on
+  // "Thêm dịch vụ mới" / "Sửa" does not have to build the whole form tree. The
+  // two forms use separate timers to keep each idle mount below a long task.
+  const [preloadCreate, setPreloadCreate] = useState<boolean>(false);
+  const [preloadEdit, setPreloadEdit] = useState<boolean>(false);
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
 
   useEffect(() => {
-    if (isEditModalOpen && editingService) {
-      editForm.setFieldsValue({
-        code: editingService.code,
-        name: editingService.name,
-        unit: editingService.unit,
-        price: parseFloat(editingService.price),
-        description: editingService.description,
-        isActive: editingService.isActive,
-      });
-    }
-  }, [isEditModalOpen, editingService, editForm]);
+    const createTimer = window.setTimeout(() => setPreloadCreate(true), 900);
+    const editTimer = window.setTimeout(() => setPreloadEdit(true), 1800);
+    return () => {
+      window.clearTimeout(createTimer);
+      window.clearTimeout(editTimer);
+    };
+  }, []);
 
   // Query Services
   const {
@@ -92,7 +130,10 @@ export const ServiceCatalogTab: React.FC = () => {
       }),
   });
 
-  const serviceList: ServiceItem[] = servicesRes?.data?.items || [];
+  const serviceList: ServiceItem[] = useMemo(
+    () => servicesRes?.data?.items || [],
+    [servicesRes]
+  );
   const total = servicesRes?.data?.pagination?.total || 0;
 
   // Mutations
@@ -139,13 +180,25 @@ export const ServiceCatalogTab: React.FC = () => {
     },
   });
 
-  const formatVND = (amount: string | number | null | undefined): string => {
-    if (!amount) return '0 ₫';
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
-  };
+  const { mutate: deactivateService } = deactivateMutation;
 
-  const columns: ColumnsType<ServiceItem> = [
+  const handleOpenEdit = useCallback(
+    (record: ServiceItem) => {
+      editForm.setFieldsValue({
+        code: record.code,
+        name: record.name,
+        unit: record.unit,
+        price: parseFloat(record.price),
+        description: record.description,
+        isActive: record.isActive,
+      });
+      setEditingService(record);
+      setIsEditModalOpen(true);
+    },
+    [editForm]
+  );
+
+  const columns = useMemo<ColumnsType<ServiceItem>>(() => [
     {
       title: 'Mã dịch vụ',
       dataIndex: 'code',
@@ -166,13 +219,18 @@ export const ServiceCatalogTab: React.FC = () => {
         <div style={{ whiteSpace: 'nowrap' }}>
           <Text strong style={{ fontSize: 14 }}>{name}</Text>
           {record.description && (
-            <Paragraph
-              ellipsis={{ rows: 1 }}
-              type="secondary"
-              style={{ fontSize: 12, margin: 0 }}
+            <div
+              style={{
+                fontSize: 12,
+                color: 'rgba(0, 0, 0, 0.45)',
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
             >
               {record.description}
-            </Paragraph>
+            </div>
           )}
         </div>
       ),
@@ -229,10 +287,7 @@ export const ServiceCatalogTab: React.FC = () => {
                 <Button
                   size="small"
                   icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditingService(record);
-                    setIsEditModalOpen(true);
-                  }}
+                  onClick={() => handleOpenEdit(record)}
                 >
                   Sửa
                 </Button>
@@ -240,7 +295,7 @@ export const ServiceCatalogTab: React.FC = () => {
                   <Popconfirm
                     title="Ngưng kích hoạt dịch vụ này?"
                     description="Dịch vụ bị ngưng sẽ không thể chọn khi tạo order mới."
-                    onConfirm={() => deactivateMutation.mutate(record.id)}
+                    onConfirm={() => deactivateService(record.id)}
                     okText="Đồng ý ngưng"
                     cancelText="Hủy"
                   >
@@ -252,7 +307,12 @@ export const ServiceCatalogTab: React.FC = () => {
           },
         ]
       : []),
-  ];
+  ], [canManageCatalog, screens.xs, deactivateService, handleOpenEdit]);
+
+  const handlePageChange = useCallback((nextPage: number, nextPageSize: number) => {
+    setPage(nextPage);
+    setPageSize(nextPageSize);
+  }, []);
 
   return (
     <div>
@@ -296,10 +356,7 @@ export const ServiceCatalogTab: React.FC = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 style={{ background: '#1b4d3e', borderColor: '#1b4d3e' }}
-                onClick={() => {
-                  createForm.resetFields();
-                  setIsCreateModalOpen(true);
-                }}
+                onClick={() => setIsCreateModalOpen(true)}
               >
                 Thêm dịch vụ mới
               </Button>
@@ -309,27 +366,18 @@ export const ServiceCatalogTab: React.FC = () => {
       </Card>
 
       {/* Services Table */}
-      <Table
+      <ServiceCatalogTable
         columns={columns}
-        dataSource={serviceList}
-        rowKey="id"
+        data={serviceList}
         loading={isLoading}
-        scroll={{ x: 1080 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-          showTotal: (tot) => `Tổng cộng ${tot} dịch vụ`,
-        }}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={handlePageChange}
       />
 
       {/* CREATE SERVICE MODAL */}
+      {(preloadCreate || isCreateModalOpen) && (
       <Modal
         title={
           <Space>
@@ -346,6 +394,7 @@ export const ServiceCatalogTab: React.FC = () => {
         okText="Tạo dịch vụ"
         cancelText="Hủy"
         confirmLoading={createMutation.isPending}
+        forceRender={preloadCreate}
       >
         <Form
           form={createForm}
@@ -426,8 +475,10 @@ export const ServiceCatalogTab: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+      )}
 
       {/* EDIT SERVICE MODAL */}
+      {(preloadEdit || isEditModalOpen) && (
       <Modal
         title={
           <Space>
@@ -445,6 +496,7 @@ export const ServiceCatalogTab: React.FC = () => {
         okText="Lưu thay đổi"
         cancelText="Hủy"
         confirmLoading={updateMutation.isPending}
+        forceRender={preloadEdit}
       >
         <Form
           form={editForm}
@@ -520,6 +572,7 @@ export const ServiceCatalogTab: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+      )}
     </div>
   );
 };

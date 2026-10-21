@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -170,6 +170,45 @@ import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
+interface ReservationsTableProps {
+  columns: ColumnsType<ReservationSummaryItem>;
+  data: ReservationSummaryItem[];
+  loading: boolean;
+  canWrite: boolean;
+}
+
+const ReservationsTable: React.FC<ReservationsTableProps> = React.memo(
+  ({ columns, data, loading, canWrite }) => (
+    <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          pageSize: 15,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '15', '30', '50'],
+          showTotal: (total) => `Tổng cộng ${total} đơn đặt phòng`,
+        }}
+        locale={{
+          emptyText: (
+            <Empty
+              description={
+                <span>
+                  Chưa có đơn đặt phòng nào phù hợp điều kiện lọc.
+                  {canWrite && ' Bạn có thể bấm "Tạo Đặt phòng Mới" để bắt đầu.'}
+                </span>
+              }
+            />
+          ),
+        }}
+        scroll={{ x: 1350 }}
+      />
+    </Card>
+  )
+);
+
 // Helper: Format Currency to VND
 const formatCurrency = (amount: string | number): string => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -303,10 +342,10 @@ export const ReservationsPage: React.FC = () => {
   });
 
   // Handle Cancel Click
-  const handleOpenCancelModal = (record: ReservationSummaryItem) => {
+  const handleOpenCancelModal = useCallback((record: ReservationSummaryItem) => {
     setCancellingReservation(record);
     setCancelModalVisible(true);
-  };
+  }, []);
 
   const handleConfirmCancel = (reason: string) => {
     if (!cancellingReservation) return;
@@ -518,7 +557,7 @@ export const ReservationsPage: React.FC = () => {
   // ----------------------------------------------------
   // TABLE COLUMNS CONFIG
   // ----------------------------------------------------
-  const columns: ColumnsType<ReservationSummaryItem> = [
+  const columns = useMemo<ColumnsType<ReservationSummaryItem>>(() => [
     {
       title: 'Mã đặt phòng',
       dataIndex: 'confirmationCode',
@@ -673,7 +712,7 @@ export const ReservationsPage: React.FC = () => {
         );
       },
     },
-  ];
+  ], [canWrite, screens.xs, navigate, handleOpenCancelModal]);
 
   return (
     <div style={{ padding: '0 0 24px 0' }}>
@@ -919,33 +958,12 @@ export const ReservationsPage: React.FC = () => {
                 )}
 
                 {/* Reservations Table */}
-                <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
-                  <Table
-                    columns={columns}
-                    dataSource={reservations}
-                    rowKey="id"
-                    loading={isLoadingReservations}
-                    pagination={{
-                      pageSize: 15,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '15', '30', '50'],
-                      showTotal: (total) => `Tổng cộng ${total} đơn đặt phòng`,
-                    }}
-                    locale={{
-                      emptyText: (
-                        <Empty
-                          description={
-                            <span>
-                              Chưa có đơn đặt phòng nào phù hợp điều kiện lọc.
-                              {canWrite && ' Bạn có thể bấm "Tạo Đặt phòng Mới" để bắt đầu.'}
-                            </span>
-                          }
-                        />
-                      ),
-                    }}
-                    scroll={{ x: 1350 }}
-                  />
-                </Card>
+                <ReservationsTable
+                  columns={columns}
+                  data={reservations}
+                  loading={isLoadingReservations}
+                  canWrite={canWrite}
+                />
               </>
             ),
           },

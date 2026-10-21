@@ -11,6 +11,11 @@ import { ServiceCatalogTab } from "./components/ServiceCatalogTab.tsx";
 
 const { Title, Text } = Typography;
 
+// Tabs keep previously visited panes mounted. Memoizing them prevents a tab
+// switch from re-rendering the other tab's table and modal tree.
+const MemoizedServiceOrdersTab = React.memo(ServiceOrdersTab);
+const MemoizedServiceCatalogTab = React.memo(ServiceCatalogTab);
+
 export const ServicesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "orders";
@@ -52,7 +57,7 @@ export const ServicesPage: React.FC = () => {
                 <span>Yêu cầu Dịch vụ (Service Orders)</span>
               </Space>
             ),
-            children: <ServiceOrdersTab />,
+            children: <MemoizedServiceOrdersTab />,
           },
           {
             key: "catalog",
@@ -62,7 +67,7 @@ export const ServicesPage: React.FC = () => {
                 <span>Danh mục Dịch vụ (Catalog)</span>
               </Space>
             ),
-            children: <ServiceCatalogTab />,
+            children: <MemoizedServiceCatalogTab />,
           },
         ]}
       />
