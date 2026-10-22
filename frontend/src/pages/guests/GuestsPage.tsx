@@ -55,6 +55,52 @@ import type {
 
 const { Title, Text, Paragraph } = Typography;
 
+// The guest API caps a page at 100 rows and only searches full names on the
+// server, so the directory is loaded page by page once and then searched /
+// filtered in memory. This keeps the KPI counters stable while typing and
+// makes phone / email search work without changing the Backend.
+const GUEST_PAGE_LIMIT = 100;
+const MAX_GUEST_PAGES = 100;
+
+const normalizeSearchText = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+
+const digitsOnly = (value: string): string => value.replace(/\D/g, '');
+
+const isDomesticGuest = (guest: GuestSummary): boolean => {
+  const nationality = (guest.nationality || '').trim().toLowerCase();
+  return !nationality || nationality === 'việt nam' || nationality === 'vietnam';
+};
+
+async function fetchAllGuests(): Promise<GuestSummary[]> {
+  const firstRes = await guestsApi.getAll({ page: 1, limit: GUEST_PAGE_LIMIT });
+  const firstPage = firstRes.data;
+  if (!firstPage) return [];
+
+  const totalPages = Math.max(
+    1,
+    Math.min(firstPage.pagination?.totalPages || 1, MAX_GUEST_PAGES)
+  );
+  if (totalPages === 1) return firstPage.items || [];
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      guestsApi.getAll({ page: index + 2, limit: GUEST_PAGE_LIMIT })
+    )
+  );
+
+  return [
+    ...(firstPage.items || []),
+    ...remainingPages.flatMap((res) => res.data?.items || []),
+  ];
+}
+
 export const GuestsPage: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
@@ -83,48 +129,72 @@ export const GuestsPage: React.FC = () => {
   const canDelete = user?.role === 'ADMIN' || user?.role === 'MANAGER';
   const isAccountant = user?.role === 'ACCOUNTANT';
 
-  // Fetch Guest List
+  // Fetch the whole guest directory once (all pages), then search/filter locally.
+  // Server-side search only matches full names, so filtering locally is also
+  // what makes phone/email search work.
   const {
-    data: guestsRes,
+    data: allGuestsData,
     isLoading,
+    isFetching,
     refetch,
   } = useQuery({
-    queryKey: ['guests', searchKeyword, sortBy],
-    queryFn: () =>
-      guestsApi.getAll({
-        search: searchKeyword.trim() || undefined,
-        sortBy,
-        sortOrder: 'asc',
-      }),
-    // Keep the current rows while the new search is in flight: without this the
-    // grid blanks out, shows the loading mask, then remounts every row — a long
-    // main-thread task that swallows the keystrokes of a held Backspace.
+    queryKey: ['guests', 'directory'],
+    queryFn: fetchAllGuests,
+    // Keep the current rows while a manual refresh is in flight instead of
+    // blanking the table.
     placeholderData: keepPreviousData,
   });
 
-  const rawData = guestsRes?.data;
-  const rawGuests: GuestSummary[] = useMemo(() => {
-    if (Array.isArray(rawData)) return rawData;
-    if (Array.isArray((rawData as any)?.items)) return (rawData as any).items;
-    return [];
-  }, [rawData]);
+  const allGuests = useMemo<GuestSummary[]>(() => allGuestsData || [], [allGuestsData]);
+
+  // KPI counters always describe the whole directory, never the filtered view.
+  const stats = useMemo(() => {
+    let domestic = 0;
+    for (const guest of allGuests) {
+      if (isDomesticGuest(guest)) domestic += 1;
+    }
+    return {
+      total: allGuests.length,
+      domestic,
+      international: allGuests.length - domestic,
+    };
+  }, [allGuests]);
 
   const guests: GuestSummary[] = useMemo(() => {
-    if (!selectedNationality || selectedNationality === 'ALL') {
-      return rawGuests;
+    const keyword = normalizeSearchText(searchKeyword);
+    const keywordDigits = digitsOnly(searchKeyword);
+
+    let result = allGuests;
+
+    if (keyword) {
+      result = result.filter((guest) => {
+        const name = normalizeSearchText(guest.fullName || '');
+        if (name.includes(keyword)) return true;
+
+        const email = normalizeSearchText(guest.email || '');
+        if (email.includes(keyword)) return true;
+
+        return keywordDigits.length >= 2
+          ? digitsOnly(guest.phone || '').includes(keywordDigits)
+          : false;
+      });
     }
+
     if (selectedNationality === 'VIETNAM') {
-      return rawGuests.filter(
-        (g) => !g.nationality || g.nationality === 'Việt Nam' || g.nationality === 'Vietnam'
-      );
+      result = result.filter(isDomesticGuest);
+    } else if (selectedNationality === 'FOREIGN') {
+      result = result.filter((guest) => !isDomesticGuest(guest));
     }
-    if (selectedNationality === 'FOREIGN') {
-      return rawGuests.filter(
-        (g) => g.nationality && g.nationality !== 'Việt Nam' && g.nationality !== 'Vietnam'
-      );
-    }
-    return rawGuests;
-  }, [rawGuests, selectedNationality]);
+
+    return [...result].sort((a, b) => {
+      if (sortBy === 'createdAt') {
+        const aTime = a.createdAt ? dayjs(a.createdAt).valueOf() : 0;
+        const bTime = b.createdAt ? dayjs(b.createdAt).valueOf() : 0;
+        return bTime - aTime;
+      }
+      return (a.fullName || '').localeCompare(b.fullName || '', 'vi', { sensitivity: 'base' });
+    });
+  }, [allGuests, searchKeyword, selectedNationality, sortBy]);
 
   // Defer the grid payload so a keydown arriving mid-render can interrupt it.
   const deferredGuests = useDeferredValue(guests);
@@ -477,13 +547,6 @@ export const GuestsPage: React.FC = () => {
     },
   ], [canDelete, canWrite, deleteGuest, handleOpenDetail, handleOpenEdit, isAccountant]);
 
-  // Quick stats calculation
-  const totalGuests = rawGuests.length;
-  const domesticCount = rawGuests.filter(
-    (g) => !g.nationality || g.nationality === 'Việt Nam' || g.nationality === 'Vietnam'
-  ).length;
-  const internationalCount = totalGuests - domesticCount;
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Page Header */}
@@ -501,7 +564,7 @@ export const GuestsPage: React.FC = () => {
             <Title level={2} style={{ margin: 0, color: '#0f172a', fontWeight: 700 }}>
               Hồ sơ Khách hàng & Định danh
             </Title>
-            <Tag color="cyan">{totalGuests} hồ sơ</Tag>
+            <Tag color="cyan">{stats.total} hồ sơ</Tag>
           </Space>
           <Paragraph style={{ marginTop: 4, marginBottom: 0, color: '#475569', fontSize: 13 }}>
             Quản lý thông tin định danh lưu trú, số CCCD/Passport mã hóa an toàn chuẩn AES-GCM và liên lạc khách sạn.
@@ -509,7 +572,7 @@ export const GuestsPage: React.FC = () => {
         </div>
 
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading}>
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>
             Làm mới
           </Button>
 
@@ -544,7 +607,7 @@ export const GuestsPage: React.FC = () => {
 
       {/* 3 Metrics Overview Cards */}
       <Row gutter={[16, 16]} className="pms-kpi-row">
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={isAccountant ? 24 : 8}>
           <Card
             variant="outlined"
             className="pms-kpi-card"
@@ -567,13 +630,15 @@ export const GuestsPage: React.FC = () => {
                   Tổng hồ sơ khách
                 </Text>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>
-                  {totalGuests}
+                  {stats.total}
                 </div>
               </div>
             </Space>
           </Card>
         </Col>
 
+        {!isAccountant && (
+          <>
         <Col xs={12} sm={8}>
           <Card
             variant="outlined"
@@ -597,7 +662,7 @@ export const GuestsPage: React.FC = () => {
                   Khách nội địa (Việt Nam)
                 </Text>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>
-                  {domesticCount}
+                  {stats.domestic}
                 </div>
               </div>
             </Space>
@@ -627,12 +692,14 @@ export const GuestsPage: React.FC = () => {
                   Khách quốc tế
                 </Text>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>
-                  {internationalCount}
+                  {stats.international}
                 </div>
               </div>
             </Space>
           </Card>
         </Col>
+          </>
+        )}
       </Row>
 
       {/* Filter & Search Toolbar */}
@@ -645,9 +712,13 @@ export const GuestsPage: React.FC = () => {
         }}
       >
         <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} md={10}>
+          <Col xs={24} md={isAccountant ? 24 : 10}>
             <DebouncedSearchInput
-              placeholder="Tìm theo Tên khách hàng, SĐT, Email..."
+              placeholder={
+                isAccountant
+                  ? 'Tìm theo tên khách hàng...'
+                  : 'Tìm theo Tên khách hàng, SĐT, Email...'
+              }
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               value={searchKeyword}
               onChange={(val) => setSearchKeyword(val)}
@@ -656,6 +727,8 @@ export const GuestsPage: React.FC = () => {
             />
           </Col>
 
+          {!isAccountant && (
+            <>
           <Col xs={12} md={7}>
             <Select
               placeholder="Quốc tịch"
@@ -683,6 +756,8 @@ export const GuestsPage: React.FC = () => {
               ]}
             />
           </Col>
+            </>
+          )}
         </Row>
       </Card>
 
@@ -703,6 +778,12 @@ export const GuestsPage: React.FC = () => {
           pagination={{ pageSize: 10, showSizeChanger: true }}
           size="middle"
           scroll={{ x: 1050 }}
+          locale={{
+            emptyText:
+              searchKeyword.trim() || selectedNationality
+                ? 'Không tìm thấy hồ sơ khách hàng phù hợp.'
+                : 'Chưa có hồ sơ khách hàng nào.',
+          }}
         />
       </Card>
 

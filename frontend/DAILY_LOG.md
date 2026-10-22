@@ -1498,3 +1498,29 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 - Backend full test suite: `453 passed | 252 skipped` (8 file MySQL integration bị skip do không có `TEST_DATABASE_URL`), 0 failed.
 - Ghi nhận tài liệu `backend/RESERVATIONS.md` (dòng mô tả "chưa có workflow NO_SHOW") đã lỗi thời so với API mới; cần cập nhật ở lần chỉnh tài liệu Backend tiếp theo.
 
+### 🐛 Fix màn hình Hồ sơ Khách hàng (branch `bugfix/fe`):
+
+#### 1. Hiện tượng & Nguyên nhân:
+- **Tổng số khách thay đổi khi search**: các thẻ KPI và tag tiêu đề được tính từ `rawGuests` — chính là kết quả đã bị lọc theo `search` gửi lên server. Vì vậy đang tìm "Alex" thì "Tổng hồ sơ khách" tụt còn 1 thay vì tổng thật của khách sạn.
+- **Không tìm được theo SĐT**: API `GET /guests` chỉ hỗ trợ `search` trên `fullName` (`guest.repository.ts`: `fullName: { contains: search }`). Ô tìm kiếm ghi "Tên, SĐT, Email" nhưng SĐT/Email thực tế chưa bao giờ được tìm.
+- Ngoài ra danh sách chỉ tải 100 hồ sơ đầu nên tổng và bộ lọc quốc tịch cũng không đầy đủ khi khách sạn có nhiều hồ sơ.
+
+#### 2. Giải pháp (chỉ Frontend, không sửa Backend/DB):
+- Thêm `fetchAllGuests()` tải toàn bộ hồ sơ theo từng trang (API giới hạn 100/trang) một lần duy nhất, cache bằng React Query.
+- Chuyển tìm kiếm/lọc/sắp xếp sang phía client trên toàn bộ danh sách:
+  - Tên: không phân biệt hoa thường và **không phân biệt dấu tiếng Việt** (`nguyen` khớp `Nguyễn`).
+  - SĐT: so khớp theo chữ số nên `0928901234`, `+7 495 123` đều tìm được dù dữ liệu lưu có dấu cách/`+`.
+  - Email: so khớp chuỗi đã chuẩn hóa.
+- Các thẻ KPI và tag "x hồ sơ" tính từ `allGuests` (toàn bộ danh sách), không phụ thuộc từ khóa hay bộ lọc.
+- Sắp xếp client-side: tên theo `localeCompare('vi')`; "Ngày tạo mới nhất" sắp xếp giảm dần đúng nhãn.
+- Với tài khoản `ACCOUNTANT` (Backend chỉ trả `id` + `fullName`): ẩn 2 thẻ quốc tịch, ẩn bộ lọc quốc tịch và sắp xếp, placeholder chỉ còn tìm theo tên — tránh hiển thị số liệu quốc tịch sai và tránh gợi ý tìm SĐT/Email bị ẩn.
+- Thêm trạng thái rỗng phù hợp ("Không tìm thấy hồ sơ phù hợp" / "Chưa có hồ sơ") và nút Làm mới dùng `isFetching`.
+
+#### 3. Kiểm thử:
+- `npm run build`: pass, 0 lỗi TypeScript; `npm run lint`: 0 warning/error.
+- Kiểm thử trực quan với `receptionist` trên dữ liệu thật (35 hồ sơ):
+  - Trước/sau khi search `Alex`, `0928901234`, `+7 495 123`, `nguyen`: KPI luôn giữ **35 tổng / 23 nội địa / 12 quốc tế**.
+  - `0928901234` và `+7 495 123` trả đúng hồ sơ; `nguyen` trả đúng các khách họ Nguyễn.
+  - Xóa từ khóa trở lại 10 dòng trang đầu; console không có lỗi.
+
+
