@@ -165,6 +165,11 @@ export interface MaintenanceTicketItem {
   history?: OperationsAuditLogItem[];
 }
 
+export interface MaintenanceTicketStatusCount {
+  status: MaintenanceTicketStatus;
+  count: number;
+}
+
 export interface CreateMaintenanceTicketDto {
   roomId: string;
   title: string;

@@ -52,6 +52,16 @@ export class MaintenanceService {
     const { items, total } = await this.repository.tickets(scope, query);
     return pageResult(items, total, query);
   }
+  async stats(scope: OperationsScope, query: TicketQuery) {
+    allowed(scope, operationsReaders);
+    if (
+      scope.role === 'TECHNICIAN' &&
+      query.assignedTo &&
+      BigInt(query.assignedTo) !== scope.actorId
+    )
+      throw new AppError(403, 'FORBIDDEN', 'Only assigned tickets are visible');
+    return this.repository.ticketStats(scope, query);
+  }
   async assign(scope: OperationsScope, id: bigint, staffId: bigint) {
     allowed(scope, managers);
     return this.repository.withHotelLock(scope.hotelId, async (repo) => {

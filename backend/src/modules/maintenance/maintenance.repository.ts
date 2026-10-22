@@ -49,12 +49,15 @@ export class PrismaMaintenanceRepository extends OperationsRepository {
   updateTicket(hotelId: bigint, id: bigint, data: Prisma.MaintenanceTicketUncheckedUpdateInput) {
     return this.db.maintenanceTicket.update({ where: { hotelId, id }, data });
   }
-  async tickets(scope: OperationsScope, query: TicketQuery) {
+  private async ticketWhere(
+    scope: OperationsScope,
+    query: TicketQuery,
+  ): Promise<Prisma.MaintenanceTicketWhereInput> {
     const hotel = await this.db.hotel.findUniqueOrThrow({
       where: { id: scope.hotelId },
       select: { timezone: true },
     });
-    const where: Prisma.MaintenanceTicketWhereInput = {
+    return {
       hotelId: scope.hotelId,
       ...(query.roomId ? { roomId: BigInt(query.roomId) } : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -66,6 +69,7 @@ export class PrismaMaintenanceRepository extends OperationsRepository {
             OR: [
               { title: { contains: query.search } },
               { description: { contains: query.search } },
+              { room: { roomNumber: { contains: query.search } } },
             ],
           }
         : {}),
@@ -80,6 +84,9 @@ export class PrismaMaintenanceRepository extends OperationsRepository {
           }
         : {}),
     };
+  }
+  async tickets(scope: OperationsScope, query: TicketQuery) {
+    const where = await this.ticketWhere(scope, query);
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.maintenanceTicket.findMany({
@@ -94,6 +101,15 @@ export class PrismaMaintenanceRepository extends OperationsRepository {
       { isolationLevel: 'RepeatableRead' },
     );
     return { items, total };
+  }
+  async ticketStats(scope: OperationsScope, query: TicketQuery) {
+    const where = await this.ticketWhere(scope, query);
+    const rows = await this.db.maintenanceTicket.groupBy({
+      by: ['status'],
+      where,
+      _count: { _all: true },
+    });
+    return rows.map((row) => ({ status: row.status, count: row._count._all }));
   }
   async block(
     hotelId: bigint,

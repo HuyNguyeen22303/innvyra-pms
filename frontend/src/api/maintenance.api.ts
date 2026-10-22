@@ -2,6 +2,7 @@ import { apiClient } from './axiosClient.ts';
 import type { ApiResponse, PaginatedResult } from '../types/api.types.ts';
 import type {
   MaintenanceTicketItem,
+  MaintenanceTicketStatusCount,
   MaintenanceBlockItem,
   CreateMaintenanceTicketDto,
   AssignMaintenanceTicketDto,
@@ -36,12 +37,26 @@ export const maintenanceApi = {
   },
 
   /**
+   * Thống kê số phiếu sự cố theo trạng thái, áp dụng cùng bộ lọc/tìm kiếm
+   * với danh sách (GET /maintenance/tickets/stats).
+   */
+  getTicketStats: async (
+    params?: TicketFilterParams
+  ): Promise<ApiResponse<MaintenanceTicketStatusCount[]>> => {
+    const res = await apiClient.get<ApiResponse<MaintenanceTicketStatusCount[]>>(
+      '/maintenance/tickets/stats',
+      { params }
+    );
+    return res.data;
+  },
+
+  /**
    * Lấy TOÀN BỘ phiếu sự cố khớp bộ lọc, không chỉ trang đầu.
    *
    * Backend giới hạn `limit` tối đa 100 mỗi request (ticketQuery -> paginationFields),
    * nên một lần gọi không thể trả hết dữ liệu. Hàm này đi lần lượt các trang cho tới
-   * khi phủ đủ `pagination.total`, để trang Bảo trì lọc theo số phòng ngay trên
-   * client mà không cần thay đổi backend.
+   * khi phủ đủ `pagination.total`, chủ yếu dùng cho dropdown liên kết phiếu khi
+   * tạo lệnh khóa phòng.
    */
   getAllTickets: async (
     params?: TicketFilterParams,

@@ -505,6 +505,16 @@ describe.skipIf(!testUrl)(
       );
       expect(result.body.data.pagination.total).toBe(1);
       expect((await get('/maintenance/tickets', 'TECHNICIAN')).body.data.items).toHaveLength(1);
+      // Room numbers are part of the free-text search, not just title/description.
+      const byRoom = await get('/maintenance/tickets?search=301');
+      expect(byRoom.body.data.pagination.total).toBe(2);
+      const stats = await get('/maintenance/tickets/stats');
+      expect(stats.body.data).toEqual(
+        expect.arrayContaining([
+          { status: 'OPEN', count: 1 },
+          { status: 'ASSIGNED', count: 1 },
+        ]),
+      );
     });
     it('rejects invalid/overlapping blocks but allows adjacent half-open intervals', async () => {
       expect((await post('/maintenance/blocks', blockInput(0, end, today))).status).toBe(422);

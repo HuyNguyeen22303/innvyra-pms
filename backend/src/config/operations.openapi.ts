@@ -132,6 +132,10 @@ export const operationsSchemas = {
   MaintenanceTicketSummary: object(ticketFields),
   MaintenanceTicket: object({ ...ticketFields, history }),
   MaintenanceTicketPage: page('MaintenanceTicketSummary'),
+  MaintenanceTicketStats: {
+    type: 'array',
+    items: object({ status: ticketStatus, count: { type: 'integer', minimum: 0 } }),
+  },
   MaintenanceBlockSummary: object(blockFields),
   MaintenanceBlock: object({ ...blockFields, history }),
   MaintenanceBlockPage: page('MaintenanceBlockSummary'),
@@ -225,8 +229,7 @@ const hkQuery = [
     default: 'createdAt',
   }),
 ];
-const ticketQuery = [
-  ...pagination,
+const ticketFilterQuery = [
   parameter('search', { type: 'string', maxLength: 100 }),
   parameter('status', ticketStatus),
   parameter('priority', ticketPriority),
@@ -234,6 +237,10 @@ const ticketQuery = [
   parameter('assignedTo', id),
   parameter('fromDate', date, 'Inclusive reported date in the hotel timezone'),
   parameter('toDate', date, 'Inclusive reported date in the hotel timezone'),
+];
+const ticketQuery = [
+  ...pagination,
+  ...ticketFilterQuery,
   parameter('sortBy', {
     ...enumeration(['reportedAt', 'priority', 'status']),
     default: 'reportedAt',
@@ -415,6 +422,15 @@ add(
   operationsReaders,
   'MaintenanceTicket',
   'MaintenanceTicketCreate',
+);
+add(
+  'get',
+  '/maintenance/tickets/stats',
+  'Count maintenance tickets by status',
+  operationsReaders,
+  'MaintenanceTicketStats',
+  undefined,
+  ticketFilterQuery,
 );
 add(
   'get',

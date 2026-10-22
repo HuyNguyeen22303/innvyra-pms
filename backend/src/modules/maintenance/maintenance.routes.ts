@@ -24,6 +24,7 @@ export function maintenanceRoutes(
   const { router, add } = operationsRouter(auth, env),
     c = maintenanceController(tickets, blocks);
   add('get', '/tickets', operationsReaders, c.tickets, { query: ticketQuery });
+  add('get', '/tickets/stats', operationsReaders, c.ticketStats, { query: ticketQuery });
   add('get', '/tickets/:id', operationsReaders, c.ticket);
   add('post', '/tickets', operationsReaders, c.createTicket, { body: createTicketBody });
   add('patch', '/tickets/:id/assign', managers, c.assign, { body: assignBody });

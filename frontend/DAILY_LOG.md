@@ -1573,28 +1573,31 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - Bảo trì — Phiếu sự cố: 10 → 20/trang.
   - Bảo trì — Lệnh khóa phòng: 10 → 20/trang.
 
-### 🐛 Tìm kiếm phiếu bảo trì theo số phòng (branch `bugfix/fe`):
+### 🐛 Tìm kiếm phiếu bảo trì theo số phòng + tối ưu phân trang (branch `bugfix/fe`):
 
 #### 1. Hiện tượng & Nguyên nhân:
 - Ô tìm kiếm ở tab "Phiếu sự cố kỹ thuật" chỉ tìm theo tiêu đề/mô tả, gõ số phòng (ví dụ `104`) không ra phiếu của phòng đó.
-- Backend `GET /maintenance/tickets` chỉ OR `title` / `description` cho tham số `search`, không tìm trong số phòng; nếu vẫn gửi `search` thì các phiếu khớp phòng sẽ bị loại ngay từ server.
+- Backend `GET /maintenance/tickets` chỉ OR `title` / `description` cho tham số `search`, không tìm trong số phòng.
 
-#### 2. Giải pháp (chỉ Frontend, không sửa Backend/DB):
-- Thêm `maintenanceApi.getAllTickets()`: tải toàn bộ phiếu theo bộ lọc trạng thái/ưu tiên (đi lần lượt các trang, `limit` tối đa 100) thay vì chỉ 20 phiếu đầu.
-- Bỏ `search` khỏi query server và lọc từ khóa ngay trên client theo:
-  - Tiêu đề sự cố.
-  - Mô tả sự cố.
-  - Số phòng (`ticket.room.roomNumber`), hỗ trợ khớp một phần (gõ `30` ra phòng `307`).
-- Gõ từ khóa không phát sinh request mới; KPI cards, số lượng trên tab và bảng đều cập nhật theo kết quả lọc.
-- Đổi placeholder thành "Tìm theo tiêu đề, mô tả hoặc số phòng...".
+#### 2. Giải pháp (tối ưu phía server, không sửa cấu trúc DB):
+- **Backend**:
+  - Tách `ticketWhere()` dùng chung cho danh sách và thống kê; thêm `{ room: { roomNumber: { contains: query.search } } }` vào `OR` của `search`.
+  - Thêm `GET /maintenance/tickets/stats`: trả số phiếu theo từng trạng thái bằng `groupBy`, hỗ trợ cùng bộ lọc/tìm kiếm với danh sách.
+- **Frontend**:
+  - Bảng phiếu chuyển sang phân trang server-side: state `ticketPage` / `ticketPageSize`; query key gồm `search`, `status`, `priority`, `page`, `limit`; dùng `pagination.total` từ response.
+  - Bỏ lọc client và `useDeferredValue`; reset về trang 1 khi đổi từ khóa/trạng thái/ưu tiên.
+  - KPI cards gọi endpoint `stats` **không kèm bộ lọc** để luôn hiển thị tổng số phiếu toàn khách sạn, không thay đổi khi search; số lượng trên tab lấy `pagination.total`.
+  - Dropdown "Liên kết phiếu sự cố" khi tạo lệnh khóa phòng chỉ tải các phiếu `OPEN` / `ASSIGNED` / `IN_PROGRESS` khi mở modal.
+  - Placeholder đổi thành "Tìm theo tiêu đề, mô tả hoặc số phòng...".
 
 #### 3. Kiểm thử:
-- `npm run build`: pass, 0 lỗi TypeScript; `npm run lint`: 0 warning/error.
+- Backend: `npm run build`, `npm run lint`, `npm test` → 453 passed, 252 skipped (thiếu `TEST_DATABASE_URL`).
+- Frontend: `npm run build` pass, `npm run lint` 0 warning/error.
 - Kiểm thử trực quan với `receptionist` (4 phiếu: phòng 104, 206, 307, 410):
-  - `104` → phiếu #1; `206` → #2; `410` → #4.
-  - `30` → phiếu #3 (phòng 307), chứng minh khớp một phần số phòng.
-  - `điều hòa` → phiếu #2 (tìm theo tiêu đề vẫn hoạt động).
-  - `9999` → bảng trống, tab hiển thị (0), không lỗi.
-  - Xóa từ khóa → trả lại đủ 4 phiếu.
+  - Request danh sách có `page=1&limit=10`; request stats chỉ chạy khi tải trang hoặc sau thao tác làm thay đổi phiếu, không chạy lại khi search.
+  - `104` → phiếu #1; `30` → phiếu #3 (phòng 307); `điều hòa` → phiếu #2.
+  - `206` → phiếu #2, tab `(1)`, nhưng KPI CLOSED vẫn `4` (tổng toàn bộ).
+  - `9999` → bảng trống, tab `(0)`, KPI CLOSED vẫn `4`; xóa từ khóa → đủ 4 phiếu.
+  - Đổi page size 10 → 20: request mới dùng `limit=20&page=1`, stats không gọi lại.
 
 

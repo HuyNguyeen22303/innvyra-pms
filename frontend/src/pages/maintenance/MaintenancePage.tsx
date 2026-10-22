@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   Typography,
@@ -455,6 +455,7 @@ export const MaintenancePage: React.FC = () => {
   const [ticketPriorityFilter, setTicketPriorityFilter] = useState<
     MaintenancePriority | undefined
   >(undefined);
+  const [ticketPage, setTicketPage] = useState<number>(1);
   const [ticketPageSize, setTicketPageSize] = useState<number>(10);
 
   // Filter States for Blocks
@@ -532,26 +533,45 @@ export const MaintenancePage: React.FC = () => {
   // QUERIES
   // ----------------------------------------------------
 
-  // 1. Maintenance Tickets list
+  // 1. Maintenance Tickets list (server-side search + pagination)
+  const trimmedTicketSearch = ticketSearch.trim();
   const {
     data: ticketsRes,
     isLoading: isTicketsLoading,
     refetch: refetchTickets,
   } = useQuery({
-    // Room numbers are not part of the backend ticket `search` (it only looks
-    // at title/description), so the whole filtered list is fetched once and the
-    // keyword is matched against title, description and room number in the
-    // browser. Typing in the search box therefore never issues a request.
-    queryKey: ["maintenance-tickets", ticketStatusFilter, ticketPriorityFilter],
+    // The backend searches title, description and room number, and returns one
+    // page at a time. Typing only refetches after the input debounce.
+    queryKey: [
+      "maintenance-tickets",
+      trimmedTicketSearch,
+      ticketStatusFilter,
+      ticketPriorityFilter,
+      ticketPage,
+      ticketPageSize,
+    ],
     queryFn: () =>
-      maintenanceApi.getAllTickets({
+      maintenanceApi.getTickets({
+        search: trimmedTicketSearch || undefined,
         status: ticketStatusFilter,
         priority: ticketPriorityFilter,
         sortBy: "reportedAt",
+        page: ticketPage,
+        limit: ticketPageSize,
       }),
     staleTime: 10000,
-    // Keep the current rows while a status/priority change is in flight instead
+    // Keep the previous page on screen while the next one is in flight instead
     // of blanking the table and remounting every row.
+    placeholderData: keepPreviousData,
+  });
+
+  // 1b. Hotel-wide ticket counts for the KPI cards. Intentionally not keyed by
+  // the table search/status/priority so KPI totals stay stable while searching.
+  // The ["maintenance-tickets"] prefix is invalidated after ticket mutations.
+  const { data: ticketStatsRes } = useQuery({
+    queryKey: ["maintenance-tickets", "stats"],
+    queryFn: () => maintenanceApi.getTicketStats(),
+    staleTime: 10000,
     placeholderData: keepPreviousData,
   });
 
@@ -612,30 +632,42 @@ export const MaintenancePage: React.FC = () => {
     enabled: !!selectedBlockForDetail?.id && isBlockDrawerOpen,
   });
 
+  const ticketItems = ticketsRes?.data?.items;
   const ticketList: MaintenanceTicketItem[] = useMemo(
-    () => (Array.isArray(ticketsRes) ? ticketsRes : []),
-    [ticketsRes]
+    () => (Array.isArray(ticketItems) ? ticketItems : []),
+    [ticketItems]
   );
+  const ticketTotal = ticketsRes?.data?.pagination?.total ?? 0;
+  const tableTickets = ticketList;
 
-  // The backend ticket `search` only covers title/description, so match the
-  // keyword against the room number here as well (and support partial room
-  // numbers such as "10" matching 101, 102, ...).
-  const normalizedTicketSearch = ticketSearch.trim().toLowerCase();
-  const searchedTickets = useMemo(() => {
-    if (!normalizedTicketSearch) return ticketList;
+  // Status counts are aggregated by the backend over every matching page.
+  const ticketCounts = useMemo(() => {
+    const counts = new Map<MaintenanceTicketStatus, number>();
+    for (const row of ticketStatsRes?.data ?? []) {
+      counts.set(row.status, row.count);
+    }
+    return counts;
+  }, [ticketStatsRes]);
 
-    return ticketList.filter((ticket) => {
-      const haystack = `${ticket.title} ${ticket.description} ${
-        ticket.room?.roomNumber ?? ""
-      }`.toLowerCase();
-      return haystack.includes(normalizedTicketSearch);
-    });
-  }, [ticketList, normalizedTicketSearch]);
-
-  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
-  const deferredTickets = useDeferredValue(searchedTickets);
-  const tableTickets =
-    deferredTickets.length > 0 ? deferredTickets : searchedTickets;
+  // Options for the optional "link a ticket" dropdown when creating a block.
+  // Fetched only while the modal is open; the main ticket table is paginated.
+  const { data: linkableTicketsRes } = useQuery({
+    queryKey: ["maintenance-ticket-options"],
+    queryFn: async () => {
+      // Only tickets that can still be linked to a new maintenance block.
+      const statuses = ["OPEN", "ASSIGNED", "IN_PROGRESS"] as const;
+      const groups = await Promise.all(
+        statuses.map((status) => maintenanceApi.getAllTickets({ status }))
+      );
+      return groups.flat();
+    },
+    enabled: isCreateBlockModalOpen,
+    staleTime: 10000,
+  });
+  const linkableTickets: MaintenanceTicketItem[] = useMemo(
+    () => (Array.isArray(linkableTicketsRes) ? linkableTicketsRes : []),
+    [linkableTicketsRes]
+  );
 
   const rawBlocks = blocksRes?.data;
   const blockList: MaintenanceBlockItem[] = useMemo(
@@ -1258,15 +1290,12 @@ export const MaintenancePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [canManageBlocks, screens, setIsBlockDrawerOpen, setIsCancelBlockModalOpen, setIsReleaseBlockModalOpen, setSelectedBlockForDetail, setActionBlock]);
 
-  // Counts for KPI (follow the same filters/search as the table above)
-  const openTickets = searchedTickets.filter((t) => t.status === "OPEN").length;
-  const inProgressTickets = searchedTickets.filter(
-    (t) => t.status === "IN_PROGRESS" || t.status === "ASSIGNED",
-  ).length;
-  const resolvedTickets = searchedTickets.filter(
-    (t) => t.status === "RESOLVED",
-  ).length;
-  const closedTickets = searchedTickets.filter((t) => t.status === "CLOSED").length;
+  // Counts for KPI (same filters/search as the table, across all pages)
+  const openTickets = ticketCounts.get("OPEN") ?? 0;
+  const inProgressTickets =
+    (ticketCounts.get("ASSIGNED") ?? 0) + (ticketCounts.get("IN_PROGRESS") ?? 0);
+  const resolvedTickets = ticketCounts.get("RESOLVED") ?? 0;
+  const closedTickets = ticketCounts.get("CLOSED") ?? 0;
 
   const activeBlocks = blockList.filter((b) => b.status === "ACTIVE").length;
   const scheduledBlocks = blockList.filter(
@@ -1418,7 +1447,10 @@ export const MaintenancePage: React.FC = () => {
                           placeholder="Tìm theo tiêu đề, mô tả hoặc số phòng..."
                           prefix={<SearchOutlined />}
                           value={ticketSearch}
-                          onChange={(val) => setTicketSearch(val)}
+                          onChange={(val) => {
+                            setTicketSearch(val);
+                            setTicketPage(1);
+                          }}
                           allowClear
                         />
                       </Col>
@@ -1428,11 +1460,12 @@ export const MaintenancePage: React.FC = () => {
                           style={{ width: "100%" }}
                           allowClear
                           value={ticketStatusFilter}
-                          onChange={(v: any) =>
+                          onChange={(v: any) => {
                             setTicketStatusFilter(
                               !v || v === "ALL" ? undefined : v,
-                            )
-                          }
+                            );
+                            setTicketPage(1);
+                          }}
                           options={[
                             { value: "ALL", label: "Tất cả trạng thái phiếu" },
                             { value: "OPEN", label: "🔴 Mới báo cáo (OPEN)" },
@@ -1462,11 +1495,12 @@ export const MaintenancePage: React.FC = () => {
                           style={{ width: "100%" }}
                           allowClear
                           value={ticketPriorityFilter}
-                          onChange={(v: any) =>
+                          onChange={(v: any) => {
                             setTicketPriorityFilter(
                               !v || v === "ALL" ? undefined : v,
-                            )
-                          }
+                            );
+                            setTicketPage(1);
+                          }}
                           options={[
                             { value: "ALL", label: "Tất cả mức độ ưu tiên" },
                             { value: "CRITICAL", label: "🔴 Khẩn cấp" },
@@ -1488,16 +1522,23 @@ export const MaintenancePage: React.FC = () => {
                       loading={isTicketsLoading}
                       scroll={{ x: 1320 }}
                       pagination={{
+                        current: ticketPage,
                         pageSize: ticketPageSize,
+                        total: ticketTotal,
                         showSizeChanger: true,
                         pageSizeOptions: ["10", "20", "50"],
-                        onChange: (_page, size) => setTicketPageSize(size),
+                        showTotal: (total) =>
+                          `Tổng cộng ${total} phiếu sự cố`,
+                        onChange: (page, size) => {
+                          setTicketPage(page);
+                          setTicketPageSize(size);
+                        },
                       }}
                     />
                   </Card>
                 </div>
     ),
-    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, tableTickets, ticketColumns, ticketPageSize, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
+    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPage, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, tableTickets, ticketColumns, ticketPage, ticketPageSize, ticketPriorityFilter, ticketSearch, ticketStatusFilter, ticketTotal]
   );
 
   // Memoized tab pane: the element identity only changes when the values it
@@ -1739,7 +1780,7 @@ export const MaintenancePage: React.FC = () => {
             key: "tickets",
             label: (
               <span>
-                <ToolOutlined /> Phiếu sự cố kỹ thuật ({searchedTickets.length})
+                <ToolOutlined /> Phiếu sự cố kỹ thuật ({ticketTotal})
               </span>
             ),
             children: maintenanceTicketsPane,
@@ -2147,14 +2188,10 @@ export const MaintenancePage: React.FC = () => {
             <Select
               placeholder="Chọn phiếu sự cố liên quan..."
               allowClear
-              options={ticketList
-                .filter((t) =>
-                  ["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(t.status),
-                )
-                .map((t) => ({
-                  value: String(t.id),
-                  label: `Phiếu #${t.id} - Phòng #${t.room.roomNumber}: ${t.title}`,
-                }))}
+              options={linkableTickets.map((t) => ({
+                value: String(t.id),
+                label: `Phiếu #${t.id} - Phòng #${t.room.roomNumber}: ${t.title}`,
+              }))}
             />
           </Form.Item>
 

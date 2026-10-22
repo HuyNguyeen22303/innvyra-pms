@@ -15,6 +15,9 @@ export function maintenanceController(
     tickets: handle<object, TicketQuery>('Tickets retrieved', (s, { query }) =>
       tickets.list(s, query),
     ),
+    ticketStats: handle<object, TicketQuery>('Ticket stats retrieved', (s, { query }) =>
+      tickets.stats(s, query),
+    ),
     ticket: handle('Ticket retrieved', (s, { params }) => tickets.detail(s, BigInt(params.id!))),
     createTicket: handle<CreateTicketInput>(
       'Ticket reported',
