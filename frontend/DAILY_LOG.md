@@ -1462,3 +1462,39 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
 - `npm run build` (`tsc -b && vite build`): **100% biên dịch thành công, 0 lỗi TypeScript** (3.271 modules transformed).
 - `npm run lint` (`oxlint`): **0 warning / 0 error** (82 files, 116 rules).
 - Đã xóa toàn bộ file harness tạm (`visual-check.html`, `visual-check.tsx`) sau khi xác minh; mã nguồn chỉ còn thay đổi duy nhất trong `EmployeesPage.tsx`.
+
+---
+
+## 📅 Ngày: 22/10/2026
+
+### 🎯 Mục tiêu trong ngày:
+- Bổ sung chức năng **đánh dấu khách không đến (No-Show)** vào trang Quản lý Đặt phòng, tận dụng API `POST /api/v1/reservations/:id/no-show` đã có ở Backend.
+- Rà soát luồng hủy đơn hiện tại để bảo đảm No-Show và Hủy đơn có giao diện, thông điệp và audit trail riêng biệt.
+
+### 💻 Công việc kỹ thuật đã hoàn thành:
+
+#### 1. Tầng API & Kiểu dữ liệu:
+- Thêm `reservationsApi.markNoShow(id, { reason })` gọi `POST /reservations/:id/no-show`, dùng chung cấu trúc response `{ id, status }` với API hủy đơn.
+- Thêm `NoShowReservationDto` trong `types/reservations.types.ts` để thể hiện rõ hợp đồng yêu cầu lý do (bắt buộc, tối đa 2000 ký tự theo schema Backend).
+
+#### 2. Giao diện Quản lý Đặt phòng (`pages/reservations/ReservationsPage.tsx`):
+- Thêm nút thao tác **No-Show** (icon `UserDeleteOutlined`, màu cam) trên mỗi dòng đơn `CONFIRMED`; đơn đã check-in/check-out/hủy không hiển thị vì Backend chỉ cho phép `CONFIRMED → NO_SHOW`.
+- Thêm nút **No-Show** trong Drawer chi tiết đơn để nhân viên thao tác ngay khi đang xem thông tin khách.
+- Tạo `NoShowReservationModal` riêng (không dùng lại modal hủy đơn) với:
+  - Cảnh báo đơn chuyển sang `NO_SHOW` chứ không phải `CANCELLED` và toàn bộ đêm phòng được giải phóng, không thể hoàn tác.
+  - Cảnh báo bổ sung khi ngày nhận phòng vẫn ở tương lai (tránh thao tác nhầm).
+  - Ô nhập **lý do khách không đến** bắt buộc; chặn gửi khi để trống.
+- Sau khi thành công: hiển thị thông báo, invalidate danh sách đơn và chi tiết đơn để trạng thái `NO_SHOW` cập nhật ngay.
+- Thêm thẻ KPI **Không đến (NO_SHOW)** và điều chỉnh 6 thẻ KPI chia đều một hàng (`lg={4}`).
+- Cập nhật khối thông tin đóng đơn trong Drawer: đơn `NO_SHOW` hiển thị cảnh báo màu vàng, tiêu đề "Khách không đến (No-Show)", nhãn "Nhân viên ghi nhận" và "Lý do khách không đến" thay vì nội dung hủy đơn.
+
+#### 3. Kiểm thử:
+- `npm run build` (`tsc -b && vite build`): biên dịch thành công, 0 lỗi TypeScript.
+- `npm run lint` (`oxlint`): 0 warning / 0 error.
+- Kiểm thử trực quan trên trình duyệt với tài khoản `receptionist`: nút No-Show chỉ xuất hiện ở đơn `CONFIRMED`, modal hiển thị đúng nội dung, chặn xác nhận khi lý do trống (không phát sinh request) và không có lỗi console.
+
+#### 4. Rà soát dự án:
+- Phát hiện test `backend/tests/guests.http.test.ts` còn hard-code **110 operations** trong OpenAPI, trong khi Backend đã bổ sung `GET /reports/procurement` và `POST /reservations/{id}/no-show` (tổng **112**). Cập nhật lại con số kỳ vọng để bộ test Backend không còn fail oan.
+- Backend full test suite: `453 passed | 252 skipped` (8 file MySQL integration bị skip do không có `TEST_DATABASE_URL`), 0 failed.
+- Ghi nhận tài liệu `backend/RESERVATIONS.md` (dòng mô tả "chưa có workflow NO_SHOW") đã lỗi thời so với API mới; cần cập nhật ở lần chỉnh tài liệu Backend tiếp theo.
+
