@@ -337,7 +337,7 @@ const STATUS_CONFIG: Record<
   PARTIALLY_CHECKED_IN: { text: 'Nhận 1 phần', color: 'cyan', badgeStatus: 'processing' },
   CHECKED_OUT: { text: 'Đã trả phòng', color: 'purple', badgeStatus: 'default' },
   CANCELLED: { text: 'Đã hủy', color: 'error', badgeStatus: 'error' },
-  NO_SHOW: { text: 'Vắng mặt (No-Show)', color: 'warning', badgeStatus: 'warning' },
+  NO_SHOW: { text: 'Vắng mặt', color: 'warning', badgeStatus: 'warning' },
 };
 
 interface ReservationFilterBarProps {

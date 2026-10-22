@@ -556,6 +556,7 @@ export const MaintenancePage: React.FC = () => {
         status: ticketStatusFilter,
         priority: ticketPriorityFilter,
         sortBy: "reportedAt",
+        sortOrder:"desc",
         page: ticketPage,
         limit: ticketPageSize,
       }),
