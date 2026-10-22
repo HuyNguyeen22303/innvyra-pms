@@ -54,7 +54,7 @@ body:
       "code": "string",
       "name": "string",
       "description": "string",
-      "isActive": true
+      "isActive": false
     }
   $type: |-
     {

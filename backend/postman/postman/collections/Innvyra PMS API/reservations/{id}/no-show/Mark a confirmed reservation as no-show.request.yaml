@@ -1,0 +1,76 @@
+$kind: http-request
+description: "Roles: ADMIN, MANAGER, RECEPTIONIST. CONFIRMED -> NO_SHOW only. Repeating no-show returns 200 with original audit information retained. PARTIALLY_CHECKED_IN/CHECKED_IN/CHECKED_OUT/CANCELLED return 409. Inventory is released exactly once in the same transaction — identical to cancel. Nightly snapshots are retained; refund policy belongs to Payments/Billing. No arbitrary status/date/room PATCH endpoint."
+url: "{{baseUrl}}/reservations/:id/no-show"
+method: POST
+headers:
+  - key: X-CSRF-Protection
+    value: "1"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "default": "1",
+            "enum": [
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+  - key: Content-Type
+    value: application/json
+  - key: Accept
+    value: application/json
+pathVariables:
+  - key: id
+    value: "12"
+    disabled: false
+    description: ""
+    $type: |-
+      {
+        "type": "object",
+        "properties": {
+          "value": {
+            "description": "Unsigned BIGINT as decimal string",
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "example": "12"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+body:
+  type: json
+  content: |-
+    {
+      "reason": "Guest did not arrive"
+    }
+  $type: |-
+    {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Mark a confirmed reservation as no-show.resources/examples
+order: 1000

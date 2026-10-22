@@ -1,6 +1,6 @@
 $kind: http-request
 description: ""
-url: "{{baseUrl}}/inventory/receipts?page=1&limit=20&supplierId=1&startDate=1995-05-14&endDate=1995-05-14"
+url: "{{baseUrl}}/inventory/receipts?page=1&limit=20&supplierId=1&startDate=1948-02-03&endDate=1948-02-03"
 method: GET
 headers:
   Accept: application/json
@@ -53,7 +53,7 @@ queryParams:
         }
       }
   - key: startDate
-    value: 1995-05-14
+    value: 1948-02-03
     disabled: false
     description: ""
     $type: |-
@@ -67,7 +67,7 @@ queryParams:
         }
       }
   - key: endDate
-    value: 1995-05-14
+    value: 1948-02-03
     disabled: false
     description: ""
     $type: |-

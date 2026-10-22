@@ -1,7 +1,7 @@
 $kind: http-example
 name: "UNAUTHORIZED: JWT missing, expired, or session revoked."
 request:
-  url: "{{baseUrl}}/reports/dashboard?date=1995-05-14"
+  url: "{{baseUrl}}/reports/dashboard?date=1948-02-03"
   method: GET
   headers:
     - key: Accept
@@ -10,7 +10,7 @@ request:
       value: Bearer <token>
       description: "Added as a part of security scheme: bearer"
   queryParams:
-    date: 1995-05-14
+    date: 1948-02-03
   body:
     type: text
     content: ""

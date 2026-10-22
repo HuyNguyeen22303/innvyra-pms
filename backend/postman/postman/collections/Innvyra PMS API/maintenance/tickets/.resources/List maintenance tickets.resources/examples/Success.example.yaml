@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=CANCELLED&priority=CRITICAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
+  url: "{{baseUrl}}/maintenance/tickets?page=1&limit=20&sortOrder=asc&search=string&status=RESOLVED&priority=CRITICAL&roomId=301&assignedTo=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=reportedAt"
   method: GET
   headers:
     - key: Accept
@@ -26,7 +26,7 @@ request:
       disabled: false
       description: ""
     - key: status
-      value: CANCELLED
+      value: RESOLVED
       disabled: false
       description: ""
     - key: priority
@@ -73,64 +73,64 @@ response:
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1989-07-20T16:41:38.615Z",
-              "updatedAt": "1998-08-31T15:10:28.293Z",
+              "createdAt": "1972-05-17T12:44:00.079Z",
+              "updatedAt": "1968-01-19T11:10:49.389Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 6409,
+                "floorNumber": 8864,
                 "roomTypeId": "301",
                 "physicalStatus": "OUT_OF_SERVICE",
-                "housekeepingStatus": "READY",
+                "housekeepingStatus": "INSPECTION",
                 "isActive": false
               },
               "title": "string",
               "description": "string",
-              "priority": "CRITICAL",
+              "priority": "LOW",
               "status": "CLOSED",
               "reportedBy": "301",
               "assignedTo": "301",
               "resolvedBy": "301",
-              "reportedAt": "2016-04-25T19:20:46.140Z",
-              "startedAt": "2007-05-06T00:51:06.657Z",
-              "resolvedAt": "1966-09-20T09:33:23.148Z",
-              "closedAt": "2014-02-07T05:28:04.742Z",
-              "resolutionNotes": "st"
+              "reportedAt": "1963-02-07T15:43:57.889Z",
+              "startedAt": "1963-09-21T04:41:44.400Z",
+              "resolvedAt": "1984-05-22T16:20:31.509Z",
+              "closedAt": "2000-08-16T09:55:08.123Z",
+              "resolutionNotes": "string"
             },
             {
               "id": "301",
               "hotelId": "301",
               "roomId": "301",
-              "createdAt": "1987-07-09T09:38:19.000Z",
-              "updatedAt": "2009-12-19T00:08:37.234Z",
+              "createdAt": "1970-12-04T17:02:06.266Z",
+              "updatedAt": "1981-11-08T00:13:27.764Z",
               "room": {
                 "id": "301",
                 "roomNumber": "string",
-                "floorNumber": 4199,
+                "floorNumber": 1901,
                 "roomTypeId": "301",
-                "physicalStatus": "OUT_OF_SERVICE",
-                "housekeepingStatus": "CLEANING",
+                "physicalStatus": "ACTIVE",
+                "housekeepingStatus": "DIRTY",
                 "isActive": false
               },
               "title": "string",
               "description": "string",
-              "priority": "HIGH",
+              "priority": "LOW",
               "status": "IN_PROGRESS",
               "reportedBy": "301",
               "assignedTo": "301",
               "resolvedBy": "301",
-              "reportedAt": "1948-04-22T23:53:32.302Z",
-              "startedAt": "2010-06-05T16:51:42.245Z",
-              "resolvedAt": "2025-05-06T13:20:43.523Z",
-              "closedAt": "1953-07-04T22:21:21.550Z",
+              "reportedAt": "1966-04-25T21:51:39.091Z",
+              "startedAt": "1950-10-01T17:16:26.789Z",
+              "resolvedAt": "2026-08-02T03:51:46.650Z",
+              "closedAt": "1960-08-28T08:37:38.556Z",
               "resolutionNotes": "string"
             }
           ],
           "pagination": {
-            "page": 7045,
-            "limit": 93,
-            "total": 7413,
-            "totalPages": 5600
+            "page": 5713,
+            "limit": 4739,
+            "total": 7549,
+            "totalPages": 1621
           }
         }
       }

@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/room-types?page=1&limit=20&search=string&isActive=true&sortOrder=asc&sortBy=name"
+  url: "{{baseUrl}}/room-types?page=1&limit=20&search=string&isActive=false&sortOrder=asc&sortBy=name"
   method: GET
   headers:
     - key: Accept
@@ -22,7 +22,7 @@ request:
       disabled: false
       description: ""
     - key: isActive
-      value: "true"
+      value: "false"
       disabled: false
       description: Literal true or false. Omitted includes active and inactive records.
     - key: sortOrder

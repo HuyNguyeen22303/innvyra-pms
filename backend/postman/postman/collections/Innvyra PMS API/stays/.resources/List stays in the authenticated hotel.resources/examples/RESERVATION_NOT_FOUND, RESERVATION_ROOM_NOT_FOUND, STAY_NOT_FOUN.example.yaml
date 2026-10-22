@@ -1,7 +1,7 @@
 $kind: http-example
 name: RESERVATION_NOT_FOUND, RESERVATION_ROOM_NOT_FOUND, STAY_NOT_FOUND, ROOM_NOT_FOUND; foreign hotel IDs also return 404
 request:
-  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1995-05-14&checkOutDate=1995-05-14&search=strin&sortBy=actualCheckinAt&sortOrder=desc"
+  url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_IN&roomId=301&roomNumber=string&checkInDate=1948-02-03&checkOutDate=1948-02-03&search=string&sortBy=actualCheckinAt&sortOrder=desc"
   method: GET
   headers:
     - key: Accept
@@ -19,7 +19,7 @@ request:
       disabled: false
       description: Page size
     - key: status
-      value: CHECKED_OUT
+      value: CHECKED_IN
       disabled: false
       description: Filter stay status
     - key: roomId
@@ -31,17 +31,17 @@ request:
       disabled: false
       description: Exact current or last room number
     - key: checkInDate
-      value: 1995-05-14
+      value: 1948-02-03
       disabled: false
       description: Actual check-in hotel-local date
     - key: checkOutDate
-      value: 1995-05-14
+      value: 1948-02-03
       disabled: false
       description: Actual checkout hotel-local date
     - key: search
-      value: strin
+      value: string
       disabled: false
-      description: Confirmation code substring
+      description: Confirmation code, guest full name or room number substring
     - key: sortBy
       value: actualCheckinAt
       disabled: false

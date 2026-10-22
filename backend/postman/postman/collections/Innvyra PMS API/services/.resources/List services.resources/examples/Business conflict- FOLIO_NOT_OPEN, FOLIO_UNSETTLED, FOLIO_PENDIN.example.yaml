@@ -1,7 +1,7 @@
 $kind: http-example
 name: "Business conflict: FOLIO_NOT_OPEN, FOLIO_UNSETTLED, FOLIO_PENDING_ACTIVITY, STAYS_NOT_FINISHED, SERVICE_INACTIVE, INVALID_ORDER_STATUS, INSUFFICIENT_OUTSTANDING_BALANCE, REFUND_AMOUNT_EXCEEDED, REFUND_NOT_ALLOWED, IDEMPOTENCY_CONFLICT or FINANCIAL_CONFLICT"
 request:
-  url: "{{baseUrl}}/services?page=1&limit=20&search=string&isActive=true&sortBy=name&sortOrder=asc"
+  url: "{{baseUrl}}/services?page=1&limit=20&search=string&isActive=false&sortBy=name&sortOrder=asc"
   method: GET
   headers:
     - key: Accept
@@ -13,7 +13,7 @@ request:
     page: "1"
     limit: "20"
     search: string
-    isActive: "true"
+    isActive: "false"
     sortBy: name
     sortOrder: asc
   body:

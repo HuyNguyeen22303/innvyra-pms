@@ -1,6 +1,6 @@
 $kind: http-request
 description: ADMIN, MANAGER, RECEPTIONIST and ACCOUNTANT. All statuses by default; status=CHECKED_IN selects active stays. Accountant receives room/date/booking identifiers only. Actual date filters use hotel.timezone (default Asia/Ho_Chi_Minh), not UTC calendar dates. roomId/roomNumber mean current or last room. Stable pagination and sorting.
-url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_OUT&roomId=301&roomNumber=string&checkInDate=1995-05-14&checkOutDate=1995-05-14&search=strin&sortBy=actualCheckinAt&sortOrder=desc"
+url: "{{baseUrl}}/stays?page=1&limit=20&status=CHECKED_IN&roomId=301&roomNumber=string&checkInDate=1948-02-03&checkOutDate=1948-02-03&search=string&sortBy=actualCheckinAt&sortOrder=desc"
 method: GET
 headers:
   Accept: application/json
@@ -38,7 +38,7 @@ queryParams:
         }
       }
   - key: status
-    value: CHECKED_OUT
+    value: CHECKED_IN
     disabled: false
     description: Filter stay status
     $type: |-
@@ -86,7 +86,7 @@ queryParams:
         }
       }
   - key: checkInDate
-    value: 1995-05-14
+    value: 1948-02-03
     disabled: false
     description: Actual check-in hotel-local date
     $type: |-
@@ -100,7 +100,7 @@ queryParams:
         }
       }
   - key: checkOutDate
-    value: 1995-05-14
+    value: 1948-02-03
     disabled: false
     description: Actual checkout hotel-local date
     $type: |-
@@ -114,9 +114,9 @@ queryParams:
         }
       }
   - key: search
-    value: strin
+    value: string
     disabled: false
-    description: Confirmation code substring
+    description: Confirmation code, guest full name or room number substring
     $type: |-
       {
         "type": "object",
@@ -124,7 +124,7 @@ queryParams:
           "value": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 100
           }
         }
       }

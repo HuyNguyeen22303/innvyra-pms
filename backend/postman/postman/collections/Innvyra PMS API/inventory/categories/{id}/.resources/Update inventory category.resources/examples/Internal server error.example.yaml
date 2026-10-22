@@ -23,7 +23,7 @@ request:
         "code": "string",
         "name": "string",
         "description": "string",
-        "isActive": true
+        "isActive": false
       }
 response:
   statusCode: 500

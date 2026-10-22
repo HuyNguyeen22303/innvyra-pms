@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Roles: ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, ACCOUNTANT, TECHNICIAN. Data is scoped to the authenticated user's current hotel, including ADMIN. Unknown query parameters are rejected. No occupancy or date availability is calculated."
-url: "{{baseUrl}}/room-types?page=1&limit=20&search=string&isActive=true&sortOrder=asc&sortBy=name"
+url: "{{baseUrl}}/room-types?page=1&limit=20&search=string&isActive=false&sortOrder=asc&sortBy=name"
 method: GET
 headers:
   Accept: application/json
@@ -53,7 +53,7 @@ queryParams:
         }
       }
   - key: isActive
-    value: "true"
+    value: "false"
     disabled: false
     description: Literal true or false. Omitted includes active and inactive records.
     $type: boolean

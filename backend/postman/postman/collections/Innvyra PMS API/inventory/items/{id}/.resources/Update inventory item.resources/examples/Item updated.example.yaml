@@ -20,7 +20,7 @@ request:
     type: json
     content: |-
       {
-        "code": "stri",
+        "code": "string",
         "name": "string",
         "categoryId": "string",
         "unit": "string",
@@ -46,7 +46,7 @@ response:
             "id": "1",
             "code": "string",
             "name": "string",
-            "isActive": true
+            "isActive": false
           },
           "code": "ITEM-SHAMPOO",
           "name": "Dầu gội mini 30ml",
@@ -56,8 +56,8 @@ response:
           "isLowStock": false,
           "isOutOfStock": false,
           "isActive": true,
-          "createdAt": "1979-02-13T03:26:11.735Z",
-          "updatedAt": "2004-08-25T06:35:09.552Z",
+          "createdAt": "1995-10-26T09:35:18.645Z",
+          "updatedAt": "1966-03-28T12:33:40.885Z",
           "description": "string"
         }
       }

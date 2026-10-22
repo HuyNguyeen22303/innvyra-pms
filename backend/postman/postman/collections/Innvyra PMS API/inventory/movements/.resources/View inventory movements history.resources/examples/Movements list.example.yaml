@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/inventory/movements?page=1&limit=20&itemId=1&type=ADJUSTMENT&startDate=1995-05-14&endDate=1995-05-14"
+  url: "{{baseUrl}}/inventory/movements?page=1&limit=20&itemId=1&type=RECEIPT&startDate=1948-02-03&endDate=1948-02-03"
   method: GET
   headers:
     - key: Accept
@@ -12,9 +12,9 @@ request:
     page: "1"
     limit: "20"
     itemId: "1"
-    type: ADJUSTMENT
-    startDate: 1995-05-14
-    endDate: 1995-05-14
+    type: RECEIPT
+    startDate: 1948-02-03
+    endDate: 1948-02-03
   body:
     type: text
     content: ""
@@ -47,7 +47,7 @@ response:
               "currentStock": "150.00",
               "referenceType": "STOCK_RECEIPT",
               "createdBy": "1",
-              "createdAt": "1984-03-13T04:56:55.830Z",
+              "createdAt": "1955-03-27T03:54:38.886Z",
               "referenceId": "string",
               "referenceNumber": "string",
               "notes": "string",
@@ -67,13 +67,13 @@ response:
                 "name": "string",
                 "unit": "string"
               },
-              "type": "RECEIPT",
+              "type": "ADJUSTMENT",
               "quantity": "+50.00",
               "previousStock": "100.00",
               "currentStock": "150.00",
               "referenceType": "STOCK_RECEIPT",
               "createdBy": "1",
-              "createdAt": "2007-06-16T05:09:45.972Z",
+              "createdAt": "1968-07-10T11:50:48.915Z",
               "referenceId": "string",
               "referenceNumber": "string",
               "notes": "string",
@@ -85,10 +85,10 @@ response:
             }
           ],
           "pagination": {
-            "page": 3338,
-            "limit": 3376,
-            "total": 7347,
-            "totalPages": 1038
+            "page": 658,
+            "limit": 7086,
+            "total": 4209,
+            "totalPages": 6421
           }
         }
       }

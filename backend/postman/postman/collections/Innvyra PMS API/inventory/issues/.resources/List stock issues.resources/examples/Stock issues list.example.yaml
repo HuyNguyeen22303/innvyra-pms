@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/inventory/issues?page=1&limit=20&department=string&startDate=1995-05-14&endDate=1995-05-14"
+  url: "{{baseUrl}}/inventory/issues?page=1&limit=20&department=string&startDate=1948-02-03&endDate=1948-02-03"
   method: GET
   headers:
     - key: Accept
@@ -12,8 +12,8 @@ request:
     page: "1"
     limit: "20"
     department: string
-    startDate: 1995-05-14
-    endDate: 1995-05-14
+    startDate: 1948-02-03
+    endDate: 1948-02-03
   body:
     type: text
     content: ""
@@ -34,7 +34,7 @@ response:
               "id": "1",
               "hotelId": "1",
               "issueNumber": "ISS-20261018-001",
-              "issueDate": "2012-09-12T15:34:48.843Z",
+              "issueDate": "1956-10-09T04:47:10.977Z",
               "department": "HOUSEKEEPING",
               "createdBy": "1",
               "items": [
@@ -48,7 +48,7 @@ response:
                     "unit": "string"
                   },
                   "quantity": "20.00",
-                  "createdAt": "1966-01-07T15:39:08.839Z",
+                  "createdAt": "1989-04-07T05:02:10.390Z",
                   "notes": "string"
                 },
                 {
@@ -61,11 +61,11 @@ response:
                     "unit": "string"
                   },
                   "quantity": "20.00",
-                  "createdAt": "2009-11-15T06:50:28.017Z",
+                  "createdAt": "1955-12-29T07:15:53.588Z",
                   "notes": "string"
                 }
               ],
-              "createdAt": "1983-01-15T02:42:56.635Z",
+              "createdAt": "1953-03-08T06:56:55.691Z",
               "purpose": "Turnover cleaning floor 3",
               "notes": "string",
               "creator": {
@@ -73,13 +73,13 @@ response:
                 "fullName": "string",
                 "username": "string"
               },
-              "updatedAt": "1981-10-03T16:45:39.078Z"
+              "updatedAt": "1951-01-29T22:10:28.495Z"
             },
             {
               "id": "1",
               "hotelId": "1",
               "issueNumber": "ISS-20261018-001",
-              "issueDate": "1949-08-27T01:45:46.524Z",
+              "issueDate": "2016-10-06T09:30:05.199Z",
               "department": "HOUSEKEEPING",
               "createdBy": "1",
               "items": [
@@ -93,7 +93,7 @@ response:
                     "unit": "string"
                   },
                   "quantity": "20.00",
-                  "createdAt": "1987-05-24T15:24:00.139Z",
+                  "createdAt": "2014-06-21T01:06:05.435Z",
                   "notes": "string"
                 },
                 {
@@ -106,11 +106,11 @@ response:
                     "unit": "string"
                   },
                   "quantity": "20.00",
-                  "createdAt": "1954-11-08T09:44:32.925Z",
+                  "createdAt": "2022-09-18T23:26:08.486Z",
                   "notes": "string"
                 }
               ],
-              "createdAt": "2019-12-09T23:22:02.637Z",
+              "createdAt": "2014-06-09T13:29:37.278Z",
               "purpose": "Turnover cleaning floor 3",
               "notes": "string",
               "creator": {
@@ -118,14 +118,14 @@ response:
                 "fullName": "string",
                 "username": "string"
               },
-              "updatedAt": "2015-08-28T09:07:29.563Z"
+              "updatedAt": "1999-09-28T14:02:05.252Z"
             }
           ],
           "pagination": {
-            "page": 1576,
-            "limit": 9024,
-            "total": 9788,
-            "totalPages": 4039
+            "page": 9458,
+            "limit": 3215,
+            "total": 101,
+            "totalPages": 1417
           }
         }
       }

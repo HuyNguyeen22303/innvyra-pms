@@ -1,7 +1,7 @@
 $kind: http-example
 name: Missing/invalid/expired access token or inactive/revoked session
 request:
-  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=true&sortOrder=asc&roomTypeId=1499776095&floorNumber=-22976&physicalStatus=MAINTENANCE&housekeepingStatus=READY&sortBy=roomNumber"
+  url: "{{baseUrl}}/rooms?page=1&limit=20&search=string&isActive=false&sortOrder=asc&roomTypeId=556261551675844825&floorNumber=6657&physicalStatus=MAINTENANCE&housekeepingStatus=CLEANING&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -23,7 +23,7 @@ request:
       disabled: false
       description: ""
     - key: isActive
-      value: "true"
+      value: "false"
       disabled: false
       description: Literal true or false. Omitted includes active and inactive records.
     - key: sortOrder
@@ -31,11 +31,11 @@ request:
       disabled: false
       description: ""
     - key: roomTypeId
-      value: "1499776095"
+      value: "556261551675844825"
       disabled: false
       description: ""
     - key: floorNumber
-      value: "-22976"
+      value: "6657"
       disabled: false
       description: Signed SMALLINT, -32768–32767; includes basement floors.
     - key: physicalStatus
@@ -43,7 +43,7 @@ request:
       disabled: false
       description: ""
     - key: housekeepingStatus
-      value: READY
+      value: CLEANING
       disabled: false
       description: ""
     - key: sortBy

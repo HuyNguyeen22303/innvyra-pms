@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=PENDING&priority=HIGH&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=-22976&sortBy=createdAt"
+  url: "{{baseUrl}}/housekeeping/tasks?page=1&limit=20&sortOrder=asc&status=CANCELLED&priority=HIGH&roomId=301&assignedTo=301&taskType=TURNOVER_CLEANING&floorNumber=6657&sortBy=createdAt"
   method: GET
   headers:
     - key: Accept
@@ -12,12 +12,12 @@ request:
     page: "1"
     limit: "20"
     sortOrder: asc
-    status: PENDING
+    status: CANCELLED
     priority: HIGH
     roomId: "301"
     assignedTo: "301"
     taskType: TURNOVER_CLEANING
-    floorNumber: "-22976"
+    floorNumber: "6657"
     sortBy: createdAt
   body:
     type: text

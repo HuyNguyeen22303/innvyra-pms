@@ -27,7 +27,7 @@ request:
           }
         ],
         "issueNumber": "ISS-20261018-001",
-        "issueDate": "1957-08-21T13:04:25.398Z",
+        "issueDate": "2019-03-11T03:52:06.617Z",
         "purpose": "Daily turnover replenishment",
         "notes": "string"
       }
@@ -46,7 +46,7 @@ response:
           "id": "1",
           "hotelId": "1",
           "issueNumber": "ISS-20261018-001",
-          "issueDate": "1970-01-03T22:43:28.399Z",
+          "issueDate": "2020-04-23T13:22:43.686Z",
           "department": "HOUSEKEEPING",
           "createdBy": "1",
           "items": [
@@ -60,7 +60,7 @@ response:
                 "unit": "string"
               },
               "quantity": "20.00",
-              "createdAt": "1972-06-08T00:06:22.196Z",
+              "createdAt": "1983-04-27T21:32:27.435Z",
               "notes": "string"
             },
             {
@@ -73,11 +73,11 @@ response:
                 "unit": "string"
               },
               "quantity": "20.00",
-              "createdAt": "1986-04-12T11:51:27.466Z",
+              "createdAt": "1998-04-28T20:37:40.173Z",
               "notes": "string"
             }
           ],
-          "createdAt": "1983-02-26T23:58:31.638Z",
+          "createdAt": "1966-10-11T22:32:21.438Z",
           "purpose": "Turnover cleaning floor 3",
           "notes": "string",
           "creator": {
@@ -85,7 +85,7 @@ response:
             "fullName": "string",
             "username": "string"
           },
-          "updatedAt": "1982-07-19T03:42:55.845Z"
+          "updatedAt": "1969-06-16T12:51:56.641Z"
         }
       }
     $type: |-

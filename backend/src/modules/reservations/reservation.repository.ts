@@ -65,6 +65,12 @@ export class PrismaReservationRepository {
               'RESERVATION_CONFLICT',
               'Reservation conflict; refresh and retry',
             );
+          if (error.code === 'P2025')
+            throw new AppError(
+              409,
+              'RESERVATION_STATUS_CHANGED',
+              'Reservation status changed; refresh and retry',
+            );
         }
         throw error;
       }

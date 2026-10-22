@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=ACTIVE&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
+  url: "{{baseUrl}}/maintenance/blocks?page=1&limit=20&sortOrder=asc&status=CANCELLED&roomId=301&maintenanceTicketId=301&fromDate=2026-11-01&toDate=2026-11-01&sortBy=startDate"
   method: GET
   headers:
     - key: Accept
@@ -22,7 +22,7 @@ request:
       disabled: false
       description: ""
     - key: status
-      value: ACTIVE
+      value: CANCELLED
       disabled: false
       description: ""
     - key: roomId

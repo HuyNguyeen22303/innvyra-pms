@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/reports/occupancy?startDate=1995-05-14&endDate=1995-05-14&groupBy=day&roomTypeId=91953479665283783"
+  url: "{{baseUrl}}/reports/occupancy?startDate=1948-02-03&endDate=1948-02-03&groupBy=day&roomTypeId=48737653528529"
   method: GET
   headers:
     - key: Accept
@@ -10,11 +10,11 @@ request:
       description: "Added as a part of security scheme: bearer"
   queryParams:
     - key: startDate
-      value: 1995-05-14
+      value: 1948-02-03
       disabled: false
       description: Inclusive hotel business date.
     - key: endDate
-      value: 1995-05-14
+      value: 1948-02-03
       disabled: false
       description: Exclusive hotel business date; startDate < endDate, default maximum 366 days, configurable by REPORT_MAX_DAYS.
     - key: groupBy
@@ -22,7 +22,7 @@ request:
       disabled: false
       description: Hotel calendar grouping; month label YYYY-MM-01. Partial months include only requested days. Missing buckets are zero-filled; unavailable values stay null.
     - key: roomTypeId
-      value: "91953479665283783"
+      value: "48737653528529"
       disabled: false
       description: Must belong to authenticated hotel; foreign IDs return 404.
   body:

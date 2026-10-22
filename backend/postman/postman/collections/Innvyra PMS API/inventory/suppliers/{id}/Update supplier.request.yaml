@@ -55,10 +55,10 @@ body:
       "name": "string",
       "contactPerson": "string",
       "phone": "string",
-      "email": "Em9kZ1EMXH@hQSNYpsH.xcse",
+      "email": "rhq@bLmXfjmAmaIGmHXebQZZkSOthlQi.zlxe",
       "address": "string",
       "notes": "string",
-      "isActive": true
+      "isActive": false
     }
   $type: |-
     {

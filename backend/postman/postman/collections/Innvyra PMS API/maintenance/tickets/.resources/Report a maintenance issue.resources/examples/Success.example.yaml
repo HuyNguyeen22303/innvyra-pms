@@ -38,12 +38,12 @@ response:
           "id": "301",
           "hotelId": "301",
           "roomId": "301",
-          "createdAt": "2024-06-05T18:29:05.472Z",
-          "updatedAt": "2023-06-11T14:48:34.676Z",
+          "createdAt": "2010-09-03T21:16:52.015Z",
+          "updatedAt": "1964-02-10T21:03:43.879Z",
           "room": {
             "id": "301",
             "roomNumber": "string",
-            "floorNumber": 2018,
+            "floorNumber": 8829,
             "roomTypeId": "301",
             "physicalStatus": "OUT_OF_SERVICE",
             "housekeepingStatus": "CLEANING",
@@ -51,15 +51,15 @@ response:
           },
           "title": "string",
           "description": "string",
-          "priority": "NORMAL",
-          "status": "RESOLVED",
+          "priority": "HIGH",
+          "status": "CLOSED",
           "reportedBy": "301",
           "assignedTo": "301",
           "resolvedBy": "301",
-          "reportedAt": "1958-04-29T07:06:33.336Z",
-          "startedAt": "2005-08-26T00:08:26.186Z",
-          "resolvedAt": "1995-10-06T17:16:23.413Z",
-          "closedAt": "1982-05-06T23:16:41.231Z",
+          "reportedAt": "1961-10-09T17:10:35.299Z",
+          "startedAt": "2017-04-02T15:07:34.015Z",
+          "resolvedAt": "1953-09-29T02:11:31.579Z",
+          "closedAt": "1978-01-28T03:21:00.653Z",
           "resolutionNotes": "string",
           "history": [
             {
@@ -73,7 +73,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "1967-06-30T12:09:13.029Z"
+              "createdAt": "1961-04-19T07:03:17.439Z"
             },
             {
               "id": "301",
@@ -86,7 +86,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "2005-11-30T03:37:46.461Z"
+              "createdAt": "1954-01-10T14:50:19.183Z"
             }
           ]
         }

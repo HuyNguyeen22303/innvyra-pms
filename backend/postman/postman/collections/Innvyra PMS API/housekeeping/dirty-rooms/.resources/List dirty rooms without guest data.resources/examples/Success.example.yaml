@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=-22976&sortBy=roomNumber"
+  url: "{{baseUrl}}/housekeeping/dirty-rooms?page=1&limit=20&sortOrder=asc&floorNumber=6657&sortBy=roomNumber"
   method: GET
   headers:
     - key: Accept
@@ -12,7 +12,7 @@ request:
     page: "1"
     limit: "20"
     sortOrder: asc
-    floorNumber: "-22976"
+    floorNumber: "6657"
     sortBy: roomNumber
   body:
     type: text
@@ -33,29 +33,29 @@ response:
             {
               "id": "301",
               "roomNumber": "string",
-              "floorNumber": 303,
+              "floorNumber": 8461,
               "roomTypeId": "301",
-              "physicalStatus": "ACTIVE",
-              "housekeepingStatus": "DIRTY",
+              "physicalStatus": "MAINTENANCE",
+              "housekeepingStatus": "INSPECTION",
               "isActive": false,
-              "occupancyStatus": "OCCUPIED"
+              "occupancyStatus": "VACANT"
             },
             {
               "id": "301",
               "roomNumber": "string",
-              "floorNumber": 2779,
+              "floorNumber": 7354,
               "roomTypeId": "301",
-              "physicalStatus": "ACTIVE",
-              "housekeepingStatus": "DIRTY",
+              "physicalStatus": "OUT_OF_SERVICE",
+              "housekeepingStatus": "READY",
               "isActive": true,
-              "occupancyStatus": "VACANT"
+              "occupancyStatus": "OCCUPIED"
             }
           ],
           "pagination": {
-            "page": 1963,
-            "limit": 2166,
-            "total": 1415,
-            "totalPages": 5191
+            "page": 330,
+            "limit": 2171,
+            "total": 7345,
+            "totalPages": 22
           }
         }
       }

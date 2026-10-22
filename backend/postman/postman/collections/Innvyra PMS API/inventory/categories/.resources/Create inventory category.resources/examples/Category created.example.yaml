@@ -39,8 +39,8 @@ response:
           "code": "HOUSEKEEPING",
           "name": "Housekeeping Supplies",
           "isActive": true,
-          "createdAt": "1992-02-24T17:28:35.250Z",
-          "updatedAt": "1985-02-24T02:27:29.439Z",
+          "createdAt": "2016-03-08T00:46:41.787Z",
+          "updatedAt": "1950-10-30T14:43:36.571Z",
           "description": "Cleaning supplies and amenities"
         }
       }

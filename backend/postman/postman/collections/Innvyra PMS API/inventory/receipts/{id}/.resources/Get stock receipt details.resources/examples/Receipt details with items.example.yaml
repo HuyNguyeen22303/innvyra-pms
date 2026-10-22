@@ -28,7 +28,7 @@ response:
           "id": "1",
           "hotelId": "1",
           "receiptNumber": "REC-20261018-001",
-          "receiptDate": "1993-04-10T15:14:46.773Z",
+          "receiptDate": "2011-12-06T00:39:19.349Z",
           "totalAmount": "1500000.00",
           "createdBy": "1",
           "items": [
@@ -44,7 +44,7 @@ response:
               "quantity": "100.00",
               "unitPrice": "15000.00",
               "lineTotal": "1500000.00",
-              "createdAt": "1974-09-14T11:45:43.786Z",
+              "createdAt": "2012-04-30T05:14:22.403Z",
               "notes": "string"
             },
             {
@@ -59,11 +59,11 @@ response:
               "quantity": "100.00",
               "unitPrice": "15000.00",
               "lineTotal": "1500000.00",
-              "createdAt": "2007-11-24T17:27:00.197Z",
+              "createdAt": "1989-04-05T07:56:37.852Z",
               "notes": "string"
             }
           ],
-          "createdAt": "1988-12-10T03:39:47.893Z",
+          "createdAt": "1950-07-23T15:18:26.601Z",
           "supplierId": "string",
           "supplier": {
             "id": "1",
@@ -76,7 +76,7 @@ response:
             "fullName": "string",
             "username": "string"
           },
-          "updatedAt": "1994-06-27T11:21:37.089Z"
+          "updatedAt": "1965-07-08T12:18:37.880Z"
         }
       }
     $type: |-

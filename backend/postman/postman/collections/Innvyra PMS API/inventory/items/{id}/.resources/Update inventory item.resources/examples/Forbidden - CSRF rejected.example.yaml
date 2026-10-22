@@ -21,7 +21,7 @@ request:
     type: json
     content: |-
       {
-        "code": "stri",
+        "code": "string",
         "name": "string",
         "categoryId": "string",
         "unit": "string",

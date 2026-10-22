@@ -1,7 +1,7 @@
 $kind: http-example
 name: "Business conflict: FOLIO_NOT_OPEN, FOLIO_UNSETTLED, FOLIO_PENDING_ACTIVITY, STAYS_NOT_FINISHED, SERVICE_INACTIVE, INVALID_ORDER_STATUS, INSUFFICIENT_OUTSTANDING_BALANCE, REFUND_AMOUNT_EXCEEDED, REFUND_NOT_ALLOWED, IDEMPOTENCY_CONFLICT or FINANCIAL_CONFLICT"
 request:
-  url: "{{baseUrl}}/service-orders?page=1&limit=20&reservationId=101&stayId=101&status=COMPLETED&sortBy=createdAt&sortOrder=asc"
+  url: "{{baseUrl}}/service-orders?page=1&limit=20&reservationId=101&stayId=101&status=CANCELLED&sortBy=createdAt&sortOrder=asc"
   method: GET
   headers:
     - key: Accept
@@ -14,7 +14,7 @@ request:
     limit: "20"
     reservationId: "101"
     stayId: "101"
-    status: COMPLETED
+    status: CANCELLED
     sortBy: createdAt
     sortOrder: asc
   body:

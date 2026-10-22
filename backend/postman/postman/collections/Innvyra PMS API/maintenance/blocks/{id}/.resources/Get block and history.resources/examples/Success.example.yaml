@@ -28,25 +28,25 @@ response:
           "id": "301",
           "hotelId": "301",
           "roomId": "301",
-          "createdAt": "1972-09-27T09:01:42.739Z",
-          "updatedAt": "1996-06-30T14:21:13.423Z",
+          "createdAt": "1975-07-15T21:43:57.967Z",
+          "updatedAt": "1961-02-17T15:53:10.057Z",
           "room": {
             "id": "301",
             "roomNumber": "string",
-            "floorNumber": 7834,
+            "floorNumber": 6592,
             "roomTypeId": "301",
-            "physicalStatus": "OUT_OF_SERVICE",
-            "housekeepingStatus": "READY",
+            "physicalStatus": "MAINTENANCE",
+            "housekeepingStatus": "DIRTY",
             "isActive": true
           },
           "maintenanceTicketId": "301",
           "startDate": "2026-11-01",
           "endDate": "2026-11-01",
-          "status": "RELEASED",
+          "status": "ACTIVE",
           "reason": "string",
           "createdBy": "301",
           "releasedBy": "301",
-          "releasedAt": "1976-09-13T03:57:55.587Z",
+          "releasedAt": "1996-06-09T19:59:37.981Z",
           "history": [
             {
               "id": "301",
@@ -59,7 +59,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "2001-06-06T21:48:42.880Z"
+              "createdAt": "2004-03-18T06:10:27.750Z"
             },
             {
               "id": "301",
@@ -72,7 +72,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "1998-11-02T00:13:34.562Z"
+              "createdAt": "1961-11-06T16:41:08.617Z"
             }
           ]
         }

@@ -34,26 +34,26 @@ response:
           "id": "301",
           "hotelId": "301",
           "roomId": "301",
-          "createdAt": "2009-04-12T10:33:22.527Z",
-          "updatedAt": "1987-05-22T07:09:34.420Z",
+          "createdAt": "1960-03-15T00:47:23.071Z",
+          "updatedAt": "2004-01-15T10:55:08.463Z",
           "room": {
             "id": "301",
             "roomNumber": "string",
-            "floorNumber": 704,
+            "floorNumber": 9333,
             "roomTypeId": "301",
-            "physicalStatus": "ACTIVE",
+            "physicalStatus": "MAINTENANCE",
             "housekeepingStatus": "READY",
-            "isActive": false
+            "isActive": true
           },
           "taskType": "TURNOVER_CLEANING",
-          "status": "PENDING",
-          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "priority": "URGENT",
           "assignedTo": "301",
           "createdBy": "301",
           "notes": "string",
-          "startedAt": "1962-02-03T18:04:34.544Z",
-          "completedAt": "2003-03-05T01:42:36.384Z",
-          "inspectedAt": "2004-10-06T22:24:38.984Z",
+          "startedAt": "1995-10-10T20:23:01.980Z",
+          "completedAt": "2024-01-13T21:02:09.031Z",
+          "inspectedAt": "2022-04-14T18:48:02.556Z",
           "inspectedBy": "301",
           "history": [
             {
@@ -67,7 +67,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "1980-03-08T21:34:21.081Z"
+              "createdAt": "1973-02-03T14:03:13.088Z"
             },
             {
               "id": "301",
@@ -80,7 +80,7 @@ response:
               "fromStatus": "string",
               "toStatus": "string",
               "notes": "string",
-              "createdAt": "1981-04-18T23:25:11.560Z"
+              "createdAt": "1993-11-22T12:30:24.806Z"
             }
           ]
         }

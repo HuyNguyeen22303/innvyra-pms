@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Paginated catalog including inactive services unless filtered; search name/code. Required roles: ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT. Scope comes from the authenticated staff's current hotel. Unknown fields are rejected."
-url: "{{baseUrl}}/services?page=1&limit=20&search=string&isActive=true&sortBy=name&sortOrder=asc"
+url: "{{baseUrl}}/services?page=1&limit=20&search=string&isActive=false&sortBy=name&sortOrder=asc"
 method: GET
 headers:
   Accept: application/json
@@ -52,7 +52,7 @@ queryParams:
         }
       }
   - key: isActive
-    value: "true"
+    value: "false"
     disabled: false
     description: ""
     $type: boolean

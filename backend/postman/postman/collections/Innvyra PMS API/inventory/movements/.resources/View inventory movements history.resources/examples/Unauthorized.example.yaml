@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: "{{baseUrl}}/inventory/movements?page=1&limit=20&itemId=1&type=ADJUSTMENT&startDate=1995-05-14&endDate=1995-05-14"
+  url: "{{baseUrl}}/inventory/movements?page=1&limit=20&itemId=1&type=RECEIPT&startDate=1948-02-03&endDate=1948-02-03"
   method: GET
   headers:
     - key: Accept
@@ -12,9 +12,9 @@ request:
     page: "1"
     limit: "20"
     itemId: "1"
-    type: ADJUSTMENT
-    startDate: 1995-05-14
-    endDate: 1995-05-14
+    type: RECEIPT
+    startDate: 1948-02-03
+    endDate: 1948-02-03
   body:
     type: text
     content: ""
