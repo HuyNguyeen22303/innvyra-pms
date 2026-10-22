@@ -388,6 +388,7 @@ export const HousekeepingPage: React.FC = () => {
 
   // UI States
   const [activeTab, setActiveTab] = useState<string>("kanban");
+  const [dirtyPageSize, setDirtyPageSize] = useState<number>(10);
   const [selectedTaskForDetail, setSelectedTaskForDetail] =
     useState<HousekeepingTaskItem | null>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState<boolean>(false);
@@ -1447,7 +1448,11 @@ export const HousekeepingPage: React.FC = () => {
                         rowKey="id"
                         loading={isDirtyLoading}
                         scroll={{ x: 1100 }}
-                        pagination={{ pageSize: 10, showSizeChanger: true }}
+                        pagination={{
+                          pageSize: dirtyPageSize,
+                          showSizeChanger: true,
+                          onChange: (_page, size) => setDirtyPageSize(size),
+                        }}
                       />
                     </Card>
                   ),

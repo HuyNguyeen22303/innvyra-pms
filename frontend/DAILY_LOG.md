@@ -1548,4 +1548,29 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `89FCF` (một phần mã `INN-89FCF...`) → gửi `search=89FCF`, trả đúng đơn #48.
   - Xóa từ khóa → tải lại danh sách đầy đủ (48 đơn), không có lỗi mới.
 
+### 🐛 Fix bộ chọn số dòng/trang (page size) trên các bảng danh sách (branch `bugfix/fe`):
+
+#### 1. Hiện tượng & Nguyên nhân:
+- Ở các màn hình Lưu trú, Hồ sơ Khách hàng, Đặt phòng, 2 tab Bảo trì Kỹ thuật (và cả Phòng vật lý / Housekeeping), đổi "x / trang" thì giá trị lập tức quay về cũ.
+- Nguyên nhân: `pagination` đang truyền `pageSize` dạng hằng số (ví dụ `pageSize: 15`) mà không có `onChange` cập nhật state. Antd coi `pageSize` là controlled prop nên mọi thay đổi từ UI bị ghi đè lại giá trị cũ sau lần render kế tiếp.
+
+#### 2. Giải pháp (chỉ Frontend):
+- Thêm state `pageSize` riêng cho từng bảng và xử lý `onChange: (_page, size) => setPageSize(size)`.
+- Áp dụng cho:
+  - `frontend/src/pages/stays/StaysPage.tsx` (bảng Lưu trú).
+  - `frontend/src/pages/guests/GuestsPage.tsx`.
+  - `frontend/src/pages/reservations/ReservationsPage.tsx` (state đặt trong `ReservationsTable`).
+  - `frontend/src/pages/maintenance/MaintenancePage.tsx` (Phiếu sự cố + Lệnh khóa phòng, mỗi tab một state).
+  - `frontend/src/pages/rooms/RoomsPage.tsx` và `frontend/src/pages/housekeeping/HousekeepingPage.tsx` (cùng lỗi, sửa luôn để đồng bộ).
+- Bổ sung `pageSize` vào dependency của các `useMemo` dựng bảng để memo không giữ lại cấu hình cũ.
+
+#### 3. Kiểm thử:
+- `npm run build`: pass, 0 lỗi TypeScript; `npm run lint`: 0 warning/error.
+- Kiểm thử trực quan với `receptionist`:
+  - Lưu trú: 15 → 30/trang, bảng hiển thị 30 dòng.
+  - Hồ sơ khách: 10 → 20/trang, bảng hiển thị 20 dòng.
+  - Đặt phòng: 15 → 30/trang, vẫn giữ tổng 48 đơn.
+  - Bảo trì — Phiếu sự cố: 10 → 20/trang.
+  - Bảo trì — Lệnh khóa phòng: 10 → 20/trang.
+
 

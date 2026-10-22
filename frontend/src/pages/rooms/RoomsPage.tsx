@@ -228,34 +228,40 @@ const RoomGrid: React.FC<RoomGridProps> = React.memo(({ rooms, onOpenQuickStatus
   );
 });
 
-const ROOM_TABLE_PAGINATION = { pageSize: 12, showSizeChanger: true };
-
 interface RoomTableProps {
   rooms: RoomItem[];
   columns: ColumnsType<RoomItem>;
   loading: boolean;
 }
 
-const RoomTable: React.FC<RoomTableProps> = React.memo(({ rooms, columns, loading }) => (
-  <Card
-    variant="outlined"
-    style={{
-      borderRadius: 12,
-      borderColor: '#cbd5e1',
-      boxShadow: '0 2px 6px rgba(15,23,42,0.04)',
-    }}
-  >
-    <Table
-      dataSource={rooms}
-      columns={columns}
-      rowKey="id"
-      loading={loading}
-      pagination={ROOM_TABLE_PAGINATION}
-      size="middle"
-      scroll={{ x: 1000 }}
-    />
-  </Card>
-));
+const RoomTable: React.FC<RoomTableProps> = React.memo(({ rooms, columns, loading }) => {
+  const [pageSize, setPageSize] = useState<number>(12);
+
+  return (
+    <Card
+      variant="outlined"
+      style={{
+        borderRadius: 12,
+        borderColor: '#cbd5e1',
+        boxShadow: '0 2px 6px rgba(15,23,42,0.04)',
+      }}
+    >
+      <Table
+        dataSource={rooms}
+        columns={columns}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          pageSize,
+          showSizeChanger: true,
+          onChange: (_page, size) => setPageSize(size),
+        }}
+        size="middle"
+        scroll={{ x: 1000 }}
+      />
+    </Card>
+  );
+});
 
 interface RoomFormModalProps {
   open: boolean;

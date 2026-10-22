@@ -112,6 +112,7 @@ export const GuestsPage: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [selectedNationality, setSelectedNationality] = useState<string | undefined>(undefined);
   const [sortBy, setSortBy] = useState<'fullName' | 'createdAt'>('fullName');
+  const [guestsPageSize, setGuestsPageSize] = useState<number>(10);
 
   // Modals & Drawer state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -775,7 +776,12 @@ export const GuestsPage: React.FC = () => {
           columns={columns}
           rowKey="id"
           loading={isLoading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{
+            pageSize: guestsPageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            onChange: (_page, size) => setGuestsPageSize(size),
+          }}
           size="middle"
           scroll={{ x: 1050 }}
           locale={{

@@ -537,6 +537,7 @@ export const StaysPage: React.FC = () => {
   // ----------------------------------------------------
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<StayStatus | undefined>(undefined);
+  const [staysPageSize, setStaysPageSize] = useState<number>(15);
 
   // Modals & Drawer State
   const [selectedStayId, setSelectedStayId] = useState<string | null>(null);
@@ -1156,9 +1157,10 @@ export const StaysPage: React.FC = () => {
         rowKey="stayId"
         loading={isLoadingStays}
         pagination={{
-          pageSize: 15,
+          pageSize: staysPageSize,
           showSizeChanger: true,
           pageSizeOptions: ['10', '15', '30', '50'],
+          onChange: (_page, size) => setStaysPageSize(size),
           showTotal: (total) => `Tổng cộng ${total} lượt lưu trú`,
         }}
         locale={{
@@ -1169,7 +1171,7 @@ export const StaysPage: React.FC = () => {
         scroll={{ x: 1200 }}
       />
     ),
-    [isLoadingStays, stayColumns, tableRows]
+    [isLoadingStays, stayColumns, staysPageSize, tableRows]
   );
 
   // Memoized tab pane: the element identity only changes when the values it

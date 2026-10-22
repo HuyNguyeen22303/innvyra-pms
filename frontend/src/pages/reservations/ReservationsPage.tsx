@@ -264,35 +264,40 @@ interface ReservationsTableProps {
 }
 
 const ReservationsTable: React.FC<ReservationsTableProps> = React.memo(
-  ({ columns, data, loading, canWrite }) => (
-    <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 15,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '15', '30', '50'],
-          showTotal: (total) => `Tổng cộng ${total} đơn đặt phòng`,
-        }}
-        locale={{
-          emptyText: (
-            <Empty
-              description={
-                <span>
-                  Chưa có đơn đặt phòng nào phù hợp điều kiện lọc.
-                  {canWrite && ' Bạn có thể bấm "Tạo Đặt phòng Mới" để bắt đầu.'}
-                </span>
-              }
-            />
-          ),
-        }}
-        scroll={{ x: 1350 }}
-      />
-    </Card>
-  )
+  ({ columns, data, loading, canWrite }) => {
+    const [pageSize, setPageSize] = useState<number>(15);
+
+    return (
+      <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '15', '30', '50'],
+            onChange: (_page, size) => setPageSize(size),
+            showTotal: (total) => `Tổng cộng ${total} đơn đặt phòng`,
+          }}
+          locale={{
+            emptyText: (
+              <Empty
+                description={
+                  <span>
+                    Chưa có đơn đặt phòng nào phù hợp điều kiện lọc.
+                    {canWrite && ' Bạn có thể bấm "Tạo Đặt phòng Mới" để bắt đầu.'}
+                  </span>
+                }
+              />
+            ),
+          }}
+          scroll={{ x: 1350 }}
+        />
+      </Card>
+    );
+  }
 );
 
 // Helper: Format Currency to VND

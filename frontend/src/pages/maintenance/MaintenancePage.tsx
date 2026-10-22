@@ -455,11 +455,13 @@ export const MaintenancePage: React.FC = () => {
   const [ticketPriorityFilter, setTicketPriorityFilter] = useState<
     MaintenancePriority | undefined
   >(undefined);
+  const [ticketPageSize, setTicketPageSize] = useState<number>(10);
 
   // Filter States for Blocks
   const [blockStatusFilter, setBlockStatusFilter] = useState<
     MaintenanceBlockStatus | undefined
   >(undefined);
+  const [blockPageSize, setBlockPageSize] = useState<number>(10);
 
   // Detail Drawers
   const [selectedTicketForDetail, setSelectedTicketForDetail] =
@@ -1477,12 +1479,17 @@ export const MaintenancePage: React.FC = () => {
                       rowKey="id"
                       loading={isTicketsLoading}
                       scroll={{ x: 1320 }}
-                      pagination={{ pageSize: 10, showSizeChanger: true }}
+                      pagination={{
+                        pageSize: ticketPageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50"],
+                        onChange: (_page, size) => setTicketPageSize(size),
+                      }}
                     />
                   </Card>
                 </div>
     ),
-    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, tableTickets, ticketColumns, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
+    [closedTickets, inProgressTickets, isTicketsLoading, openTickets, resolvedTickets, setTicketPriorityFilter, setTicketSearch, setTicketStatusFilter, tableTickets, ticketColumns, ticketPageSize, ticketPriorityFilter, ticketSearch, ticketStatusFilter]
   );
 
   // Memoized tab pane: the element identity only changes when the values it
@@ -1632,12 +1639,17 @@ export const MaintenancePage: React.FC = () => {
                       rowKey="id"
                       loading={isBlocksLoading}
                       scroll={{ x: 1080 }}
-                      pagination={{ pageSize: 10, showSizeChanger: true }}
+                      pagination={{
+                        pageSize: blockPageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50"],
+                        onChange: (_page, size) => setBlockPageSize(size),
+                      }}
                     />
                   </Card>
                 </div>
     ),
-    [activeBlocks, blockColumns, blockList, blockStatusFilter, isBlocksLoading, releasedBlocks, scheduledBlocks, setBlockStatusFilter]
+    [activeBlocks, blockColumns, blockList, blockPageSize, blockStatusFilter, isBlocksLoading, releasedBlocks, scheduledBlocks, setBlockStatusFilter]
   );
 
   return (
