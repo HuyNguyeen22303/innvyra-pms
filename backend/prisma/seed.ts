@@ -1533,6 +1533,7 @@ async function main() {
       const checkOutDate = addDays(checkInDate, 2);
       const totalRate = (parseFloat(rtRecord.basePrice.toString()) * 2).toFixed(2);
       const createdDate = new Date(`${addDays(today, -cfg.daysAgoCreated)}T11:00:00.000Z`);
+      const cancelledDate = new Date(`${addDays(checkInDate, 1)}T02:00:00.000Z`);
 
       const res = await prisma.reservation.create({
         data: {
@@ -1546,6 +1547,9 @@ async function main() {
           totalAmount: totalRate,
           createdBy: receptionist.id,
           createdAt: createdDate,
+          cancelledAt: cancelledDate,
+          cancelledBy: receptionist.id,
+          cancellationReason: 'Khách không đến (no-show)',
         },
       });
 
