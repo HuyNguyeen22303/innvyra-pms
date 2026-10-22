@@ -1,5 +1,12 @@
--- DropConstraint
-ALTER TABLE `reservations` DROP CONSTRAINT `reservations_cancellation_check`;
+-- Drop old constraint if it still exists (idempotent – safe to re-run).
+-- MySQL 8.0 does not support DROP CONSTRAINT IF EXISTS, so we use dynamic SQL.
+SET @cn = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reservations'
+           AND CONSTRAINT_NAME = 'reservations_cancellation_check');
+SET @sql = IF(@cn > 0, 'ALTER TABLE `reservations` DROP CONSTRAINT `reservations_cancellation_check`', 'SELECT 1 AS skipped');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Fix existing NO_SHOW rows that have NULL cancellation fields
 -- so they become compatible with the new constraint below.
