@@ -36,6 +36,43 @@ export const maintenanceApi = {
   },
 
   /**
+   * Lấy TOÀN BỘ phiếu sự cố khớp bộ lọc, không chỉ trang đầu.
+   *
+   * Backend giới hạn `limit` tối đa 100 mỗi request (ticketQuery -> paginationFields),
+   * nên một lần gọi không thể trả hết dữ liệu. Hàm này đi lần lượt các trang cho tới
+   * khi phủ đủ `pagination.total`, để trang Bảo trì lọc theo số phòng ngay trên
+   * client mà không cần thay đổi backend.
+   */
+  getAllTickets: async (
+    params?: TicketFilterParams,
+    pageSize = 100
+  ): Promise<MaintenanceTicketItem[]> => {
+    const first = await maintenanceApi.getTickets({ ...params, page: 1, limit: pageSize });
+    const firstItems: MaintenanceTicketItem[] = Array.isArray(first.data)
+      ? first.data
+      : first.data?.items || [];
+    const total = Array.isArray(first.data)
+      ? firstItems.length
+      : first.data?.pagination?.total ?? firstItems.length;
+
+    if (firstItems.length >= total) return firstItems;
+
+    // Remaining pages are independent, so fetch them in parallel.
+    const loadedPages = Math.ceil(firstItems.length / pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(totalPages - loadedPages, 0) }, (_, idx) =>
+        maintenanceApi.getTickets({ ...params, page: loadedPages + idx + 1, limit: pageSize })
+      )
+    );
+
+    return rest.reduce<MaintenanceTicketItem[]>((acc, res) => {
+      const items = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      return acc.concat(items);
+    }, firstItems);
+  },
+
+  /**
    * Lấy chi tiết phiếu sự cố kèm lịch sử timeline (audit logs)
    * GET /maintenance/tickets/:id
    */

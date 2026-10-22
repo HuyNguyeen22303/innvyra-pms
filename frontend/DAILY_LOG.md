@@ -1573,4 +1573,28 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - Bảo trì — Phiếu sự cố: 10 → 20/trang.
   - Bảo trì — Lệnh khóa phòng: 10 → 20/trang.
 
+### 🐛 Tìm kiếm phiếu bảo trì theo số phòng (branch `bugfix/fe`):
+
+#### 1. Hiện tượng & Nguyên nhân:
+- Ô tìm kiếm ở tab "Phiếu sự cố kỹ thuật" chỉ tìm theo tiêu đề/mô tả, gõ số phòng (ví dụ `104`) không ra phiếu của phòng đó.
+- Backend `GET /maintenance/tickets` chỉ OR `title` / `description` cho tham số `search`, không tìm trong số phòng; nếu vẫn gửi `search` thì các phiếu khớp phòng sẽ bị loại ngay từ server.
+
+#### 2. Giải pháp (chỉ Frontend, không sửa Backend/DB):
+- Thêm `maintenanceApi.getAllTickets()`: tải toàn bộ phiếu theo bộ lọc trạng thái/ưu tiên (đi lần lượt các trang, `limit` tối đa 100) thay vì chỉ 20 phiếu đầu.
+- Bỏ `search` khỏi query server và lọc từ khóa ngay trên client theo:
+  - Tiêu đề sự cố.
+  - Mô tả sự cố.
+  - Số phòng (`ticket.room.roomNumber`), hỗ trợ khớp một phần (gõ `30` ra phòng `307`).
+- Gõ từ khóa không phát sinh request mới; KPI cards, số lượng trên tab và bảng đều cập nhật theo kết quả lọc.
+- Đổi placeholder thành "Tìm theo tiêu đề, mô tả hoặc số phòng...".
+
+#### 3. Kiểm thử:
+- `npm run build`: pass, 0 lỗi TypeScript; `npm run lint`: 0 warning/error.
+- Kiểm thử trực quan với `receptionist` (4 phiếu: phòng 104, 206, 307, 410):
+  - `104` → phiếu #1; `206` → #2; `410` → #4.
+  - `30` → phiếu #3 (phòng 307), chứng minh khớp một phần số phòng.
+  - `điều hòa` → phiếu #2 (tìm theo tiêu đề vẫn hoạt động).
+  - `9999` → bảng trống, tab hiển thị (0), không lỗi.
+  - Xóa từ khóa → trả lại đủ 4 phiếu.
+
 

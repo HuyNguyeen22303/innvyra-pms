@@ -538,23 +538,20 @@ export const MaintenancePage: React.FC = () => {
     isLoading: isTicketsLoading,
     refetch: refetchTickets,
   } = useQuery({
-    queryKey: [
-      "maintenance-tickets",
-      ticketSearch,
-      ticketStatusFilter,
-      ticketPriorityFilter,
-    ],
+    // Room numbers are not part of the backend ticket `search` (it only looks
+    // at title/description), so the whole filtered list is fetched once and the
+    // keyword is matched against title, description and room number in the
+    // browser. Typing in the search box therefore never issues a request.
+    queryKey: ["maintenance-tickets", ticketStatusFilter, ticketPriorityFilter],
     queryFn: () =>
-      maintenanceApi.getTickets({
-        limit: 20,
-        search: ticketSearch.trim() || undefined,
+      maintenanceApi.getAllTickets({
         status: ticketStatusFilter,
         priority: ticketPriorityFilter,
         sortBy: "reportedAt",
       }),
     staleTime: 10000,
-    // Keep the current rows while the new search is in flight instead of
-    // blanking the table and remounting every row on each debounce tick.
+    // Keep the current rows while a status/priority change is in flight instead
+    // of blanking the table and remounting every row.
     placeholderData: keepPreviousData,
   });
 
@@ -615,19 +612,30 @@ export const MaintenancePage: React.FC = () => {
     enabled: !!selectedBlockForDetail?.id && isBlockDrawerOpen,
   });
 
-  const rawTickets = ticketsRes?.data;
   const ticketList: MaintenanceTicketItem[] = useMemo(
-    () =>
-      Array.isArray(rawTickets)
-        ? rawTickets
-        : (rawTickets as any)?.items || [],
-    [rawTickets]
+    () => (Array.isArray(ticketsRes) ? ticketsRes : []),
+    [ticketsRes]
   );
 
+  // The backend ticket `search` only covers title/description, so match the
+  // keyword against the room number here as well (and support partial room
+  // numbers such as "10" matching 101, 102, ...).
+  const normalizedTicketSearch = ticketSearch.trim().toLowerCase();
+  const searchedTickets = useMemo(() => {
+    if (!normalizedTicketSearch) return ticketList;
+
+    return ticketList.filter((ticket) => {
+      const haystack = `${ticket.title} ${ticket.description} ${
+        ticket.room?.roomNumber ?? ""
+      }`.toLowerCase();
+      return haystack.includes(normalizedTicketSearch);
+    });
+  }, [ticketList, normalizedTicketSearch]);
+
   // Defer the grid payload so a keydown arriving mid-render can interrupt it.
-  const deferredTickets = useDeferredValue(ticketList);
+  const deferredTickets = useDeferredValue(searchedTickets);
   const tableTickets =
-    deferredTickets.length > 0 ? deferredTickets : ticketList;
+    deferredTickets.length > 0 ? deferredTickets : searchedTickets;
 
   const rawBlocks = blocksRes?.data;
   const blockList: MaintenanceBlockItem[] = useMemo(
@@ -1250,15 +1258,15 @@ export const MaintenancePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [canManageBlocks, screens, setIsBlockDrawerOpen, setIsCancelBlockModalOpen, setIsReleaseBlockModalOpen, setSelectedBlockForDetail, setActionBlock]);
 
-  // Counts for KPI
-  const openTickets = ticketList.filter((t) => t.status === "OPEN").length;
-  const inProgressTickets = ticketList.filter(
+  // Counts for KPI (follow the same filters/search as the table above)
+  const openTickets = searchedTickets.filter((t) => t.status === "OPEN").length;
+  const inProgressTickets = searchedTickets.filter(
     (t) => t.status === "IN_PROGRESS" || t.status === "ASSIGNED",
   ).length;
-  const resolvedTickets = ticketList.filter(
+  const resolvedTickets = searchedTickets.filter(
     (t) => t.status === "RESOLVED",
   ).length;
-  const closedTickets = ticketList.filter((t) => t.status === "CLOSED").length;
+  const closedTickets = searchedTickets.filter((t) => t.status === "CLOSED").length;
 
   const activeBlocks = blockList.filter((b) => b.status === "ACTIVE").length;
   const scheduledBlocks = blockList.filter(
@@ -1407,7 +1415,7 @@ export const MaintenancePage: React.FC = () => {
                     <Row gutter={[12, 12]} align="middle">
                       <Col xs={24} sm={8}>
                         <DebouncedSearchInput
-                          placeholder="Tìm theo tiêu đề sự cố..."
+                          placeholder="Tìm theo tiêu đề, mô tả hoặc số phòng..."
                           prefix={<SearchOutlined />}
                           value={ticketSearch}
                           onChange={(val) => setTicketSearch(val)}
@@ -1731,7 +1739,7 @@ export const MaintenancePage: React.FC = () => {
             key: "tickets",
             label: (
               <span>
-                <ToolOutlined /> Phiếu sự cố kỹ thuật ({ticketList.length})
+                <ToolOutlined /> Phiếu sự cố kỹ thuật ({searchedTickets.length})
               </span>
             ),
             children: maintenanceTicketsPane,
