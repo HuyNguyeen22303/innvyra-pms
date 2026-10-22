@@ -40,6 +40,7 @@ import {
   ShoppingCartOutlined,
   StopOutlined,
   LoginOutlined,
+  UserDeleteOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
@@ -140,6 +141,91 @@ const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo
             <Input.TextArea
               rows={3}
               placeholder="Vui lòng nêu rõ lý do hủy (VD: Khách báo hủy chuyến bay, thay đổi lịch công tác, khách đổi ngày sang tháng sau...)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={2000}
+              showCount
+            />
+          </div>
+        </Space>
+      </Modal>
+    );
+  }
+);
+
+interface NoShowReservationModalProps {
+  open: boolean;
+  reservation: ReservationSummaryItem | null;
+  confirmLoading: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}
+
+const NoShowReservationModal: React.FC<NoShowReservationModalProps> = React.memo(
+  ({ open, reservation, confirmLoading, onCancel, onConfirm }) => {
+    const { message: appMessage } = AntdApp.useApp();
+    const [reason, setReason] = useState<string>('');
+    const [prevOpen, setPrevOpen] = useState(open);
+
+    if (open && !prevOpen) {
+      setPrevOpen(true);
+      setReason('');
+    } else if (!open && prevOpen) {
+      setPrevOpen(false);
+    }
+
+    const isFutureCheckIn =
+      !!reservation?.checkInDate &&
+      dayjs(reservation.checkInDate).startOf('day').isAfter(dayjs().startOf('day'));
+
+    const handleOk = () => {
+      if (!reason.trim()) {
+        appMessage.warning('Vui lòng nhập lý do khách không đến!');
+        return;
+      }
+      onConfirm(reason.trim());
+    };
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <UserDeleteOutlined style={{ color: '#fa8c16' }} />
+            <span>Khách Không Đến (No-Show): {reservation?.confirmationCode}</span>
+          </Space>
+        }
+        open={open}
+        onCancel={onCancel}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        okText="Xác nhận Khách Không Đến"
+        cancelText="Đóng"
+        okButtonProps={{ danger: true }}
+      >
+        <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
+          <Alert
+            type="warning"
+            showIcon
+            title="Đơn sẽ được chuyển sang trạng thái Vắng mặt (NO_SHOW)"
+            description="Đơn đặt phòng sẽ không bị hủy mà được ghi nhận là khách không đến. Toàn bộ đêm phòng đã giữ chỗ sẽ được giải phóng ngay lập tức để phục vụ khách khác. Thao tác này KHÔNG thể hoàn tác."
+          />
+
+          {isFutureCheckIn && (
+            <Alert
+              type="info"
+              showIcon
+              title={`Ngày nhận phòng là ${dayjs(reservation?.checkInDate).format('DD/MM/YYYY')} (chưa tới)`}
+              description="Hãy chắc chắn khách đã xác nhận không đến trước khi đánh dấu No-Show cho đơn đặt phòng trong tương lai."
+            />
+          )}
+
+          <div style={{ paddingBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6 }}>
+              Lý do khách không đến: <span style={{ color: '#ff4d4f' }}>*</span>
+            </Text>
+            <Input.TextArea
+              rows={3}
+              placeholder="VD: Khách không đến nhận phòng, không liên hệ được sau nhiều lần gọi, khách báo hủy chuyến..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               maxLength={2000}
@@ -387,6 +473,10 @@ export const ReservationsPage: React.FC = () => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancellingReservation, setCancellingReservation] = useState<ReservationSummaryItem | null>(null);
 
+  // No-Show Modal state
+  const [noShowModalVisible, setNoShowModalVisible] = useState(false);
+  const [noShowReservation, setNoShowReservation] = useState<ReservationSummaryItem | null>(null);
+
   // Fetch Reservations
   const {
     data: reservationsRes,
@@ -477,6 +567,40 @@ export const ReservationsPage: React.FC = () => {
     if (!cancellingReservation) return;
     cancelMutation.mutate({
       id: cancellingReservation.id,
+      reason,
+    });
+  };
+
+  // No-Show Mutation: close the booking with the NO_SHOW status so the audit
+  // trail records "guest did not arrive" instead of a regular cancellation.
+  const noShowMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      reservationsApi.markNoShow(id, { reason }),
+    onSuccess: () => {
+      appMessage.success('Đã đánh dấu khách không đến (No-Show) và giải phóng phòng!');
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['reservationDetail', noShowReservation?.id] });
+      setNoShowModalVisible(false);
+      setNoShowReservation(null);
+    },
+    onError: (err: any) => {
+      const errorMsg =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        'Không thể đánh dấu khách không đến. Vui lòng kiểm tra lại.';
+      appMessage.error(errorMsg);
+    },
+  });
+
+  const handleOpenNoShowModal = useCallback((record: ReservationSummaryItem) => {
+    setNoShowReservation(record);
+    setNoShowModalVisible(true);
+  }, []);
+
+  const handleConfirmNoShow = (reason: string) => {
+    if (!noShowReservation) return;
+    noShowMutation.mutate({
+      id: noShowReservation.id,
       reason,
     });
   };
@@ -697,7 +821,8 @@ export const ReservationsPage: React.FC = () => {
     ).length;
     const checkedOut = reservations.filter((r) => r.status === 'CHECKED_OUT').length;
     const cancelled = reservations.filter((r) => r.status === 'CANCELLED').length;
-    return { total, confirmed, inHouse, checkedOut, cancelled };
+    const noShow = reservations.filter((r) => r.status === 'NO_SHOW').length;
+    return { total, confirmed, inHouse, checkedOut, cancelled, noShow };
   }, [reservations]);
 
   // ----------------------------------------------------
@@ -819,7 +944,7 @@ export const ReservationsPage: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 140,
+      width: 175,
       fixed: screens.xs ? false : 'right',
       render: (_, record) => {
         const isConfirmed = record.status === 'CONFIRMED';
@@ -845,6 +970,15 @@ export const ReservationsPage: React.FC = () => {
               </Tooltip>
             )}
             {canWrite && isConfirmed && (
+              <Tooltip title="Đánh dấu khách không đến (No-Show)">
+                <Button
+                  type="text"
+                  icon={<UserDeleteOutlined style={{ color: '#fa8c16' }} />}
+                  onClick={() => handleOpenNoShowModal(record)}
+                />
+              </Tooltip>
+            )}
+            {canWrite && isConfirmed && (
               <Tooltip title="Hủy đơn đặt phòng này">
                 <Button
                   type="text"
@@ -858,7 +992,7 @@ export const ReservationsPage: React.FC = () => {
         );
       },
     },
-  ], [canWrite, screens.xs, navigate, handleOpenCancelModal]);
+  ], [canWrite, screens.xs, navigate, handleOpenCancelModal, handleOpenNoShowModal]);
 
   // Memoized tab pane: the element identity only changes when the values it
   // actually reads change, so unrelated page state (other tab, filters,
@@ -1273,7 +1407,7 @@ export const ReservationsPage: React.FC = () => {
                         </div>
                       </Card>
                     </Col>
-                    <Col xs={12} sm={8} md={6} lg={5}>
+                    <Col xs={12} sm={8} md={6} lg={4}>
                       <Card
                         size="small"
                         variant="outlined"
@@ -1294,7 +1428,7 @@ export const ReservationsPage: React.FC = () => {
                         </div>
                       </Card>
                     </Col>
-                    <Col xs={12} sm={8} md={6} lg={5}>
+                    <Col xs={12} sm={8} md={6} lg={4}>
                       <Card
                         size="small"
                         variant="outlined"
@@ -1315,7 +1449,7 @@ export const ReservationsPage: React.FC = () => {
                         </div>
                       </Card>
                     </Col>
-                    <Col xs={12} sm={8} md={6} lg={5}>
+                    <Col xs={12} sm={8} md={6} lg={4}>
                       <Card
                         size="small"
                         variant="outlined"
@@ -1336,7 +1470,7 @@ export const ReservationsPage: React.FC = () => {
                         </div>
                       </Card>
                     </Col>
-                    <Col xs={12} sm={8} md={6} lg={5}>
+                    <Col xs={12} sm={8} md={6} lg={4}>
                       <Card
                         size="small"
                         variant="outlined"
@@ -1354,6 +1488,27 @@ export const ReservationsPage: React.FC = () => {
                         </Text>
                         <div style={{ fontSize: 20, fontWeight: 700, color: '#cf1322', marginTop: 4 }}>
                           {stats.cancelled}
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={6} lg={4}>
+                      <Card
+                        size="small"
+                        variant="outlined"
+                        className="pms-kpi-card"
+                        style={{
+                          height: '100%',
+                          borderRadius: 8,
+                          borderColor: '#ffd591',
+                          background: '#fff7e6',
+                        }}
+                        styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+                      >
+                        <Text style={{ fontSize: 12, color: '#d46b08' }}>
+                          Không đến (NO_SHOW)
+                        </Text>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: '#d46b08', marginTop: 4 }}>
+                          {stats.noShow}
                         </div>
                       </Card>
                     </Col>
@@ -1504,17 +1659,30 @@ export const ReservationsPage: React.FC = () => {
         }}
         extra={
           canWrite && reservationDetail && (reservationDetail.status === 'CONFIRMED' || reservationDetail.status === 'PARTIALLY_CHECKED_IN') ? (
-            <Button
-              type="primary"
-              icon={<LoginOutlined />}
-              style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
-              onClick={() => {
-                setIsDrawerOpen(false);
-                navigate(`/stays?tab=arrivals&reservationId=${reservationDetail.id}`);
-              }}
-            >
-              Làm thủ tục Check-in
-            </Button>
+            <Space>
+              {reservationDetail.status === 'CONFIRMED' && (
+                <Button
+                  danger
+                  size="small"
+                  icon={<UserDeleteOutlined />}
+                  onClick={() => handleOpenNoShowModal(reservationDetail)}
+                >
+                  No-Show
+                </Button>
+              )}
+              <Button
+                type="primary"
+                size="small"
+                icon={<LoginOutlined />}
+                style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  navigate(`/stays?tab=arrivals&reservationId=${reservationDetail.id}`);
+                }}
+              >
+                Làm thủ tục Check-in
+              </Button>
+            </Space>
           ) : null
         }
       >
@@ -1733,26 +1901,39 @@ export const ReservationsPage: React.FC = () => {
               </Card>
             )}
 
-            {/* Cancellation info (if cancelled) */}
+            {/* Cancellation / No-Show info (if the booking is closed) */}
             {reservationDetail.cancellation && (
               <Alert
-                type="error"
+                type={reservationDetail.status === 'NO_SHOW' ? 'warning' : 'error'}
                 showIcon
-                icon={<StopOutlined />}
-                title={`Đơn đặt phòng đã bị hủy vào ${dayjs(
-                  reservationDetail.cancellation.cancelledAt
-                ).format('DD/MM/YYYY HH:mm:ss')}`}
+                icon={
+                  reservationDetail.status === 'NO_SHOW' ? <UserDeleteOutlined /> : <StopOutlined />
+                }
+                title={
+                  reservationDetail.status === 'NO_SHOW'
+                    ? `Khách không đến (No-Show) — ghi nhận lúc ${dayjs(
+                        reservationDetail.cancellation.cancelledAt
+                      ).format('DD/MM/YYYY HH:mm:ss')}`
+                    : `Đơn đặt phòng đã bị hủy vào ${dayjs(
+                        reservationDetail.cancellation.cancelledAt
+                      ).format('DD/MM/YYYY HH:mm:ss')}`
+                }
                 description={
                   <div>
                     {reservationDetail.cancellation.cancelledBy && (
                       <div>
-                        Người thực hiện hủy:{' '}
+                        {reservationDetail.status === 'NO_SHOW'
+                          ? 'Nhân viên ghi nhận: '
+                          : 'Người thực hiện hủy: '}
                         <strong>{reservationDetail.cancellation.cancelledBy.fullName}</strong>
                       </div>
                     )}
                     {reservationDetail.cancellation.reason && (
                       <div style={{ marginTop: 4 }}>
-                        Lý do hủy: <em>{reservationDetail.cancellation.reason}</em>
+                        {reservationDetail.status === 'NO_SHOW'
+                          ? 'Lý do khách không đến: '
+                          : 'Lý do hủy: '}
+                        <em>{reservationDetail.cancellation.reason}</em>
                       </div>
                     )}
                   </div>
@@ -1775,6 +1956,20 @@ export const ReservationsPage: React.FC = () => {
           setCancellingReservation(null);
         }}
         onConfirm={handleConfirmCancel}
+      />
+
+      {/* ---------------------------------------------------- */}
+      {/* NO-SHOW RESERVATION MODAL */}
+      {/* ---------------------------------------------------- */}
+      <NoShowReservationModal
+        open={noShowModalVisible}
+        reservation={noShowReservation}
+        confirmLoading={noShowMutation.isPending}
+        onCancel={() => {
+          setNoShowModalVisible(false);
+          setNoShowReservation(null);
+        }}
+        onConfirm={handleConfirmNoShow}
       />
     </div>
   );

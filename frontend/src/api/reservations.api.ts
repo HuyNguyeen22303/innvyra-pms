@@ -6,6 +6,7 @@ import type {
   RoomAvailabilityItem,
   CreateReservationDto,
   CancelReservationDto,
+  NoShowReservationDto,
   AvailabilityQueryParams,
   ReservationFilterParams,
 } from '../types/reservations.types.ts';
@@ -64,6 +65,21 @@ export const reservationsApi = {
   ): Promise<ApiResponse<{ id: string; status: string }>> => {
     const res = await apiClient.post<ApiResponse<{ id: string; status: string }>>(
       `/reservations/${id}/cancel`,
+      data
+    );
+    return res.data;
+  },
+
+  /**
+   * Đánh dấu khách không đến (No-Show). Chỉ áp dụng cho đơn CONFIRMED,
+   * yêu cầu lý do và giải phóng tồn phòng giống thao tác hủy đơn.
+   */
+  markNoShow: async (
+    id: string,
+    data: NoShowReservationDto
+  ): Promise<ApiResponse<{ id: string; status: string }>> => {
+    const res = await apiClient.post<ApiResponse<{ id: string; status: string }>>(
+      `/reservations/${id}/no-show`,
       data
     );
     return res.data;

@@ -95,6 +95,10 @@ export interface CancelReservationDto {
   reason: string;
 }
 
+export interface NoShowReservationDto {
+  reason: string;
+}
+
 export interface AvailabilityQueryParams {
   checkInDate: string;
   checkOutDate: string;
