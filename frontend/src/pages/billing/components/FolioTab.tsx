@@ -67,6 +67,16 @@ const getApiErrorMessage = (err: any, fallback: string): string => {
   return errData?.error?.message || errData?.message || fallback;
 };
 
+/**
+ * Reservation codes are generated as `INN-<hex>` or seeded as `RES-...`.
+ * A guest name is not code-shaped, so the single Folio search box can route
+ * the keyword to the right API parameter. This matters because the Backend
+ * ANDs `search` and `guestSearch`: sending the same keyword to both would
+ * almost always return zero rows.
+ */
+const looksLikeReservationCode = (keyword: string): boolean =>
+  /^(?:INN|RES)-/i.test(keyword) || /^[A-Z0-9_-]*\d[A-Z0-9_-]*$/i.test(keyword);
+
 export const FolioTab: React.FC = () => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
@@ -74,6 +84,7 @@ export const FolioTab: React.FC = () => {
   const { user } = useAuthStore();
 
   const userRole = user?.role || '';
+  const isAccountant = userRole === 'ACCOUNTANT';
   const canOpenOrPay = ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'].includes(userRole);
   const canSettleOrAdjust = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
 
@@ -158,15 +169,22 @@ export const FolioTab: React.FC = () => {
     refetch: refetchReservations,
   } = useQuery({
     queryKey: ['billing-reservations-list', resTablePage, resTablePageSize, resTableSearch, resTableStatus],
-    queryFn: () =>
-      reservationsApi.getAll({
+    queryFn: () => {
+      const keyword = resTableSearch.trim();
+      // ACCOUNTANT is not allowed to call `guestSearch` (403), so their box
+      // stays code-only. For everyone else, route code-shaped input to
+      // `search` and the rest to `guestSearch`.
+      const codeSearch = !keyword || isAccountant || looksLikeReservationCode(keyword);
+      return reservationsApi.getAll({
         page: resTablePage,
         limit: resTablePageSize,
-        search: resTableSearch.trim() || undefined,
+        search: codeSearch ? keyword || undefined : undefined,
+        guestSearch: !codeSearch && keyword ? keyword : undefined,
         status: resTableStatus || undefined,
         sortBy: 'createdAt',
         sortOrder: 'desc',
-      }),
+      });
+    },
     // Server-paginated list: keep the current page on screen while the next
     // request is in flight so the table never blanks out mid-typing.
     placeholderData: keepPreviousData,
@@ -1038,7 +1056,7 @@ export const FolioTab: React.FC = () => {
                 ]}
               />
               <DebouncedSearchInput
-                placeholder="Tìm mã đơn, tên khách..."
+                placeholder={isAccountant ? 'Tìm mã đơn...' : 'Tìm mã đơn, tên khách...'}
                 prefix={<SearchOutlined />}
                 style={{ width: 220 }}
                 value={resTableSearch}

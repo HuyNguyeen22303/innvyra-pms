@@ -1523,4 +1523,29 @@ Tài liệu này ghi lại chi tiết tiến độ, công việc thực hiện, 
   - `0928901234` và `+7 495 123` trả đúng hồ sơ; `nguyen` trả đúng các khách họ Nguyễn.
   - Xóa từ khóa trở lại 10 dòng trang đầu; console không có lỗi.
 
+### 🐛 Fix thanh tìm kiếm Folio (branch `bugfix/fe`):
+
+#### 1. Hiện tượng & Nguyên nhân:
+- Ô tìm kiếm ở màn hình Thu ngân & Folio ghi "Tìm mã đơn, tên khách..." nhưng chỉ gửi `search` lên API.
+- Backend dùng `search` để tìm trong `confirmationCode` và `guestSearch` để tìm trong `bookerGuest.fullName`. Vì vậy gõ tên khách luôn ra 0 kết quả.
+- Không thể gửi cùng lúc cả hai tham số: Backend AND hai điều kiện, nên kết quả gần như luôn rỗng.
+
+#### 2. Giải pháp (chỉ Frontend, không sửa Backend/DB):
+- Thêm hàm `looksLikeReservationCode()`: nhận diện mã đơn theo tiền tố `INN-` / `RES-` hoặc chuỗi chỉ gồm chữ/số/gạch và có chữ số.
+- Trong query danh sách đơn:
+  - Nếu từ khóa giống mã đơn → gửi `search`.
+  - Nếu là tên khách → gửi `guestSearch`.
+  - Nếu ô trống → không gửi tham số tìm kiếm.
+- Với `ACCOUNTANT`: Backend chặn `guestSearch` (403) nên chỉ gửi `search`, placeholder đổi thành "Tìm mã đơn..." để phản ánh đúng khả năng tìm kiếm.
+- Giữ nguyên phân trang server-side, không tải toàn bộ danh sách.
+
+#### 3. Kiểm thử:
+- `npm run build`: pass, 0 lỗi TypeScript; `npm run lint`: 0 warning/error.
+- Kiểm thử trực quan với `receptionist`:
+  - `Carlos` → gửi `guestSearch=Carlos`, trả đúng các đơn của Carlos Rodriguez (#48, #30).
+  - `Nguyen` → gửi `guestSearch=Nguyen`, trả đúng các đơn của Nguyễn Thành Nam và Nguyễn Văn An (không phân biệt dấu).
+  - `RES-UNASSIGN-02` → gửi `search=...`, trả đúng đơn #28.
+  - `89FCF` (một phần mã `INN-89FCF...`) → gửi `search=89FCF`, trả đúng đơn #48.
+  - Xóa từ khóa → tải lại danh sách đầy đủ (48 đơn), không có lỗi mới.
+
 
