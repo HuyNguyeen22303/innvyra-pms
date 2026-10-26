@@ -156,7 +156,7 @@ export const ServiceOrdersTab: React.FC = () => {
 
   // Filter States
   const [statusFilter, setStatusFilter] = useState<ServiceOrderStatus | undefined>(undefined);
-  const [reservationSearch, setReservationSearch] = useState<string>('');
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
 
@@ -167,18 +167,22 @@ export const ServiceOrdersTab: React.FC = () => {
 
   const [createForm] = Form.useForm();
 
-  // Query Service Orders
+  // Users often type the displayed "#RES-IN-101"/"#101" as-is; the API expects
+  // the bare code/room number.
+  const searchTerm = searchKeyword.trim().replace(/^#+/, '');
+
+  // Query Service Orders (server-side search & pagination)
   const {
     data: ordersRes,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['billing-orders', statusFilter, reservationSearch, page, pageSize],
+    queryKey: ['billing-orders', statusFilter, searchTerm, page, pageSize],
     queryFn: () =>
       billingApi.getServiceOrders({
         page,
         limit: pageSize,
-        reservationId: reservationSearch.trim() || undefined,
+        search: searchTerm || undefined,
         status: statusFilter,
         sortBy: 'createdAt',
         sortOrder: 'desc',
@@ -198,7 +202,7 @@ export const ServiceOrdersTab: React.FC = () => {
   // Dynamic Staff Directory for instant employee names & roles
   const { getStaff } = useStaffDirectory();
 
-  // Query Stays & Reservations (cached for table lookups & modal)
+  // Query Stays & Reservations (only needed by the create-order modal)
   const { data: activeStaysRes } = useQuery({
     queryKey: ['active-stays-lookup'],
     queryFn: () => staysApi.getAll({ limit: 100 }),
@@ -237,24 +241,6 @@ export const ServiceOrdersTab: React.FC = () => {
       ? (rawReservations as any).items
       : [];
   }, [rawReservations]);
-
-  // Lookup maps for fast access in table rows
-  const staysMap = useMemo(() => {
-    const map = new Map<string, any>();
-    activeStays.forEach((s: any) => {
-      if (s.stayId) map.set(String(s.stayId), s);
-      if (s.id) map.set(String(s.id), s);
-    });
-    return map;
-  }, [activeStays]);
-
-  const reservationsMap = useMemo(() => {
-    const map = new Map<string, any>();
-    allReservations.forEach((r: any) => {
-      if (r.id) map.set(String(r.id), r);
-    });
-    return map;
-  }, [allReservations]);
 
   // Backend requires active stay (CHECKED_IN or PARTIALLY_CHECKED_IN) for service orders
   const activeReservations = useMemo(() => {
@@ -348,12 +334,7 @@ export const ServiceOrdersTab: React.FC = () => {
       key: 'resInfo',
       width: 200,
       render: (_, record) => {
-        const stay = record.stayId ? staysMap.get(String(record.stayId)) : undefined;
-        const res = reservationsMap.get(String(record.reservationId));
-        const roomNumber = stay?.room?.roomNumber;
-        const roomTypeName = stay?.roomType?.name;
-        const guestName = stay?.bookerGuest?.fullName || res?.bookerGuest?.fullName;
-        const confirmationCode = stay?.confirmationCode || res?.confirmationCode;
+        const { roomNumber, roomTypeName, guestName, confirmationCode } = record;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
@@ -537,7 +518,7 @@ export const ServiceOrdersTab: React.FC = () => {
         ]
       : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [canManageOrders, completeOrder, completeOrderPending, formatVND, getStaff, renderStatusTag, reservationsMap, staysMap]);
+  ], [canManageOrders, completeOrder, completeOrderPending, getStaff]);
 
   return (
     <div>
@@ -547,14 +528,14 @@ export const ServiceOrdersTab: React.FC = () => {
           <Col xs={24} sm={16} md={12}>
             <Space wrap size={10} style={{ width: '100%' }}>
               <DebouncedSearchInput
-                placeholder="Mã đơn đặt phòng (VD: 1, 2)..."
+                placeholder="Tìm tên khách, số phòng, mã đặt..."
                 prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
-                value={reservationSearch}
+                value={searchKeyword}
                 onChange={(val) => {
-                  setReservationSearch(val);
+                  setSearchKeyword(val);
                   setPage(1);
                 }}
-                style={{ width: 220 }}
+                style={{ width: 300 }}
                 allowClear
               />
               <Select

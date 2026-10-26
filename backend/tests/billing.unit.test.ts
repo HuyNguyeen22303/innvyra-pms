@@ -210,6 +210,11 @@ describe('Billing Decimal and validation policy', () => {
     }
     expect(serviceQuery.safeParse({ sortBy: 'passwordHash' }).success).toBe(false);
     expect(orderQuery.safeParse({ status: 'PAID' }).success).toBe(false);
+    expect(orderQuery.parse({ search: '  Mai  ' }).search).toBe('Mai');
+    for (const search of ['', '   ', 'x'.repeat(101)])
+      expect(orderQuery.safeParse({ search }).success).toBe(false);
+    expect(orderQuery.safeParse({ search: ['101'] }).success).toBe(false);
+    expect(orderQuery.safeParse({ search: 'Nguyễn Văn An' }).success).toBe(true);
   });
   it('documents all 19 Billing operations, auth, roles, errors and resolvable references', () => {
     const operations = Object.values(billingPaths).flatMap(Object.values);

@@ -42,6 +42,7 @@ Reads aggregate entries and payments in a RepeatableRead snapshot. Pending/faile
 
 - Folio opening is explicit and idempotent, including retrieving an existing CLOSED folio. GET returns `404 FOLIO_NOT_FOUND` if unopened. A new folio cannot open for CANCELLED/NO_SHOW.
 - New orders require an active stay. Supplied stayId must be active and belong to the same reservation/hotel, with live occupancy. Without stayId the order is reservation-level during an active stay. Prices snapshot when the order is created. Completion and charges commit atomically. Previously requested services may complete after physical checkout. Only REQUESTED orders can cancel.
+- `GET /service-orders?search=` uses one term: numeric input matches a physical room-number prefix (for example `2` finds 201/202 but not 102); text matches guest name, confirmation code or room number (case/diacritic-insensitive via the database collation). Internal order/reservation/stay IDs are not searchable. Guest-name matching is excluded for ACCOUNTANT; room/code search still works.
 - Physical checkout performs no billing mutation. Cancellation creates no automatic refund/credit and deletes no charges. Folios may remain OPEN with debt after checkout.
 - Receipts require `confirmedReceived:true`; BANK_TRANSFER also requires an actual transfer reference. This is the authorized employee's attestation, not a bank integration. Payment/deposit cannot exceed current outstanding. Deposits are allowed only for CONFIRMED/CHECKED_IN/PARTIALLY_CHECKED_IN reservations.
 - ADMIN/MANAGER/ACCOUNTANT may approve and record manual refunds with a mandatory reason and `confirmedRefunded:true`; bank refunds require the outgoing reference. The recording employee is the approver under this MVP policy; two-person approval is not implemented. Cumulative refunds cannot exceed the original confirmed receipt or folio net money received. Refunds cannot themselves be refunded.
@@ -74,7 +75,7 @@ All paths are under `/api/v1`, use Bearer authentication and `success/message/da
 | PATCH /services/:id                          | Current catalog changes; preserve old snapshots                                      |
 | DELETE /services/:id                         | Deactivate                                                                           |
 | POST /service-orders                         | reservationId, optional stayId, items, notes                                         |
-| GET /service-orders                          | page, limit, reservationId, stayId, status, sortBy createdAt/id, sortOrder           |
+| GET /service-orders                          | page, limit, reservationId, stayId, status, search, sortBy createdAt/id, sortOrder   |
 | GET /service-orders/:id                      | Order and item snapshots                                                             |
 | POST /service-orders/:id/complete            | Complete and post charges atomically                                                 |
 | POST /service-orders/:id/cancel              | Cancel REQUESTED order with reason                                                   |

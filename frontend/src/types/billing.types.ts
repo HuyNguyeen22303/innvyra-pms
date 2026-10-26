@@ -74,6 +74,10 @@ export interface ServiceOrderItem {
   id: string;
   reservationId: string;
   stayId: string | null;
+  guestName: string;
+  confirmationCode: string;
+  roomNumber: string | null;
+  roomTypeName: string | null;
   status: ServiceOrderStatus;
   notes: string | null;
   createdBy: string;
@@ -107,6 +111,7 @@ export interface OrderQueryParams {
   reservationId?: string;
   stayId?: string;
   status?: ServiceOrderStatus;
+  search?: string;
   sortBy?: 'createdAt' | 'id';
   sortOrder?: 'asc' | 'desc';
 }

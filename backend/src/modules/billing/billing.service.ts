@@ -147,7 +147,11 @@ export class BillingService {
   async listOrders(scope: BillingScope, query: OrderQuery) {
     this.authorize(scope, 'read');
     return this.repository.snapshot(async (r) => {
-      const result = await r.orders(scope.hotelId, query);
+      const result = await r.orders(scope.hotelId, query, {
+        // Guest-name lookup is a front-desk capability; accountants may still
+        // search by request/booking code or room number.
+        matchGuestName: scope.role !== 'ACCOUNTANT',
+      });
       return pageResult(result.items.map(orderDto), result.total, query);
     });
   }

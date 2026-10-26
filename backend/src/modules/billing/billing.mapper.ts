@@ -3,9 +3,8 @@ import type {
   FolioItem,
   Payment,
   Service,
-  ServiceOrder,
-  ServiceOrderItem,
 } from '../../generated/prisma/client.js';
+import type { OrderRecord } from './billing.repository.js';
 import { balanceDto, type calculateBalance } from './billing.money.js';
 
 export const serviceDto = (row: Service) => ({
@@ -16,10 +15,14 @@ export const serviceDto = (row: Service) => ({
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
-export const orderDto = (row: ServiceOrder & { items: ServiceOrderItem[] }) => ({
+export const orderDto = (row: OrderRecord) => ({
   id: row.id.toString(),
   reservationId: row.reservationId.toString(),
   stayId: row.stayId?.toString() ?? null,
+  guestName: row.reservation.bookerGuest.fullName,
+  confirmationCode: row.reservation.confirmationCode,
+  roomNumber: row.stay?.currentRoom?.roomNumber ?? null,
+  roomTypeName: row.stay?.currentRoom?.roomType?.name ?? null,
   status: row.status,
   notes: row.notes,
   createdBy: row.createdBy.toString(),

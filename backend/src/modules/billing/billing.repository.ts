@@ -9,7 +9,49 @@ import type {
   ServiceQuery,
 } from './billing.types.js';
 
-const orderInclude = { items: { orderBy: { id: 'asc' } } } as const;
+const orderInclude = {
+  items: { orderBy: { id: 'asc' } },
+  reservation: {
+    select: {
+      confirmationCode: true,
+      bookerGuest: { select: { fullName: true } },
+    },
+  },
+  stay: {
+    select: {
+      currentRoom: {
+        select: {
+          roomNumber: true,
+          roomType: { select: { name: true } },
+        },
+      },
+    },
+  },
+} as const;
+export type OrderRecord = Prisma.ServiceOrderGetPayload<{ include: typeof orderInclude }>;
+
+/**
+ * One box for booking code, guest name or physical room. A numeric term is a
+ * room-number prefix (so "2" finds 201/202 without also matching 102), never an
+ * internal order/reservation/stay ID. Guest-name matching is optional because
+ * only front-desk roles are allowed to search guests by name.
+ */
+function orderSearchFilters(
+  search: string,
+  matchGuestName: boolean,
+): Prisma.ServiceOrderWhereInput[] {
+  if (/^\d+$/.test(search))
+    return [{ stay: { currentRoom: { roomNumber: { startsWith: search } } } }];
+
+  const filters: Prisma.ServiceOrderWhereInput[] = [
+    { reservation: { confirmationCode: { contains: search } } },
+    { stay: { currentRoom: { roomNumber: { contains: search } } } },
+  ];
+  if (matchGuestName)
+    filters.push({ reservation: { bookerGuest: { fullName: { contains: search } } } });
+  return filters;
+}
+
 export class PrismaBillingRepository {
   constructor(
     private readonly prisma: PrismaClient,
@@ -106,12 +148,17 @@ export class PrismaBillingRepository {
   order(hotelId: bigint, id: bigint) {
     return this.db.serviceOrder.findFirst({ where: { hotelId, id }, include: orderInclude });
   }
-  async orders(hotelId: bigint, query: OrderQuery) {
+  async orders(
+    hotelId: bigint,
+    query: OrderQuery,
+    options: { matchGuestName: boolean } = { matchGuestName: true },
+  ) {
     const where: Prisma.ServiceOrderWhereInput = {
       hotelId,
       ...(query.reservationId ? { reservationId: BigInt(query.reservationId) } : {}),
       ...(query.stayId ? { stayId: BigInt(query.stayId) } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.search ? { OR: orderSearchFilters(query.search, options.matchGuestName) } : {}),
     };
     return {
       items: await this.db.serviceOrder.findMany({

@@ -67,6 +67,7 @@ export const orderQuery = z
     reservationId: idSchema.optional(),
     stayId: idSchema.optional(),
     status: z.enum(['REQUESTED', 'COMPLETED', 'CANCELLED']).optional(),
+    search: paginationFields.search,
     sortBy: z.enum(['createdAt', 'id']).default('createdAt'),
     sortOrder: paginationFields.sortOrder,
   })

@@ -413,6 +413,32 @@ describe.skipIf(!testUrl)(
       expect(list.body.data.items).toHaveLength(1);
       expect((await get(`/service-orders/${other}`)).body.data.status).toBe('COMPLETED');
     });
+    it('searches orders by guest, room and confirmation code while keeping accountant name search restricted', async () => {
+      const stayId = await active();
+      const orderId = await order(await catalog(), 1, stayId);
+      const base = `/service-orders?reservationId=${booking.id}`;
+
+      const byGuest = await get(`${base}&search=Synthetic`);
+      expect(byGuest.body.data.pagination.total).toBe(1);
+      expect(byGuest.body.data.items[0]).toMatchObject({
+        id: orderId,
+        guestName: 'Synthetic guest',
+        confirmationCode: booking.confirmationCode,
+        roomNumber: '101',
+        roomTypeName: 'Deluxe',
+      });
+      expect((await get(`${base}&search=10`)).body.data.pagination.total).toBe(1);
+      expect((await get(`${base}&search=101`)).body.data.pagination.total).toBe(1);
+      expect(
+        (await get(`${base}&search=${encodeURIComponent(booking.confirmationCode)}`)).body.data
+          .pagination.total,
+      ).toBe(1);
+      expect((await get(`${base}&search=does-not-exist`)).body.data.pagination.total).toBe(0);
+
+      await changeRole('ACCOUNTANT');
+      expect((await get(`${base}&search=Synthetic`)).body.data.pagination.total).toBe(0);
+      expect((await get(`${base}&search=101`)).body.data.pagination.total).toBe(1);
+    });
     it('GET never opens a folio and completion before opening leaves an order REQUESTED', async () => {
       expect((await get(`/reservations/${booking.id}/folio`)).status).toBe(404);
       await active();
