@@ -16,3 +16,7 @@ coverage/
 .claude/
 .windsurf/
 .windsuft/
+.commandcode/
+
+# Local documentation archives, references and generated exports
+/doc/_local/
