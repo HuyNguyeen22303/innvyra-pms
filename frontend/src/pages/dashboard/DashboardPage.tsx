@@ -26,7 +26,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.ts';
 import { reportsApi } from '../../api/reports.api.ts';
@@ -36,6 +36,7 @@ import type { ReservationSummaryItem } from '../../types/reservations.types.ts';
 import type { StaySummaryItem } from '../../types/stays.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
+const dashboardPageSize = 5;
 
 export const DashboardPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -52,6 +53,8 @@ export const DashboardPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs().startOf('day'));
   const isSelectedDateToday = selectedDate.isSame(dayjs(), 'day');
   const dateStr = selectedDate.format('YYYY-MM-DD');
+  const [arrivalsPage, setArrivalsPage] = useState(1);
+  const [inHousePage, setInHousePage] = useState(1);
 
   // Period for Accountant/Operations
   const todayStr = dayjs().format('YYYY-MM-DD');
@@ -73,32 +76,35 @@ export const DashboardPage: React.FC = () => {
 
   const dashboardData = dashboardRes?.data;
 
-  // Real Expected Arrivals List (Confirmed Reservations)
-  const { data: arrivalsRes, isLoading: isArrivalsLoading } = useQuery({
-    queryKey: ['dashboard-arrivals'],
-    queryFn: () => reservationsApi.getAll({ status: 'CONFIRMED', limit: 20 }),
+  // Pending orders for the selected arrival date; one order can contain several rooms.
+  const {
+    data: arrivalsList = [],
+    isFetching: isArrivalsLoading,
+    error: arrivalsError,
+    refetch: refetchArrivals,
+  } = useQuery({
+    queryKey: ['dashboard-arrivals', dateStr],
+    queryFn: () => reservationsApi.getPendingArrivals(dateStr),
     enabled: isFrontDesk,
     staleTime: 30000,
   });
-
-  const rawArrivals = arrivalsRes?.data as any;
-  const arrivalsList: ReservationSummaryItem[] = Array.isArray(rawArrivals)
-    ? rawArrivals
-    : Array.isArray(rawArrivals?.items)
-    ? rawArrivals.items
-    : [];
 
   // Real In-House Stays List (Checked-in Stays)
-  const { data: inHouseRes, isLoading: isInHouseLoading } = useQuery({
-    queryKey: ['dashboard-in-house'],
-    queryFn: () => staysApi.getAll({ status: 'CHECKED_IN', limit: 20 }),
+  const {
+    data: inHouseRes,
+    isFetching: isInHouseLoading,
+    error: inHouseError,
+    refetch: refetchInHouse,
+  } = useQuery({
+    queryKey: ['dashboard-in-house', inHousePage],
+    queryFn: () => staysApi.getAll({ status: 'CHECKED_IN', page: inHousePage, limit: dashboardPageSize }),
+    placeholderData: keepPreviousData,
     enabled: isFrontDesk,
     staleTime: 30000,
   });
 
-  const inHouseList: StaySummaryItem[] = Array.isArray(inHouseRes?.data?.items)
-    ? inHouseRes.data.items
-    : [];
+  const inHouseList: StaySummaryItem[] = inHouseRes?.data.items ?? [];
+  const inHouseTotal = inHouseRes?.data.pagination.total;
 
   // ----------------------------------------------------
   // 2. ACCOUNTANT QUERIES (/reports/revenue & /reports/outstanding)
@@ -273,7 +279,10 @@ export const DashboardPage: React.FC = () => {
             <DatePicker
               value={selectedDate}
               onChange={(val) => {
-                if (val) setSelectedDate(val.startOf('day'));
+                if (val) {
+                  setSelectedDate(val.startOf('day'));
+                  setArrivalsPage(1);
+                }
               }}
               format="DD/MM/YYYY"
               allowClear={false}
@@ -282,7 +291,9 @@ export const DashboardPage: React.FC = () => {
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
-              if (isFrontDesk) refetchDashboard();
+              if (isFrontDesk) {
+                void Promise.all([refetchDashboard(), refetchArrivals(), refetchInHouse()]);
+              }
             }}
           >
             Làm mới
@@ -362,14 +373,14 @@ export const DashboardPage: React.FC = () => {
                     styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
                   >
                     <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
-                      Lượt khách đến dự kiến
+                      Phòng chờ nhận trong ngày
                     </Text>
                     <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
                       <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#096dd9' }}>
                         {dashboardData?.reservations?.expectedArrivals ?? 0}
                       </Title>
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        lượt
+                        phòng
                       </Text>
                     </div>
                   </Card>
@@ -520,16 +531,24 @@ export const DashboardPage: React.FC = () => {
                       label: (
                         <Space size={4}>
                           <LoginOutlined />
-                          <span>Khách Đến ({arrivalsList.length})</span>
+                          <span>Khách Đến ({arrivalsError ? '—' : arrivalsList.length} đơn)</span>
                         </Space>
                       ),
-                      children: (
+                      children: arrivalsError ? (
+                        <Alert type="error" showIcon title="Không tải được danh sách khách đến. Vui lòng thử Làm mới." />
+                      ) : (
                         <Table
                           columns={arrivalColumns}
                           dataSource={arrivalsList}
                           rowKey="id"
                           loading={isArrivalsLoading}
-                          pagination={{ pageSize: 5 }}
+                          pagination={{
+                            current: arrivalsPage,
+                            pageSize: dashboardPageSize,
+                            onChange: setArrivalsPage,
+                            showSizeChanger: false,
+                            showTotal: (total) => `${total} đơn chờ nhận phòng trong ngày`,
+                          }}
                           size="small"
                           scroll={{ x: 680 }}
                         />
@@ -540,16 +559,25 @@ export const DashboardPage: React.FC = () => {
                       label: (
                         <Space size={4}>
                           <HomeOutlined />
-                          <span>Đang Lưu Trú ({inHouseList.length})</span>
+                          <span>Đang Lưu Trú ({inHouseError ? '—' : inHouseTotal ?? '—'} lượt)</span>
                         </Space>
                       ),
-                      children: (
+                      children: inHouseError ? (
+                        <Alert type="error" showIcon title="Không tải được danh sách lưu trú. Vui lòng thử Làm mới." />
+                      ) : (
                         <Table
                           columns={inHouseColumns}
                           dataSource={inHouseList}
                           rowKey="stayId"
                           loading={isInHouseLoading}
-                          pagination={{ pageSize: 5 }}
+                          pagination={{
+                            current: inHousePage,
+                            pageSize: dashboardPageSize,
+                            total: inHouseTotal ?? 0,
+                            onChange: setInHousePage,
+                            showSizeChanger: false,
+                            showTotal: (total) => `${total} lượt đang lưu trú`,
+                          }}
                           size="small"
                           scroll={{ x: 700 }}
                         />

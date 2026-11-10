@@ -27,6 +27,23 @@ export const reservationsApi = {
     return res.data;
   },
 
+  /** Pending arrival orders for one day, including partially checked-in bookings. */
+  getPendingArrivals: async (checkInDate: string): Promise<ReservationSummaryItem[]> => {
+    const lists = await Promise.all(
+      (['CONFIRMED', 'PARTIALLY_CHECKED_IN'] as const).map(async (status) => {
+        const params = { checkInDate, status, limit: 100 };
+        const first = await reservationsApi.getAll({ ...params, page: 1 });
+        const rest = await Promise.all(
+          Array.from({ length: Math.max(0, first.data.pagination.totalPages - 1) }, (_, index) =>
+            reservationsApi.getAll({ ...params, page: index + 2 })
+          )
+        );
+        return first.data.items.concat(...rest.map((response) => response.data.items));
+      })
+    );
+    return lists.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
+  },
+
   /**
    * Xem chi tiết đặt phòng bao gồm danh sách phòng, giá từng đêm, thông tin hủy (nếu có)
    */
