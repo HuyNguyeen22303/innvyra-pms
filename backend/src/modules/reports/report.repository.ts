@@ -175,6 +175,7 @@ export class PrismaReportRepository {
       UNION ALL SELECT date, 'noShowReservationsInCreatedCohort', noShows, '' FROM created
       UNION ALL SELECT d.date, 'cancelledReservations', COUNT(*), ''
         FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
+          AND r.status = 'CANCELLED'
           AND r.cancelled_at >= d.starts AND r.cancelled_at < d.ends GROUP BY d.date
       UNION ALL SELECT d.date, 'reservationRoomsCreated', COUNT(*), ''
         FROM days d JOIN reservation_rooms rr ON rr.hotel_id = ${hotelId}

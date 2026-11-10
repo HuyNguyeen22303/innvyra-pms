@@ -189,11 +189,12 @@ describe.skipIf(!testUrl)(
             createdBy: staff.ADMIN,
             bookingSource: input.source ?? 'DIRECT',
             createdAt: input.created ?? d('2020-10-01T03:00:00Z'),
-            ...(status === 'CANCELLED'
+            ...(status === 'CANCELLED' || status === 'NO_SHOW'
               ? {
                   cancelledAt: d('2020-10-02T03:00:00Z'),
                   cancelledBy: staff.ADMIN,
-                  cancellationReason: 'Synthetic cancellation',
+                  cancellationReason:
+                    status === 'NO_SHOW' ? 'Synthetic no-show' : 'Synthetic cancellation',
                 }
               : {}),
             rooms: {

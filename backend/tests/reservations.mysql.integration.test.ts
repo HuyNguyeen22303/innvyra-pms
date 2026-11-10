@@ -373,7 +373,10 @@ describe.skipIf(!testUrl)(
       'rejects ordinary cancellation of persisted %s',
       async (status) => {
         const booking = await service.create(scope, input());
-        await prisma.reservation.update({ where: { id: BigInt(booking.id) }, data: { status } });
+        if (status === 'NO_SHOW')
+          await service.noShow(scope, BigInt(booking.id), { reason: 'Guest did not arrive' });
+        else
+          await prisma.reservation.update({ where: { id: BigInt(booking.id) }, data: { status } });
         await expect(
           service.cancel(scope, BigInt(booking.id), { reason: 'Cancel' }),
         ).rejects.toMatchObject({ code: 'RESERVATION_CANNOT_BE_CANCELLED' });

@@ -312,7 +312,7 @@ describe.skipIf(!testUrl)(
     it.each(['CANCELLED', 'NO_SHOW'] as const)('refuses arrival for %s booking', async (status) => {
       if (status === 'CANCELLED')
         await bookings.cancel(scope, BigInt(booking.id), { reason: 'Guest cancelled' });
-      else await db.reservation.update({ where: { id: BigInt(booking.id) }, data: { status } });
+      else await bookings.noShow(scope, BigInt(booking.id), { reason: 'Guest did not arrive' });
       expect((await arrive()).body.error.code).toBe('RESERVATION_NOT_CONFIRMED');
       expect(await db.stay.count({ where: { hotelId: scope.hotelId } })).toBe(0);
     });
