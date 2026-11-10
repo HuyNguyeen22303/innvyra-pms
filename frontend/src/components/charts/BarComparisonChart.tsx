@@ -20,6 +20,7 @@ export interface BarComparisonChartProps {
   series1Color?: string;
   series2Color?: string;
   valueFormatter?: (val: number) => string;
+  integerTicks?: boolean;
   height?: number;
 }
 
@@ -37,6 +38,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
   series1Color = '#1b4d3e',
   series2Color = '#1890ff',
   valueFormatter = defaultFormatNumber,
+  integerTicks = false,
   height = 280,
 }) => {
   const chartHeight = height;
@@ -47,8 +49,10 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
   const maxValue = useMemo(() => {
     if (!data.length) return 100;
     const maxVal = Math.max(...data.flatMap((d) => [Math.max(0, d.value1), Math.max(0, d.value2)]));
+    // Four equal intervals with integer bounds prevent fractional or repeated count labels.
+    if (integerTicks) return Math.ceil((Math.max(1, maxVal) * 1.15) / 4) * 4;
     return maxVal <= 0 ? 100 : maxVal * 1.15; // 15% headroom
-  }, [data]);
+  }, [data, integerTicks]);
 
   const yTicks = useMemo(() => {
     const ticks = [0];

@@ -26,7 +26,8 @@ import type { ReservationSeriesItem } from '../../../types/reports.types.ts';
 
 const { Text } = Typography;
 
-const formatReservationCount = (val: number) => `${val} lượt`;
+const formatReservationCount = (val: number) =>
+  `${val.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} lượt`;
 
 const channelColors: Record<string, string> = {
   DIRECT: '#1b4d3e',
@@ -245,6 +246,7 @@ export const ReservationsTab: React.FC<ReservationsTabProps> = React.memo(({
               series1Color="#1b4d3e"
               series2Color="#52c41a"
               valueFormatter={formatReservationCount}
+              integerTicks
               height={260}
             />
           </Card>
