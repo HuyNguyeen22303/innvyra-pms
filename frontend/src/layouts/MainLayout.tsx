@@ -39,6 +39,8 @@ import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore.ts";
 import { RoleBadge } from "../components/RoleBadge.tsx";
+import { BrandLogo } from "../components/BrandLogo.tsx";
+import "./MainLayout.css";
 import { roomsApi } from "../api/rooms.api.ts";
 import { useStaffDirectory } from "../utils/staffDirectory.ts";
 import type { Role } from "../types/auth.types.ts";
@@ -311,92 +313,25 @@ export const MainLayout: React.FC = () => {
         })
         .filter(Boolean) as MenuProps["items"]);
 
-  // Sidebar branding & property info block
+  // Product identity is shared with login; the property remains a separate context.
+  const compactBrand = collapsed && !useDrawerNavigation;
   const brandBlock = (
-    <div
-      style={{
-        height: 70,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 20px",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-        background: "#091c17",
-      }}
-    >
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 8,
-          backgroundColor: "#1b4d3e",
-          border: "1px solid #2d6b58",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 20,
-          marginRight: (collapsed && !useDrawerNavigation) ? 0 : 12,
-          flexShrink: 0,
-        }}
-      >
-        🏨
-      </div>
-      {(!collapsed || useDrawerNavigation) && (
-        <div style={{ overflow: "hidden" }}>
-          <div
-            style={{
-              color: "#ffffff",
-              fontWeight: 700,
-              fontSize: 16,
-              letterSpacing: 0.8,
-              lineHeight: 1.2,
-            }}
-          >
-            INNVYRA PMS
-          </div>
-          <div
-            style={{
-              color: "#94a3b8",
-              fontSize: 10,
-              letterSpacing: 1.2,
-              textTransform: "uppercase",
-              marginTop: 2,
-            }}
-          >
-            Boutique Hotel & Resort
-          </div>
-        </div>
-      )}
+    <div className={`sidebar-brand${compactBrand ? ' sidebar-brand--compact' : ''}`}>
+      <BrandLogo tone="dark" variant={compactBrand ? 'mark' : 'full'} size={36} />
+      {!compactBrand && <p>Nền tảng quản lý khách sạn</p>}
     </div>
   );
 
-  const propertyStrip = (!collapsed || useDrawerNavigation) && (
-    <div
-      style={{
-        margin: "14px 16px",
-        padding: "10px 12px",
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 8,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          color: "#cbd5e1",
-          fontWeight: 600,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
+  const propertyStrip = !compactBrand && (
+    <div className="sidebar-property">
+      <div className="sidebar-property__label">Cơ sở hiện tại</div>
+      <div className="sidebar-property__name">
         <span>Innvyra Hotel</span>
-        <span style={{ color: "#4ade80" }}>● {roomCount} phòng</span>
+        <span className="sidebar-property__rooms">{roomCount} phòng</span>
       </div>
-      <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
-        {currentShift}
-      </div>
+      <div className="sidebar-property__shift"><ClockCircleOutlined />{currentShift}</div>
     </div>
   );
-
   return (
     <Layout className="pms-shell" style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* Persistent navigation is reserved for wide workspaces. */}

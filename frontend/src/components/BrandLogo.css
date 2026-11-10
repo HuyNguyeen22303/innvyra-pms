@@ -1,0 +1,33 @@
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  color: #0f2922;
+  vertical-align: middle;
+}
+
+.brand-logo > img {
+  display: block;
+  flex-shrink: 0;
+}
+.brand-logo--dark {
+  color: #f7f3ea;
+}
+.brand-logo__wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1;
+}
+.brand-logo__name {
+  font-family: "Arial Black", "Segoe UI", sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+}
+.brand-logo__product {
+  color: #c6ad77;
+  font-size: 0.48em;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+}

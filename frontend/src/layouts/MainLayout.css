@@ -1,0 +1,77 @@
+.sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 94px;
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid #c6ad7724;
+  background: #0b241c;
+}
+
+.sidebar-brand > p {
+  margin: 10px 0 0;
+  color: #adc0b2;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.015em;
+}
+.sidebar-brand--compact {
+  min-height: 84px;
+  padding: 16px 8px;
+  align-items: center;
+}
+.sidebar-property {
+  margin: 14px;
+  padding: 12px;
+  border: 1px solid #c6ad7729;
+  border-radius: 10px;
+  background: #ffffff05;
+}
+.sidebar-property__label {
+  color: #8ca896;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sidebar-property__name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 5px;
+  color: #f2f0e4;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sidebar-property__rooms {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #34594369;
+  color: #b9d8be;
+  font-size: 10px;
+  font-weight: 500;
+}
+.sidebar-property__rooms::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #9ebf97;
+}
+.sidebar-property__shift {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid #ffffff0c;
+  color: #a1b6a8;
+  font-size: 10px;
+  line-height: 1.5;
+}
