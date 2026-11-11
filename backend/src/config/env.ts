@@ -53,6 +53,7 @@ const schema = z
       .regex(/^[1-9]\d*[smh]$/)
       .default('15m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: z.coerce.number().int().min(1).max(90).default(7),
+    PLATFORM_REFRESH_TOKEN_EXPIRES_IN_DAYS: z.coerce.number().int().min(1).max(7).default(1),
     FRONTEND_URL: origin.default('http://localhost:5173'),
     CORS_ORIGINS: z.string().default(''),
     COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).default('lax'),

@@ -17,6 +17,7 @@ import { startMaintenanceWorker } from './modules/maintenance/maintenance-worker
 import { PrismaReportRepository } from './modules/reports/report.repository.js';
 import { PrismaEmployeeRepository } from './modules/employees/employee.repository.js';
 import { PrismaInventoryRepository } from './modules/inventory/inventory.repository.js';
+import { PrismaPlatformAuthRepository } from './modules/platform-auth/platform-auth.repository.js';
 
 async function main() {
   const env = parseEnv(process.env);
@@ -42,6 +43,7 @@ async function main() {
       new PrismaReportRepository(prisma),
       new PrismaEmployeeRepository(prisma),
       new PrismaInventoryRepository(prisma),
+      new PrismaPlatformAuthRepository(prisma),
     ).listen(env.PORT, () => {
       console.info(`Innvyra PMS API listening on port ${env.PORT}`);
     });

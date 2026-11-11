@@ -21,6 +21,9 @@ import type { MaintenanceRepository } from './modules/maintenance/maintenance.ty
 import type { ReportRepository } from './modules/reports/report.types.js';
 import type { EmployeeRepository } from './modules/employees/employee.types.js';
 import type { InventoryRepository } from './modules/inventory/inventory.types.js';
+import type { PlatformAuthRepository } from './modules/platform-auth/platform-auth.types.js';
+import { PlatformAuthService } from './modules/platform-auth/platform-auth.service.js';
+import { platformRoutes } from './modules/platform-auth/platform-auth.routes.js';
 export type OperationsRepositories = {
   housekeeping: HousekeepingRepository;
   maintenance: MaintenanceRepository;
@@ -40,6 +43,7 @@ export function createApp(
   reports?: ReportRepository,
   employees?: EmployeeRepository,
   inventory?: InventoryRepository,
+  platformAuth?: PlatformAuthRepository,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -58,6 +62,9 @@ export function createApp(
   app.use(cors(corsOptions(env)));
   app.use(express.json({ limit: '16kb' }));
   app.use(cookieParser());
+  if (platformAuth) {
+    app.use('/api/v1/platform', platformRoutes(new PlatformAuthService(platformAuth, env), env));
+  }
   app.get('/api-docs/openapi.json', (_req, res) => {
     res.json(openApiDocument);
   });

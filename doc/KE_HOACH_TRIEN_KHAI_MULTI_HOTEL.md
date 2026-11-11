@@ -5,7 +5,7 @@ Ngày lập: 11/11/2026.
 ## 1. Trạng thái và nguyên tắc thực hiện
 
 - Nhánh làm việc: `feature/multi-hotel-saas`, tạo trực tiếp từ `develop` tại commit `48623cb`.
-- Đã hoàn thành giai đoạn 1: kiểm tra nền, chuẩn bị schema và kiểm chứng migration trên database test riêng. Chưa áp dụng migration vào database ứng dụng.
+- Đã hoàn thành giai đoạn 1 và 2: nền dữ liệu, bootstrap, xác thực và giao diện quản trị Innvyra. Chỉ kiểm chứng trên database test riêng; chưa thay đổi database ứng dụng.
 - Không commit, push hoặc merge nếu chưa được người dùng yêu cầu.
 - Thực hiện từng giai đoạn, kiểm tra đạt tiêu chí nghiệm thu trước khi chuyển sang giai đoạn tiếp theo.
 - Ghi nhận lỗi có sẵn trước khi sửa để phân biệt với lỗi do tính năng mới.
@@ -32,7 +32,7 @@ Ngày lập: 11/11/2026.
 | --- | --- | --- |
 | 0. Chuẩn bị và lập kế hoạch | Nhánh từ `develop`, lộ trình và phạm vi rõ ràng | Chỉ có tài liệu kế hoạch; chưa thay đổi mã nguồn |
 | 1. Xác lập hiện trạng và dữ liệu — hoàn thành | Schema, migration và báo cáo kiểm chứng | 713/713 test đạt; nâng cấp dữ liệu cũ và hồi quy PMS đã được kiểm chứng |
-| 2. Quản trị Innvyra | Bootstrap, xác thực riêng và giao diện nền tảng ban đầu | Hai hệ thống tài khoản không dùng chéo token hoặc quyền |
+| 2. Quản trị Innvyra — hoàn thành | Bootstrap, xác thực riêng và giao diện nền tảng ban đầu | 744/744 test backend và 14/14 test frontend đạt; xác nhận hai hệ thống tài khoản không dùng chéo token hoặc quyền |
 | 3. Tài khoản khách sạn và cache | Đăng nhập email, đổi mật khẩu bắt buộc, cache tách biệt | Tài khoản cũ hoạt động; không lộ dữ liệu giữa các phiên |
 | 4. Tiếp nhận và thiết lập khách sạn | Tạo khách sạn/admin/kỳ sử dụng, quản lý thông tin | Tạo giao dịch nguyên vẹn; khách sạn A và B hoạt động độc lập |
 | 5. Thuê bao và quyền sử dụng | Gia hạn, cảnh báo, khóa/mở và nhật ký | Đúng quy tắc hạn; khóa tác động cả phiên đang hoạt động |
@@ -43,11 +43,11 @@ Ngày lập: 11/11/2026.
 - [x] Kiểm tra trạng thái Git trước khi thay đổi nhánh.
 - [x] Tạo nhánh mới trực tiếp từ `develop` theo yêu cầu.
 - [x] Lưu kế hoạch triển khai từng bước.
-- Giai đoạn 1 đã được người dùng yêu cầu thực hiện; các giai đoạn 2–6 vẫn là công việc dự kiến.
+- Giai đoạn 1 và 2 đã hoàn thành theo yêu cầu; các giai đoạn 3–6 vẫn là công việc dự kiến.
 
 ### Giai đoạn 1 — Xác lập hiện trạng và chuẩn bị dữ liệu
 
-Trạng thái: **hoàn thành**. Chi tiết được ghi trong [báo cáo phase 1](PHASE_1_MULTI_HOTEL.md). Các giai đoạn 2–6 chưa triển khai.
+Trạng thái: **hoàn thành**. Chi tiết được ghi trong [báo cáo phase 1](PHASE_1_MULTI_HOTEL.md).
 
 - Chạy các kiểm tra hiện có để lấy mốc đối chiếu: test, kiểm tra kiểu, lint và build của backend/frontend.
 - Chạy kiểm thử MySQL trên database test riêng khi có môi trường phù hợp; ghi rõ phần không chạy được.
@@ -59,6 +59,8 @@ Trạng thái: **hoàn thành**. Chi tiết được ghi trong [báo cáo phase 
 - Nghiệm thu: migration trên dữ liệu thử không làm mất dữ liệu và các luồng hiện tại vẫn chạy.
 
 ### Giai đoạn 2 — Tài khoản và khu vực quản trị Innvyra
+
+Trạng thái: **hoàn thành**. Chi tiết, hướng dẫn bootstrap và kết quả kiểm tra được ghi trong [báo cáo phase 2](PHASE_2_PLATFORM_ADMIN.md). Các giai đoạn 3–6 chưa triển khai.
 
 - Thêm lệnh `npm run create:platform-admin` để bootstrap quản trị Innvyra đầu tiên; không đưa mật khẩu cố định vào code hoặc seed.
 - Tách tài khoản, session, refresh token, cookie và JWT audience của nền tảng với nhân viên khách sạn.

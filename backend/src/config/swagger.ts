@@ -7,6 +7,7 @@ import { operationsPaths, operationsSchemas } from './operations.openapi.js';
 import { reportPaths, reportSchemas } from './reports.openapi.js';
 import { employeePaths, employeeSchemas } from './employees.openapi.js';
 import { inventoryPaths, inventorySchemas } from './inventory.openapi.js';
+import { platformPaths, platformSchemas } from './platform.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -84,6 +85,7 @@ export const openApiDocument = {
         'Technical tickets and dated room blocks share inventory locking with reservations.',
     },
     { name: 'Authentication' },
+    { name: 'Platform Authentication' },
     { name: 'Room Types' },
     { name: 'Rooms' },
     { name: 'Guests' },
@@ -103,6 +105,19 @@ export const openApiDocument = {
   components: {
     securitySchemes: {
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      platformBearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Innvyra platform tokens only; audience is JWT_AUDIENCE + :platform.',
+      },
+      platformRefreshCookie: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'innvyra_platform_refresh',
+        description:
+          'Automatically managed platform refresh cookie, scoped to /api/v1/platform/auth.',
+      },
       refreshCookie: {
         type: 'apiKey',
         in: 'cookie',
@@ -121,6 +136,7 @@ export const openApiDocument = {
       ...reportSchemas,
       ...employeeSchemas,
       ...inventorySchemas,
+      ...platformSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -171,6 +187,7 @@ export const openApiDocument = {
     ...guestPaths,
     ...employeePaths,
     ...inventoryPaths,
+    ...platformPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

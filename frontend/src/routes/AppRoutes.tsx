@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { Spin } from 'antd';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout.tsx';
 import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
@@ -19,8 +20,38 @@ import { ReportsPage } from '../pages/reports/ReportsPage.tsx';
 import { InventoryPage } from '../pages/inventory/InventoryPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
+import { useAuthStore } from '../store/authStore.ts';
+
+const PlatformRoutes = lazy(() => import('./PlatformRoutes.tsx'));
 
 export const AppRoutes: React.FC = () => {
+  return (
+    <Routes>
+      <Route
+        path="/platform/*"
+        element={
+          <Suspense
+            fallback={
+              <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+                <Spin description="Đang tải Innvyra..." />
+              </div>
+            }
+          >
+            <PlatformRoutes />
+          </Suspense>
+        }
+      />
+      <Route path="/*" element={<HotelRoutes />} />
+    </Routes>
+  );
+};
+
+const HotelRoutes: React.FC = () => {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  useEffect(() => {
+    if (window.location.pathname !== '/login') void checkAuth();
+    else useAuthStore.setState({ isLoading: false });
+  }, [checkAuth]);
   return (
     <Routes>
       {/* Public Route */}

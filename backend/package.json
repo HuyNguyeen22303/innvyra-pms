@@ -23,7 +23,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx prisma/seed.ts",
     "seed:inventory": "tsx scripts/seed-inventory.ts",
-    "create:admin": "tsx scripts/create-admin.ts"
+    "create:admin": "tsx scripts/create-admin.ts",
+    "create:platform-admin": "tsx scripts/create-platform-admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "7.10.0",
