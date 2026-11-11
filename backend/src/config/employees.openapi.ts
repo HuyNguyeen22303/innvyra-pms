@@ -21,6 +21,11 @@ const employeeFields = {
   email: { type: 'string', format: 'email', nullable: true, maxLength: 191 },
   role: { type: 'string', enum: [...ROLE_CODES] },
   isActive: { type: 'boolean' },
+  mustChangePassword: {
+    type: 'boolean',
+    description:
+      'Newly issued and reset employee credentials must be changed before hotel operations.',
+  },
   createdAt: timestamp,
 };
 

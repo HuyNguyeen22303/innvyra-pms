@@ -9,7 +9,7 @@ import {
   HomeOutlined,
   BarChartOutlined,
 } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore.ts";
 import type { LoginCredentials } from "../../types/auth.types.ts";
 import { BrandLogo } from "../../components/BrandLogo.tsx";
@@ -61,10 +61,8 @@ export const LoginPage: React.FC = () => {
       setCustomError(null);
       await login(values);
       navigate(from, { replace: true });
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.error?.message || "Đăng nhập không thành công.";
-      setCustomError(msg);
+    } catch {
+      setCustomError(useAuthStore.getState().error || 'Đăng nhập không thành công.');
     }
   };
 
@@ -111,6 +109,7 @@ export const LoginPage: React.FC = () => {
             <h2 id="login-title">Chào mừng trở lại</h2>
             <p>Đăng nhập để tiếp tục công việc.</p>
           </header>
+          {(location.state as { passwordChanged?: boolean } | null)?.passwordChanged && <Alert type="success" showIcon title="Đổi mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới." style={{ marginBottom: 16 }} />}
 
           {(error || customError) && (
             <Alert
@@ -190,6 +189,7 @@ export const LoginPage: React.FC = () => {
               ))}
             </div>
           </section>
+          <p style={{ marginTop: 20, textAlign: 'center' }}><Link to="/platform/login">Đăng nhập quản trị Innvyra →</Link></p>
         </div>
         <p className="login-footnote">
           INNVYRA PMS · KHÔNG GIAN VẬN HÀNH KHÁCH SẠN

@@ -24,6 +24,8 @@ import type { InventoryRepository } from './modules/inventory/inventory.types.js
 import type { PlatformAuthRepository } from './modules/platform-auth/platform-auth.types.js';
 import { PlatformAuthService } from './modules/platform-auth/platform-auth.service.js';
 import { platformRoutes } from './modules/platform-auth/platform-auth.routes.js';
+import type { HotelManagementService } from './modules/hotels/hotel.service.js';
+import { ownHotelRoutes, platformHotelRoutes } from './modules/hotels/hotel.routes.js';
 export type OperationsRepositories = {
   housekeeping: HousekeepingRepository;
   maintenance: MaintenanceRepository;
@@ -44,6 +46,7 @@ export function createApp(
   employees?: EmployeeRepository,
   inventory?: InventoryRepository,
   platformAuth?: PlatformAuthRepository,
+  hotels?: HotelManagementService,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -63,8 +66,18 @@ export function createApp(
   app.use(express.json({ limit: '16kb' }));
   app.use(cookieParser());
   if (platformAuth) {
-    app.use('/api/v1/platform', platformRoutes(new PlatformAuthService(platformAuth, env), env));
+    const platformService = new PlatformAuthService(platformAuth, env);
+    app.use(
+      '/api/v1/platform',
+      platformRoutes(
+        platformService,
+        env,
+        hotels ? platformHotelRoutes(hotels, platformService, env) : undefined,
+      ),
+    );
   }
+  if (hotels)
+    app.use('/api/v1/hotel', ownHotelRoutes(hotels, new AuthService(repository, env), env));
   app.get('/api-docs/openapi.json', (_req, res) => {
     res.json(openApiDocument);
   });

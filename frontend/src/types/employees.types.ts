@@ -8,6 +8,7 @@ export interface EmployeeItem {
   email: string | null;
   role: Role;
   isActive: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
 }
 

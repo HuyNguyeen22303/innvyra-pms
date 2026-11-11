@@ -258,6 +258,15 @@
   color: #42654b;
   font-size: 24px;
 }
+.platform-hotel-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.platform-hotel-form-stack { display: grid; gap: 24px; }
+.platform-hotel-form-grid > * { min-width: 0; }
+@media (max-width: 1100px) { .platform-hotel-form-grid { grid-template-columns: minmax(0, 1fr); } }
 .platform-footer {
   font-size: 11px;
   color: #7c8f80 !important;

@@ -1,7 +1,11 @@
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { AuthRepository, NewSession, RotationResult } from './auth.types.js';
+import { unauthorized } from '../../shared/errors/app-error.js';
 
-const staffInclude = { role: true } as const;
+const staffInclude = {
+  role: true,
+  hotel: { select: { id: true, code: true, name: true, timezone: true } },
+} as const;
 const sessionInclude = { staffUser: { include: staffInclude } } as const;
 
 export class PrismaAuthRepository implements AuthRepository {
@@ -12,14 +16,51 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async createSession(input: NewSession): Promise<void> {
-    await this.prisma.authSession.create({
-      data: {
-        id: input.id,
-        staffUserId: input.staffUserId,
-        expiresAt: input.expiresAt,
-        refreshTokens: { create: { tokenHash: input.tokenHash, expiresAt: input.expiresAt } },
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM staff_users WHERE id = ${input.staffUserId} FOR UPDATE`;
+        const staff = await tx.staffUser.findUnique({ where: { id: input.staffUserId } });
+        if (
+          !staff?.isActive ||
+          (input.expectedPasswordHash && staff.passwordHash !== input.expectedPasswordHash)
+        )
+          throw unauthorized();
+        await tx.authSession.create({
+          data: {
+            id: input.id,
+            staffUserId: input.staffUserId,
+            expiresAt: input.expiresAt,
+            refreshTokens: { create: { tokenHash: input.tokenHash, expiresAt: input.expiresAt } },
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  async changePassword(
+    id: bigint,
+    expectedHash: string,
+    newHash: string,
+    now: Date,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM staff_users WHERE id = ${id} FOR UPDATE`;
+        const staff = await tx.staffUser.findUnique({ where: { id } });
+        if (!staff?.isActive || staff.passwordHash !== expectedHash) return false;
+        await tx.staffUser.update({
+          where: { id },
+          data: { passwordHash: newHash, mustChangePassword: false },
+        });
+        await tx.authSession.updateMany({
+          where: { staffUserId: id, revokedAt: null },
+          data: { revokedAt: now, revokedReason: 'PASSWORD_CHANGED' },
+        });
+        return true;
+      },
+      { isolationLevel: 'ReadCommitted', maxWait: 5000, timeout: 10000 },
+    );
   }
 
   findSession(id: string) {

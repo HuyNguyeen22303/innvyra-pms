@@ -258,7 +258,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
             showIcon
             icon={<ExclamationCircleOutlined />}
             title="Chính sách bảo mật tài khoản"
-            description="Sau khi mật khẩu mới được cấp, mọi thiết bị đang đăng nhập bằng tài khoản này sẽ bị đăng xuất ngay lập tức để bảo vệ hệ thống."
+            description="Mọi phiên đăng nhập cũ sẽ bị thu hồi. Nhân viên phải đổi mật khẩu được cấp trước khi tiếp tục sử dụng PMS."
             style={{ marginBottom: 16, fontSize: 12 }}
           />
 

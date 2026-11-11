@@ -48,6 +48,7 @@ import { CreateEmployeeModal } from './components/CreateEmployeeModal.tsx';
 import { EditEmployeeModal } from './components/EditEmployeeModal.tsx';
 import { ResetPasswordModal } from './components/ResetPasswordModal.tsx';
 import { registerStaffMembers } from '../../utils/staffDirectory.ts';
+import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 
 const { Title, Text, Paragraph } = Typography;
@@ -96,6 +97,7 @@ const EmployeeTable = React.memo(({
 EmployeeTable.displayName = 'EmployeeTable';
 
 export const EmployeesPage: React.FC = () => {
+  const [directoryGeneration] = useState(hotelSessionGeneration);
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
@@ -165,9 +167,9 @@ export const EmployeesPage: React.FC = () => {
   // Sync loaded employees with global staff directory cache
   React.useEffect(() => {
     if (employeesRes?.data?.items) {
-      registerStaffMembers(employeesRes.data.items);
+      registerStaffMembers(employeesRes.data.items, directoryGeneration);
     }
-  }, [employeesRes]);
+  }, [employeesRes, directoryGeneration]);
 
   // KPI Queries (Get accurate totals without full list download)
   const { data: totalAllRes } = useQuery({

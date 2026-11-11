@@ -29,6 +29,7 @@ function toResponse(staff: {
   username: string;
   email: string | null;
   isActive: boolean;
+  mustChangePassword?: boolean;
   createdAt: Date;
   role: { code: string; name?: string };
 }) {
@@ -39,6 +40,7 @@ function toResponse(staff: {
     email: staff.email,
     role: staff.role.code,
     isActive: staff.isActive,
+    mustChangePassword: staff.mustChangePassword ?? false,
     createdAt: staff.createdAt,
   };
 }
@@ -174,8 +176,7 @@ export class EmployeeService {
 
       this.checkRoleHierarchy(scope.role, record.role.code);
 
-      if (record.isActive)
-        throw new AppError(409, 'ALREADY_ACTIVE', 'Employee is already active');
+      if (record.isActive) throw new AppError(409, 'ALREADY_ACTIVE', 'Employee is already active');
 
       const updated = await repository.activate(scope.hotelId, id);
       return toResponse(updated);
@@ -216,6 +217,7 @@ export class EmployeeService {
         email: item.email,
         role: item.role.code,
         isActive: item.isActive,
+        mustChangePassword: item.mustChangePassword,
         createdAt: item.createdAt,
       })),
       total,

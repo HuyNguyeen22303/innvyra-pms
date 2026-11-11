@@ -1,11 +1,13 @@
 # Kế hoạch triển khai Innvyra PMS đa khách sạn
 
 Ngày lập: 11/11/2026.
+Cập nhật trạng thái: 12/11/2026.
 
 ## 1. Trạng thái và nguyên tắc thực hiện
 
 - Nhánh làm việc: `feature/multi-hotel-saas`, tạo trực tiếp từ `develop` tại commit `48623cb`.
-- Đã hoàn thành giai đoạn 1 và 2: nền dữ liệu, bootstrap, xác thực và giao diện quản trị Innvyra. Chỉ kiểm chứng trên database test riêng; chưa thay đổi database ứng dụng.
+- Đã hoàn thành giai đoạn 1–4. Giai đoạn 4 được triển khai trước, sau đó hoàn thiện giai đoạn 3 vào 12/11/2026 với mật khẩu tạm và cách ly phiên/cache. Đợt này giữ đăng nhập nhân viên bằng username; hỗ trợ email để sau.
+- Các lượt kiểm chứng của agent dùng database test riêng; không reset, seed hoặc tạo khách sạn trên database ứng dụng.
 - Không commit, push hoặc merge nếu chưa được người dùng yêu cầu.
 - Thực hiện từng giai đoạn, kiểm tra đạt tiêu chí nghiệm thu trước khi chuyển sang giai đoạn tiếp theo.
 - Ghi nhận lỗi có sẵn trước khi sửa để phân biệt với lỗi do tính năng mới.
@@ -16,7 +18,7 @@ Ngày lập: 11/11/2026.
 - Innvyra vận hành ứng dụng và database; khách sạn nhận tài khoản để sử dụng.
 - Nhiều khách sạn độc lập dùng chung ứng dụng và database MySQL, cách ly dữ liệu bằng `hotelId`.
 - Một tài khoản nhân viên thuộc một khách sạn. Username và email tiếp tục duy nhất toàn hệ thống.
-- Đăng nhập bằng username hoặc email; tài khoản cũ tiếp tục sử dụng được.
+- Phiên bản hiện tại đăng nhập khách sạn bằng username + mật khẩu; tài khoản cũ tiếp tục sử dụng được. Hỗ trợ thêm email cho nhân viên được để sau theo phạm vi triển khai đã trao đổi khi chốt phase 3. Quản trị Innvyra vẫn đăng nhập bằng email riêng.
 - `PLATFORM_ADMIN` là quản trị Innvyra, thuộc hệ thống tài khoản riêng, không gắn với khách sạn.
 - `ADMIN` hiện tại là quản trị khách sạn; giữ nguyên sáu vai trò nhân viên.
 - Quản trị Innvyra quản lý thông tin khách sạn, cấp/reset admin, thuê bao và khóa/mở; không mặc định truy cập nghiệp vụ của khách sạn.
@@ -33,8 +35,8 @@ Ngày lập: 11/11/2026.
 | 0. Chuẩn bị và lập kế hoạch | Nhánh từ `develop`, lộ trình và phạm vi rõ ràng | Chỉ có tài liệu kế hoạch; chưa thay đổi mã nguồn |
 | 1. Xác lập hiện trạng và dữ liệu — hoàn thành | Schema, migration và báo cáo kiểm chứng | 713/713 test đạt; nâng cấp dữ liệu cũ và hồi quy PMS đã được kiểm chứng |
 | 2. Quản trị Innvyra — hoàn thành | Bootstrap, xác thực riêng và giao diện nền tảng ban đầu | 744/744 test backend và 14/14 test frontend đạt; xác nhận hai hệ thống tài khoản không dùng chéo token hoặc quyền |
-| 3. Tài khoản khách sạn và cache | Đăng nhập email, đổi mật khẩu bắt buộc, cache tách biệt | Tài khoản cũ hoạt động; không lộ dữ liệu giữa các phiên |
-| 4. Tiếp nhận và thiết lập khách sạn | Tạo khách sạn/admin/kỳ sử dụng, quản lý thông tin | Tạo giao dịch nguyên vẹn; khách sạn A và B hoạt động độc lập |
+| 3. Tài khoản khách sạn và cache — hoàn thành | Giữ username, hoàn thiện mật khẩu tạm và cache/phiên tách biệt | 773/773 test backend, 37/37 test frontend đạt; kiểm chứng chuyển A/B và nhiều tab bằng trình duyệt |
+| 4. Tiếp nhận và thiết lập khách sạn — hoàn thành | Tạo khách sạn/admin/kỳ sử dụng, quản lý thông tin | 762/762 test backend và 14/14 test frontend đạt; kiểm chứng giao diện và A/B trên database test riêng |
 | 5. Thuê bao và quyền sử dụng | Gia hạn, cảnh báo, khóa/mở và nhật ký | Đúng quy tắc hạn; khóa tác động cả phiên đang hoạt động |
 | 6. Hồi quy và chuẩn bị triển khai | Bộ kiểm tra, tài liệu vận hành và bản thử nghiệm | Kiểm tra đạt; xác nhận khả năng sao lưu và khôi phục |
 
@@ -43,7 +45,7 @@ Ngày lập: 11/11/2026.
 - [x] Kiểm tra trạng thái Git trước khi thay đổi nhánh.
 - [x] Tạo nhánh mới trực tiếp từ `develop` theo yêu cầu.
 - [x] Lưu kế hoạch triển khai từng bước.
-- Giai đoạn 1 và 2 đã hoàn thành theo yêu cầu; các giai đoạn 3–6 vẫn là công việc dự kiến.
+- Giai đoạn 1–4 đã hoàn thành theo yêu cầu; giai đoạn 5–6 chưa triển khai.
 
 ### Giai đoạn 1 — Xác lập hiện trạng và chuẩn bị dữ liệu
 
@@ -60,7 +62,7 @@ Trạng thái: **hoàn thành**. Chi tiết được ghi trong [báo cáo phase 
 
 ### Giai đoạn 2 — Tài khoản và khu vực quản trị Innvyra
 
-Trạng thái: **hoàn thành**. Chi tiết, hướng dẫn bootstrap và kết quả kiểm tra được ghi trong [báo cáo phase 2](PHASE_2_PLATFORM_ADMIN.md). Các giai đoạn 3–6 chưa triển khai.
+Trạng thái: **hoàn thành**. Chi tiết, hướng dẫn bootstrap và kết quả kiểm tra được ghi trong [báo cáo phase 2](PHASE_2_PLATFORM_ADMIN.md).
 
 - Thêm lệnh `npm run create:platform-admin` để bootstrap quản trị Innvyra đầu tiên; không đưa mật khẩu cố định vào code hoặc seed.
 - Tách tài khoản, session, refresh token, cookie và JWT audience của nền tảng với nhân viên khách sạn.
@@ -72,16 +74,20 @@ Trạng thái: **hoàn thành**. Chi tiết, hướng dẫn bootstrap và kết 
 
 ### Giai đoạn 3 — Tài khoản khách sạn và cách ly dữ liệu trên trình duyệt
 
-- Mở rộng `/auth/login` nhận `identifier` là username hoặc email; giữ tương thích request `username` cũ, không nhận đồng thời hai trường.
+Trạng thái: **hoàn thành** ngày 12/11/2026. Chi tiết ở [báo cáo phase 3](PHASE_3_HOTEL_SESSIONS.md). Giữ username + mật khẩu cho nhân viên trong đợt này; tính năng email tùy chọn được để sau.
+
+- Giữ `/auth/login` nhận `username` + mật khẩu; không thêm `identifier`/email trong phạm vi nghiệm thu lần này. Không thay đổi tài khoản hoặc mật khẩu cũ chỉ vì nâng cấp code.
 - Bổ sung `mustChangePassword` trong thông tin người dùng và API `/api/v1/auth/change-password`.
 - Chặn nghiệp vụ PMS tại backend cho đến khi tài khoản dùng mật khẩu tạm hoàn tất đổi mật khẩu.
 - Đổi/reset mật khẩu thu hồi các phiên hiện có; thay đổi thành công yêu cầu đăng nhập lại.
 - Áp dụng cờ đổi mật khẩu cho tài khoản được cấp mật khẩu tạm, gồm cả khi reset.
 - Tách cache theo tài khoản/khách sạn; xóa cache và danh bạ nhân viên khi kết thúc phiên.
 - Ngăn request của phiên cũ ghi kết quả vào giao diện hoặc danh bạ của phiên mới.
-- Nghiệm thu: đăng nhập cũ và đăng nhập email đều hoạt động; đăng xuất A rồi đăng nhập B không thấy dữ liệu A; sửa giao diện không thể vượt yêu cầu đổi mật khẩu.
+- Nghiệm thu: đăng nhập username cũ hoạt động; đăng xuất A rồi đăng nhập B không thấy dữ liệu/cache/form/danh bạ A; phản hồi phiên cũ không tác động phiên mới; sửa giao diện không vượt được yêu cầu đổi mật khẩu. Login/logout/đổi mật khẩu ở một tab làm các tab PMS khác bỏ phiên và dữ liệu cũ.
 
 ### Giai đoạn 4 — Tiếp nhận khách sạn và quản trị thông tin
+
+Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần còn lại của phase 3. Chi tiết và cách test trong [báo cáo phase 4](PHASE_4_HOTEL_ONBOARDING.md). Phase 3 đã được hoàn thiện sau đó vào 12/11/2026; nghiệm thu production ở phase 6 chưa thực hiện.
 
 - Tạo danh sách/tìm kiếm khách sạn và trang chi tiết trong khu vực quản trị Innvyra.
 - Tạo khách sạn, admin đầu tiên và kỳ sử dụng trong một transaction; lỗi ở bất kỳ phần nào phải hoàn tác toàn bộ.

@@ -6,6 +6,12 @@ import { requirePrincipal } from './authenticate.middleware.js';
 export function authorizeRoles(...roles: RoleCode[]): RequestHandler {
   return (req, _res, next) => {
     const principal = requirePrincipal(req);
+    if (principal.user.mustChangePassword)
+      throw new AppError(
+        403,
+        'PASSWORD_CHANGE_REQUIRED',
+        'Change your temporary password before accessing hotel operations',
+      );
     if (!roles.includes(principal.user.role)) throw new AppError(403, 'FORBIDDEN', 'Forbidden');
     next();
   };

@@ -28,6 +28,7 @@ export function PlatformLayout() {
   const navigate = useNavigate();
   const selected = location.pathname.startsWith("/platform/account")
     ? "/platform/account"
+    : location.pathname.startsWith('/platform/hotels') ? '/platform/hotels'
     : "/platform";
   const navigation = (
     <>
@@ -41,6 +42,7 @@ export function PlatformLayout() {
         selectedKeys={[selected]}
         items={[
           { key: "/platform", icon: <ApartmentOutlined />, label: "Tổng quan" },
+          { key: '/platform/hotels', icon: <ApartmentOutlined />, label: 'Khách sạn' },
           {
             key: "/platform/account",
             icon: <UserOutlined />,

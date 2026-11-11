@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { Env } from '../../config/env.js';
 import { AppError, unauthorized } from '../../shared/errors/app-error.js';
 import { isRoleCode } from '../../shared/types/roles.js';
-import { getDummyPasswordHash, verifyPassword } from '../../shared/utils/password.js';
+import { getDummyPasswordHash, hashPassword, verifyPassword } from '../../shared/utils/password.js';
+import type { PlatformPasswordInput } from '../platform-auth/platform-auth.schema.js';
 import { AccessTokens, hashRefreshToken, newRefreshToken } from '../../shared/utils/tokens.js';
 import type { LoginInput } from './auth.schema.js';
 import type { AuthRepository, CurrentUser, Principal, StaffRecord } from './auth.types.js';
@@ -17,6 +18,8 @@ function currentUser(staff: StaffRecord): CurrentUser {
     email: staff.email,
     role: staff.role.code,
     isActive: staff.isActive,
+    mustChangePassword: staff.mustChangePassword ?? false,
+    ...(staff.hotel ? { hotel: { ...staff.hotel, id: staff.hotel.id.toString() } } : {}),
   };
 }
 
@@ -45,6 +48,7 @@ export class AuthService {
       staffUserId: staff.id,
       expiresAt,
       tokenHash: refresh.hash,
+      expectedPasswordHash: staff.passwordHash,
     });
     return {
       data: {
@@ -97,5 +101,20 @@ export class AuthService {
 
   async logout(principal: Principal): Promise<void> {
     await this.repository.revokeSession(principal.sessionId, BigInt(principal.user.id), new Date());
+  }
+
+  async changePassword(principal: Principal, input: PlatformPasswordInput): Promise<void> {
+    const staff = await this.repository.findStaffByUsername(principal.user.username);
+    if (!staff?.isActive || staff.id.toString() !== principal.user.id) throw unauthorized();
+    if (!(await verifyPassword(staff.passwordHash, input.currentPassword)))
+      throw new AppError(400, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
+    const changed = await this.repository.changePassword(
+      staff.id,
+      staff.passwordHash,
+      await hashPassword(input.newPassword),
+      new Date(),
+    );
+    if (!changed)
+      throw new AppError(409, 'PASSWORD_CHANGE_CONFLICT', 'Account changed; sign in again');
   }
 }

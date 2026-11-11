@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { Spin } from 'antd';
+import { Button, Result, Spin } from 'antd';
+import { HotelSessionBoundary } from '../components/HotelSessionBoundary.tsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout.tsx';
 import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
@@ -21,6 +22,8 @@ import { InventoryPage } from '../pages/inventory/InventoryPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
 import { useAuthStore } from '../store/authStore.ts';
+import { HotelPasswordChangePage } from '../pages/auth/HotelPasswordChangePage.tsx';
+import { HotelSettingsPage } from '../pages/hotel/HotelSettingsPage.tsx';
 
 const PlatformRoutes = lazy(() => import('./PlatformRoutes.tsx'));
 
@@ -47,15 +50,18 @@ export const AppRoutes: React.FC = () => {
 };
 
 const HotelRoutes: React.FC = () => {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const { checkAuth, restoreError } = useAuthStore();
   useEffect(() => {
     if (window.location.pathname !== '/login') void checkAuth();
-    else useAuthStore.setState({ isLoading: false });
+    else useAuthStore.setState({ isLoading: false, restoreError: null });
   }, [checkAuth]);
+  if (restoreError) return <Result status="warning" title="Chưa thể khôi phục phiên khách sạn" subTitle={restoreError} extra={<Button type="primary" onClick={() => void checkAuth()}>Thử lại</Button>} />;
   return (
+    <HotelSessionBoundary>
     <Routes>
       {/* Public Route */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/change-password" element={<HotelPasswordChangePage />} />
 
       {/* Protected Routes wrapped in MainLayout */}
       <Route
@@ -68,6 +74,7 @@ const HotelRoutes: React.FC = () => {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="hotel" element={<ProtectedRoute allowedRoles={['ADMIN']}><HotelSettingsPage /></ProtectedRoute>} />
 
         {/* Calendar / Room Matrix */}
         <Route path="calendar" element={<RoomMatrixPage />} />
@@ -189,5 +196,6 @@ const HotelRoutes: React.FC = () => {
       {/* 404 Outside */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </HotelSessionBoundary>
   );
 };

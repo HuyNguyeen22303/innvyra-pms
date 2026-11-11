@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import axios from 'axios';
 import {
   Layout,
+  App as AntdApp,
   Menu,
   Avatar,
   Dropdown,
@@ -171,6 +173,7 @@ const menuGroups: MenuGroupDef[] = [
     key: "group-system",
     title: "HỆ THỐNG & CÀI ĐẶT",
     items: [
+      { key: '/hotel', icon: <ApartmentOutlined />, label: 'Thông tin khách sạn', roles: ['ADMIN'] },
       {
         key: "/room-types",
         icon: <AppstoreOutlined />,
@@ -187,6 +190,7 @@ const menuGroups: MenuGroupDef[] = [
 ];
 
 export const MainLayout: React.FC = () => {
+  const { message } = AntdApp.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const screens = useBreakpoint();
@@ -235,8 +239,8 @@ export const MainLayout: React.FC = () => {
         : "Ca đêm: 22:00 – 06:00";
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try { await logout(); navigate('/login'); }
+    catch (error) { if (!axios.isCancel(error)) void message.error('Chưa thể đăng xuất. Vui lòng kiểm tra kết nối và thử lại.'); }
   };
 
   const userMenuItems: MenuProps["items"] = [
@@ -326,7 +330,7 @@ export const MainLayout: React.FC = () => {
     <div className="sidebar-property">
       <div className="sidebar-property__label">Cơ sở hiện tại</div>
       <div className="sidebar-property__name">
-        <span>Innvyra Hotel</span>
+        <span>{user?.hotel?.name || 'Khách sạn'}</span>
         <span className="sidebar-property__rooms">{roomCount} phòng</span>
       </div>
       <div className="sidebar-property__shift"><ClockCircleOutlined />{currentShift}</div>

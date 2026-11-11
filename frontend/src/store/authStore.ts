@@ -1,92 +1,156 @@
-import { create } from 'zustand';
-import { authApi } from '../api/auth.api.ts';
-import { setAccessToken } from '../api/axiosClient.ts';
-import type { CurrentUser, LoginCredentials } from '../types/auth.types.ts';
+import axios, { CanceledError } from "axios";
+import { create } from "zustand";
+import {
+  apiClient,
+  hotelAuthError,
+  hotelAuthMutation,
+  refreshHotelSession,
+} from "../api/axiosClient.ts";
+import {
+  announceHotelSessionChange,
+  clearHotelSession,
+  hotelAuthLock,
+  hotelSessionGeneration,
+  hotelSessionUser,
+  installHotelSession,
+  invalidateHotelRequests,
+  observeHotelSession,
+} from "../auth/hotelSession.ts";
+import type { ApiResponse } from "../types/api.types.ts";
+import type {
+  AuthTokens,
+  CurrentUser,
+  LoginCredentials,
+} from "../types/auth.types.ts";
 
 interface AuthState {
   user: CurrentUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isSubmitting: boolean;
   error: string | null;
-
-  login: (credentials: LoginCredentials) => Promise<void>;
+  restoreError: string | null;
+  login: (input: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  changePassword: (input: {
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<void>;
   clearError: () => void;
 }
-
-// React StrictMode runs mount effects twice in development. Share one refresh
-// operation so both effect calls cannot rotate the same refresh cookie at once.
-let authCheckPromise: Promise<void> | null = null;
-
+let checking: { generation: number; promise: Promise<void> } | null = null;
 export const useAuthStore = create<AuthState>((set) => {
-  // Listen for unauthorized events from axios interceptor
-  if (typeof window !== 'undefined') {
-    window.addEventListener('auth:unauthorized', () => {
-      set({ user: null, isAuthenticated: false });
-    });
-  }
-
+  observeHotelSession((user) =>
+    set({
+      user,
+      isAuthenticated: !!user,
+      isLoading: false,
+      restoreError: null,
+      ...(!user ? { isSubmitting: false } : {}),
+    }),
+  );
   return {
     user: null,
     isAuthenticated: false,
     isLoading: true,
+    isSubmitting: false,
     error: null,
-
-    login: async (credentials: LoginCredentials) => {
-      set({ isLoading: true, error: null });
-      try {
-        const response = await authApi.login(credentials);
-        const { accessToken, user } = response.data;
-        setAccessToken(accessToken);
-        set({ user, isAuthenticated: true, isLoading: false });
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.error?.message || 'Đăng nhập không thành công. Vui lòng thử lại!';
-        set({ error: errorMessage, isLoading: false });
-        throw err;
-      }
-    },
-
-    logout: async () => {
-      set({ isLoading: true });
-      try {
-        await authApi.logout();
-      } catch {
-        // Ignore logout network errors and clear client session anyway
-      } finally {
-        setAccessToken(null);
-        set({ user: null, isAuthenticated: false, isLoading: false, error: null });
-      }
-    },
-
-    checkAuth: async () => {
-      if (authCheckPromise) return authCheckPromise;
-
-      authCheckPromise = (async () => {
-        set({ isLoading: true });
-        try {
-          // Try to refresh token using existing HttpOnly cookie
-          const refreshRes = await authApi.refreshToken();
-          const { accessToken } = refreshRes.data;
-          setAccessToken(accessToken);
-
-          // Fetch current user details
-          const meRes = await authApi.getMe();
-          set({ user: meRes.data, isAuthenticated: true, isLoading: false });
-        } catch {
-          setAccessToken(null);
-          set({ user: null, isAuthenticated: false, isLoading: false });
-        }
-      })();
-
-      try {
-        await authCheckPromise;
-      } finally {
-        authCheckPromise = null;
-      }
-    },
-
+    restoreError: null,
     clearError: () => set({ error: null }),
+    login: async (input) => {
+      clearHotelSession();
+      const expected = hotelSessionGeneration();
+      set({
+        isLoading: true,
+        isSubmitting: true,
+        error: null,
+        restoreError: null,
+      });
+      try {
+        const response = await hotelAuthLock(() => {
+          if (expected !== hotelSessionGeneration())
+            throw new CanceledError("Hotel session changed");
+          return apiClient.post<ApiResponse<AuthTokens>>("/auth/login", input);
+        });
+        if (expected !== hotelSessionGeneration())
+          throw new CanceledError("Hotel session changed");
+        installHotelSession(
+          response.data.data.accessToken,
+          response.data.data.user,
+        );
+        set({ isSubmitting: false });
+        announceHotelSessionChange();
+      } catch (error) {
+        if (expected === hotelSessionGeneration())
+          set({
+            error: hotelAuthError(error),
+            isLoading: false,
+            isSubmitting: false,
+          });
+        throw error;
+      }
+    },
+    logout: async () => {
+      invalidateHotelRequests();
+      const expected = hotelSessionGeneration();
+      set({ isLoading: true, isSubmitting: true, error: null });
+      try {
+        await hotelAuthMutation(
+          () => apiClient.post("/auth/logout", {}),
+          expected,
+        );
+        if (expected !== hotelSessionGeneration())
+          throw new CanceledError("Hotel session changed");
+        if (expected === hotelSessionGeneration()) clearHotelSession(true);
+      } catch (error) {
+        if (expected !== hotelSessionGeneration()) {
+          if (
+            !hotelSessionUser() &&
+            axios.isAxiosError(error) &&
+            error.response?.status === 401
+          )
+            return;
+          throw new CanceledError("Hotel session changed");
+        }
+        if (axios.isAxiosError(error) && error.response?.status === 401)
+          clearHotelSession(true);
+        else {
+          set({ error: hotelAuthError(error) });
+          throw error;
+        }
+      } finally {
+        if (expected === hotelSessionGeneration())
+          set({ isLoading: false, isSubmitting: false });
+      }
+    },
+    checkAuth: async () => {
+      const expected = hotelSessionGeneration();
+      if (checking?.generation === expected) return checking.promise;
+      set({ isLoading: true, restoreError: null });
+      const promise = (async () => {
+        try {
+          await refreshHotelSession();
+        } catch (error) {
+          if (expected !== hotelSessionGeneration() || axios.isCancel(error))
+            return;
+          set({ isLoading: false, restoreError: hotelAuthError(error) });
+        }
+      })().finally(() => {
+        if (checking?.promise === promise) checking = null;
+      });
+      checking = { generation: expected, promise };
+      return promise;
+    },
+    changePassword: async (input) => {
+      const expected = hotelSessionGeneration();
+      await hotelAuthMutation(
+        () => apiClient.post("/auth/change-password", input),
+        expected,
+      );
+      if (expected !== hotelSessionGeneration())
+        throw new CanceledError("Hotel session changed");
+      clearHotelSession(true);
+    },
   };
 });

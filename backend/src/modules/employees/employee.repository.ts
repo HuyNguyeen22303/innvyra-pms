@@ -112,6 +112,7 @@ export class PrismaEmployeeRepository {
         username: data.username,
         email: data.email ?? null,
         passwordHash: data.passwordHash,
+        mustChangePassword: true,
       },
       include: staffInclude,
     });
@@ -144,7 +145,7 @@ export class PrismaEmployeeRepository {
   async resetPassword(hotelId: bigint, id: bigint, passwordHash: string) {
     return this.db.staffUser.update({
       where: { hotelId_id: { hotelId, id } },
-      data: { passwordHash },
+      data: { passwordHash, mustChangePassword: true },
       include: staffInclude,
     });
   }
@@ -179,6 +180,7 @@ export class PrismaEmployeeRepository {
         email: true,
         isActive: true,
         createdAt: true,
+        mustChangePassword: true,
         role: { select: { code: true, name: true } },
       },
     });

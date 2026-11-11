@@ -8,6 +8,7 @@ import { reportPaths, reportSchemas } from './reports.openapi.js';
 import { employeePaths, employeeSchemas } from './employees.openapi.js';
 import { inventoryPaths, inventorySchemas } from './inventory.openapi.js';
 import { platformPaths, platformSchemas } from './platform.openapi.js';
+import { hotelPaths, hotelSchemas } from './hotels.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -86,6 +87,8 @@ export const openApiDocument = {
     },
     { name: 'Authentication' },
     { name: 'Platform Authentication' },
+    { name: 'Platform Hotels' },
+    { name: 'Hotel Profile' },
     { name: 'Room Types' },
     { name: 'Rooms' },
     { name: 'Guests' },
@@ -137,6 +140,7 @@ export const openApiDocument = {
       ...employeeSchemas,
       ...inventorySchemas,
       ...platformSchemas,
+      ...hotelSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -151,6 +155,20 @@ export const openApiDocument = {
           },
           hotelId: { type: 'string', pattern: '^[0-9]+$', example: '1' },
           isActive: { type: 'boolean' },
+          mustChangePassword: {
+            type: 'boolean',
+            description:
+              'Temporary credentials can access account endpoints only until password change.',
+          },
+          hotel: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              code: { type: 'string' },
+              name: { type: 'string' },
+              timezone: { type: 'string' },
+            },
+          },
         },
       },
       Error: {
@@ -188,6 +206,7 @@ export const openApiDocument = {
     ...employeePaths,
     ...inventoryPaths,
     ...platformPaths,
+    ...hotelPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

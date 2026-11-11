@@ -22,7 +22,7 @@ export const PLATFORM_REFRESH_COOKIE = 'innvyra_platform_refresh';
 export function platformCookieOptions(env: Env) {
   return { ...refreshCookieOptions(env), path: '/api/v1/platform/auth' };
 }
-export function platformRoutes(service: PlatformAuthService, env: Env) {
+export function platformRoutes(service: PlatformAuthService, env: Env, hotels?: Router) {
   const router = Router();
   const auth = Router();
   const csrf = csrfProtection(env);
@@ -83,6 +83,7 @@ export function platformRoutes(service: PlatformAuthService, env: Env) {
     },
   );
   router.use('/auth', auth);
+  if (hotels) router.use('/hotels', hotels);
   router.use(authenticate, notFound);
   return router;
 }

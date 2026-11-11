@@ -79,6 +79,7 @@ export function employeeController(service: EmployeeService) {
       email: result.email,
       role: result.role,
       isActive: result.isActive,
+      mustChangePassword: result.mustChangePassword,
       createdAt: result.createdAt,
     };
     res.json({

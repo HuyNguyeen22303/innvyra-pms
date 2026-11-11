@@ -279,12 +279,12 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ error: { code: 'BAD_REQUEST' } });
   });
-  it('serves Swagger and all five documented operations', async () => {
+  it('serves Swagger and all six documented staff auth operations', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = await request(app).get('/api-docs/openapi.json');
     expect(spec.status).toBe(200);
     const document = spec.body as { paths: Record<string, unknown> };
-    expect(Object.keys(document.paths).filter((path) => path.startsWith('/auth/'))).toHaveLength(5);
+    expect(Object.keys(document.paths).filter((path) => path.startsWith('/auth/'))).toHaveLength(6);
   });
   it('does not expose registration and protects reservations', async () => {
     expect((await request(app).post('/api/v1/auth/register')).status).toBe(401);

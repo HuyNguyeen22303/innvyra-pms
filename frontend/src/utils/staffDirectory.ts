@@ -3,10 +3,13 @@
  * Cung cấp thông tin tên và chức vụ của nhân viên khách sạn từ API và fallback an toàn
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ROLE_CONFIG, type Role } from '../types/employees.types.ts';
 import { employeesApi } from '../api/employees.api.ts';
+import { hotelSessionGeneration } from '../auth/hotelSession.ts';
+import { getRegisteredHotelStaff, registerHotelStaff } from '../auth/hotelStaffCache.ts';
+import { useAuthStore } from '../store/authStore.ts';
 
 export interface StaffMemberInfo {
   id: string;
@@ -17,27 +20,27 @@ export interface StaffMemberInfo {
 }
 
 // In-memory dynamic registry of loaded staff members from API queries
-const dynamicStaffRegistry = new Map<string, StaffMemberInfo>();
 
 /**
  * Register employee records into the dynamic directory cache
  */
 export const registerStaffMembers = (
-  employees: Array<{ id: string | bigint | number; fullName: string; role: Role | string }>
+  employees: Array<{ id: string | bigint | number; fullName: string; role: Role | string }>,
+  expectedGeneration: number,
 ) => {
   if (!Array.isArray(employees)) return;
-  employees.forEach((emp) => {
+  registerHotelStaff(employees.map((emp) => {
     const idStr = String(emp.id);
     const roleCode = (emp.role as Role) || 'STAFF';
     const meta = ROLE_CONFIG[roleCode as Role];
-    dynamicStaffRegistry.set(idStr, {
+    return {
       id: idStr,
       fullName: emp.fullName,
       roleTitle: meta ? meta.label : roleCode,
       roleCode,
       color: meta ? meta.color : 'default',
-    });
-  });
+    };
+  }), expectedGeneration);
 };
 
 /**
@@ -50,13 +53,16 @@ export const KNOWN_STAFF_DIRECTORY: Record<string, StaffMemberInfo> = {};
  * Any consuming component will automatically re-render when staff members are loaded.
  */
 export const useStaffDirectory = () => {
+  const [generation] = useState(hotelSessionGeneration);
+  const user = useAuthStore(state => state.user);
   const { data: staffRes, isLoading, refetch } = useQuery({
     queryKey: ['staff-directory-global'],
+    enabled: !!user && !user.mustChangePassword,
     queryFn: async () => {
       // Backend validates limit: max 100
       const res = await employeesApi.list({ limit: 100 });
       if (res?.data?.items && Array.isArray(res.data.items)) {
-        registerStaffMembers(res.data.items);
+        registerStaffMembers(res.data.items, generation);
       }
       return res;
     },
@@ -68,14 +74,14 @@ export const useStaffDirectory = () => {
 
   // Immediately register in memory if served from React Query cache
   if (staffItems && Array.isArray(staffItems)) {
-    registerStaffMembers(staffItems);
+    registerStaffMembers(staffItems, generation);
   }
 
   useEffect(() => {
     if (staffItems && Array.isArray(staffItems)) {
-      registerStaffMembers(staffItems);
+      registerStaffMembers(staffItems, generation);
     }
-  }, [staffItems]);
+  }, [staffItems, generation]);
 
   const getStaff = useCallback(
     (
@@ -118,9 +124,8 @@ export const getStaffDisplay = (
   const idStr = String(staffId);
 
   // 1. Check dynamic registry first (loaded from API)
-  if (dynamicStaffRegistry.has(idStr)) {
-    return dynamicStaffRegistry.get(idStr)!;
-  }
+  const registered = getRegisteredHotelStaff(idStr);
+  if (registered) return registered;
 
   // 2. Check baseline directory
   const found = KNOWN_STAFF_DIRECTORY[idStr];

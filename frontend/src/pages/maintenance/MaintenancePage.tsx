@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   Typography,
@@ -429,6 +430,7 @@ const renderBlockStatusTag = (s: MaintenanceBlockStatus) => {
 };
 
 export const MaintenancePage: React.FC = () => {
+  const [directoryGeneration] = useState(hotelSessionGeneration);
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
@@ -511,9 +513,9 @@ export const MaintenancePage: React.FC = () => {
 
   useEffect(() => {
     if (techniciansRes?.data?.items) {
-      registerStaffMembers(techniciansRes.data.items);
+      registerStaffMembers(techniciansRes.data.items, directoryGeneration);
     }
-  }, [techniciansRes]);
+  }, [techniciansRes, directoryGeneration]);
 
   const technicianOptions = useMemo(() => {
     const items = techniciansRes?.data?.items || [];

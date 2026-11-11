@@ -14,6 +14,8 @@ export interface CurrentUser {
   email: string | null;
   role: Role;
   isActive: boolean;
+  mustChangePassword?: boolean;
+  hotel?: { id: string; code: string; name: string; timezone: string };
 }
 
 export interface LoginCredentials {

@@ -27,14 +27,14 @@ async function main() {
     const admin = await prisma.$transaction(
       async (tx) => {
         // Serializes simultaneous first-admin bootstraps without adding a new table.
-        await tx.$queryRaw`SELECT id FROM roles WHERE code = 'ADMIN' FOR UPDATE`;
+        await tx.$queryRaw`SELECT id FROM hotels WHERE id = ${input.hotelId} FOR UPDATE`;
         const role = await tx.role.findUnique({ where: { code: 'ADMIN' } });
         if (!role) throw new AppError(409, 'ROLE_MISSING', 'Run db:seed before creating an admin');
-        if (await tx.staffUser.findFirst({ where: { roleId: role.id } }))
+        if (await tx.staffUser.findFirst({ where: { roleId: role.id, hotelId: input.hotelId } }))
           throw new AppError(
             409,
             'ADMIN_EXISTS',
-            'An ADMIN already exists; this script only bootstraps the first admin',
+            'An ADMIN already exists in this hotel; this script only bootstraps its first admin',
           );
         if (!(await tx.hotel.findUnique({ where: { id: input.hotelId } })))
           throw new AppError(422, 'HOTEL_MISSING', 'The specified hotel does not exist');

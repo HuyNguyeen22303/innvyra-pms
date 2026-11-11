@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Typography,
@@ -376,6 +377,7 @@ const renderStatusTag = (status: HousekeepingTaskStatus) => {
 };
 
 export const HousekeepingPage: React.FC = () => {
+  const [directoryGeneration] = useState(hotelSessionGeneration);
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
@@ -416,9 +418,9 @@ export const HousekeepingPage: React.FC = () => {
 
   useEffect(() => {
     if (housekeepingStaffRes?.data?.items) {
-      registerStaffMembers(housekeepingStaffRes.data.items);
+      registerStaffMembers(housekeepingStaffRes.data.items, directoryGeneration);
     }
-  }, [housekeepingStaffRes]);
+  }, [housekeepingStaffRes, directoryGeneration]);
 
   const housekeepingOptions = useMemo(() => {
     const items = housekeepingStaffRes?.data?.items || [];

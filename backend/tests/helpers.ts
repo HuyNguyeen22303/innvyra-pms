@@ -67,6 +67,15 @@ export class MemoryAuthRepository implements AuthRepository {
   async findStaffByUsername(username: string) {
     return this.users.get(username) ?? null;
   }
+  async changePassword(id: bigint, expectedHash: string, newHash: string, now: Date) {
+    const staff = [...this.users.values()].find((user) => user.id === id);
+    if (!staff?.isActive || staff.passwordHash !== expectedHash) return false;
+    staff.passwordHash = newHash;
+    staff.mustChangePassword = false;
+    for (const session of this.sessions.values())
+      if (session.staffUserId === id && !session.revokedAt) session.revokedAt = now;
+    return true;
+  }
   async createSession(input: NewSession) {
     const user = [...this.users.values()].find((staff) => staff.id === input.staffUserId);
     if (!user) throw new Error('Unknown staff');

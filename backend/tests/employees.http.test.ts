@@ -87,6 +87,16 @@ describe('Employees HTTP: real JWT, RBAC, validation, tenant isolation and lifec
 
     const authService = new AuthService(auth, testEnv);
 
+    // These RBAC actors represent existing employees who have already changed
+    // their issued password. New accounts created by the tests retain the flag.
+    for (const username of ['manager', 'receptionist_same_hotel']) {
+      auth.users.get(username)!.mustChangePassword = false;
+      const record = [...employeeStore.records.values()].find(
+        (staff) => staff.username === username,
+      );
+      if (record) record.mustChangePassword = false;
+    }
+
     const adminLogin = await authService.login({ username: 'admin', password: testPassword });
     adminToken = adminLogin.data.accessToken;
     adminId = adminLogin.data.user.id;

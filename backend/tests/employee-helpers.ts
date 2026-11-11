@@ -135,7 +135,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
         email: data.email ?? null,
         passwordHash: data.passwordHash,
         isActive: true,
-        mustChangePassword: false,
+        mustChangePassword: true,
         createdAt: new Date(),
         role,
       };
@@ -151,6 +151,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
           email: record.email,
           passwordHash: record.passwordHash,
           isActive: record.isActive,
+          mustChangePassword: record.mustChangePassword,
           role: { code: record.role.code },
         });
       }
@@ -225,11 +226,15 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
       if (!row || row.hotelId !== hotelId)
         throw new AppError(404, 'EMPLOYEE_NOT_FOUND', 'Employee not found');
       row.passwordHash = passwordHash;
+      row.mustChangePassword = true;
 
       // Sync with authRepo
       if (authRepo) {
         const authUser = authRepo.users.get(row.username);
-        if (authUser) authUser.passwordHash = passwordHash;
+        if (authUser) {
+          authUser.passwordHash = passwordHash;
+          authUser.mustChangePassword = true;
+        }
       }
 
       return row;
@@ -267,6 +272,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
         username: r.username,
         email: r.email,
         isActive: r.isActive,
+        mustChangePassword: r.mustChangePassword,
         createdAt: r.createdAt,
         role: { code: r.role.code, name: r.role.name },
       }));

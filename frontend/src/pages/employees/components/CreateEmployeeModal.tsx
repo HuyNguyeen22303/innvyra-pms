@@ -147,6 +147,7 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
         />
       )}
 
+      <Alert type="info" showIcon title="Nhân viên phải đổi mật khẩu được cấp ở lần đăng nhập đầu tiên trước khi dùng PMS." style={{ marginBottom: 16 }} />
       <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={{ role: assignableRoles[0] }}>
         <Form.Item
           name="fullName"

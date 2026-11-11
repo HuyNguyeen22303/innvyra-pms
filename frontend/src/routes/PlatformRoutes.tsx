@@ -7,6 +7,9 @@ import { PlatformLayout } from "../layouts/PlatformLayout.tsx";
 import { PlatformLoginPage } from "../pages/platform/PlatformLoginPage.tsx";
 import { PlatformOverviewPage } from "../pages/platform/PlatformOverviewPage.tsx";
 import { PlatformAccountPage } from "../pages/platform/PlatformAccountPage.tsx";
+import { PlatformHotelsPage } from '../pages/platform/PlatformHotelsPage.tsx';
+import { PlatformHotelCreatePage } from '../pages/platform/PlatformHotelCreatePage.tsx';
+import { PlatformHotelDetailPage } from '../pages/platform/PlatformHotelDetailPage.tsx';
 import "../pages/platform/platform.css";
 
 export default function PlatformRoutes() {
@@ -47,6 +50,9 @@ export default function PlatformRoutes() {
       >
         <Route index element={<PlatformOverviewPage />} />
         <Route path="account" element={<PlatformAccountPage />} />
+        <Route path="hotels" element={<PlatformHotelsPage />} />
+        <Route path="hotels/new" element={<PlatformHotelCreatePage />} />
+        <Route path="hotels/:id" element={<PlatformHotelDetailPage />} />
         <Route
           path="*"
           element={
