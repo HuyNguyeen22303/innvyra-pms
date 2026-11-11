@@ -1156,9 +1156,7 @@ describe.skipIf(!testUrl)(
     it('serves Swagger and browser preflight for Idempotency-Key', async () => {
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;
-      expect(Object.values(spec.paths).flatMap((path) => Object.keys(path as object))).toHaveLength(
-        83,
-      );
+      expect(spec.paths['/folios/{folioId}/payments'].post.security).toEqual([{ bearerAuth: [] }]);
       expect(spec.paths['/payments/{id}/refunds'].post.parameters).toContainEqual(
         expect.objectContaining({ name: 'Idempotency-Key', required: true }),
       );

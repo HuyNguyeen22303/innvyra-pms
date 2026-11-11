@@ -325,7 +325,12 @@ describe('InventoryService Unit Tests', () => {
       });
       // Two receipts: first receipt had 1 movement (+10), second had 1 movement (+8)
       expect(movements.items).toHaveLength(2);
-      const secondReceiptMovement = movements.items[1];
+      // Identify the receipt itself: descending timestamps (and millisecond ties)
+      // must not decide which receipt this aggregation regression verifies.
+      const secondReceiptMovement = movements.items.find(
+        (movement) => movement.referenceId === receipt.id && movement.itemId === item.id,
+      );
+      expect(secondReceiptMovement).toBeDefined();
       expect(secondReceiptMovement?.quantity).toBe('8.00');
       expect(secondReceiptMovement?.previousStock).toBe('10.00');
       expect(secondReceiptMovement?.currentStock).toBe('18.00');

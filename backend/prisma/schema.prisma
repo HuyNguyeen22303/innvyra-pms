@@ -10,12 +10,26 @@ datasource db {
   provider = "mysql"
 }
 
+enum HotelStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 model Hotel {
-  id       BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
-  code     String      @unique @db.VarChar(50)
-  name     String      @db.VarChar(191)
-  timezone String      @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
-  staff    StaffUser[]
+  id                  BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  code                String                    @unique @db.VarChar(50)
+  name                String                    @db.VarChar(191)
+  timezone            String                    @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  status              HotelStatus               @default(ACTIVE)
+  contactEmail        String?                   @map("contact_email") @db.VarChar(191)
+  contactPhone        String?                   @map("contact_phone") @db.VarChar(30)
+  address             String?                   @db.Text
+  agreementReference  String?                   @map("agreement_reference") @db.VarChar(191)
+  suspendedAt         DateTime?                 @map("suspended_at") @db.DateTime(3)
+  suspensionReason    String?                   @map("suspension_reason") @db.VarChar(2000)
+  staff               StaffUser[]
+  subscriptionPeriods HotelSubscriptionPeriod[]
+  platformAudits      PlatformAuditLog[]
 
   roomTypes          RoomType[]
   rooms              Room[]
@@ -34,6 +48,7 @@ model Hotel {
   stockAdjustments    StockAdjustment[]
   inventoryMovements  InventoryMovement[]
 
+  @@index([status])
   @@map("hotels")
 }
 
@@ -55,6 +70,7 @@ model StaffUser {
   email                  String?              @unique @db.VarChar(191)
   passwordHash           String               @map("password_hash") @db.VarChar(255)
   isActive               Boolean              @default(true) @map("is_active")
+  mustChangePassword     Boolean              @default(false) @map("must_change_password")
   createdAt              DateTime             @default(now()) @map("created_at") @db.DateTime(3)
   hotel                  Hotel                @relation(fields: [hotelId], references: [id], onDelete: Restrict)
   role                   Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
@@ -83,6 +99,7 @@ model StaffUser {
   createdStockIssues     StockIssue[]         @relation("IssueCreator")
   createdStockAdjustments StockAdjustment[]   @relation("AdjustmentCreator")
   inventoryMovements     InventoryMovement[]  @relation("MovementCreator")
+  platformAuditTargets   PlatformAuditLog[]    @relation("PlatformAuditStaffTarget")
 
   @@unique([hotelId, id])
   @@index([hotelId])
@@ -117,6 +134,110 @@ model RefreshToken {
   @@index([sessionId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// Platform identity is deliberately separate from hotel staff and its Role table.
+// Every PlatformAdmin represents PLATFORM_ADMIN; no hotelId or staff role is assigned.
+model PlatformAdmin {
+  id                  BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  fullName            String                    @map("full_name") @db.VarChar(191)
+  email               String                    @unique @db.VarChar(191)
+  passwordHash        String                    @map("password_hash") @db.VarChar(255)
+  isActive            Boolean                   @default(true) @map("is_active")
+  createdAt           DateTime                  @default(now()) @map("created_at") @db.DateTime(3)
+  sessions            PlatformAuthSession[]
+  subscriptionPeriods HotelSubscriptionPeriod[]
+  auditLogs           PlatformAuditLog[]
+
+  @@map("platform_admins")
+}
+
+model PlatformAuthSession {
+  id              String                 @id @db.Char(36)
+  platformAdminId BigInt                 @map("platform_admin_id") @db.UnsignedBigInt
+  createdAt       DateTime               @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt       DateTime               @map("expires_at") @db.DateTime(3)
+  revokedAt       DateTime?              @map("revoked_at") @db.DateTime(3)
+  revokedReason   String?                @map("revoked_reason") @db.VarChar(32)
+  platformAdmin   PlatformAdmin          @relation(fields: [platformAdminId], references: [id], onDelete: Restrict)
+  refreshTokens   PlatformRefreshToken[]
+
+  @@index([platformAdminId, revokedAt])
+  @@index([expiresAt])
+  @@map("platform_auth_sessions")
+}
+
+model PlatformRefreshToken {
+  id        BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  sessionId String              @map("session_id") @db.Char(36)
+  tokenHash String              @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  expiresAt DateTime            @map("expires_at") @db.DateTime(3)
+  usedAt    DateTime?           @map("used_at") @db.DateTime(3)
+  session   PlatformAuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("platform_refresh_tokens")
+}
+
+// Records confirmed manual service periods, not guest folios or recurring invoices.
+// The service layer will serialize period creation with the existing hotel row lock.
+model HotelSubscriptionPeriod {
+  id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId            BigInt             @map("hotel_id") @db.UnsignedBigInt
+  planName           String             @map("plan_name") @db.VarChar(100)
+  startsOn           DateTime           @map("starts_on") @db.Date
+  endsOn             DateTime           @map("ends_on") @db.Date
+  feeAmount          Decimal            @map("fee_amount") @db.Decimal(14, 2)
+  currency           String             @default("VND") @db.Char(3)
+  agreementReference String?            @map("agreement_reference") @db.VarChar(191)
+  paymentReference   String?            @map("payment_reference") @db.VarChar(191)
+  notes              String?            @db.Text
+  recordedById       BigInt             @map("recorded_by_id") @db.UnsignedBigInt
+  createdAt          DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  recordedBy         PlatformAdmin      @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+  auditLogs          PlatformAuditLog[]
+
+  @@unique([hotelId, id])
+  @@index([hotelId, startsOn, endsOn])
+  @@index([hotelId, endsOn])
+  @@index([recordedById])
+  @@map("hotel_subscription_periods")
+}
+
+enum PlatformAuditAction {
+  HOTEL_CREATED
+  HOTEL_UPDATED
+  HOTEL_SUSPENDED
+  HOTEL_REACTIVATED
+  HOTEL_ADMIN_CREATED
+  HOTEL_ADMIN_PASSWORD_RESET
+  SUBSCRIPTION_PERIOD_RECORDED
+}
+
+model PlatformAuditLog {
+  id                   BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId              BigInt                   @map("hotel_id") @db.UnsignedBigInt
+  actorId              BigInt                   @map("actor_id") @db.UnsignedBigInt
+  action               PlatformAuditAction
+  reason               String?                  @db.VarChar(2000)
+  // Only allowlisted hotel/subscription metadata; never passwords, tokens or guest data.
+  changes              Json?
+  targetStaffUserId    BigInt?                  @map("target_staff_user_id") @db.UnsignedBigInt
+  subscriptionPeriodId BigInt?                  @map("subscription_period_id") @db.UnsignedBigInt
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.DateTime(3)
+  hotel                Hotel                    @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  actor                PlatformAdmin            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  targetStaffUser      StaffUser?               @relation("PlatformAuditStaffTarget", fields: [hotelId, targetStaffUserId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  subscriptionPeriod   HotelSubscriptionPeriod? @relation(fields: [hotelId, subscriptionPeriodId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([hotelId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([hotelId, targetStaffUserId])
+  @@index([hotelId, subscriptionPeriodId])
+  @@map("platform_audit_logs")
 }
 
 enum PhysicalStatus {

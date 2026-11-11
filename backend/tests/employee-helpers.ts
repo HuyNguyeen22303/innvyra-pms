@@ -41,6 +41,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
     email: 'admin@example.test',
     passwordHash: 'dummy',
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-10-14T00:00:00.000Z'),
     role: adminRole,
   });
@@ -54,6 +55,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
     email: 'receptionist@example.test',
     passwordHash: 'dummy',
     isActive: true,
+    mustChangePassword: false,
     createdAt: new Date('2026-10-14T00:00:00.000Z'),
     role: receptionistRole,
   });
@@ -133,6 +135,7 @@ export function memoryEmployees(authRepo?: MemoryAuthRepository) {
         email: data.email ?? null,
         passwordHash: data.passwordHash,
         isActive: true,
+        mustChangePassword: false,
         createdAt: new Date(),
         role,
       };

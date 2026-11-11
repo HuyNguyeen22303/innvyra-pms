@@ -964,7 +964,7 @@ describe.skipIf(!testUrl)(
       expect((await get('/maintenance/blocks/' + id)).body.data.status).toBe('ACTIVE');
       expect((await state()).housekeepingStatus).toBe('DIRTY');
     });
-    it('serves Swagger UI and all 22 documented operations with response schemas, auth and errors', async () => {
+    it('serves Swagger UI and all 23 documented operations with response schemas, auth and errors', async () => {
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;
       const paths = Object.entries(spec.paths).filter(
@@ -975,7 +975,8 @@ describe.skipIf(!testUrl)(
           path as Record<string, { security: object[]; responses: object; description: string }>,
         ),
       );
-      expect(operations).toHaveLength(22);
+      expect(operations).toHaveLength(23);
+      expect(spec.paths['/maintenance/tickets/stats']).toHaveProperty('get');
       for (const operation of operations) {
         expect(operation.security).toEqual([{ bearerAuth: [] }]);
         expect(operation.responses).toHaveProperty('409');
