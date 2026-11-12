@@ -92,7 +92,18 @@ Lưu kết quả ngẫu nhiên vừa sinh vào `JWT_ACCESS_SECRET` trong `.env`.
 
 ## Database mới và migration
 
-Workspace ban đầu trống, không có schema/database credentials để kiểm tra dữ liệu đang tồn tại. Chỉ chuẩn bị schema và migration; không tự reset hoặc xóa dữ liệu.
+Seed mặc định hiện là bộ dữ liệu đa khách sạn local. Hướng dẫn đầy đủ, tài khoản và cấu trúc dữ liệu: [DATABASE_MULTI_HOTEL_LOCAL.md](../doc/DATABASE_MULTI_HOTEL_LOCAL.md).
+
+Để tạo database mới độc lập, tự migrate, seed, kiểm chứng và chuyển cấu hình local:
+
+```powershell
+npm run prisma:generate
+npm run db:seed:multi -- --activate
+```
+
+Lệnh tạo `innvyra_pms_multi_hotel`, từ chối ghi đè nếu tên đã tồn tại hoặc đang là database ứng dụng. Chỉ đổi `DATABASE_URL` khi kiểm tra thành công; giữ nguyên database cũ, JWT và các khóa mã hóa. Dữ liệu được giữ lại khi tắt server. `npm run db:check:multi` chỉ đọc và kiểm tra lại.
+
+Các bước dưới đây dành cho tự quản lý schema/migration.
 
 Với **database mới**, quản trị viên MySQL tạo database UTF-8 và cấp quyền cho tài khoản ứng dụng/migration:
 
@@ -108,11 +119,10 @@ npm run prisma:validate
 npm run prisma:generate
 npm run db:inspect
 npm run db:migrate
-npm run db:seed
 npm run db:inspect
 ```
 
-**Bản clone mới phải generate trước khi inspect/migrate/seed.** Các script database import Prisma Client tại `src/generated/prisma`, nhưng thư mục này bị Git ignore. Chạy generate cuối cùng sẽ khiến các lệnh trước đó lỗi `ERR_MODULE_NOT_FOUND` / `Cannot find module .../generated/prisma/client.js` và chưa tạo bảng. Nếu đã gặp lỗi này, generate rồi chạy lại inspect → migrate → seed. `prisma:validate` chỉ kiểm tra schema, `prisma:generate` chỉ sinh client; `db:migrate` mới áp dụng SQL tạo bảng và `db:seed` chỉ thêm dữ liệu vào bảng đã có.
+**Bản clone mới phải generate trước khi inspect/migrate/seed.** Các script database import Prisma Client tại `src/generated/prisma`, nhưng thư mục này bị Git ignore. Chạy generate cuối cùng sẽ khiến các lệnh trước đó lỗi `ERR_MODULE_NOT_FOUND` / `Cannot find module .../generated/prisma/client.js`. Nếu gặp lỗi này, generate rồi chạy lại lệnh cần dùng. `prisma:validate` chỉ kiểm tra schema, `prisma:generate` chỉ sinh client; `db:migrate` áp dụng SQL cho database đang cấu hình. Quy trình seed đa khách sạn ở đầu mục tự tạo/migrate một database local riêng trước khi thêm dữ liệu, không chạy seed như bước tiếp theo của quy trình quản lý schema thủ công này.
 
 Nếu migrate báo thành công nhưng công cụ quản lý database vẫn không thấy bảng, đối chiếu host, port và tên database đang mở với `DATABASE_URL` trong `backend/.env`, rồi refresh danh sách bảng. `db:inspect` chạy sau migration phải liệt kê các bảng đã tạo. Nếu migrate báo lỗi, xử lý lỗi đó trước khi seed.
 
@@ -143,34 +153,19 @@ Không chạy migration khởi tạo này trực tiếp và không đánh dấu 
 
 Không dùng `migrate reset`, `db push --accept-data-loss` hay drop bảng để chữa lỗi. MySQL DDL không rollback nguyên khối; nếu migration lỗi giữa chừng, kiểm tra từng bước đã áp dụng và dùng quy trình repair có backup.
 
-## Seed và tạo ADMIN đầu tiên
+## Seed đa khách sạn và ADMIN
 
-`npm run db:seed` upsert sáu roles theo code. Ngoài production, seed mặc định thêm **5 tài khoản nhân viên, 20 loại phòng và 20 phòng** vào khách sạn duy nhất đang có. Nếu chưa có khách sạn, seed tạo `MAIN` / `Innvyra Hotel`; nếu có nhiều khách sạn, phải chỉ định cả `SEED_HOTEL_CODE` và `SEED_HOTEL_NAME`.
+`npm run db:seed` và `npm run db:seed:multi` dùng seed đa khách sạn mới, mặc định tạo database riêng nhưng chưa đổi cấu hình. Thêm `-- --activate` để chuyển ứng dụng sau khi kiểm chứng. Không chạy lại trên database đã có dữ liệu và không có chế độ reset.
 
-| Username       | Role         | Vai trò   |
-| -------------- | ------------ | --------- |
-| `manager`      | MANAGER      | Quản lý   |
-| `receptionist` | RECEPTIONIST | Lễ tân    |
-| `accountant`   | ACCOUNTANT   | Kế toán   |
-| `housekeeping` | HOUSEKEEPING | Dọn phòng |
-| `technician`   | TECHNICIAN   | Kỹ thuật  |
+Bộ mẫu tạo ba khách sạn Lotus/Ocean/Pine, ba gói mẫu, đủ sáu vai trò cho mỗi khách sạn, 54 phòng hoạt động + 3 phòng inactive, 78 khách, lịch sử/đặt phòng/lưu trú/thu ngân/buồng phòng/bảo trì/kho liên kết đầy đủ. Có ADMIN khách sạn và quản trị Innvyra sẵn dùng. Xem tài khoản và cách đối chiếu trong [hướng dẫn database local mới](../doc/DATABASE_MULTI_HOTEL_LOCAL.md).
 
-Mật khẩu demo chung: `Innvyra@Demo2026!`; có thể thay bằng biến `SEED_STAFF_PASSWORD` (15–128 ký tự đủ đa dạng) trước lần seed đầu tiên. Mật khẩu được hash Argon2id với salt riêng cho từng tài khoản. Không tạo thêm ADMIN.
+Seed đơn khách sạn cũ được giữ ở `prisma/seed.ts` và đổi tên lệnh thành `db:seed:legacy`. Script cũ có thao tác xóa/tạo lại nghiệp vụ mẫu; không chạy nó trên database đang sử dụng. Nó không được chạy trong quá trình tạo database đa khách sạn mới.
 
-20 loại phòng gồm Standard, Superior, Deluxe, Family và Suite, với giá mẫu 500.000–6.000.000 VND. Phòng **101–110** ở tầng 1 và **201–210** ở tầng 2, mỗi phòng liên kết một loại phòng, trạng thái ban đầu `ACTIVE` / `READY`.
+### Bootstrap ADMIN thủ công
 
-Chạy seed lại không tạo trùng và không ghi đè mật khẩu, role, giá, trạng thái hay dữ liệu hiện có. Username trùng nhưng thuộc hotel/role khác hoặc loại phòng không hoạt động cần dùng cho phòng mới sẽ làm transaction rollback. Console báo số bản ghi mới thực sự được thêm. Đặt `SEED_DEMO_DATA=false` để chỉ seed roles/khách sạn; production mặc định tắt demo và từ chối `SEED_DEMO_DATA=true`.
+Nếu tự tạo một khách sạn trên database khác, có thể dùng CLI dưới đây để cấp ADMIN đầu tiên cho chính khách sạn đó. Bộ seed đa khách sạn đã cấp ADMIN nên không cần bước này.
 
-Có thể chỉ định khách sạn tường minh:
-
-```powershell
-$env:SEED_HOTEL_CODE = 'MAIN'
-$env:SEED_HOTEL_NAME = 'Khach san cua ban'
-npm run db:seed
-Remove-Item Env:SEED_HOTEL_CODE, Env:SEED_HOTEL_NAME
-```
-
-Seed sẽ in ID khách sạn. Dùng ID đó trong CLI admin. Nhập mật khẩu bằng `Read-Host -AsSecureString`, không gõ mật khẩu trực tiếp vào lịch sử lệnh:
+Lấy ID của khách sạn cần cấp ADMIN để dùng trong CLI. Nhập mật khẩu bằng `Read-Host -AsSecureString`, không gõ mật khẩu trực tiếp vào lịch sử lệnh:
 
 ```powershell
 $env:ADMIN_USERNAME = 'admin'

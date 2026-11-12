@@ -19,26 +19,26 @@ import "./LoginPage.css";
 const demoAccounts = [
   {
     label: "Lễ tân",
-    username: "receptionist",
+    username: "lotus_letan_hoangnam",
     role: "RECEPTIONIST",
     color: "blue",
   },
-  { label: "Quản lý", username: "manager", role: "MANAGER", color: "green" },
+  { label: "Quản lý", username: "lotus_quanly_ngoclinh", role: "MANAGER", color: "green" },
   {
     label: "Kế toán",
-    username: "accountant",
+    username: "lotus_ketoan_giahuy",
     role: "ACCOUNTANT",
     color: "gold",
   },
   {
     label: "Buồng phòng",
-    username: "housekeeping",
+    username: "lotus_buongphong_thanhha",
     role: "HOUSEKEEPING",
     color: "cyan",
   },
   {
     label: "Kỹ thuật",
-    username: "technician",
+    username: "lotus_kythuat_quocbao",
     role: "TECHNICIAN",
     color: "purple",
   },

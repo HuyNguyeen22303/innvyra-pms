@@ -27,34 +27,18 @@ const unitSchema = z
 
 const textSchema = z.string().trim().max(5000).nullable().optional();
 
-// Decimal string or positive number for quantity
-const positiveQuantitySchema = z
-  .union([
-    z.number().positive('Quantity must be greater than 0'),
-    z
-      .string()
-      .trim()
-      .regex(/^(0\.\d*[1-9]\d*|[1-9]\d*(\.\d{1,2})?)$/, 'Quantity must be a positive decimal'),
-  ])
-  .transform((val) => String(val));
-
-// Decimal string or non-negative number for min stock level or actual physical count
-const nonNegativeQuantitySchema = z
-  .union([
-    z.number().nonnegative('Quantity cannot be negative'),
-    z
-      .string()
-      .trim()
-      .regex(/^(0|[1-9]\d*)(\.\d{1,2})?$/, 'Must be a non-negative decimal'),
-  ])
-  .transform((val) => String(val));
-
-const positiveOrZeroPriceSchema = z
-  .union([
-    z.number().nonnegative('Price cannot be negative'),
-    priceSchema,
-  ])
-  .transform((val) => String(val));
+// Match DECIMAL(14,2) before writing: accepting extra precision lets MySQL
+// round quantities independently from stock/movement calculations.
+const inventoryDecimal = z
+  .union([z.number(), z.string()])
+  .transform((value) => String(value).trim())
+  .pipe(priceSchema);
+const positiveQuantitySchema = inventoryDecimal.refine(
+  (value) => Number(value) > 0,
+  'Quantity must be greater than 0',
+);
+const nonNegativeQuantitySchema = inventoryDecimal;
+const positiveOrZeroPriceSchema = inventoryDecimal;
 
 // --- Category Schemas ---
 export const categoryCreateBody = z

@@ -31,6 +31,17 @@ import {
   movementView,
 } from './inventory.types.js';
 
+const maximumInventoryAmount = new Prisma.Decimal('999999999999.99');
+function requireInventoryRange(value: Prisma.Decimal) {
+  if (!value.isFinite() || value.isNegative() || value.greaterThan(maximumInventoryAmount))
+    throw new AppError(
+      422,
+      'INVENTORY_AMOUNT_TOO_LARGE',
+      'Inventory amount or stock exceeds the supported limit',
+    );
+  return value;
+}
+
 export class InventoryService {
   constructor(private readonly repository: InventoryRepository) {}
 
@@ -319,7 +330,10 @@ export class InventoryService {
       const preparedLines = input.items.map((line) => {
         const qty = new Prisma.Decimal(line.quantity);
         const price = new Prisma.Decimal(line.unitPrice ?? '0.00');
-        const lineTotal = qty.mul(price);
+        // Persist each line at database precision, then sum the persisted amounts.
+        const lineTotal = requireInventoryRange(
+          qty.mul(price).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+        );
         receiptTotalAmount = receiptTotalAmount.add(lineTotal);
         return {
           itemId: BigInt(line.itemId),
@@ -329,6 +343,8 @@ export class InventoryService {
           notes: line.notes ?? null,
         };
       });
+
+      requireInventoryRange(receiptTotalAmount);
 
       // Create Receipt and line items
       const receiptDate = input.receiptDate ? new Date(input.receiptDate) : new Date();
@@ -347,7 +363,10 @@ export class InventoryService {
 
       // Merge quantities per itemId for stock updates and movements
       // (preserving the original lines for the receipt detail rows)
-      const mergedByItem = new Map<bigint, { totalQty: Prisma.Decimal; firstNotes: string | null }>();
+      const mergedByItem = new Map<
+        bigint,
+        { totalQty: Prisma.Decimal; firstNotes: string | null }
+      >();
       for (const line of preparedLines) {
         const existing = mergedByItem.get(line.itemId);
         if (existing) {
@@ -360,7 +379,7 @@ export class InventoryService {
       for (const [itemId, merged] of mergedByItem) {
         const item = itemMap.get(itemId)!;
         const prevStock = item.currentStock;
-        const newStock = prevStock.add(merged.totalQty);
+        const newStock = requireInventoryRange(prevStock.add(merged.totalQty));
 
         await repo.updateItem(scope.hotelId, itemId, {
           currentStock: newStock,

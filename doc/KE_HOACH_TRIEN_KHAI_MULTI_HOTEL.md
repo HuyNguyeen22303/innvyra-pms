@@ -6,7 +6,7 @@ Cập nhật trạng thái: 12/11/2026.
 ## 1. Trạng thái và nguyên tắc thực hiện
 
 - Nhánh làm việc: `feature/multi-hotel-saas`, tạo trực tiếp từ `develop` tại commit `48623cb`.
-- Đã hoàn thành giai đoạn 1–5. Giai đoạn 4 được triển khai trước, sau đó hoàn thiện giai đoạn 3 vào 12/11/2026 với mật khẩu tạm và cách ly phiên/cache. Đợt này giữ đăng nhập nhân viên bằng username; hỗ trợ email để sau.
+- Đã hoàn thành giai đoạn 1–6. Giai đoạn 4 được triển khai trước, sau đó hoàn thiện giai đoạn 3 vào 12/11/2026 với mật khẩu tạm và cách ly phiên/cache. Đợt này giữ đăng nhập nhân viên bằng username; hỗ trợ email để sau.
 - Các lượt kiểm chứng của agent dùng database test riêng; không reset, seed hoặc tạo khách sạn trên database ứng dụng.
 - Lộ trình này tập trung bổ sung và kiểm thử tính năng đa khách sạn. Phase 6 nghiệm thu tính năng trên môi trường phát triển/test; triển khai tổng dự án lên hosting/production sẽ có kế hoạch riêng sau khi dự án sẵn sàng.
 - Không commit, push hoặc merge nếu chưa được người dùng yêu cầu.
@@ -39,14 +39,14 @@ Cập nhật trạng thái: 12/11/2026.
 | 3. Tài khoản khách sạn và cache — hoàn thành | Giữ username, hoàn thiện mật khẩu tạm và cache/phiên tách biệt | 773/773 test backend, 37/37 test frontend đạt; kiểm chứng chuyển A/B và nhiều tab bằng trình duyệt |
 | 4. Tiếp nhận và thiết lập khách sạn — hoàn thành | Tạo khách sạn/admin/kỳ sử dụng, quản lý thông tin | 762/762 test backend và 14/14 test frontend đạt; kiểm chứng giao diện và A/B trên database test riêng |
 | 5. Gói thuê bao theo tháng và quyền sử dụng — hoàn thành | Danh mục nhiều gói, chọn/gia hạn theo tháng, cảnh báo, khóa/mở và nhật ký | 803/803 test backend, 39/39 test frontend đạt; giữ lịch sử, hạn mức và khóa cả phiên đang hoạt động |
-| 6. Kiểm thử và hoàn thiện tính năng đa khách sạn | Luồng tích hợp, bộ hồi quy, sửa lỗi và hướng dẫn test local | Các tiêu chí tính năng đạt, không lộ dữ liệu A/B, không làm hỏng nghiệp vụ cũ; chưa deploy tổng dự án |
+| 6. Kiểm thử và hoàn thiện tính năng đa khách sạn — hoàn thành | Luồng tích hợp, bộ hồi quy, sửa lỗi và hướng dẫn test local | 836/836 test backend, 39/39 test frontend đạt; seed/demo riêng, đối chiếu A/B và sửa lỗi kho; chưa deploy tổng dự án |
 
 ### Giai đoạn 0 — Chuẩn bị và lập kế hoạch
 
 - [x] Kiểm tra trạng thái Git trước khi thay đổi nhánh.
 - [x] Tạo nhánh mới trực tiếp từ `develop` theo yêu cầu.
 - [x] Lưu kế hoạch triển khai từng bước.
-- Giai đoạn 1–5 đã hoàn thành theo yêu cầu; giai đoạn 6 chưa triển khai.
+- Giai đoạn 1–6 đã hoàn thành theo yêu cầu; kiểm thử Phase 6 trên local/test, chưa deploy tổng dự án.
 
 ### Giai đoạn 1 — Xác lập hiện trạng và chuẩn bị dữ liệu
 
@@ -125,6 +125,8 @@ Các gói dùng cùng bộ nghiệp vụ PMS hiện có, khác hạn mức phòn
 - Nghiệm thu: chọn/gia hạn đúng gói, đơn giá, số tháng và thành tiền; lịch sử không đổi khi sửa danh mục. Đúng ranh giới tháng/ngày và quyền; admin khách sạn không tự đổi gói, thời hạn hoặc mở khóa; khóa/mở không làm thay đổi dữ liệu nghiệp vụ. Đã kiểm tra hạn mức phòng/tài khoản; lịch sử kỳ cũ không đổi và không tự áp hạn mức cho kỳ chưa gán gói.
 
 ### Giai đoạn 6 — Kiểm thử và hoàn thiện tính năng đa khách sạn
+
+Trạng thái: **hoàn thành ngày 12/11/2026**. Bộ seed, kết quả nghiệm thu, lỗi đã sửa và cách chạy lại: [PHASE_6_INTEGRATION_TESTING.md](./PHASE_6_INTEGRATION_TESTING.md).
 
 Thực hiện trên môi trường phát triển/test. Mục tiêu là nghiệm thu phần tính năng đa khách sạn, thuê bao và quyền sử dụng đã bổ sung; không đánh dấu toàn bộ dự án đã sẵn sàng vận hành production.
 

@@ -17,7 +17,7 @@ const url = datasourceUrl();
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
-  migrations: { path: 'prisma/migrations', seed: 'tsx prisma/seed.ts' },
+  migrations: { path: 'prisma/migrations', seed: 'tsx scripts/seed-local-multi-hotel.ts' },
   // Optional here so generate/typecheck/build work without a database or secrets.
   ...(url ? { datasource: { url } } : {}),
 });

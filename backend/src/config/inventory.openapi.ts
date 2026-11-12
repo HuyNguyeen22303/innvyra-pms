@@ -11,6 +11,14 @@ const id = {
   description: 'Unsigned BIGINT decimal string',
   example: '1',
 };
+const inventoryDecimal = {
+  oneOf: [
+    { type: 'string', pattern: '^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,2})?$' },
+    { type: 'number', minimum: 0, maximum: 999999999999.99, multipleOf: 0.01 },
+  ],
+  description:
+    'Non-negative DECIMAL(14,2): at most 12 integer and 2 fractional digits. Receipt line totals round half up to 2 digits; the header sums rounded lines. Out-of-range amounts/stock return 422 atomically.',
+};
 const timestamp = { type: 'string', format: 'date-time' };
 
 const security = [{ bearerAuth: [] }];
@@ -173,7 +181,12 @@ export const inventorySchemas = {
       categoryId: id,
       category: {
         type: 'object',
-        properties: { id, code: { type: 'string' }, name: { type: 'string' }, isActive: { type: 'boolean' } },
+        properties: {
+          id,
+          code: { type: 'string' },
+          name: { type: 'string' },
+          isActive: { type: 'boolean' },
+        },
       },
       code: { type: 'string', example: 'ITEM-SHAMPOO' },
       name: { type: 'string', example: 'Dầu gội mini 30ml' },
@@ -197,7 +210,7 @@ export const inventorySchemas = {
       categoryId: { type: 'string', example: '1' },
       unit: { type: 'string', minLength: 1, maxLength: 30, example: 'bottle' },
       description: { type: 'string', nullable: true, maxLength: 5000 },
-      minStockLevel: { type: 'string', example: '50.00', default: '0.00' },
+      minStockLevel: { ...inventoryDecimal, example: '50.00', default: '0.00' },
     },
     description:
       'Creates a new inventory item. Initial current stock is always 0.00 and cannot be set directly.',
@@ -210,7 +223,7 @@ export const inventorySchemas = {
       categoryId: { type: 'string' },
       unit: { type: 'string', minLength: 1, maxLength: 30 },
       description: { type: 'string', nullable: true, maxLength: 5000 },
-      minStockLevel: { type: 'string' },
+      minStockLevel: { ...inventoryDecimal },
     },
     description:
       'Current stock cannot be updated directly through this endpoint. Stock changes only through receipts, issues, or adjustments.',
@@ -223,7 +236,12 @@ export const inventorySchemas = {
       itemId: id,
       item: {
         type: 'object',
-        properties: { id, code: { type: 'string' }, name: { type: 'string' }, unit: { type: 'string' } },
+        properties: {
+          id,
+          code: { type: 'string' },
+          name: { type: 'string' },
+          unit: { type: 'string' },
+        },
       },
       quantity: { type: 'string', example: '100.00' },
       unitPrice: { type: 'string', example: '15000.00' },
@@ -234,7 +252,16 @@ export const inventorySchemas = {
   },
   StockReceipt: {
     type: 'object',
-    required: ['id', 'hotelId', 'receiptNumber', 'receiptDate', 'totalAmount', 'createdBy', 'items', 'createdAt'],
+    required: [
+      'id',
+      'hotelId',
+      'receiptNumber',
+      'receiptDate',
+      'totalAmount',
+      'createdBy',
+      'items',
+      'createdAt',
+    ],
     properties: {
       id,
       hotelId: id,
@@ -274,8 +301,12 @@ export const inventorySchemas = {
           required: ['itemId', 'quantity'],
           properties: {
             itemId: { type: 'string', example: '1' },
-            quantity: { type: 'string', example: '100.00' },
-            unitPrice: { type: 'string', example: '15000.00', default: '0.00' },
+            quantity: {
+              ...inventoryDecimal,
+              not: { enum: ['0', '0.0', '0.00', 0] },
+              example: '100.00',
+            },
+            unitPrice: { ...inventoryDecimal, example: '15000.00', default: '0.00' },
             notes: { type: 'string', nullable: true, maxLength: 500 },
           },
         },
@@ -290,7 +321,12 @@ export const inventorySchemas = {
       itemId: id,
       item: {
         type: 'object',
-        properties: { id, code: { type: 'string' }, name: { type: 'string' }, unit: { type: 'string' } },
+        properties: {
+          id,
+          code: { type: 'string' },
+          name: { type: 'string' },
+          unit: { type: 'string' },
+        },
       },
       quantity: { type: 'string', example: '20.00' },
       notes: { type: 'string', nullable: true },
@@ -299,7 +335,16 @@ export const inventorySchemas = {
   },
   StockIssue: {
     type: 'object',
-    required: ['id', 'hotelId', 'issueNumber', 'issueDate', 'department', 'createdBy', 'items', 'createdAt'],
+    required: [
+      'id',
+      'hotelId',
+      'issueNumber',
+      'issueDate',
+      'department',
+      'createdBy',
+      'items',
+      'createdAt',
+    ],
     properties: {
       id,
       hotelId: id,
@@ -325,7 +370,12 @@ export const inventorySchemas = {
       issueNumber: { type: 'string', maxLength: 50, example: 'ISS-20261018-001' },
       issueDate: { type: 'string', format: 'date-time' },
       department: { type: 'string', minLength: 1, maxLength: 100, example: 'HOUSEKEEPING' },
-      purpose: { type: 'string', nullable: true, maxLength: 500, example: 'Daily turnover replenishment' },
+      purpose: {
+        type: 'string',
+        nullable: true,
+        maxLength: 500,
+        example: 'Daily turnover replenishment',
+      },
       notes: { type: 'string', nullable: true, maxLength: 5000 },
       items: {
         type: 'array',
@@ -335,7 +385,11 @@ export const inventorySchemas = {
           required: ['itemId', 'quantity'],
           properties: {
             itemId: { type: 'string', example: '1' },
-            quantity: { type: 'string', example: '20.00' },
+            quantity: {
+              ...inventoryDecimal,
+              not: { enum: ['0', '0.0', '0.00', 0] },
+              example: '20.00',
+            },
             notes: { type: 'string', nullable: true, maxLength: 500 },
           },
         },
@@ -364,7 +418,12 @@ export const inventorySchemas = {
       itemId: id,
       item: {
         type: 'object',
-        properties: { id, code: { type: 'string' }, name: { type: 'string' }, unit: { type: 'string' } },
+        properties: {
+          id,
+          code: { type: 'string' },
+          name: { type: 'string' },
+          unit: { type: 'string' },
+        },
       },
       systemQuantity: { type: 'string', example: '100.00' },
       actualQuantity: { type: 'string', example: '95.00' },
@@ -384,8 +443,13 @@ export const inventorySchemas = {
     properties: {
       adjustmentNumber: { type: 'string', maxLength: 50, example: 'ADJ-20261018-001' },
       itemId: { type: 'string', example: '1' },
-      actualQuantity: { type: 'string', example: '95.00' },
-      reason: { type: 'string', minLength: 1, maxLength: 500, example: 'Stock discrepancy found during monthly count' },
+      actualQuantity: { ...inventoryDecimal, example: '95.00' },
+      reason: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 500,
+        example: 'Stock discrepancy found during monthly count',
+      },
     },
   },
   InventoryMovement: {
@@ -409,7 +473,12 @@ export const inventorySchemas = {
       itemId: id,
       item: {
         type: 'object',
-        properties: { id, code: { type: 'string' }, name: { type: 'string' }, unit: { type: 'string' } },
+        properties: {
+          id,
+          code: { type: 'string' },
+          name: { type: 'string' },
+          unit: { type: 'string' },
+        },
       },
       type: { type: 'string', enum: ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] },
       quantity: { type: 'string', example: '+50.00' },
@@ -468,7 +537,10 @@ export const inventoryPaths = {
       description: `Roles: ${inventoryPermissions.summaryRead.join(', ')}. Scoped to authenticated user\\'s hotel.`,
       security,
       responses: {
-        200: { description: 'Inventory summary overview', content: json(envelope(ref('InventorySummary'))) },
+        200: {
+          description: 'Inventory summary overview',
+          content: json(envelope(ref('InventorySummary'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         500: error('Internal server error'),
@@ -481,7 +553,11 @@ export const inventoryPaths = {
       summary: 'Get low stock items list',
       description: `Roles: ${inventoryPermissions.lowStockRead.join(', ')}. Lists active items whose current stock is at or below their configured minStockLevel.`,
       security,
-      parameters: [pageParam, limitParam, { name: 'categoryId', in: 'query', required: false, schema: id }],
+      parameters: [
+        pageParam,
+        limitParam,
+        { name: 'categoryId', in: 'query', required: false, schema: id },
+      ],
       responses: {
         200: { description: 'Low stock items', content: json(pageEnvelope(ref('InventoryItem'))) },
         401: error('Unauthorized'),
@@ -520,7 +596,10 @@ export const inventoryPaths = {
         { name: 'isActive', in: 'query', required: false, schema: { type: 'boolean' } },
       ],
       responses: {
-        200: { description: 'Categories list', content: json(pageEnvelope(ref('InventoryCategory'))) },
+        200: {
+          description: 'Categories list',
+          content: json(pageEnvelope(ref('InventoryCategory'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         500: error('Internal server error'),
@@ -567,7 +646,10 @@ export const inventoryPaths = {
       security,
       parameters: [idParam, csrf],
       responses: {
-        200: { description: 'Category deactivated', content: json(envelope(ref('InventoryCategory'))) },
+        200: {
+          description: 'Category deactivated',
+          content: json(envelope(ref('InventoryCategory'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden / CSRF rejected'),
         404: error('Category not found'),
@@ -694,11 +776,18 @@ export const inventoryPaths = {
           name: 'stockStatus',
           in: 'query',
           required: false,
-          schema: { type: 'string', enum: ['ALL', 'IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'], default: 'ALL' },
+          schema: {
+            type: 'string',
+            enum: ['ALL', 'IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'],
+            default: 'ALL',
+          },
         },
       ],
       responses: {
-        200: { description: 'Inventory items list', content: json(pageEnvelope(ref('InventoryItem'))) },
+        200: {
+          description: 'Inventory items list',
+          content: json(pageEnvelope(ref('InventoryItem'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         500: error('Internal server error'),
@@ -781,11 +870,24 @@ export const inventoryPaths = {
         pageParam,
         limitParam,
         { name: 'supplierId', in: 'query', required: false, schema: id },
-        { name: 'startDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
-        { name: 'endDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+        {
+          name: 'startDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
+        {
+          name: 'endDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
       ],
       responses: {
-        200: { description: 'Stock receipts list', content: json(pageEnvelope(ref('StockReceipt'))) },
+        200: {
+          description: 'Stock receipts list',
+          content: json(pageEnvelope(ref('StockReceipt'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         500: error('Internal server error'),
@@ -799,7 +901,10 @@ export const inventoryPaths = {
       security,
       parameters: [idParam],
       responses: {
-        200: { description: 'Receipt details with items', content: json(envelope(ref('StockReceipt'))) },
+        200: {
+          description: 'Receipt details with items',
+          content: json(envelope(ref('StockReceipt'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         404: error('Receipt not found'),
@@ -834,8 +939,18 @@ export const inventoryPaths = {
         pageParam,
         limitParam,
         { name: 'department', in: 'query', required: false, schema: { type: 'string' } },
-        { name: 'startDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
-        { name: 'endDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+        {
+          name: 'startDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
+        {
+          name: 'endDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
       ],
       responses: {
         200: { description: 'Stock issues list', content: json(pageEnvelope(ref('StockIssue'))) },
@@ -852,7 +967,10 @@ export const inventoryPaths = {
       security,
       parameters: [idParam],
       responses: {
-        200: { description: 'Issue details with items', content: json(envelope(ref('StockIssue'))) },
+        200: {
+          description: 'Issue details with items',
+          content: json(envelope(ref('StockIssue'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         404: error('Issue not found'),
@@ -869,7 +987,10 @@ export const inventoryPaths = {
       parameters: [csrf],
       requestBody: { required: true, content: json(ref('CreateStockAdjustment')) },
       responses: {
-        201: { description: 'Stock adjustment created', content: json(envelope(ref('StockAdjustment'))) },
+        201: {
+          description: 'Stock adjustment created',
+          content: json(envelope(ref('StockAdjustment'))),
+        },
         400: error('Malformed request'),
         401: error('Unauthorized'),
         403: error('Forbidden / CSRF rejected'),
@@ -890,12 +1011,30 @@ export const inventoryPaths = {
         pageParam,
         limitParam,
         { name: 'itemId', in: 'query', required: false, schema: id },
-        { name: 'type', in: 'query', required: false, schema: { type: 'string', enum: ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] } },
-        { name: 'startDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
-        { name: 'endDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+        {
+          name: 'type',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', enum: ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] },
+        },
+        {
+          name: 'startDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
+        {
+          name: 'endDate',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'date' },
+        },
       ],
       responses: {
-        200: { description: 'Movements list', content: json(pageEnvelope(ref('InventoryMovement'))) },
+        200: {
+          description: 'Movements list',
+          content: json(pageEnvelope(ref('InventoryMovement'))),
+        },
         401: error('Unauthorized'),
         403: error('Forbidden'),
         500: error('Internal server error'),

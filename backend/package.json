@@ -21,10 +21,15 @@
     "prisma:validate": "prisma validate",
     "db:inspect": "tsx scripts/inspect-database.ts",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx scripts/seed-local-multi-hotel.ts",
     "seed:inventory": "tsx scripts/seed-inventory.ts",
     "create:admin": "tsx scripts/create-admin.ts",
-    "create:platform-admin": "tsx scripts/create-platform-admin.ts"
+    "create:platform-admin": "tsx scripts/create-platform-admin.ts",
+    "test:phase6": "tsx scripts/test-mysql.ts tests/phase6-saas.mysql.integration.test.ts tests/phase6-safety.unit.test.ts",
+    "demo:phase6": "tsx scripts/phase6-demo.ts",
+    "db:seed:multi": "tsx scripts/seed-local-multi-hotel.ts",
+    "db:check:multi": "tsx scripts/seed-local-multi-hotel.ts --check",
+    "db:seed:legacy": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "7.10.0",
