@@ -12,6 +12,7 @@ import {
   hotelSessionGeneration,
   installHotelSession,
   updateHotelPasswordRequirement,
+  updateHotelSuspension,
 } from "../auth/hotelSession.ts";
 export { getAccessToken } from "../auth/hotelSession.ts";
 
@@ -101,6 +102,7 @@ apiClient.interceptors.response.use(
     const code = (
       error.response?.data as { error?: { code?: string } } | undefined
     )?.error?.code;
+    if (code === "HOTEL_SUSPENDED") updateHotelSuspension();
     if (code === "PASSWORD_CHANGE_REQUIRED") {
       updateHotelPasswordRequirement();
       throw error;

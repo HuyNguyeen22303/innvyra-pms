@@ -1,5 +1,21 @@
+import { useQuery } from "@tanstack/react-query";
+import {
+  subscriptionsApi,
+  type MonthlyPeriodInput,
+} from "../../api/subscriptions.api.ts";
+import { usePlatformAuthStore } from "../../store/platformAuthStore.ts";
 import { useState } from "react";
-import { Alert, Button, Card, DatePicker, Form, Input, Space } from "antd";
+import {
+  Alert,
+  Button,
+  Card,
+  DatePicker,
+  Form,
+  Input,
+  Space,
+  Select,
+  InputNumber,
+} from "antd";
 import type { Dayjs } from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { hotelsApi } from "../../api/hotels.api.ts";
@@ -15,9 +31,8 @@ import {
 import { hotelError } from "../../utils/hotelErrors.ts";
 
 type CreateForm = Omit<HotelCreate, "subscription"> & {
-  subscription: Omit<HotelCreate["subscription"], "startsOn" | "endsOn"> & {
+  subscription: Omit<MonthlyPeriodInput, "startsOn"> & {
     startsOn: Dayjs;
-    endsOn: Dayjs;
   };
 };
 export function PlatformHotelCreatePage() {
@@ -27,6 +42,11 @@ export function PlatformHotelCreatePage() {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const owner = usePlatformAuthStore((s) => s.user?.id);
+  const plans = useQuery({
+    queryKey: ["platform-plans-onboarding", owner],
+    queryFn: ({ signal }) => subscriptionsApi.plans(signal),
+  });
   const submit = async (values: CreateForm) => {
     setSaving(true);
     setError(null);
@@ -41,7 +61,6 @@ export function PlatformHotelCreatePage() {
           subscription: {
             ...values.subscription,
             startsOn: values.subscription.startsOn.format("YYYY-MM-DD"),
-            endsOn: values.subscription.endsOn.format("YYYY-MM-DD"),
           },
         }),
       );
@@ -78,7 +97,7 @@ export function PlatformHotelCreatePage() {
         disabled={saving || !!issued}
         initialValues={{
           timezone: "Asia/Ho_Chi_Minh",
-          subscription: { planName: "Innvyra PMS" },
+          subscription: { monthCount: 1, reason: "Tiếp nhận khách sạn" },
         }}
       >
         <div className="platform-hotel-form-grid">
@@ -107,64 +126,66 @@ export function PlatformHotelCreatePage() {
               </p>
             </Card>
             <Card title="Kỳ sử dụng ban đầu">
+              {plans.isError && (
+                <Alert type="error" title={hotelError(plans.error)} />
+              )}
+              {plans.data?.length === 0 && (
+                <Alert
+                  type="info"
+                  title={
+                    <Link to="/platform/plans">
+                      Tạo gói dịch vụ trước khi tiếp nhận khách sạn
+                    </Link>
+                  }
+                />
+              )}
               <Form.Item
-                name={["subscription", "planName"]}
-                label="Tên gói"
-                rules={[
-                  {
-                    required: true,
-                    whitespace: true,
-                    message: "Nhập tên gói.",
-                  },
-                ]}
+                name={["subscription", "planId"]}
+                label="Gói dịch vụ"
+                rules={[{ required: true, message: "Chọn gói dịch vụ." }]}
               >
-                <Input maxLength={100} />
+                <Select
+                  loading={plans.isFetching}
+                  options={plans.data
+                    ?.filter((p) => p.isActive)
+                    .map((p) => ({
+                      value: p.id,
+                      label:
+                        p.name +
+                        " • " +
+                        Number(p.monthlyPrice).toLocaleString("vi-VN") +
+                        " ₫ / tháng • " +
+                        p.roomLimit +
+                        " phòng / " +
+                        p.staffLimit +
+                        " tài khoản",
+                    }))}
+                />
               </Form.Item>
               <Form.Item
                 name={["subscription", "startsOn"]}
                 label="Ngày bắt đầu"
                 rules={[{ required: true, message: "Chọn ngày bắt đầu." }]}
               >
-                <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+                <DatePicker format="DD/MM/YYYY" />
               </Form.Item>
               <Form.Item
-                name={["subscription", "endsOn"]}
-                label="Ngày kết thúc (bao gồm ngày này)"
-                dependencies={[["subscription", "startsOn"]]}
-                rules={[
-                  { required: true, message: "Chọn ngày kết thúc." },
-                  ({ getFieldValue }) => ({
-                    validator(_, value: Dayjs | undefined) {
-                      const start = getFieldValue([
-                        "subscription",
-                        "startsOn",
-                      ]) as Dayjs | undefined;
-                      return value && start && value.isBefore(start, "day")
-                        ? Promise.reject(
-                            new Error(
-                              "Ngày kết thúc phải từ ngày bắt đầu trở đi.",
-                            ),
-                          )
-                        : Promise.resolve();
-                    },
-                  }),
-                ]}
+                name={["subscription", "monthCount"]}
+                label="Số tháng"
+                rules={[{ required: true }]}
               >
-                <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+                <InputNumber min={1} max={120} precision={0} />
               </Form.Item>
+              <p>
+                Phí kỳ bằng giá gói mỗi tháng × số tháng. Ngày kết thúc được hệ
+                thống tính khi ghi nhận.
+              </p>
               <Form.Item
-                name={["subscription", "feeAmount"]}
-                label="Phí theo thỏa thuận (VND)"
-                rules={[
-                  { required: true, message: "Nhập mức phí." },
-                  {
-                    pattern: /^(0|[1-9]\d{0,11})(\.\d{1,2})?$/,
-                    message:
-                      "Nhập số tiền không âm, tối đa 12 chữ số phần nguyên và 2 chữ số thập phân.",
-                  },
-                ]}
+                name={["subscription", "reason"]}
+                label="Lý do ghi nhận"
+                rules={[{ required: true, whitespace: true }]}
               >
-                <Input inputMode="decimal" />
+                <Input maxLength={2000} />
               </Form.Item>
               <Form.Item
                 name={["subscription", "agreementReference"]}

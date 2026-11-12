@@ -1,3 +1,4 @@
+import { HotelSubscriptionCard } from "./HotelSubscriptionCard.tsx";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -126,7 +127,12 @@ function HotelDetailContent({ id }: { id: string }) {
           style={{ marginBottom: 20 }}
         />
       )}
-      <div className="platform-hotel-form-grid">
+      <HotelSubscriptionCard
+        id={id}
+        status={hotel.status}
+        onChanged={() => setRevision((v) => v + 1)}
+      />
+      <div className="platform-hotel-form-grid" style={{ marginTop: 24 }}>
         <Card title="Thông tin khách sạn">
           <Form<HotelEdit>
             form={editForm}
@@ -212,43 +218,6 @@ function HotelDetailContent({ id }: { id: string }) {
           />
         </Card>
       </div>
-      <Card title="Kỳ sử dụng đã ghi nhận" style={{ marginTop: 24 }}>
-        <Table
-          rowKey="id"
-          dataSource={hotel.subscriptionPeriods}
-          pagination={false}
-          scroll={{ x: 650 }}
-          columns={[
-            { title: "Gói", dataIndex: "planName" },
-            {
-              title: "Bắt đầu",
-              dataIndex: "startsOn",
-              render: (value: string) => value.slice(0, 10),
-            },
-            {
-              title: "Kết thúc",
-              dataIndex: "endsOn",
-              render: (value: string) => value.slice(0, 10),
-            },
-            {
-              title: "Phí VND",
-              dataIndex: "feeAmount",
-              render: (value: string) =>
-                Number(value).toLocaleString("vi-VN", {
-                  maximumFractionDigits: 2,
-                }),
-            },
-            {
-              title: "Tham chiếu thanh toán",
-              dataIndex: "paymentReference",
-              render: (value: string | null) => value || "—",
-            },
-          ]}
-        />
-        {!hotel.subscriptionPeriods.length && (
-          <p className="platform-muted">Khách sạn chưa thiết lập kỳ sử dụng.</p>
-        )}
-      </Card>
       <Card title="Nhật ký quản trị gần đây" style={{ marginTop: 24 }}>
         <Table
           rowKey="id"

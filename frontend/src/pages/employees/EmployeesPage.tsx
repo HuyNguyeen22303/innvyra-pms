@@ -278,7 +278,7 @@ export const EmployeesPage: React.FC = () => {
     },
     onError: (err: any) => {
       const code = err.response?.data?.error?.code || err.response?.data?.code;
-      const msg = err.response?.data?.error?.message || err.response?.data?.message;
+      const msg = code === 'SUBSCRIPTION_LIMIT_REACHED' ? 'Đã đạt hạn mức tài khoản hoạt động của gói. Liên hệ Innvyra để đổi gói.' : err.response?.data?.error?.message || err.response?.data?.message;
 
       if (code === 'LAST_ADMIN') {
         appMessage.error('Không thể vô hiệu hóa Quản trị viên (ADMIN) cuối cùng còn lại trong khách sạn!');

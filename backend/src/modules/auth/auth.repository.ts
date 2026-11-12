@@ -4,7 +4,7 @@ import { unauthorized } from '../../shared/errors/app-error.js';
 
 const staffInclude = {
   role: true,
-  hotel: { select: { id: true, code: true, name: true, timezone: true } },
+  hotel: { select: { id: true, code: true, name: true, timezone: true, status: true } },
 } as const;
 const sessionInclude = { staffUser: { include: staffInclude } } as const;
 

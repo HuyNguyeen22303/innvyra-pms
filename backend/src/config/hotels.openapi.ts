@@ -152,7 +152,19 @@ export const hotelSchemas = {
       Object.entries(period).filter(([key]) => !['id', 'currency', 'createdAt'].includes(key)),
     ),
   },
-  HotelPeriod: { type: 'object', properties: { ...period, startsOn: dateTime, endsOn: dateTime } },
+  HotelPeriod: {
+    type: 'object',
+    properties: {
+      ...period,
+      startsOn: dateTime,
+      endsOn: dateTime,
+      planId: { ...id, nullable: true },
+      monthlyPrice: { type: 'string', nullable: true },
+      monthCount: { type: 'integer', nullable: true },
+      roomLimit: { type: 'integer', nullable: true },
+      staffLimit: { type: 'integer', nullable: true },
+    },
+  },
   PlatformHotelCreate: {
     type: 'object',
     additionalProperties: false,
@@ -161,7 +173,11 @@ export const hotelSchemas = {
       ...platformEditable,
       code: { ...text(50), pattern: '^[a-zA-Z0-9][a-zA-Z0-9_-]*$' },
       admin: ref('HotelAdminInput'),
-      subscription: ref('InitialHotelPeriod'),
+      subscription: {
+        oneOf: [ref('MonthlyHotelPeriod'), ref('InitialHotelPeriod')],
+        description:
+          'Monthly catalog plan recommended; manual legacy period input retained for compatibility.',
+      },
     },
   },
   PlatformHotelUpdate: {
@@ -233,6 +249,14 @@ export const hotelPaths = {
         },
         { name: 'search', in: 'query', schema: { type: 'string', minLength: 1, maxLength: 100 } },
         { name: 'status', in: 'query', schema: { type: 'string', enum: ['ACTIVE', 'SUSPENDED'] } },
+        {
+          name: 'subscriptionStatus',
+          in: 'query',
+          schema: {
+            type: 'string',
+            enum: ['ACTIVE', 'EXPIRING', 'EXPIRED', 'UPCOMING', 'UNCONFIGURED'],
+          },
+        },
       ],
     ),
     post: {

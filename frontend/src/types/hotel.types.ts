@@ -29,6 +29,11 @@ export interface HotelAdminInput {
 }
 export interface HotelPeriod {
   id: string;
+  planId?: string | null;
+  monthlyPrice?: string | null;
+  monthCount?: number | null;
+  roomLimit?: number | null;
+  staffLimit?: number | null;
   planName: string;
   startsOn: string;
   endsOn: string;
@@ -62,15 +67,17 @@ export type HotelEdit = Pick<
 export interface HotelCreate extends HotelEdit {
   code: string;
   admin: HotelAdminInput;
-  subscription: {
-    planName: string;
-    startsOn: string;
-    endsOn: string;
-    feeAmount: string;
-    agreementReference?: string;
-    paymentReference?: string;
-    notes?: string;
-  };
+  subscription:
+    | import("../api/subscriptions.api.ts").MonthlyPeriodInput
+    | {
+        planName: string;
+        startsOn: string;
+        endsOn: string;
+        feeAmount: string;
+        agreementReference?: string;
+        paymentReference?: string;
+        notes?: string;
+      };
 }
 export interface IssuedHotelCredentials {
   admin: HotelAdmin;

@@ -1,3 +1,5 @@
+import { day } from './subscription-day.js';
+import { monthlyPeriodBody } from './subscription.schema.js';
 import { z } from 'zod';
 import {
   emptyQuery,
@@ -41,18 +43,6 @@ export const hotelPlatformBody = hotelProfileBody
 export const hotelAdminBody = z
   .object({ fullName: name, username: usernameSchema, email })
   .strict();
-const day = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((value) => {
-    const date = new Date(`${value}T00:00:00.000Z`);
-    return (
-      value >= '1000-01-01' &&
-      value <= '9999-12-31' &&
-      !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value
-    );
-  }, 'Use a valid date in YYYY-MM-DD format');
 export const initialPeriodBody = z
   .object({
     planName: z.string().trim().min(1).max(100),
@@ -78,7 +68,7 @@ export const hotelCreateBody = hotelPlatformBody
       .max(50)
       .regex(/^[A-Z0-9][A-Z0-9_-]*$/),
     admin: hotelAdminBody,
-    subscription: initialPeriodBody,
+    subscription: z.union([monthlyPeriodBody, initialPeriodBody]),
   })
   .strict();
 export const hotelUpdateBody = hotelPlatformBody
@@ -93,6 +83,9 @@ export const hotelListQuery = z
     limit: paginationFields.limit,
     search: paginationFields.search,
     status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
+    subscriptionStatus: z
+      .enum(['ACTIVE', 'EXPIRING', 'EXPIRED', 'UPCOMING', 'UNCONFIGURED'])
+      .optional(),
   })
   .strict();
 export const createHotelSchema = z.object({ body: hotelCreateBody, query: emptyQuery });

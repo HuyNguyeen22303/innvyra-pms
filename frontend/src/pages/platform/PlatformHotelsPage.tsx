@@ -11,10 +11,19 @@ export function PlatformHotelsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>();
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>();
   const userId = usePlatformAuthStore((state) => state.user?.id);
   const [revision, setRevision] = useState(0);
   const query = useQuery({
-    queryKey: ["platform-hotels", userId, page, search, status, revision],
+    queryKey: [
+      "platform-hotels",
+      userId,
+      page,
+      search,
+      status,
+      subscriptionStatus,
+      revision,
+    ],
     queryFn: ({ signal }) =>
       hotelsApi.list(
         {
@@ -22,6 +31,7 @@ export function PlatformHotelsPage() {
           limit: 20,
           ...(search ? { search } : {}),
           ...(status ? { status } : {}),
+          ...(subscriptionStatus ? { subscriptionStatus } : {}),
         },
         signal,
       ),
@@ -59,6 +69,23 @@ export function PlatformHotelsPage() {
             onChange={(value) => {
               setPage(1);
               setStatus(value);
+            }}
+          />
+          <Select
+            placeholder="Thời hạn thuê bao"
+            aria-label="Thời hạn thuê bao"
+            allowClear
+            style={{ width: 220 }}
+            options={[
+              { value: "ACTIVE", label: "Còn hạn trên 14 ngày" },
+              { value: "EXPIRING", label: "Sắp hết hạn (≤ 14 ngày)" },
+              { value: "EXPIRED", label: "Đã hết hạn" },
+              { value: "UPCOMING", label: "Chưa bắt đầu" },
+              { value: "UNCONFIGURED", label: "Chưa có kỳ sử dụng" },
+            ]}
+            onChange={(value) => {
+              setPage(1);
+              setSubscriptionStatus(value);
             }}
           />
           <Button onClick={() => setRevision((value) => value + 1)}>

@@ -1,3 +1,4 @@
+import { PlatformPlansPage } from '../pages/platform/PlatformPlansPage.tsx';
 import { useEffect } from "react";
 import { Button, Result, Spin } from "antd";
 import { Route, Routes } from "react-router-dom";
@@ -49,6 +50,7 @@ export default function PlatformRoutes() {
         }
       >
         <Route index element={<PlatformOverviewPage />} />
+        <Route path="plans" element={<PlatformPlansPage />} />
         <Route path="account" element={<PlatformAccountPage />} />
         <Route path="hotels" element={<PlatformHotelsPage />} />
         <Route path="hotels/new" element={<PlatformHotelCreatePage />} />

@@ -148,6 +148,7 @@ model PlatformAdmin {
   sessions            PlatformAuthSession[]
   subscriptionPeriods HotelSubscriptionPeriod[]
   auditLogs           PlatformAuditLog[]
+  planAudits          SubscriptionPlanAudit[]
 
   @@map("platform_admins")
 }
@@ -187,6 +188,12 @@ model HotelSubscriptionPeriod {
   id                 BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
   hotelId            BigInt             @map("hotel_id") @db.UnsignedBigInt
   planName           String             @map("plan_name") @db.VarChar(100)
+  planId             BigInt?            @map("plan_id") @db.UnsignedBigInt
+  monthlyPrice       Decimal?           @map("monthly_price") @db.Decimal(14, 2)
+  monthCount         Int?               @map("month_count") @db.UnsignedSmallInt
+  roomLimit          Int?               @map("room_limit") @db.UnsignedInt
+  staffLimit         Int?               @map("staff_limit") @db.UnsignedInt
+  plan               SubscriptionPlan?  @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   startsOn           DateTime           @map("starts_on") @db.Date
   endsOn             DateTime           @map("ends_on") @db.Date
   feeAmount          Decimal            @map("fee_amount") @db.Decimal(14, 2)
@@ -205,6 +212,37 @@ model HotelSubscriptionPeriod {
   @@index([hotelId, endsOn])
   @@index([recordedById])
   @@map("hotel_subscription_periods")
+}
+
+model SubscriptionPlan {
+  id           BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  code         String                    @unique @db.VarChar(50)
+  name         String                    @db.VarChar(100)
+  description  String?                   @db.Text
+  monthlyPrice Decimal                   @map("monthly_price") @db.Decimal(14, 2)
+  roomLimit    Int                       @map("room_limit") @db.UnsignedInt
+  staffLimit   Int                       @map("staff_limit") @db.UnsignedInt
+  isActive     Boolean                   @default(true) @map("is_active")
+  createdAt    DateTime                  @default(now()) @map("created_at") @db.DateTime(3)
+  periods      HotelSubscriptionPeriod[]
+  audits       SubscriptionPlanAudit[]
+
+  @@map("subscription_plans")
+}
+
+// Catalog changes have their own audit; no artificial hotel identity is needed.
+model SubscriptionPlanAudit {
+  id        BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  planId    BigInt           @map("plan_id") @db.UnsignedBigInt
+  actorId   BigInt           @map("actor_id") @db.UnsignedBigInt
+  changes   Json
+  createdAt DateTime         @default(now()) @map("created_at") @db.DateTime(3)
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  actor     PlatformAdmin    @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([planId, createdAt])
+  @@index([actorId])
+  @@map("subscription_plan_audits")
 }
 
 enum PlatformAuditAction {

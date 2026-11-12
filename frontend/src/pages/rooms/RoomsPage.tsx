@@ -636,6 +636,7 @@ export const RoomsPage: React.FC = () => {
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||
+        (err.response?.data?.error?.code === 'SUBSCRIPTION_LIMIT_REACHED' ? 'Đã đạt hạn mức phòng hoạt động của gói. Liên hệ Innvyra để đổi gói.' : null) ||
         err.response?.data?.error?.message ||
         'Không thể tạo phòng.';
       appMessage.error(msg);
@@ -659,6 +660,7 @@ export const RoomsPage: React.FC = () => {
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||
+        (err.response?.data?.error?.code === 'SUBSCRIPTION_LIMIT_REACHED' ? 'Đã đạt hạn mức phòng hoạt động của gói. Liên hệ Innvyra để đổi gói.' : null) ||
         err.response?.data?.error?.message ||
         'Cập nhật thất bại.';
       appMessage.error(msg);
@@ -680,6 +682,7 @@ export const RoomsPage: React.FC = () => {
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||
+        (err.response?.data?.error?.code === 'SUBSCRIPTION_LIMIT_REACHED' ? 'Đã đạt hạn mức phòng hoạt động của gói. Liên hệ Innvyra để đổi gói.' : null) ||
         err.response?.data?.error?.message ||
         'Thao tác không thành công.';
       appMessage.error(msg);

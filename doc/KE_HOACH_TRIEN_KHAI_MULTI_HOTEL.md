@@ -6,8 +6,9 @@ Cập nhật trạng thái: 12/11/2026.
 ## 1. Trạng thái và nguyên tắc thực hiện
 
 - Nhánh làm việc: `feature/multi-hotel-saas`, tạo trực tiếp từ `develop` tại commit `48623cb`.
-- Đã hoàn thành giai đoạn 1–4. Giai đoạn 4 được triển khai trước, sau đó hoàn thiện giai đoạn 3 vào 12/11/2026 với mật khẩu tạm và cách ly phiên/cache. Đợt này giữ đăng nhập nhân viên bằng username; hỗ trợ email để sau.
+- Đã hoàn thành giai đoạn 1–5. Giai đoạn 4 được triển khai trước, sau đó hoàn thiện giai đoạn 3 vào 12/11/2026 với mật khẩu tạm và cách ly phiên/cache. Đợt này giữ đăng nhập nhân viên bằng username; hỗ trợ email để sau.
 - Các lượt kiểm chứng của agent dùng database test riêng; không reset, seed hoặc tạo khách sạn trên database ứng dụng.
+- Lộ trình này tập trung bổ sung và kiểm thử tính năng đa khách sạn. Phase 6 nghiệm thu tính năng trên môi trường phát triển/test; triển khai tổng dự án lên hosting/production sẽ có kế hoạch riêng sau khi dự án sẵn sàng.
 - Không commit, push hoặc merge nếu chưa được người dùng yêu cầu.
 - Thực hiện từng giai đoạn, kiểm tra đạt tiêu chí nghiệm thu trước khi chuyển sang giai đoạn tiếp theo.
 - Ghi nhận lỗi có sẵn trước khi sửa để phân biệt với lỗi do tính năng mới.
@@ -24,7 +25,7 @@ Cập nhật trạng thái: 12/11/2026.
 - Quản trị Innvyra quản lý thông tin khách sạn, cấp/reset admin, thuê bao và khóa/mở; không mặc định truy cập nghiệp vụ của khách sạn.
 - Tạo khách sạn qua giao diện sau tư vấn/thỏa thuận. Không cần tạo database riêng hoặc deploy lại khi thêm khách sạn.
 - Mật khẩu tạm chỉ hiển thị khi cấp/reset; người nhận phải đổi trước khi dùng PMS.
-- Bản đầu có một gói PMS đầy đủ, giá theo thỏa thuận. Ghi nhận thanh toán và gia hạn thủ công.
+- Cập nhật 12/11/2026: chuyển từ một gói PMS sang **nhiều gói thuê bao, tính phí theo tháng**. Ghi nhận thanh toán và gia hạn thủ công. Phase 5 dùng cùng bộ nghiệp vụ PMS, khác hạn mức phòng/tài khoản hoạt động. Quản trị Innvyra tự cấu hình tên, giá và hạn mức; không seed các mức minh họa.
 - Hợp đồng và thanh toán thực hiện bên ngoài ứng dụng; hệ thống lưu thông tin tham chiếu.
 - Phí khách sạn trả cho Innvyra được quản lý riêng với thu ngân khách lưu trú.
 
@@ -37,15 +38,15 @@ Cập nhật trạng thái: 12/11/2026.
 | 2. Quản trị Innvyra — hoàn thành | Bootstrap, xác thực riêng và giao diện nền tảng ban đầu | 744/744 test backend và 14/14 test frontend đạt; xác nhận hai hệ thống tài khoản không dùng chéo token hoặc quyền |
 | 3. Tài khoản khách sạn và cache — hoàn thành | Giữ username, hoàn thiện mật khẩu tạm và cache/phiên tách biệt | 773/773 test backend, 37/37 test frontend đạt; kiểm chứng chuyển A/B và nhiều tab bằng trình duyệt |
 | 4. Tiếp nhận và thiết lập khách sạn — hoàn thành | Tạo khách sạn/admin/kỳ sử dụng, quản lý thông tin | 762/762 test backend và 14/14 test frontend đạt; kiểm chứng giao diện và A/B trên database test riêng |
-| 5. Thuê bao và quyền sử dụng | Gia hạn, cảnh báo, khóa/mở và nhật ký | Đúng quy tắc hạn; khóa tác động cả phiên đang hoạt động |
-| 6. Hồi quy và chuẩn bị triển khai | Bộ kiểm tra, tài liệu vận hành và bản thử nghiệm | Kiểm tra đạt; xác nhận khả năng sao lưu và khôi phục |
+| 5. Gói thuê bao theo tháng và quyền sử dụng — hoàn thành | Danh mục nhiều gói, chọn/gia hạn theo tháng, cảnh báo, khóa/mở và nhật ký | 803/803 test backend, 39/39 test frontend đạt; giữ lịch sử, hạn mức và khóa cả phiên đang hoạt động |
+| 6. Kiểm thử và hoàn thiện tính năng đa khách sạn | Luồng tích hợp, bộ hồi quy, sửa lỗi và hướng dẫn test local | Các tiêu chí tính năng đạt, không lộ dữ liệu A/B, không làm hỏng nghiệp vụ cũ; chưa deploy tổng dự án |
 
 ### Giai đoạn 0 — Chuẩn bị và lập kế hoạch
 
 - [x] Kiểm tra trạng thái Git trước khi thay đổi nhánh.
 - [x] Tạo nhánh mới trực tiếp từ `develop` theo yêu cầu.
 - [x] Lưu kế hoạch triển khai từng bước.
-- Giai đoạn 1–4 đã hoàn thành theo yêu cầu; giai đoạn 5–6 chưa triển khai.
+- Giai đoạn 1–5 đã hoàn thành theo yêu cầu; giai đoạn 6 chưa triển khai.
 
 ### Giai đoạn 1 — Xác lập hiện trạng và chuẩn bị dữ liệu
 
@@ -87,7 +88,7 @@ Trạng thái: **hoàn thành** ngày 12/11/2026. Chi tiết ở [báo cáo phas
 
 ### Giai đoạn 4 — Tiếp nhận khách sạn và quản trị thông tin
 
-Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần còn lại của phase 3. Chi tiết và cách test trong [báo cáo phase 4](PHASE_4_HOTEL_ONBOARDING.md). Phase 3 đã được hoàn thiện sau đó vào 12/11/2026; nghiệm thu production ở phase 6 chưa thực hiện.
+Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần còn lại của phase 3. Chi tiết và cách test trong [báo cáo phase 4](PHASE_4_HOTEL_ONBOARDING.md). Phase 3 đã được hoàn thiện sau đó vào 12/11/2026; kiểm thử tích hợp tính năng ở phase 6 chưa thực hiện. Deploy tổng dự án nằm ngoài lộ trình hiện tại.
 
 - Tạo danh sách/tìm kiếm khách sạn và trang chi tiết trong khu vực quản trị Innvyra.
 - Tạo khách sạn, admin đầu tiên và kỳ sử dụng trong một transaction; lỗi ở bất kỳ phần nào phải hoàn tác toàn bộ.
@@ -101,9 +102,18 @@ Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần cò
 - Ghi nhật ký tạo/cập nhật khách sạn và reset admin ngay khi các thao tác này được triển khai.
 - Nghiệm thu: tạo được A và B, mỗi bên có admin riêng; trùng mã/email/username được xử lý và không tạo dữ liệu dở dang; admin khách sạn chỉ tạo nhân viên của mình.
 
-### Giai đoạn 5 — Thuê bao, cảnh báo và tạm ngừng
+### Giai đoạn 5 — Gói thuê bao theo tháng, cảnh báo và tạm ngừng
 
-- Mỗi kỳ lưu ngày bắt đầu/kết thúc, tên gói, phí VND, tham chiếu thỏa thuận/thanh toán và người xác nhận; giữ lịch sử các kỳ.
+Đã thống nhất hướng **nhiều gói khác nhau và tính theo tháng**, thay cho phạm vi một gói trước đó. Đã triển khai ngày 12/11/2026. Chi tiết, giới hạn và cách test: [PHASE_5_MONTHLY_SUBSCRIPTIONS.md](./PHASE_5_MONTHLY_SUBSCRIPTIONS.md).
+
+Các gói dùng cùng bộ nghiệp vụ PMS hiện có, khác hạn mức phòng/tài khoản hoạt động. Danh mục do quản trị Innvyra cấu hình, không cố định số gói hoặc seed các mức giá/hạn mức minh họa. Chưa phân quyền module theo gói.
+
+- Bổ sung danh mục gói do quản trị Innvyra tạo/cập nhật: mã, tên, mô tả, giá tháng VND và trạng thái cho phép đăng ký. Mỗi gói có hạn mức phòng và tài khoản hoạt động. Gói đã được dùng giữ lịch sử, không xóa làm mất tham chiếu kỳ cũ.
+- Chọn gói khi tiếp nhận khách sạn hoặc thiết lập thuê bao cho khách sạn đã có; gia hạn theo số tháng. Quản trị Innvyra ghi nhận số tiền và tham chiếu thanh toán đã thỏa thuận.
+- Mỗi kỳ lưu ngày bắt đầu/kết thúc, gói được chọn, tên gói/giá tháng tại thời điểm ghi nhận, số tháng, phí VND, tham chiếu thỏa thuận/thanh toán và người xác nhận. Thay giá/tên gói trong danh mục không sửa các kỳ đã ghi nhận.
+- Thiết kế và kiểm thử quy tắc cộng tháng, tháng ngắn, năm nhuận, ngày bắt đầu/kết thúc trước khi nghiệm thu. Giữ tiền bằng decimal và hiển thị rõ số tháng/đơn giá/thành tiền.
+- Khi thay đổi gói phải xác định thời điểm áp dụng và ghi nhật ký; không âm thầm áp giá/quyền mới lên kỳ cũ. Kiểm tra hạn mức theo số lượng đang sử dụng khi chuyển gói và tại các API tạo/kích hoạt tương ứng; không tự xóa dữ liệu để ép về hạn mức.
+- Giữ dữ liệu kỳ sử dụng tự nhập ở phase 4; khách sạn cũ chưa chọn gói không tự bị khóa hoặc mất dữ liệu do nâng cấp schema.
 - Ngày kết thúc bao gồm cả ngày đó, tính theo múi giờ khách sạn; ngày sử dụng được quản trị nhập theo thỏa thuận.
 - Bổ sung `GET /api/v1/hotel/subscription` cho admin/quản lý xem gói, thời hạn và lịch sử.
 - Hiện cảnh báo khi còn tối đa 14 ngày, tăng mức cảnh báo tại 7 và 1 ngày; quá hạn vẫn vận hành.
@@ -112,18 +122,23 @@ Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần cò
 - Kiểm tra trạng thái khách sạn trên mọi API nghiệp vụ, kể cả token đã được cấp trước lúc khóa.
 - Khi tạm ngừng, vẫn cho đăng nhập/xử lý tài khoản và xem thông báo, tình trạng thuê bao; chặn truy cập nghiệp vụ PMS, giữ nguyên dữ liệu.
 - Bổ sung bộ lọc hoạt động/tạm ngừng/sắp hết hạn/quá hạn/chưa thiết lập và hoàn thiện lịch sử quản trị trên giao diện nền tảng.
-- Nghiệm thu: đúng ranh giới ngày và quyền; admin khách sạn không tự đổi gói, thời hạn hoặc mở khóa; khóa/mở không làm thay đổi dữ liệu nghiệp vụ.
+- Nghiệm thu: chọn/gia hạn đúng gói, đơn giá, số tháng và thành tiền; lịch sử không đổi khi sửa danh mục. Đúng ranh giới tháng/ngày và quyền; admin khách sạn không tự đổi gói, thời hạn hoặc mở khóa; khóa/mở không làm thay đổi dữ liệu nghiệp vụ. Đã kiểm tra hạn mức phòng/tài khoản; lịch sử kỳ cũ không đổi và không tự áp hạn mức cho kỳ chưa gán gói.
 
-### Giai đoạn 6 — Hồi quy và chuẩn bị triển khai
+### Giai đoạn 6 — Kiểm thử và hoàn thiện tính năng đa khách sạn
 
-- Kiểm tra xuyên suốt: bootstrap nền tảng → tạo A/B → bàn giao tài khoản → đổi mật khẩu → thiết lập → vận hành → gia hạn → khóa/mở.
+Thực hiện trên môi trường phát triển/test. Mục tiêu là nghiệm thu phần tính năng đa khách sạn, thuê bao và quyền sử dụng đã bổ sung; không đánh dấu toàn bộ dự án đã sẵn sàng vận hành production.
+
+- Kiểm tra xuyên suốt: bootstrap nền tảng → tạo gói tháng → tạo A/B/chọn gói → bàn giao tài khoản → đổi mật khẩu → vận hành → gia hạn/đổi gói → khóa/mở.
 - Kiểm tra cách ly dữ liệu đọc/ghi/xuất báo cáo ở mọi module; A/B được trùng số phòng hoặc mã loại phòng.
 - Kiểm tra token dùng chéo, sửa ID, refresh/logout, phiên cũ sau reset và cache khi đổi tài khoản.
+- Kiểm tra danh mục gói, giá theo tháng, các trường hợp ranh giới tháng, lịch sử giá/gói và hạn mức hoặc quyền theo gói đã được chốt.
 - Chạy toàn bộ test backend; kiểm thử MySQL trên database test riêng; kiểm tra kiểu, lint và build backend/frontend.
 - Rà soát các luồng đặt phòng, nhận/trả phòng, thu ngân, nhân viên, buồng phòng, bảo trì, kho và báo cáo.
-- Cập nhật OpenAPI, hướng dẫn bootstrap, bàn giao tài khoản, gia hạn, khóa/mở và xử lý lỗi.
-- Chuẩn bị cấu hình production, sao lưu, thử khôi phục và quy trình triển khai migration trên môi trường thử nghiệm trước.
-- Không tự áp dụng migration lên database vận hành hoặc deploy production trong giai đoạn lập kế hoạch này.
+- Sửa các lỗi phát hiện trong phạm vi tính năng và kiểm tra lại các trường hợp lỗi, tranh chấp, dữ liệu trùng hoặc thiếu thiết lập.
+- Cập nhật OpenAPI, hướng dẫn bootstrap, bàn giao tài khoản, gia hạn, khóa/mở, xử lý lỗi và các bước test thủ công trên local.
+- Chuẩn bị dữ liệu mẫu riêng cho demo/test A/B; không dùng dữ liệu vận hành để kiểm thử ghi.
+- Nghiệm thu: luồng tích hợp hoạt động đúng, dữ liệu/quyền/cache A/B được cách ly, các kiểm tra bắt buộc đạt và nghiệp vụ cũ không bị ảnh hưởng.
+- Cấu hình hosting/production, triển khai migration production, sao lưu/khôi phục phục vụ vận hành và deploy tổng dự án sẽ được lập kế hoạch riêng sau; không phải điều kiện hoàn tất phase 6 hiện tại.
 
 ## 4. Quy tắc kiểm tra sau mỗi giai đoạn
 
@@ -137,8 +152,12 @@ Trạng thái: **hoàn thành** theo yêu cầu triển khai trước phần cò
 
 - Tự đăng ký khách sạn và thanh toán thuê bao trực tuyến.
 - Email mời kích hoạt, ký hợp đồng điện tử và tự động xuất hóa đơn thuê bao.
-- Phân quyền tính năng theo gói, tự thu phí hoặc tự gia hạn.
+- Tự thu phí hoặc tự gia hạn. Phân quyền module theo gói nằm ngoài Phase 5 hiện tại.
 - Một tài khoản quản lý nhiều khách sạn, chuỗi và báo cáo tổng hợp nhiều cơ sở.
 - Mỗi khách sạn một database hoặc hạ tầng riêng.
 - Đăng nhập thay khách sạn hoặc cấp mặc định quyền xem dữ liệu nghiệp vụ cho quản trị Innvyra.
 - Xóa dữ liệu tự động khi quá hạn hoặc tạm ngừng.
+
+## 6. Triển khai tổng dự án — lập kế hoạch riêng sau
+
+Khi người dùng xác định toàn bộ dự án đã sẵn sàng, sẽ lập kế hoạch riêng cho hosting/database production, cấu hình môi trường và tên miền/HTTPS, migration, sao lưu/khôi phục và quy trình phát hành. Hoàn thành lộ trình tính năng phase 0–6 hiện tại không tự cho phép deploy hoặc áp dụng thay đổi lên database production.

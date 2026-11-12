@@ -5,7 +5,7 @@ import {
   requirePlatformPrincipal,
 } from '../../middlewares/platform-authenticate.middleware.js';
 import { authenticate, requirePrincipal } from '../../middlewares/authenticate.middleware.js';
-import { authorizeRoles } from '../../middlewares/authorize.middleware.js';
+import { authorizeRoles, authorizeHotelAccount } from '../../middlewares/authorize.middleware.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { ROLE_CODES } from '../../shared/types/roles.js';
@@ -44,12 +44,10 @@ export function platformHotelRoutes(
   });
   router.post('/:id/admins', csrf, validate(schemas.createHotelAdminSchema), async (req, res) => {
     const { body } = res.locals.validated as { body: schemas.CreateHotelAdminInput };
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.addAdmin(actor(req), BigInt(req.params.id as string), body),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.addAdmin(actor(req), BigInt(req.params.id as string), body),
+    });
   });
   router.post(
     '/:id/admins/:staffId/reset-password',
@@ -77,6 +75,17 @@ export function ownHotelRoutes(service: HotelManagementService, auth: AuthServic
     next();
   });
   router.use(authenticate(auth));
+  router.get(
+    '/subscription',
+    authorizeHotelAccount('ADMIN', 'MANAGER'),
+    validate(schemas.ownHotelSchema),
+    async (req, res) => {
+      res.json({
+        success: true,
+        data: await service.subscriptions.summary(BigInt(requirePrincipal(req).user.hotelId)),
+      });
+    },
+  );
   router.get(
     '/',
     authorizeRoles(...ROLE_CODES),

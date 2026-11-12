@@ -13,7 +13,7 @@ import type {
 
 export const hotelsApi = {
   async list(
-    params: { page: number; limit: number; search?: string; status?: string },
+    params: { page: number; limit: number; search?: string; status?: string; subscriptionStatus?: string },
     signal?: AbortSignal,
   ) {
     return (

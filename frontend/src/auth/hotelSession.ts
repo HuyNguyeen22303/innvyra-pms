@@ -13,7 +13,7 @@ export const hotelSessionGeneration = () => generation;
 export const hotelSessionUser = () => user;
 export const getAccessToken = () => accessToken;
 export const hotelIdentity = (value: CurrentUser) =>
-  `${value.hotelId}:${value.id}:${value.role}:${!!value.mustChangePassword}`;
+  `${value.hotelId}:${value.id}:${value.role}:${!!value.mustChangePassword}:${value.hotel?.status ?? "ACTIVE"}`;
 export function onHotelSessionReset(listener: () => void) {
   resetListeners.add(listener);
   return () => {
@@ -60,4 +60,9 @@ export async function hotelAuthLock<T>(action: () => Promise<T>): Promise<T> {
   if (typeof navigator !== "undefined" && navigator.locks)
     return navigator.locks.request("innvyra-hotel-auth", action);
   return action();
+}
+
+export function updateHotelSuspension() {
+  if (user?.hotel && user.hotel.status !== 'SUSPENDED' && accessToken)
+    installHotelSession(accessToken, { ...user, hotel: { ...user.hotel, status: 'SUSPENDED' } });
 }

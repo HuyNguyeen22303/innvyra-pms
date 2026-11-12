@@ -4,6 +4,8 @@ Ngày hoàn thành: 11/11/2026. Nhánh: `feature/multi-hotel-saas`, bắt đầu
 
 Cập nhật 12/11/2026: phần Phase 3 được nhắc là còn thiếu trong báo cáo lịch sử bên dưới đã được hoàn thiện về mật khẩu tạm và cách ly phiên/cache; giữ đăng nhập username, để email tùy chọn cho sau. Xem [báo cáo Phase 3](PHASE_3_HOTEL_SESSIONS.md) để biết trạng thái mới nhất. Phase 5–6 vẫn chưa triển khai.
 
+Cập nhật phạm vi Phase 6 ngày 12/11/2026: Phase 6 chỉ kiểm thử tích hợp, hồi quy và hoàn thiện tính năng đa khách sạn trên local/test. Deploy tổng dự án cùng chuẩn bị hosting/production và sao lưu/khôi phục sẽ có kế hoạch riêng sau khi dự án sẵn sàng.
+
 Rà soát lại 12/11/2026 sau khi chốt Phase 3: đã đối chiếu toàn bộ các mục Phase 4 trong kế hoạch với route, service, schema, giao diện, bootstrap và test. Không phát hiện mục nghiệm thu Phase 4 còn thiếu. Chạy lại `hotel-onboarding.mysql.integration.test.ts` (18 test) cùng `hotel-accounts.mysql.integration.test.ts` (11 test): **29/29 đạt**, 2 file, 51.96 giây trên database test riêng. Lượt hồi quy toàn bộ gần nhất sau Phase 3 đạt **773/773 test backend**; frontend đạt **37/37 test**, build/lint/typecheck đã được kiểm chứng ở lượt đó. Log kiểm tra lại: `.tmp/multi-hotel-phase4/phase4-recheck-after-phase3.log` (Git ignore). Không sửa mã chức năng hoặc dữ liệu ứng dụng trong lần rà soát này; chưa commit/push/deploy.
 
 ## 1. Phạm vi và thứ tự triển khai

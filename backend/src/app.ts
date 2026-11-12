@@ -1,3 +1,4 @@
+import { platformSubscriptionRoutes } from './modules/hotels/subscription.routes.js';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -73,6 +74,7 @@ export function createApp(
         platformService,
         env,
         hotels ? platformHotelRoutes(hotels, platformService, env) : undefined,
+        hotels ? platformSubscriptionRoutes(hotels.subscriptions, platformService, env) : undefined,
       ),
     );
   }

@@ -217,7 +217,42 @@ describe.skipIf(!testUrl)(
       await seedLegacyData(raw, passwordHash);
       const layout = await legacyLayout(raw);
       before = await snapshot(raw, layout);
+      // Upgrade through Phase 4 first; preserve an existing manual contract in Phase 5.
+      await cp(join(migrationsRoot, migrationName), join(legacyMigrations, migrationName), {
+        recursive: true,
+      });
+      migrate(legacyConfig, target.toString());
+      await raw.query(
+        "INSERT INTO platform_admins (id, full_name, email, password_hash) VALUES (999, 'Migration owner', 'migration-owner@example.test', ?)",
+        [passwordHash],
+      );
+      await raw.query(
+        "INSERT INTO hotel_subscription_periods (id, hotel_id, recorded_by_id, plan_name, starts_on, ends_on, fee_amount, payment_reference) VALUES (999, 101, 999, 'Legacy manual contract', '2026-01-01', '2026-12-31', 1234567.89, 'OLD-REFERENCE')",
+      );
+      const manualBefore = await raw.query(
+        'SELECT id, hotel_id, plan_name, starts_on, ends_on, fee_amount, payment_reference FROM hotel_subscription_periods WHERE id=999',
+      );
       migrate(join(backendRoot, 'prisma.config.ts'), target.toString());
+      expect(
+        await raw.query(
+          'SELECT id, hotel_id, plan_name, starts_on, ends_on, fee_amount, payment_reference FROM hotel_subscription_periods WHERE id=999',
+        ),
+      ).toEqual(manualBefore);
+      const snapshots = await raw.query(
+        'SELECT plan_id, monthly_price, month_count, room_limit, staff_limit FROM hotel_subscription_periods WHERE id=999',
+      );
+      expect(snapshots[0]).toMatchObject({
+        plan_id: null,
+        monthly_price: null,
+        month_count: null,
+        room_limit: null,
+        staff_limit: null,
+      });
+      expect(Number((await raw.query('SELECT COUNT(*) AS n FROM subscription_plans'))[0].n)).toBe(
+        0,
+      );
+      await raw.query('DELETE FROM hotel_subscription_periods WHERE id=999');
+      await raw.query('DELETE FROM platform_admins WHERE id=999');
       // The second deploy must do nothing, including no subscription/account backfill.
       migrate(join(backendRoot, 'prisma.config.ts'), target.toString());
       after = await snapshot(raw, layout);

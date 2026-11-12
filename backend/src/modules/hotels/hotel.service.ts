@@ -1,3 +1,6 @@
+import { dateOnly, localDay, subscriptionTiming } from './subscription-calendar.js';
+import { SubscriptionService, subscriptionPeriodSelect } from './subscription.service.js';
+import { assertCapacity } from './subscription-capacity.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { hashPassword } from '../../shared/utils/password.js';
@@ -35,18 +38,7 @@ const adminSelect = {
   mustChangePassword: true,
   createdAt: true,
 } as const;
-const periodSelect = {
-  id: true,
-  planName: true,
-  startsOn: true,
-  endsOn: true,
-  feeAmount: true,
-  currency: true,
-  agreementReference: true,
-  paymentReference: true,
-  notes: true,
-  createdAt: true,
-} as const;
+const periodSelect = subscriptionPeriodSelect;
 const missing = () => new AppError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
 const transactionOptions = {
   isolationLevel: 'ReadCommitted',
@@ -61,7 +53,10 @@ function defined<T extends object>(value: T): { [K in keyof T]: Exclude<T[K], un
 
 // Deliberate allowlists: no hotel operational data, password hash or session/token fields.
 export class HotelManagementService {
-  constructor(private readonly prisma: PrismaClient) {}
+  readonly subscriptions: SubscriptionService;
+  constructor(private readonly prisma: PrismaClient) {
+    this.subscriptions = new SubscriptionService(prisma);
+  }
 
   private async transaction<T>(action: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     try {
@@ -101,6 +96,7 @@ export class HotelManagementService {
     const role = await tx.role.findUnique({ where: { code: 'ADMIN' } });
     if (!role)
       throw new AppError(409, 'ROLE_MISSING', 'Initialize system roles before onboarding a hotel');
+    await assertCapacity(tx, hotelId, 'staff');
     return tx.staffUser.create({
       data: { ...input, hotelId, roleId: role.id, passwordHash, mustChangePassword: true },
       select: adminSelect,
@@ -113,16 +109,19 @@ export class HotelManagementService {
     const result = await this.transaction(async (tx) => {
       const record = await tx.hotel.create({ data: defined(hotel), select: hotelSelect });
       const staff = await this.createAdmin(tx, record.id, admin, passwordHash);
-      const period = await tx.hotelSubscriptionPeriod.create({
-        data: defined({
-          ...subscription,
-          startsOn: new Date(`${subscription.startsOn}T00:00:00Z`),
-          endsOn: new Date(`${subscription.endsOn}T00:00:00Z`),
-          hotelId: record.id,
-          recordedById: actorId,
-        }),
-        select: periodSelect,
-      });
+      const period =
+        'planId' in subscription
+          ? await this.subscriptions.recordInTransaction(tx, actorId, record.id, subscription)
+          : await tx.hotelSubscriptionPeriod.create({
+              data: defined({
+                ...subscription,
+                startsOn: new Date(`${subscription.startsOn}T00:00:00Z`),
+                endsOn: new Date(`${subscription.endsOn}T00:00:00Z`),
+                hotelId: record.id,
+                recordedById: actorId,
+              }),
+              select: periodSelect,
+            });
       await tx.platformAuditLog.createMany({
         data: [
           {
@@ -137,12 +136,16 @@ export class HotelManagementService {
             action: 'HOTEL_ADMIN_CREATED',
             targetStaffUserId: staff.id,
           },
-          {
-            hotelId: record.id,
-            actorId,
-            action: 'SUBSCRIPTION_PERIOD_RECORDED',
-            subscriptionPeriodId: period.id,
-          },
+          ...('planId' in subscription
+            ? []
+            : [
+                {
+                  hotelId: record.id,
+                  actorId,
+                  action: 'SUBSCRIPTION_PERIOD_RECORDED' as const,
+                  subscriptionPeriodId: period.id,
+                },
+              ]),
         ],
       });
       return { hotel: record, admin: staff, subscription: period };
@@ -162,6 +165,34 @@ export class HotelManagementService {
           }
         : {}),
     };
+    if (query.subscriptionStatus) {
+      const candidates = await this.prisma.hotel.findMany({
+        where,
+        select: {
+          id: true,
+          timezone: true,
+          subscriptionPeriods: {
+            select: { startsOn: true, endsOn: true },
+            orderBy: [{ startsOn: 'desc' }, { id: 'desc' }],
+          },
+        },
+      });
+      where.id = {
+        in: candidates
+          .filter((candidate) => {
+            const today = localDay(candidate.timezone);
+            const period =
+              candidate.subscriptionPeriods.find((p) => dateOnly(p.startsOn) <= today) ??
+              candidate.subscriptionPeriods.at(-1);
+            return (
+              (period
+                ? subscriptionTiming(period.startsOn, period.endsOn, today).status
+                : 'UNCONFIGURED') === query.subscriptionStatus
+            );
+          })
+          .map((candidate) => candidate.id),
+      };
+    }
     const [items, total] = await this.prisma.$transaction([
       this.prisma.hotel.findMany({
         where,

@@ -67,9 +67,11 @@ export const CreateEmployeeModal: React.FC<CreateEmployeeModalProps> = ({ open, 
     },
     onError: (err: any) => {
       const code = err.response?.data?.error?.code || err.response?.data?.code;
-      const msg = err.response?.data?.error?.message || err.response?.data?.message;
+      const msg = code === 'SUBSCRIPTION_LIMIT_REACHED' ? 'Đã đạt hạn mức tài khoản hoạt động của gói. Liên hệ Innvyra để đổi gói.' : err.response?.data?.error?.message || err.response?.data?.message;
 
-      if (code === 'USERNAME_EXISTS') {
+      if (code === 'SUBSCRIPTION_LIMIT_REACHED') {
+        setErrorMessage('Đã đạt hạn mức tài khoản hoạt động của gói. Liên hệ Innvyra để đổi gói.');
+      } else if (code === 'USERNAME_EXISTS') {
         setErrorMessage('Tên đăng nhập (username) đã tồn tại trong hệ thống. Vui lòng chọn tên đăng nhập khác.');
       } else if (code === 'EMAIL_EXISTS') {
         setErrorMessage('Địa chỉ email này đã được sử dụng bởi một nhân viên khác.');

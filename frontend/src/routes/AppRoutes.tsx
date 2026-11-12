@@ -1,3 +1,4 @@
+import { HotelSubscriptionPage } from '../pages/hotel/HotelSubscriptionPage.tsx';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Button, Result, Spin } from 'antd';
 import { HotelSessionBoundary } from '../components/HotelSessionBoundary.tsx';
@@ -63,6 +64,7 @@ const HotelRoutes: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/change-password" element={<HotelPasswordChangePage />} />
 
+      <Route path="/subscription" element={<ProtectedRoute allowSuspended><HotelSubscriptionPage /></ProtectedRoute>} />
       {/* Protected Routes wrapped in MainLayout */}
       <Route
         path="/"

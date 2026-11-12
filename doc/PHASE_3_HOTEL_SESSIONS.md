@@ -83,4 +83,4 @@ Khởi động lại backend/frontend để dùng code mới. Không cần migra
 - Cấp/reset tài khoản nhân viên, bàn giao mật khẩu tạm; nhân viên phải đổi trước khi dùng PMS. Mật khẩu/phiên cũ mất hiệu lực sau reset.
 - Đăng nhập tài khoản cũ không vừa bị cấp/reset: tiếp tục dùng username bình thường.
 
-Sau nghiệm thu Phase 3, phần kế tiếp theo kế hoạch là Phase 5 (thuê bao/cảnh báo/tạm ngừng) và Phase 6 (hồi quy/deploy/sao lưu/khôi phục). Không tự triển khai production, commit hoặc push khi chốt phase.
+Sau nghiệm thu Phase 3, phần kế tiếp theo kế hoạch là Phase 5 (thuê bao/cảnh báo/tạm ngừng) và Phase 6 (kiểm thử tích hợp, hồi quy và hoàn thiện tính năng trên local/test). Theo cập nhật phạm vi ngày 12/11/2026, deploy tổng dự án và công việc production/sao lưu/khôi phục sẽ lập kế hoạch riêng sau. Không tự triển khai production, commit hoặc push khi chốt phase.

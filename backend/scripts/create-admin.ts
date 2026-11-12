@@ -1,3 +1,4 @@
+import { assertCapacity } from '../src/modules/hotels/subscription-capacity.js';
 import { adminInputSchema } from '../src/modules/auth/auth.schema.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import { AppError } from '../src/shared/errors/app-error.js';
@@ -46,6 +47,7 @@ async function main() {
           })
         )
           throw new AppError(409, 'ACCOUNT_EXISTS', 'The username or email already exists');
+        await assertCapacity(tx, input.hotelId, 'staff');
         return tx.staffUser.create({
           data: {
             username: input.username,

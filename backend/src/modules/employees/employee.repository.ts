@@ -1,3 +1,4 @@
+import { assertCapacity } from '../hotels/subscription-capacity.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import type { EmployeeQuery } from './employee.types.js';
@@ -104,6 +105,7 @@ export class PrismaEmployeeRepository {
     email: string | null;
     passwordHash: string;
   }) {
+    await assertCapacity(this.db, data.hotelId, 'staff');
     return this.db.staffUser.create({
       data: {
         hotelId: data.hotelId,
@@ -135,6 +137,8 @@ export class PrismaEmployeeRepository {
   }
 
   async activate(hotelId: bigint, id: bigint) {
+    if (!(await this.findById(hotelId, id))?.isActive)
+      await assertCapacity(this.db, hotelId, 'staff');
     return this.db.staffUser.update({
       where: { hotelId_id: { hotelId, id } },
       data: { isActive: true },

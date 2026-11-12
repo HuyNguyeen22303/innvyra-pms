@@ -1,3 +1,4 @@
+import { assertCapacity } from '../hotels/subscription-capacity.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { roomTransaction } from '../../database/room-transaction.js';
 import { futureReservedPeak, sellableRoomWhere } from '../reservations/inventory.repository.js';
@@ -91,12 +92,15 @@ export class PrismaRoomRepository {
     return { items, total };
   }
   async create(hotelId: bigint, input: CreateRoomInput) {
+    if (input.isActive !== false) await assertCapacity(this.db, hotelId, 'room');
     return this.db.room.create({
       data: { ...input, notes: input.notes ?? null, hotelId, roomTypeId: BigInt(input.roomTypeId) },
       include,
     });
   }
   async update(hotelId: bigint, id: bigint, input: UpdateRoomInput) {
+    if (input.isActive === true && !(await this.findById(hotelId, id))?.isActive)
+      await assertCapacity(this.db, hotelId, 'room');
     const data: Prisma.RoomUncheckedUpdateInput = {};
     if (input.roomNumber !== undefined) data.roomNumber = input.roomNumber;
     if (input.floorNumber !== undefined) data.floorNumber = input.floorNumber;

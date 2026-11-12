@@ -7,11 +7,13 @@ import type { Role } from '../types/auth.types.ts';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: Role[];
+  allowSuspended?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
+  allowSuspended = false,
 }) => {
   const { isAuthenticated, isLoading, user } = useAuthStore();
   const location = useLocation();
@@ -36,6 +38,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+
+  if (!allowSuspended && user.hotel?.status === "SUSPENDED") return <Navigate to="/subscription" replace />;
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/403" replace />;

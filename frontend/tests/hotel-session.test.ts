@@ -111,6 +111,60 @@ const deferred = <T>() => {
   return { resolve, promise };
 };
 const tick = () => new Promise<void>((done) => setImmediate(done));
+test("suspension response clears operational cache and keeps account session for the notice", async () => {
+  const user = {
+    ...profile(),
+    hotel: {
+      id: "1",
+      code: "A",
+      name: "Hotel A",
+      timezone: "Asia/Ho_Chi_Minh",
+      status: "ACTIVE" as const,
+    },
+  };
+  session.installHotelSession("active-token", user);
+  const previous = cache.hotelQueryClient();
+  previous.setQueryData(["rooms"], ["private room"]);
+  const before = session.hotelSessionGeneration();
+  handler = async (config) => fail(config, 403, "HOTEL_SUSPENDED");
+  await assert.rejects(api.apiClient.get("/rooms"));
+  assert.equal(store.getState().user?.hotel?.status, "SUSPENDED");
+  assert.equal(session.getAccessToken(), "active-token");
+  assert.ok(session.hotelSessionGeneration() > before);
+  assert.equal(previous.getQueryCache().getAll().length, 0);
+  handler = async (config) => respond(config, { data: { status: "EXPIRED" } });
+  const result = await api.apiClient.get("/hotel/subscription");
+  assert.equal(result.data.data.status, "EXPIRED");
+});
+test("refreshing a reactivated hotel remounts caches and ignores prior suspension responses", async () => {
+  const hotel = {
+    id: "1",
+    code: "A",
+    name: "Hotel A",
+    timezone: "Asia/Ho_Chi_Minh",
+  };
+  session.installHotelSession("suspended-token", {
+    ...profile(),
+    hotel: { ...hotel, status: "SUSPENDED" },
+  });
+  const old = deferred<ReturnType<typeof respond>>();
+  let config!: InternalAxiosRequestConfig;
+  handler = (request) => {
+    config = request;
+    return old.promise;
+  };
+  const pending = api.apiClient.get("/hotel/subscription");
+  await tick();
+  const before = session.hotelSessionGeneration();
+  session.installHotelSession("reactivated-token", {
+    ...profile(),
+    hotel: { ...hotel, status: "ACTIVE" },
+  });
+  old.resolve(respond(config, { data: "old suspended profile" }));
+  await assert.rejects(pending);
+  assert.ok(session.hotelSessionGeneration() > before);
+  assert.equal(store.getState().user?.hotel?.status, "ACTIVE");
+});
 async function login(id = "1", hotelId = id) {
   handler = async (config) => respond(config, { data: tokens(id, hotelId) });
   await store

@@ -1,3 +1,4 @@
+import { SubscriptionNotice } from '../components/SubscriptionNotice.tsx';
 import React, { useState } from "react";
 import axios from 'axios';
 import {
@@ -173,6 +174,7 @@ const menuGroups: MenuGroupDef[] = [
     key: "group-system",
     title: "HỆ THỐNG & CÀI ĐẶT",
     items: [
+      { key: '/subscription', icon: <ApartmentOutlined />, label: 'Gói dịch vụ', roles: ['ADMIN', 'MANAGER'] },
       { key: '/hotel', icon: <ApartmentOutlined />, label: 'Thông tin khách sạn', roles: ['ADMIN'] },
       {
         key: "/room-types",
@@ -548,6 +550,7 @@ export const MainLayout: React.FC = () => {
             overflowX: "hidden",
           }}
         >
+          <SubscriptionNotice />
           <Outlet />
         </Content>
       </Layout>

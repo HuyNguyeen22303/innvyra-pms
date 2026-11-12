@@ -1,3 +1,4 @@
+import { subscriptionPaths, subscriptionSchemas } from './subscriptions.openapi.js';
 import { roomPaths, roomSchemas } from './rooms.openapi.js';
 import { guestPaths, guestSchemas } from './guests.openapi.js';
 import { reservationPaths, reservationSchemas } from './reservations.openapi.js';
@@ -141,6 +142,7 @@ export const openApiDocument = {
       ...inventorySchemas,
       ...platformSchemas,
       ...hotelSchemas,
+      ...subscriptionSchemas,
       CurrentUser: {
         type: 'object',
         required: ['id', 'fullName', 'username', 'email', 'role', 'hotelId', 'isActive'],
@@ -167,6 +169,7 @@ export const openApiDocument = {
               code: { type: 'string' },
               name: { type: 'string' },
               timezone: { type: 'string' },
+              status: { type: 'string', enum: ['ACTIVE', 'SUSPENDED'] },
             },
           },
         },
@@ -207,6 +210,7 @@ export const openApiDocument = {
     ...inventoryPaths,
     ...platformPaths,
     ...hotelPaths,
+    ...subscriptionPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

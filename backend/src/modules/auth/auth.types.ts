@@ -9,7 +9,13 @@ export interface StaffRecord {
   passwordHash: string;
   isActive: boolean;
   mustChangePassword?: boolean;
-  hotel?: { id: bigint; code: string; name: string; timezone: string };
+  hotel?: {
+    id: bigint;
+    code: string;
+    name: string;
+    timezone: string;
+    status?: 'ACTIVE' | 'SUSPENDED';
+  };
   role: { code: string };
 }
 
@@ -22,7 +28,13 @@ export interface CurrentUser {
   role: RoleCode;
   isActive: boolean;
   mustChangePassword?: boolean;
-  hotel?: { id: string; code: string; name: string; timezone: string };
+  hotel?: {
+    id: string;
+    code: string;
+    name: string;
+    timezone: string;
+    status?: 'ACTIVE' | 'SUSPENDED';
+  };
 }
 
 export interface Principal {
