@@ -13,6 +13,7 @@ import { localStaff } from './staff.js';
 import { isLocalDatabaseName } from './config.js';
 import { defaultCleaningMaterials } from './supply-defaults.js';
 import { backfillLocalSupplies } from './supply-backfill.js';
+import { localPurchaseReceiptNumber } from './receipt-number.js';
 import {
   LOCAL_PASSWORD,
   LOCAL_INITIAL_PASSWORD,
@@ -597,7 +598,10 @@ export async function seedLocalDataset(
         '/inventory/receipts',
         admin.accessToken,
         {
-          receiptNumber: `NHAP-${receipt + 1}`,
+          receiptNumber: localPurchaseReceiptNumber(
+            dayOffset(today, receipt ? -5 : -20),
+            receipt + 1,
+          ),
           ...(paidRatio > 0
             ? {
                 initialPayment: {
@@ -672,24 +676,19 @@ export async function seedLocalDataset(
       201,
     );
 
-    // Imported legacy receipt: goods and stock are known, settlement is not assumed.
-    const legacyReceipt = await http.ok<Entity>(
+    await http.ok<Entity>(
       'post',
       '/inventory/receipts',
       admin.accessToken,
       {
-        receiptNumber: 'NHAP-CHUYENTIEP',
+        receiptNumber: localPurchaseReceiptNumber(dayOffset(today, -60), 3),
         supplierId: suppliers[0],
         receiptDate: `${dayOffset(today, -60)}T09:00:00+07:00`,
         items: [{ itemId: items[1], quantity: '10', unitPrice: '5000' }],
-        notes: 'Chứng từ chuyển tiếp đang chờ đối chiếu lịch sử thanh toán.',
+        notes: 'Nhập bổ sung dầu gội cho buồng phòng.',
       },
       201,
     );
-    await prisma.stockReceipt.update({
-      where: { id: BigInt(legacyReceipt.id) },
-      data: { paymentTracking: 'UNRECONCILED' },
-    });
     const supplyItems = await prisma.inventoryItem.findMany({ where: { hotelId } });
     for (const type of types)
       await http.ok('put', `/room-types/${type.id}/housekeeping-materials`, admin.accessToken, {

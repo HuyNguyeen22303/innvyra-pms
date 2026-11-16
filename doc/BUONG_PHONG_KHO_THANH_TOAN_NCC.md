@@ -6,11 +6,28 @@ Chạy trong thư mục `backend` sau khi lấy code:
 
 ```powershell
 npm ci
-npm run db:migrate
-npm run prisma:generate
+npm run db:update:local
 ```
 
-Sau đó cài dependencies frontend nếu cần và khởi động lại backend/frontend. Migration bổ sung bảng và liên kết, không reset database. Vật tư cũ được đánh dấu **Chưa phân loại**, phiếu nhập cũ là **Chưa đối soát**. Các nhiệm vụ đang dọn có mã lượt để tiếp tục hoàn thành; hệ thống không tự tạo lịch sử tiêu hao hoặc khoản tiền đã trả cho dữ liệu cũ.
+Lệnh dành cho bộ dữ liệu local Lotus/Ocean/Pine đã có: sinh Prisma Client, chạy migration, chuẩn hóa phiếu nhập, bổ sung vật tư/định mức rồi kiểm chứng liên kết và sổ kho. Sau đó khởi động lại backend/frontend. Không tạo database khác hoặc reset dữ liệu. Giữ nguyên đơn đặt phòng, lưu trú, số lượng tồn và các khoản tiền đã ghi nhận.
+
+Nếu máy chỉ có DB một khách sạn từ trước khi có bộ dữ liệu Lotus/Ocean/Pine, dùng phần tạo DB mới bên dưới để khởi tạo bộ đa khách sạn; không dùng lệnh cập nhật này để biến dữ liệu một khách sạn thành ba khách sạn.
+
+### Chuẩn hóa phiếu nhập local
+
+- Các phiếu `NHAP-1`, `NHAP-2`, `NHAP-CHUYENTIEP` khớp bộ seed được chuyển sang mã có ngày nhập `NHAP-VT-YYYYMMDD-01/02/03`.
+- Phiếu còn **Chưa đối soát** và chưa có khoản chi được thay bằng phiếu theo dõi thanh toán, bắt đầu ở **Chưa thanh toán**. Đây là chuẩn hóa tình huống dữ liệu local theo yêu cầu, không xác minh hay suy diễn việc chi tiền thật.
+- Phiếu đã được đối soát/theo dõi chỉ đổi mã, giữ ID, thông tin đối soát, các lần trả và đảo tiền. Phiếu bổ sung `NHAP-BP-…` không thay đổi.
+- Các dòng hàng và sổ kho được chuyển sang liên kết phiếu mới; không tạo biến động nhập kho lần hai. Số lượng, đơn giá, giá trị hàng nhận và ngày nhập được giữ nguyên.
+- Mỗi lần áp dụng có bản sao JSON đầy đủ các phiếu/dòng hàng/sổ kho liên quan ở `backend/.tmp/local-seed/`. Nếu dữ liệu thay đổi sau khi lập bản xem trước, toàn bộ chuyển đổi dừng và hoàn tác. Phiếu không khớp cấu trúc seed được từ chối; dữ liệu khách sạn khác không bị chọn.
+
+Chỉ xem trước mà chưa cập nhật:
+
+```powershell
+npm run db:refresh:receipts
+```
+
+Áp dụng riêng phần phiếu: `npm run db:refresh:receipts -- --apply`. Không cần thao tác này riêng nếu đã chạy `db:update:local`.
 
 Với bộ dữ liệu local Lotus/Ocean/Pine đã có, bổ sung cấu hình còn thiếu bằng:
 
@@ -40,7 +57,7 @@ Kiểm tra lại database đang dùng:
 npm run db:check:multi
 ```
 
-Seed gồm Lotus Riverside, Ocean Breeze và Pine Valley: mỗi khách sạn có 40 mã vật tư, định mức từng hạng phòng, hóa chất sẵn dùng theo ml, lịch sử dọn lại với lượng sử dụng bổ sung, phiếu trả đủ/chưa trả/trả nhiều lần và phiếu chuyển tiếp chưa đối soát. Lịch chứng từ thay đổi theo ngày chạy seed.
+Seed v4 gồm Lotus Riverside, Ocean Breeze và Pine Valley: mỗi khách sạn có 40 mã vật tư, định mức từng hạng phòng, hóa chất sẵn dùng theo ml, lịch sử dọn lại với lượng sử dụng bổ sung và các phiếu trả đủ/chưa trả/trả nhiều lần. Mọi phiếu seed đều dùng luồng theo dõi thanh toán mới; không tạo sẵn phiếu **Chưa đối soát**. Lịch chứng từ thay đổi theo ngày chạy seed.
 
 Tài khoản quản lý khách sạn:
 

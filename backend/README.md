@@ -103,15 +103,16 @@ npm run db:seed:multi -- --activate
 
 Tên database mặc định là `innvyra`. Seed chỉ tạo database chưa tồn tại, từ chối ghi đè cả database rỗng đã có. Có thể cấu hình `DATABASE_URL` trỏ `/innvyra` ngay từ đầu nếu MySQL chưa có schema đó. Chỉ đổi `DATABASE_URL` khi kiểm tra thành công; giữ nguyên JWT và các khóa mã hóa. `npm run db:check:multi` chỉ đọc và kiểm tra lại.
 
-Nếu đã có dữ liệu và chỉ cần bổ sung phân loại/định mức dọn phòng cho bộ ba khách sạn local, giữ nguyên database và chạy:
+Nếu đã có bộ dữ liệu đa khách sạn Lotus/Ocean/Pine, sau khi pull code chạy trong `backend`:
 
 ```powershell
-npm run prisma:generate
-npm run db:migrate
-npm run db:backfill:supplies -- --apply
+npm ci
+npm run db:update:local
 ```
 
-Bỏ `-- --apply` để xem trước. Lệnh bổ sung catalogue buồng phòng (40 mã/khách sạn), phân loại còn thiếu và định mức theo khách/phòng. Vật tư mới có phiếu nhập chưa thanh toán và sổ kho; các tồn và chứng từ cũ được giữ nguyên. Hai dòng dầu gội/bàn chải mặc định cũ được đổi sang cách tính 1/khách; cấu hình khác đã chỉnh được giữ. Hóa chất sẵn dùng ml có mã riêng, không quy đổi chai cũ. Chi tiết ở [hướng dẫn buồng phòng – kho](../doc/BUONG_PHONG_KHO_THANH_TOAN_NCC.md). Không chạy toàn bộ seed để cập nhật database đang dùng.
+Lệnh sinh Prisma Client, chạy migration, chuyển phiếu nhập local cũ sang mã `NHAP-VT-YYYYMMDD-01/02/03`, bổ sung catalogue/định mức và kiểm chứng toàn bộ DB. Phiếu chưa đối soát đúng mẫu seed được thay bằng phiếu theo dõi thanh toán, bắt đầu chưa trả tiền; phiếu đã theo dõi giữ ID và lịch sử trả/đảo tiền. Chuyển tham chiếu sổ kho mà không nhập hàng lần hai, giữ nguyên tồn. Chỉ áp dụng các phiếu khớp dữ liệu seed đã biết; gặp dữ liệu đã chỉnh khác thì dừng. Bản sao JSON trước khi thay ở `.tmp/local-seed/`.
+
+`npm run db:refresh:receipts` chỉ xem trước phần phiếu; thêm `-- --apply` để áp dụng riêng. `npm run db:backfill:supplies` xem trước phần catalogue (40 mã/khách sạn) và định mức. Vật tư bổ sung có phiếu nhập chưa thanh toán; mã hóa chất ml riêng không quy đổi chai cũ. Các lệnh có thể chạy lại, không tạo DB mới hoặc seed lại toàn bộ dữ liệu đang dùng. Chi tiết ở [hướng dẫn buồng phòng – kho](../doc/BUONG_PHONG_KHO_THANH_TOAN_NCC.md).
 
 Mã đặt phòng mới có 16 ký tự (`INN-` + 12 ký tự hex in hoa), áp dụng cả seed lịch sử. Database multi-hotel local đã tạo bằng code cũ có thể chuyển mã bằng `npm run db:shorten:reservation-codes -- --apply`; lệnh tự lưu backup, giữ ID và các liên kết, không seed/reset lại. Bỏ `-- --apply` để chỉ xem số mã cần chuyển. Chi tiết và giới hạn an toàn ở hướng dẫn database phía trên.
 

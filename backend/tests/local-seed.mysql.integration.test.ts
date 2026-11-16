@@ -7,6 +7,10 @@ import { verifyLocalDataset } from '../scripts/local-seed/verify.js';
 import { LOCAL_PASSWORD, LOCAL_INITIAL_PASSWORD } from '../scripts/local-seed/catalog.js';
 import { backfillLocalSupplies } from '../scripts/local-seed/supply-backfill.js';
 import {
+  planLocalReceiptRefresh,
+  applyLocalReceiptRefresh,
+} from '../scripts/local-seed/receipt-refresh.js';
+import {
   planReservationCodeChanges,
   applyReservationCodeChanges,
 } from '../scripts/local-seed/reservation-codes.js';
@@ -33,6 +37,60 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
     afterAll(async () => {
       await database?.dispose();
     });
+    async function makeLegacy(
+      hotelCode: string,
+      sequence: number,
+      tracking: 'TRACKED' | 'UNRECONCILED',
+    ) {
+      const db = database.prisma;
+      const original = await db.stockReceipt.findFirstOrThrow({
+        where: {
+          hotel: { code: hotelCode },
+          receiptNumber: { startsWith: 'NHAP-VT-', endsWith: `-0${sequence}` },
+        },
+      });
+      const movements = await db.inventoryMovement.findMany({
+        where: {
+          hotelId: original.hotelId,
+          referenceType: 'STOCK_RECEIPT',
+          referenceId: original.id,
+        },
+        orderBy: { id: 'asc' },
+      });
+      const number = sequence === 3 ? 'NHAP-CHUYENTIEP' : `NHAP-${sequence}`;
+      await db.stockReceipt.update({
+        where: { id: original.id },
+        data: { receiptNumber: number, paymentTracking: tracking },
+      });
+      await db.inventoryMovement.updateMany({
+        where: {
+          hotelId: original.hotelId,
+          referenceType: 'STOCK_RECEIPT',
+          referenceId: original.id,
+        },
+        data: { referenceNumber: number, notes: `Stock Receipt ${number}` },
+      });
+      return { original, movements };
+    }
+    async function restoreReceipt(fixture: Awaited<ReturnType<typeof makeLegacy>>) {
+      const db = database.prisma,
+        { original, movements } = fixture;
+      await db.stockReceipt.update({
+        where: { id: original.id },
+        data: {
+          receiptNumber: original.receiptNumber,
+          paymentTracking: original.paymentTracking,
+          supplierId: original.supplierId,
+          notes: original.notes,
+          updatedAt: original.updatedAt,
+        },
+      });
+      for (const movement of movements)
+        await db.inventoryMovement.update({
+          where: { id: movement.id },
+          data: { referenceNumber: movement.referenceNumber, notes: movement.notes },
+        });
+    }
     it('creates a different persistent-style dataset with complete hotel-scoped roles and history', async () => {
       const report = await verifyLocalDataset(database.prisma, env);
       expect(report.foreignKeyCount).toBeGreaterThan(50);
@@ -46,6 +104,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       expect(report.counts.room_occupancies).toBe(9);
       expect(report.counts.inventory_items).toBe(120);
       expect(report.counts.housekeeping_material_presets).toBe(216);
+      expect(
+        await database.prisma.stockReceipt.count({ where: { paymentTracking: 'UNRECONCILED' } }),
+      ).toBe(0);
+      expect(
+        await database.prisma.stockReceipt.count({
+          where: { receiptNumber: { in: ['NHAP-1', 'NHAP-2', 'NHAP-CHUYENTIEP'] } },
+        }),
+      ).toBe(0);
       const openingReceipts = await database.prisma.stockReceipt.findMany({
         where: { receiptNumber: { startsWith: 'NHAP-BP-' } },
         include: { supplierPayments: true, items: true },
@@ -200,6 +266,115 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
             where: { id: booking.id },
             data: { confirmationCode: originals[index]! },
           });
+      }
+    });
+    it('replaces obsolete unpaid receipts and normalizes tracked ones without changing stock or recorded payments', async () => {
+      const db = database.prisma;
+      await makeLegacy('LOTUS_HCM', 1, 'TRACKED');
+      await makeLegacy('OCEAN_DN', 1, 'UNRECONCILED');
+      await makeLegacy('PINE_DL', 3, 'UNRECONCILED');
+      const items = await db.inventoryItem.findMany({ orderBy: { id: 'asc' } });
+      const payments = await db.supplierPayment.findMany({
+        include: { reversal: true },
+        orderBy: { id: 'asc' },
+      });
+      const count = await db.stockReceipt.count();
+      const ledger = async () =>
+        (await db.inventoryMovement.findMany({ orderBy: { id: 'asc' } })).map(
+          ({ referenceId: _id, referenceNumber: _number, notes: _notes, ...row }) => {
+            void _id;
+            void _number;
+            void _notes;
+            return row;
+          },
+        );
+      const beforeLedger = await ledger();
+      const lines = async () =>
+        (await db.stockReceiptItem.findMany({ orderBy: { id: 'asc' } })).map(
+          ({ receiptId: _parent, ...row }) => {
+            void _parent;
+            return row;
+          },
+        );
+      const beforeLines = await lines();
+      const plan = await planLocalReceiptRefresh(db, env);
+      expect(plan.filter((change) => change.mode === 'REPLACE_UNRECONCILED')).toHaveLength(2);
+      expect(plan.filter((change) => change.mode === 'RENAME_TRACKED')).toHaveLength(1);
+      expect(await db.stockReceipt.count()).toBe(count);
+      const result = await applyLocalReceiptRefresh(db, env, plan);
+      for (const change of result) {
+        if (change.mode === 'REPLACE_UNRECONCILED') {
+          expect(change.newId).not.toBe(change.oldId);
+          expect(await db.stockReceipt.findUnique({ where: { id: change.oldId } })).toBeNull();
+        } else expect(change.newId).toBe(change.oldId);
+        expect(
+          (await db.stockReceipt.findUniqueOrThrow({ where: { id: change.newId } })).receiptNumber,
+        ).toBe(change.newNumber);
+        expect(
+          await db.inventoryMovement.count({
+            where: {
+              referenceType: 'STOCK_RECEIPT',
+              referenceId: change.newId,
+              referenceNumber: change.newNumber,
+            },
+          }),
+        ).toBeGreaterThan(0);
+      }
+      expect(await db.stockReceipt.count()).toBe(count);
+      expect(await db.inventoryItem.findMany({ orderBy: { id: 'asc' } })).toEqual(items);
+      expect(
+        await db.supplierPayment.findMany({ include: { reversal: true }, orderBy: { id: 'asc' } }),
+      ).toEqual(payments);
+      expect(await ledger()).toEqual(beforeLedger);
+      expect(await lines()).toEqual(beforeLines);
+      expect(await planLocalReceiptRefresh(db, env)).toEqual([]);
+      expect(await applyLocalReceiptRefresh(db, env, [])).toEqual([]);
+      expect((await verifyLocalDataset(db, env)).ok).toBe(true);
+      await expect(planLocalReceiptRefresh(db, { ...env, NODE_ENV: 'production' })).rejects.toThrow(
+        'local Innvyra',
+      );
+    });
+    it('refuses a stale receipt refresh plan and rolls back every receipt together', async () => {
+      const db = database.prisma;
+      const fixtures = [
+        await makeLegacy('PINE_DL', 1, 'TRACKED'),
+        await makeLegacy('PINE_DL', 2, 'TRACKED'),
+      ];
+      try {
+        const plan = await planLocalReceiptRefresh(db, env);
+        await db.stockReceipt.update({
+          where: { id: fixtures[1]!.original.id },
+          data: { notes: 'Changed after preview' },
+        });
+        const before = await db.stockReceipt.findMany({ orderBy: { id: 'asc' } });
+        const movements = await db.inventoryMovement.findMany({ orderBy: { id: 'asc' } });
+        await expect(applyLocalReceiptRefresh(db, env, plan)).rejects.toThrow('plan changed');
+        expect(await db.stockReceipt.findMany({ orderBy: { id: 'asc' } })).toEqual(before);
+        expect(await db.inventoryMovement.findMany({ orderBy: { id: 'asc' } })).toEqual(movements);
+      } finally {
+        for (const fixture of fixtures) await restoreReceipt(fixture);
+      }
+    });
+    it('does not alter lookalike receipt numbers that no longer match the known local data', async () => {
+      const db = database.prisma,
+        fixture = await makeLegacy('OCEAN_DN', 2, 'TRACKED');
+      try {
+        const otherSupplier = await db.supplier.findFirstOrThrow({
+          where: { hotelId: fixture.original.hotelId, code: 'SUPPLIER_1' },
+        });
+        await db.stockReceipt.update({
+          where: { id: fixture.original.id },
+          data: { supplierId: otherSupplier.id },
+        });
+        const before = await db.stockReceipt.findUniqueOrThrow({
+          where: { id: fixture.original.id },
+        });
+        await expect(planLocalReceiptRefresh(db, env)).rejects.toThrow('unrecognized');
+        expect(
+          await db.stockReceipt.findUniqueOrThrow({ where: { id: fixture.original.id } }),
+        ).toEqual(before);
+      } finally {
+        await restoreReceipt(fixture);
       }
     });
     it('fills only missing local supply configuration, preserves custom presets and all stock/financial history, and supports reruns', async () => {

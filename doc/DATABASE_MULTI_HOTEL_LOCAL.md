@@ -56,7 +56,7 @@ Tổng: **3 khách sạn, 3 gói mẫu, 57 phòng (54 active), 36 nhân viên, 7
 - Dịch vụ có đơn hoàn tất và đang chờ; số tiền đã ghi sổ khớp chi tiết dịch vụ.
 - Buồng phòng có nhiệm vụ được phân công ở trạng thái chờ làm, đang làm và chờ kiểm tra, cùng lịch sử đã hoàn tất.
 - Bảo trì có phiếu kỹ thuật đang xử lý và block an toàn phòng 104.
-- Kho mỗi khách sạn có ba nhóm, hai nhà cung cấp, sáu vật tư, hai phiếu nhập, ba phiếu xuất và một phiếu kiểm kê. Có vật tư dưới định mức và hết hàng để kiểm tra cảnh báo.
+- Kho mỗi khách sạn có bốn nhóm, hai nhà cung cấp và 40 vật tư, các phiếu nhập theo dõi thanh toán, phiếu xuất và phiếu kiểm kê. Có vật tư dưới định mức và hết hàng để kiểm tra cảnh báo. Seed v4 dùng mã nhập `NHAP-VT-YYYYMMDD-01/02/03`; không tạo phiếu chưa đối soát.
 - Giấy tờ khách là dữ liệu giả, được mã hóa bằng khóa hiện có của local. Không sao chép khách/đơn/phòng từ database cũ.
 - Các gói và giá thuê bao là ví dụ local, mỗi khách sạn có kỳ sáu tháng và hạn mức đủ dùng; có thể chỉnh danh mục từ quản trị Innvyra.
 - Tên gói, nhân viên, nhà cung cấp, địa chỉ và ghi chú được trình bày tự nhiên, không gắn nhãn “mẫu”/“mô phỏng” trong dữ liệu hiển thị. Đây vẫn là dữ liệu hư cấu phục vụ kiểm thử.
@@ -123,13 +123,10 @@ Máy khác đã có bộ dữ liệu Lotus/Ocean/Pine chạy từ `backend` sau 
 
 ```powershell
 npm ci
-npm run prisma:generate
-npm run db:migrate
-npm run db:backfill:supplies -- --apply
-npm run db:check:multi
+npm run db:update:local
 ```
 
-Backfill dùng database local đang cấu hình, không đổi tên DB của máy khác, không tạo lại đơn/phòng/chứng từ. Chạy lại không ghi đè phân loại và định mức đã có. Máy mới chưa có dữ liệu dùng `npm run db:seed:multi -- --activate` để tạo `innvyra` từ đầu; không chạy seed toàn bộ trên dữ liệu đang sử dụng.
+Lệnh dùng database local đang cấu hình, không đổi tên DB của máy khác và không tạo lại đơn/phòng. Nó thay các phiếu seed cũ chưa theo dõi thanh toán, giữ các khoản chi đã ghi và chuyển tham chiếu sổ kho để tồn không đổi, rồi bổ sung catalogue và kiểm chứng. Có thể chạy lại mà không tạo trùng. Chỉ xem trước phần phiếu bằng `npm run db:refresh:receipts`; bản sao và báo cáo ở `.tmp/local-seed/`. Máy mới chưa có dữ liệu dùng `npm run db:seed:multi -- --activate` để tạo `innvyra` từ đầu; không chạy seed toàn bộ trên dữ liệu đang sử dụng.
 
 ## Kết quả kiểm chứng ngày 12/11/2026
 

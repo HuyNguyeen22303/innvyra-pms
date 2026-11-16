@@ -30,6 +30,8 @@
     "db:seed:multi": "tsx scripts/seed-local-multi-hotel.ts",
     "db:check:multi": "tsx scripts/seed-local-multi-hotel.ts --check",
     "db:backfill:supplies": "tsx scripts/backfill-local-supplies.ts",
+    "db:refresh:receipts": "tsx scripts/refresh-local-receipts.ts",
+    "db:update:local": "prisma generate && tsx scripts/migrate.ts && tsx scripts/refresh-local-receipts.ts --apply && tsx scripts/backfill-local-supplies.ts --apply && tsx scripts/seed-local-multi-hotel.ts --check",
     "db:shorten:reservation-codes": "tsx scripts/shorten-reservation-codes.ts",
     "db:seed:legacy": "tsx prisma/seed.ts"
   },
