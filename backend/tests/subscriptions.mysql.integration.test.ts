@@ -192,6 +192,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       expect(String(persisted.monthlyPrice)).toBe('123456.78');
       expect(persisted.roomLimit).toBe(2);
       expect((await service.summary(h.id)).usage.roomLimit).toBe(2);
+      const available = await get('/hotel/subscription-plans', h.token);
+      expect(available.status).toBe(200);
+      expect(available.body.data.some((p: { id: string }) => p.id === String(h.plan.id))).toBe(
+        false,
+      );
+      const own = await get('/hotel/subscription', h.token);
+      expect(own.body.data.current).toMatchObject({
+        planId: String(h.plan.id),
+        monthlyPrice: '123456.78',
+        roomLimit: 2,
+      });
       await expect(
         service.record(actor, h.id, {
           planId: String(h.plan.id),
@@ -200,6 +211,80 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           reason: 'Renew',
         }),
       ).rejects.toMatchObject({ code: 'PLAN_UNAVAILABLE' });
+    });
+    it('hotel catalog lists only available plans ordered by exact monthly price and reflects platform updates', async () => {
+      const h = await hotel();
+      const low = await plan({ monthlyPrice: '10.10', name: 'Entry' });
+      const high = await plan({ monthlyPrice: '10.20', name: 'Larger' });
+      const hidden = await plan({ isActive: false });
+      const response = await get('/hotel/subscription-plans', h.token);
+      expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe('no-store');
+      const data = response.body.data as { id: string; monthlyPrice: string; isActive: boolean }[];
+      const expected = await database.prisma.subscriptionPlan.findMany({
+        where: { isActive: true },
+        orderBy: [{ monthlyPrice: 'asc' }, { id: 'asc' }],
+      });
+      expect(data.map((p) => p.id)).toEqual(expected.map((p) => String(p.id)));
+      expect(data.every((p) => p.isActive)).toBe(true);
+      expect(data.some((p) => p.id === String(hidden.id))).toBe(false);
+      expect(data.findIndex((p) => p.id === String(low.id))).toBeLessThan(
+        data.findIndex((p) => p.id === String(high.id)),
+      );
+      expect(Object.keys(data[0]!).sort()).toEqual(
+        [
+          'id',
+          'code',
+          'name',
+          'description',
+          'monthlyPrice',
+          'roomLimit',
+          'staffLimit',
+          'isActive',
+        ].sort(),
+      );
+      await service.updatePlan(actor, low.id, { monthlyPrice: '9.99', staffLimit: 10 });
+      const updated = await get('/hotel/subscription-plans', h.token);
+      expect(updated.body.data.find((p: { id: string }) => p.id === String(low.id))).toMatchObject({
+        monthlyPrice: '9.99',
+        staffLimit: 10,
+      });
+      expect((await get('/hotel/subscription-plans?hotelId=' + h.id, h.token)).status).toBe(422);
+    });
+    it('hotel catalog enforces account roles and password change while remaining readable during suspension', async () => {
+      const h = await hotel();
+      expect((await request(app).get('/api/v1/hotel/subscription-plans')).status).toBe(401);
+      expect((await get('/hotel/subscription-plans')).status).toBe(401);
+      await service.setStatus(actor, h.id, 'SUSPENDED', 'Account review');
+      expect((await get('/hotel/subscription-plans', h.token)).status).toBe(200);
+      const manager = await database.prisma.role.create({
+        data: { code: 'MANAGER', name: 'Manager' },
+      });
+      await database.prisma.staffUser.update({
+        where: { id: h.staff.id },
+        data: { roleId: manager.id },
+      });
+      expect((await get('/hotel/subscription-plans', h.token)).status).toBe(200);
+      await database.prisma.staffUser.update({
+        where: { id: h.staff.id },
+        data: { mustChangePassword: true },
+      });
+      expect((await get('/hotel/subscription-plans', h.token)).body.error.code).toBe(
+        'PASSWORD_CHANGE_REQUIRED',
+      );
+      for (const code of ['RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING', 'TECHNICIAN'] as const) {
+        const role = await database.prisma.role.upsert({
+          where: { code },
+          create: { code, name: code },
+          update: {},
+        });
+        await database.prisma.staffUser.update({
+          where: { id: h.staff.id },
+          data: { roleId: role.id, mustChangePassword: false },
+        });
+        expect((await get('/hotel/subscription-plans', h.token)).body.error.code).toBe('FORBIDDEN');
+      }
+      expect((await get('/platform/plans', h.token)).status).toBe(401);
     });
     it('serializes overlapping concurrent renewals and retains explicit future change date', async () => {
       const h = await hotel(false);

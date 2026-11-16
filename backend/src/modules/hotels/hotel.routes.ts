@@ -76,6 +76,14 @@ export function ownHotelRoutes(service: HotelManagementService, auth: AuthServic
   });
   router.use(authenticate(auth));
   router.get(
+    '/subscription-plans',
+    authorizeHotelAccount('ADMIN', 'MANAGER'),
+    validate(schemas.ownHotelSchema),
+    async (_req, res) => {
+      res.json({ success: true, data: await service.subscriptions.availablePlans() });
+    },
+  );
+  router.get(
     '/subscription',
     authorizeHotelAccount('ADMIN', 'MANAGER'),
     validate(schemas.ownHotelSchema),

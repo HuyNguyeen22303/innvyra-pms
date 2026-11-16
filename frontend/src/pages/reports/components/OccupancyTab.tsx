@@ -26,7 +26,7 @@ import { formatVnd } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
-const formatNightCount = (val: number) => `${val} đêm`;
+const formatNightCount = (val: number) => `${Math.round(val).toLocaleString('vi-VN')} đêm`;
 
 export interface OccupancyTabProps {
   startDateStr: string;
@@ -346,6 +346,7 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
           series1Color="#1b4d3e"
           series2Color="#52c41a"
           valueFormatter={formatNightCount}
+          integerTicks
           height={260}
         />
       </Card>

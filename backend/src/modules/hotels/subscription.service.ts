@@ -64,6 +64,22 @@ export class SubscriptionService {
   plans() {
     return this.prisma.subscriptionPlan.findMany({ orderBy: { id: 'asc' } });
   }
+  availablePlans() {
+    return this.prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: [{ monthlyPrice: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        monthlyPrice: true,
+        roomLimit: true,
+        staffLimit: true,
+        isActive: true,
+      },
+    });
+  }
   createPlan(actorId: bigint, input: PlanInput) {
     return this.transaction(async (tx) => {
       const plan = await tx.subscriptionPlan.create({

@@ -100,38 +100,42 @@ export function SubscriptionDetails({
             : []),
         ]}
       />
-      {history && (
-        <Table
-          style={{ marginTop: 20 }}
-          size="small"
-          rowKey="id"
-          dataSource={value.history}
-          scroll={{ x: 1000 }}
-          pagination={{ pageSize: 5 }}
-          columns={[
-            { title: "Gói đã đăng ký", dataIndex: "planName" },
-            { title: "Từ ngày", dataIndex: "startsOn", render: displayDay },
-            { title: "Đến hết ngày", dataIndex: "endsOn", render: displayDay },
-            {
-              title: "Số tháng",
-              dataIndex: "monthCount",
-              render: (v: number | null) => v ?? "Kỳ cũ",
-            },
-            {
-              title: "Đơn giá / tháng",
-              dataIndex: "monthlyPrice",
-              render: (value: string | null) =>
-                value == null ? "Kỳ cũ" : money(value),
-            },
-            { title: "Phí (VND)", dataIndex: "feeAmount", render: money },
-            {
-              title: "Thanh toán tham chiếu",
-              dataIndex: "paymentReference",
-              render: (v: string | null) => v || "—",
-            },
-          ]}
-        />
-      )}
+      {history && <SubscriptionHistory value={value} />}
     </>
+  );
+}
+
+export function SubscriptionHistory({ value }: { value: SubscriptionSummary }) {
+  return (
+    <Table
+      style={{ marginTop: 20 }}
+      size="small"
+      rowKey="id"
+      dataSource={value.history}
+      scroll={{ x: 1000 }}
+      pagination={{ pageSize: 5 }}
+      columns={[
+        { title: "Gói đã đăng ký", dataIndex: "planName" },
+        { title: "Từ ngày", dataIndex: "startsOn", render: displayDay },
+        { title: "Đến hết ngày", dataIndex: "endsOn", render: displayDay },
+        {
+          title: "Số tháng",
+          dataIndex: "monthCount",
+          render: (v: number | null) => v ?? "Kỳ cũ",
+        },
+        {
+          title: "Đơn giá / tháng",
+          dataIndex: "monthlyPrice",
+          render: (value: string | null) =>
+            value == null ? "Kỳ cũ" : money(value),
+        },
+        { title: "Phí (VND)", dataIndex: "feeAmount", render: money },
+        {
+          title: "Thanh toán tham chiếu",
+          dataIndex: "paymentReference",
+          render: (v: string | null) => v || "—",
+        },
+      ]}
+    />
   );
 }

@@ -11,3 +11,16 @@ export const money = (value: string) =>
   `${Number(value).toLocaleString("vi-VN")} ₫`;
 export const displayDay = (value: string) =>
   value.slice(0, 10).split("-").reverse().join("/");
+
+export function subscriptionPlanState(
+  planId: string,
+  summary?: SubscriptionSummary,
+) {
+  if (
+    summary?.current?.planId === planId &&
+    (summary.status === "ACTIVE" || summary.status === "EXPIRING")
+  )
+    return "current";
+  if (summary?.upcoming?.planId === planId) return "upcoming";
+  return null;
+}

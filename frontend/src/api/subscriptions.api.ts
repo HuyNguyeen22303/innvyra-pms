@@ -43,6 +43,16 @@ export interface SubscriptionSummary {
   nextStartsOn: string;
 }
 export const subscriptionsApi = {
+  async availablePlans(signal?: AbortSignal) {
+    return (
+      await apiClient.get<ApiResponse<SubscriptionPlan[]>>(
+        "/hotel/subscription-plans",
+        {
+          signal,
+        },
+      )
+    ).data.data;
+  },
   async plans(signal?: AbortSignal) {
     return (
       await platformClient.get<ApiResponse<SubscriptionPlan[]>>("/plans", {

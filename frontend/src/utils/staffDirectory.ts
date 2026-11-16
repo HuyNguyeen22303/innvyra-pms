@@ -10,6 +10,7 @@ import { employeesApi } from '../api/employees.api.ts';
 import { hotelSessionGeneration } from '../auth/hotelSession.ts';
 import { getRegisteredHotelStaff, registerHotelStaff } from '../auth/hotelStaffCache.ts';
 import { useAuthStore } from '../store/authStore.ts';
+import { canLoadHotelOperations } from '../auth/hotelWorkspaceAccess.ts';
 
 export interface StaffMemberInfo {
   id: string;
@@ -57,7 +58,7 @@ export const useStaffDirectory = () => {
   const user = useAuthStore(state => state.user);
   const { data: staffRes, isLoading, refetch } = useQuery({
     queryKey: ['staff-directory-global'],
-    enabled: !!user && !user.mustChangePassword,
+    enabled: canLoadHotelOperations(user),
     queryFn: async () => {
       // Backend validates limit: max 100
       const res = await employeesApi.list({ limit: 100 });
@@ -70,7 +71,7 @@ export const useStaffDirectory = () => {
     refetchOnWindowFocus: false,
   });
 
-  const staffItems = staffRes?.data?.items;
+  const staffItems = canLoadHotelOperations(user) ? staffRes?.data?.items : undefined;
 
   // Immediately register in memory if served from React Query cache
   if (staffItems && Array.isArray(staffItems)) {

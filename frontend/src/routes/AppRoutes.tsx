@@ -2,7 +2,7 @@ import { HotelSubscriptionPage } from '../pages/hotel/HotelSubscriptionPage.tsx'
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Button, Result, Spin } from 'antd';
 import { HotelSessionBoundary } from '../components/HotelSessionBoundary.tsx';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout.tsx';
 import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
 import { LoginPage } from '../pages/auth/LoginPage.tsx';
@@ -25,6 +25,7 @@ import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
 import { useAuthStore } from '../store/authStore.ts';
 import { HotelPasswordChangePage } from '../pages/auth/HotelPasswordChangePage.tsx';
 import { HotelSettingsPage } from '../pages/hotel/HotelSettingsPage.tsx';
+import { isSubscriptionPath } from '../auth/hotelWorkspaceAccess.ts';
 
 const PlatformRoutes = lazy(() => import('./PlatformRoutes.tsx'));
 
@@ -51,6 +52,7 @@ export const AppRoutes: React.FC = () => {
 };
 
 const HotelRoutes: React.FC = () => {
+  const location = useLocation();
   const { checkAuth, restoreError } = useAuthStore();
   useEffect(() => {
     if (window.location.pathname !== '/login') void checkAuth();
@@ -64,17 +66,17 @@ const HotelRoutes: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/change-password" element={<HotelPasswordChangePage />} />
 
-      <Route path="/subscription" element={<ProtectedRoute allowSuspended><HotelSubscriptionPage /></ProtectedRoute>} />
       {/* Protected Routes wrapped in MainLayout */}
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowSuspended={isSubscriptionPath(location.pathname)}>
             <MainLayout />
           </ProtectedRoute>
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="subscription" element={<HotelSubscriptionPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="hotel" element={<ProtectedRoute allowedRoles={['ADMIN']}><HotelSettingsPage /></ProtectedRoute>} />
 

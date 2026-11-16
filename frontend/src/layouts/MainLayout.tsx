@@ -47,6 +47,11 @@ import "./MainLayout.css";
 import { roomsApi } from "../api/rooms.api.ts";
 import { useStaffDirectory } from "../utils/staffDirectory.ts";
 import type { Role } from "../types/auth.types.ts";
+import {
+  canLoadHotelOperations,
+  isHotelWorkspaceRestricted,
+  isSubscriptionPath,
+} from "../auth/hotelWorkspaceAccess.ts";
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -199,6 +204,7 @@ export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const subscriptionOnly = isHotelWorkspaceRestricted(user);
 
   // Keep the full workspace available on tablets and smaller laptops. The
   // persistent sidebar returns once there is room for both navigation and content.
@@ -219,6 +225,7 @@ export const MainLayout: React.FC = () => {
   // Dynamic room count from backend API
   const { data: roomsRes } = useQuery({
     queryKey: ["rooms-count"],
+    enabled: canLoadHotelOperations(user),
     queryFn: () => roomsApi.getAll(),
     staleTime: 30000,
   });
@@ -271,8 +278,19 @@ export const MainLayout: React.FC = () => {
     },
   ];
 
+  const visibleMenuGroups: MenuGroupDef[] = subscriptionOnly
+    ? [{
+        key: "group-account",
+        title: "TÀI KHOẢN KHÁCH SẠN",
+        items: [{
+          key: "/subscription",
+          icon: <ApartmentOutlined />,
+          label: "Gói dịch vụ",
+        }],
+      }]
+    : menuGroups;
   const filteredMenuItems: MenuProps["items"] = (collapsed && !useDrawerNavigation)
-    ? menuGroups
+    ? visibleMenuGroups
         .flatMap((group) =>
           group.items.filter(
             (item) => !item.roles || (user && item.roles.includes(user.role)),
@@ -283,7 +301,7 @@ export const MainLayout: React.FC = () => {
           icon: item.icon,
           label: item.label,
         }))
-    : (menuGroups
+    : (visibleMenuGroups
         .map((group) => {
           const allowedItems = group.items
             .filter(
@@ -333,7 +351,7 @@ export const MainLayout: React.FC = () => {
       <div className="sidebar-property__label">Cơ sở hiện tại</div>
       <div className="sidebar-property__name">
         <span>{user?.hotel?.name || 'Khách sạn'}</span>
-        <span className="sidebar-property__rooms">{roomCount} phòng</span>
+        {!subscriptionOnly && <span className="sidebar-property__rooms">{roomCount} phòng</span>}
       </div>
       <div className="sidebar-property__shift"><ClockCircleOutlined />{currentShift}</div>
     </div>
@@ -550,7 +568,7 @@ export const MainLayout: React.FC = () => {
             overflowX: "hidden",
           }}
         >
-          <SubscriptionNotice />
+          {!isSubscriptionPath(location.pathname) && <SubscriptionNotice />}
           <Outlet />
         </Content>
       </Layout>

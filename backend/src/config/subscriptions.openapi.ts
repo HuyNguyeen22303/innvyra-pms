@@ -206,4 +206,12 @@ export const subscriptionPaths = {
       true,
     ),
   },
+  '/hotel/subscription-plans': {
+    get: operation(
+      'List active monthly plans by price (ADMIN/MANAGER); available while suspended after password change',
+      { type: 'array', items: ref('SubscriptionPlan') },
+      undefined,
+      true,
+    ),
+  },
 };
