@@ -35,7 +35,12 @@ const roomInput = {
 };
 const summaryFields = {
   id,
-  confirmationCode: { type: 'string', maxLength: 32 },
+  confirmationCode: {
+    type: 'string',
+    maxLength: 32,
+    description:
+      'New bookings use INN- plus 12 uppercase hex characters (16 total); legacy codes remain readable.',
+  },
   status,
   bookerGuest: identity,
   checkInDate: date,
@@ -49,7 +54,7 @@ const summaryFields = {
 };
 const summaryExample = {
   id: '101',
-  confirmationCode: 'INN-A7DC158049FA43FC102B1240F001',
+  confirmationCode: 'INN-A7DC158049FA',
   bookerGuest: { id: '12', fullName: 'Synthetic Guest' },
   checkInDate: '2026-10-20',
   checkOutDate: '2026-10-22',

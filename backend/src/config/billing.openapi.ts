@@ -233,7 +233,7 @@ const orderExample = {
   reservationId: '101',
   stayId: '501',
   guestName: 'Nguyễn Văn An',
-  confirmationCode: 'RES-IN-101',
+  confirmationCode: 'INN-A7DC158049FA',
   roomNumber: '101',
   roomTypeName: 'Standard Single',
   status: 'REQUESTED',

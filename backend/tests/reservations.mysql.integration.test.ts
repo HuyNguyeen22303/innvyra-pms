@@ -13,6 +13,7 @@ import { PrismaRoomTypeRepository } from '../src/modules/room-types/room-type.re
 import { RoomTypeService } from '../src/modules/room-types/room-type.service.js';
 import { PrismaReservationRepository } from '../src/modules/reservations/reservation.repository.js';
 import { ReservationService } from '../src/modules/reservations/reservation.service.js';
+import * as reservationCodes from '../src/modules/reservations/reservation-code.js';
 import {
   availabilityQuery,
   createReservationBody,
@@ -427,6 +428,7 @@ describe.skipIf(!testUrl)(
       ).rejects.toThrow();
       const next = await service.create(scope, input(1, 12, 14));
       expect(next.confirmationCode).not.toBe(booking.confirmationCode);
+      expect(next.confirmationCode).toMatch(/^INN-[0-9A-F]{12}$/);
       await expect(
         prisma.reservation.update({
           where: { id: BigInt(next.id) },
@@ -436,6 +438,24 @@ describe.skipIf(!testUrl)(
       await expect(prisma.guest.delete({ where: { id: guestId } })).rejects.toMatchObject({
         code: 'P2003',
       });
+    });
+    it('regenerates a 16-character code after a real unique-index collision and rolls back partial writes', async () => {
+      const first = await service.create(scope, input());
+      const nextCode = 'INN-ABCDEF123456';
+      const generator = vi
+        .spyOn(reservationCodes, 'generateReservationCode')
+        .mockReturnValueOnce(first.confirmationCode)
+        .mockReturnValueOnce(nextCode);
+      const next = await service.create(scope, input(1, 12, 14));
+      expect(next.confirmationCode).toBe(nextCode);
+      expect(generator).toHaveBeenCalledTimes(2);
+      expect(await prisma.reservation.count({ where: { hotelId: scope.hotelId } })).toBe(2);
+      expect(await prisma.reservationRoom.count({ where: { hotelId: scope.hotelId } })).toBe(2);
+      expect(
+        await prisma.reservationRoomNight.count({
+          where: { reservationRoom: { hotelId: scope.hotelId } },
+        }),
+      ).toBe(4);
     });
     it('does not expose or accept foreign/deleted resources and retains history after soft deletion', async () => {
       const foreignGuest = await prisma.guest.create({

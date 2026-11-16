@@ -1,9 +1,9 @@
-import { randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { inventoryNights, sellableRoomWhere } from './inventory.repository.js';
 import { asDate } from './reservation.dates.js';
+import { generateReservationCode } from './reservation-code.js';
 import type {
   ReservationOperations,
   ReservationQuery,
@@ -140,8 +140,7 @@ export class PrismaReservationRepository {
         hotelId,
         createdBy: actorId,
         bookerGuestId: input.guestId,
-        // 112 random bits + DB unique index; collision retries the complete transaction.
-        confirmationCode: `INN-${randomBytes(14).toString('hex').toUpperCase()}`,
+        confirmationCode: generateReservationCode(),
         checkInDate: input.checkInDate,
         checkOutDate: input.checkOutDate,
         status: 'CONFIRMED',

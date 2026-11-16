@@ -143,7 +143,7 @@ const example = {
   stayId: '501',
   reservationId: '101',
   reservationRoomId: '1001',
-  confirmationCode: 'INN-A7DC158049FA43FC102B1240F001',
+  confirmationCode: 'INN-A7DC158049FA',
   bookerGuest: { id: '12', fullName: 'Synthetic Guest' },
   room: { id: '301', roomNumber: '301', housekeepingStatus: 'READY' },
   roomType: { id: '2', code: 'DELUXE', name: 'Deluxe' },

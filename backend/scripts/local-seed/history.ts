@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from '../../src/generated/prisma/client.js';
 import { asDate } from '../../src/modules/hotels/subscription-calendar.js';
 import { dayOffset } from '../phase6/scenario.js';
+import { generateReservationCode } from '../../src/modules/reservations/reservation-code.js';
 
 export interface HistoryInput {
   hotelId: bigint;
@@ -16,6 +17,25 @@ export interface HistoryInput {
 }
 const at = (day: string, time: string) => new Date(`${day}T${time}:00+07:00`);
 
+async function retryCodeCollision<T>(
+  prisma: PrismaClient,
+  create: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await prisma.$transaction(create);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        attempt < 2
+      )
+        continue;
+      throw error;
+    }
+  }
+}
+
 // Import only synthetic historical records. Public APIs intentionally reject past
 // bookings. Each complete graph is inserted transactionally with real FKs enabled.
 export async function seedLocalHistory(prisma: PrismaClient, input: HistoryInput) {
@@ -30,12 +50,12 @@ export async function seedLocalHistory(prisma: PrismaClient, input: HistoryInput
     const postedAt = at(startsOn, '14:05');
     const paidAt = at(endsOn, '10:30');
     const createdAt = at(dayOffset(startsOn, -3), '10:00');
-    const record = await prisma.$transaction(async (tx) => {
+    const record = await retryCodeCollision(prisma, async (tx) => {
       const totalRoom = new Prisma.Decimal(room.rate).mul(nights);
       const reservation = await tx.reservation.create({
         data: {
           hotelId: input.hotelId,
-          confirmationCode: `LOCAL-${input.code}-H${index + 1}`,
+          confirmationCode: generateReservationCode(),
           bookerGuestId: input.guestIds[index % input.guestIds.length]!,
           checkInDate: asDate(startsOn),
           checkOutDate: asDate(endsOn),

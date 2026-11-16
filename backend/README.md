@@ -103,6 +103,8 @@ npm run db:seed:multi -- --activate
 
 Lệnh tạo `innvyra_pms_multi_hotel`, từ chối ghi đè nếu tên đã tồn tại hoặc đang là database ứng dụng. Chỉ đổi `DATABASE_URL` khi kiểm tra thành công; giữ nguyên database cũ, JWT và các khóa mã hóa. Dữ liệu được giữ lại khi tắt server. `npm run db:check:multi` chỉ đọc và kiểm tra lại.
 
+Mã đặt phòng mới có 16 ký tự (`INN-` + 12 ký tự hex in hoa), áp dụng cả seed lịch sử. Database multi-hotel local đã tạo bằng code cũ có thể chuyển mã bằng `npm run db:shorten:reservation-codes -- --apply`; lệnh tự lưu backup, giữ ID và các liên kết, không seed/reset lại. Bỏ `-- --apply` để chỉ xem số mã cần chuyển. Chi tiết và giới hạn an toàn ở hướng dẫn database phía trên.
+
 Các bước dưới đây dành cho tự quản lý schema/migration.
 
 Với **database mới**, quản trị viên MySQL tạo database UTF-8 và cấp quyền cho tài khoản ứng dụng/migration:

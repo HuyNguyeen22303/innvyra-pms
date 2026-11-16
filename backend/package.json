@@ -29,6 +29,7 @@
     "demo:phase6": "tsx scripts/phase6-demo.ts",
     "db:seed:multi": "tsx scripts/seed-local-multi-hotel.ts",
     "db:check:multi": "tsx scripts/seed-local-multi-hotel.ts --check",
+    "db:shorten:reservation-codes": "tsx scripts/shorten-reservation-codes.ts",
     "db:seed:legacy": "tsx prisma/seed.ts"
   },
   "dependencies": {

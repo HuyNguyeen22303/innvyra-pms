@@ -5,6 +5,10 @@ import { isolatedMySql } from './isolated-mysql.js';
 import { seedLocalDataset } from '../scripts/local-seed/dataset.js';
 import { verifyLocalDataset } from '../scripts/local-seed/verify.js';
 import { LOCAL_PASSWORD, LOCAL_INITIAL_PASSWORD } from '../scripts/local-seed/catalog.js';
+import {
+  planReservationCodeChanges,
+  applyReservationCodeChanges,
+} from '../scripts/local-seed/reservation-codes.js';
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)(
   'Persistent multi-hotel local sample: full graph and financial integrity',
@@ -39,6 +43,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       expect(report.counts.guests).toBe(78);
       expect(report.counts.reservations).toBeGreaterThanOrEqual(60);
       expect(report.counts.room_occupancies).toBe(9);
+      const codes = (await database.prisma.reservation.findMany()).map(
+        (row) => row.confirmationCode,
+      );
+      expect(codes.every((code) => /^INN-[0-9A-F]{12}$/.test(code))).toBe(true);
+      expect(new Set(codes).size).toBe(codes.length);
       for (const hotel of seeded.manifest.hotels) {
         expect(hotel.historyCount).toBe(8);
         const session = await seeded.http.login(hotel.adminUsername, LOCAL_PASSWORD);
@@ -117,6 +126,64 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           where: { id: receipt.id },
           data: { totalAmount: receipt.totalAmount },
         });
+      }
+    });
+    it('converts legacy codes without changing IDs or financial details, avoiding existing codes and supporting reruns', async () => {
+      const booking = await database.prisma.reservation.findFirstOrThrow();
+      await database.prisma.reservation.update({
+        where: { id: booking.id },
+        data: { confirmationCode: `INN-${'A'.repeat(28)}` },
+      });
+      const before = await database.prisma.reservation.findUniqueOrThrow({
+        where: { id: booking.id },
+      });
+      const existing = await database.prisma.reservation.findFirstOrThrow({
+        where: { id: { not: booking.id } },
+      });
+      let calls = 0;
+      const plan = await planReservationCodeChanges(database.prisma, env, () =>
+        ++calls === 1 ? existing.confirmationCode : 'INN-123456789ABC',
+      );
+      expect(calls).toBe(2);
+      expect(plan).toHaveLength(1);
+      await applyReservationCodeChanges(database.prisma, env, plan);
+      const after = await database.prisma.reservation.findUniqueOrThrow({
+        where: { id: booking.id },
+      });
+      expect(after).toEqual({ ...before, confirmationCode: 'INN-123456789ABC' });
+      expect(await planReservationCodeChanges(database.prisma, env)).toEqual([]);
+      expect((await verifyLocalDataset(database.prisma, env)).ok).toBe(true);
+    });
+    it('rolls back the entire code update when a reservation changes after planning', async () => {
+      const bookings = await database.prisma.reservation.findMany({
+        take: 2,
+        orderBy: { id: 'asc' },
+      });
+      const originals = bookings.map((booking) => booking.confirmationCode);
+      try {
+        for (const [index, booking] of bookings.entries())
+          await database.prisma.reservation.update({
+            where: { id: booking.id },
+            data: { confirmationCode: `LEGACY-ROLLBACK-${index}` },
+          });
+        const plan = await planReservationCodeChanges(database.prisma, env);
+        await database.prisma.reservation.update({
+          where: { id: bookings[1]!.id },
+          data: { confirmationCode: 'LEGACY-CHANGED' },
+        });
+        await expect(applyReservationCodeChanges(database.prisma, env, plan)).rejects.toThrow(
+          'rolled back',
+        );
+        expect(
+          (await database.prisma.reservation.findUniqueOrThrow({ where: { id: bookings[0]!.id } }))
+            .confirmationCode,
+        ).toBe('LEGACY-ROLLBACK-0');
+      } finally {
+        for (const [index, booking] of bookings.entries())
+          await database.prisma.reservation.update({
+            where: { id: booking.id },
+            data: { confirmationCode: originals[index]! },
+          });
       }
     });
   },

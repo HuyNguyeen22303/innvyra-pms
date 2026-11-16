@@ -169,3 +169,27 @@ Kiểm chứng sau cập nhật: backend **852/852 bài trong 35 file**, fronten
 Đã cập nhật trực tiếp 36 nhân viên, ba số phòng và 24 tên khách bị nối tên; giữ nguyên ID, mật khẩu, vai trò, trạng thái, đơn đặt phòng và sổ tiền/kho. Đã xác minh đăng nhập 33 tài khoản hoạt động bằng username mới, ba tài khoản đã nghỉ bị từ chối đăng nhập. Các nút điền nhanh ở trang đăng nhập dev cũng dùng username mới. Không cần seed lại; đăng nhập bằng username mới và mật khẩu hiện có.
 
 Kiểm chứng sau chuẩn hóa: **853/853 bài backend (35 file)**, **39/39 bài frontend**; riêng seed/cấu hình **17/17 bài**. Typecheck/lint/build đều đạt. Database thực tế giữ nguyên số bản ghi, ID và dấu kiểm chứng mật khẩu/vai trò/trạng thái; 95 khóa ngoại và 23 điều kiện nghiệp vụ đạt. Báo cáo và bản sao thay đổi chỉ lưu local tại `backend/.tmp/local-seed/professional-verification.json` và `professional-backup-*.json`.
+
+## Mã đặt phòng 16 ký tự
+
+Mã mới có dạng **`INN-A7DC158049FA`**: tiền tố `INN-` và 12 ký tự hex in hoa, tổng 16 ký tự. Backend và seed lịch sử dùng chung bộ sinh mã. Unique index toàn hệ thống vẫn được giữ; backend/seed thử lại transaction khi gặp trùng mã. ID nội bộ của đơn, ví dụ `25`, tách biệt với mã xác nhận.
+
+Đã chuyển cả **72 đơn** trong `innvyra_pms_multi_hotel` sang định dạng này. ID, khách đặt, trạng thái, ngày lưu trú, giá và thời điểm cập nhật của đơn đều được giữ nguyên; 95 khóa ngoại và 23 kiểm tra nghiệp vụ đạt. Database `innvyra_pms` cũ vẫn được giữ riêng.
+
+Máy đã có database multi-hotel từ bản code trước có thể cập nhật mà không seed/reset lại. Tại `backend`, chạy:
+
+```powershell
+# Chỉ xem số mã cần đổi, không ghi database.
+npm run db:shorten:reservation-codes
+
+# Lưu backup mã cũ/mới, chuyển đổi trong transaction rồi kiểm chứng.
+npm run db:shorten:reservation-codes -- --apply
+```
+
+Lệnh chỉ cho phép database local đa khách sạn riêng, từ chối production/remote và database cũ `innvyra_pms`. Nếu một đơn thay đổi sau khi lập danh sách, toàn bộ transaction được rollback. Chạy lại khi đã đổi xong sẽ không thay mã đã đúng. Máy tạo database mới bằng seed hiện tại tự có mã 16 ký tự, không cần lệnh chuyển đổi.
+
+Backup nằm ở `backend/.tmp/local-seed/<tên-db>.reservation-codes-*.backup.json`; kết quả kiểm chứng ở `<tên-db>.reservation-codes.verification.json`, cùng thư mục. Các file runtime này không đưa lên GitHub.
+
+Cột SQL vẫn có dung lượng `VARCHAR(32)` để đọc dữ liệu cũ ở những môi trường chưa chuyển đổi; mã được sinh mới luôn 16 ký tự. Không cần sửa schema hoặc chạy migration thu hẹp cột. Bảng Thu ngân/Folio đã tăng độ rộng cột mã, giới hạn chữ trong ô, có tooltip và nút sao chép toàn bộ mã; bảng có cuộn ngang khi thiếu chỗ.
+
+Kết quả kiểm chứng: **856/856 bài backend, 35 file**; **39/39 bài frontend**; typecheck/lint/build đạt. Có kiểm thử va chạm unique index buộc backend sinh lại mã, seed lịch sử/API cùng sinh mã 16 ký tự, chuyển mã cũ giữ nguyên dữ liệu, chạy lại không đổi mã đã đúng và rollback toàn bộ khi một đơn thay đổi giữa lúc lập danh sách và cập nhật. Đã xem bảng Thu ngân/Folio trên giao diện thực tế và xác nhận mã không đè vào tên khách. `pip check` vẫn không chạy được do WindowsApps Python alias trên máy; các kiểm tra Node/MySQL đã chạy đầy đủ.

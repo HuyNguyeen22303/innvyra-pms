@@ -780,13 +780,19 @@ export const FolioTab: React.FC = () => {
       title: 'Mã đơn',
       dataIndex: 'id',
       key: 'id',
-      width: 110,
+      width: 190,
       render: (id: string, record) => (
-        <div style={{ whiteSpace: 'nowrap' }}>
+        <div style={{ minWidth: 0 }}>
           <Text strong style={{ color: '#1b4d3e', fontFamily: 'monospace', fontSize: 13 }}>
             #{id}
           </Text>
-          <div style={{ fontSize: 11, color: '#8c8c8c' }}>{record.confirmationCode}</div>
+          <Text
+            ellipsis={{ tooltip: record.confirmationCode }}
+            copyable={{ text: record.confirmationCode, tooltips: ['Sao chép mã đơn', 'Đã sao chép'] }}
+            style={{ display: 'block', width: '100%', fontSize: 11, color: '#8c8c8c' }}
+          >
+            {record.confirmationCode}
+          </Text>
         </div>
       ),
     },
@@ -1086,7 +1092,8 @@ export const FolioTab: React.FC = () => {
             dataSource={tableReservationList}
             rowKey="id"
             loading={isReservationsLoading}
-            scroll={{ x: 1050 }}
+            tableLayout="fixed"
+            scroll={{ x: 1230 }}
             pagination={{
               current: resTablePage,
               pageSize: resTablePageSize,
