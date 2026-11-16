@@ -46,6 +46,10 @@ export interface RevenueMetrics {
   successfulDeposits: string;
   successfulRefunds: string;
   netCashCollected: string;
+  supplierPayments: string;
+  supplierReversals: string;
+  netSupplierPaid: string;
+  netCashAfterSupplies: string;
   balanceMovement: string;
   paymentCount: number;
   depositCount: number;
@@ -82,6 +86,10 @@ export interface PaymentMetrics {
   successfulDeposits: string;
   successfulRefunds: string;
   netCashCollected: string;
+  supplierPayments: string;
+  supplierReversals: string;
+  netSupplierPaid: string;
+  netCashAfterSupplies: string;
   paymentCount: number;
   depositCount: number;
   refundCount: number;

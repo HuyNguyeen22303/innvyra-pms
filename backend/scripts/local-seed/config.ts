@@ -1,16 +1,15 @@
 import { parse as parseDotenv } from 'dotenv';
 import { databaseUrlSchema } from '../../src/config/env.js';
 
+export const isLocalDatabaseName = (name: string) =>
+  /^innvyra(?:_[A-Za-z0-9_]+)?$/.test(name) && name.length <= 64;
+
 export function localDatabaseUrl(source: string, name: string, creating = true) {
   if (!databaseUrlSchema.safeParse(source).success)
     throw new Error('Invalid local database configuration');
   const url = new URL(source);
-  if (
-    !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
-    !/^innvyra_pms_multi_hotel(?:_[A-Za-z0-9_]+)?$/.test(name) ||
-    name.length > 64
-  )
-    throw new Error('Choose a separate local innvyra_pms_multi_hotel database');
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || !isLocalDatabaseName(name))
+    throw new Error('Choose a separate local innvyra database');
   if (creating && url.pathname === `/${name}`)
     throw new Error('Current application database cannot be seeded again');
   url.pathname = `/${name}`;

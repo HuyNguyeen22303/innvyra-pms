@@ -257,6 +257,7 @@ describe.skipIf(!testUrl)(
       if (!db || !hotels.length) return;
       const where = { hotelId: { in: hotels } };
       await db.operationsAuditLog.deleteMany({ where });
+      await db.housekeepingMaterialCompletion.deleteMany({ where });
       await db.housekeepingTask.deleteMany({ where });
       // Delete only synthetic fixtures created by this test, in foreign-key order.
       await db.roomOccupancy.deleteMany({ where });
@@ -427,8 +428,12 @@ describe.skipIf(!testUrl)(
         where: { hotelId: scope.hotelId, activeRoomId: roomIds[0]! },
       });
       await housekeeping.assign(operationsScope, task.id, scope.actorId);
-      await housekeeping.start(operationsScope, task.id);
-      await housekeeping.complete(operationsScope, task.id);
+      const started = await housekeeping.start(operationsScope, task.id);
+      await housekeeping.complete(operationsScope, task.id, {
+        workToken: started.workToken!,
+        materials: [],
+        noMaterialsReason: 'Vệ sinh chuẩn bị phòng, không cấp vật tư tiêu hao',
+      });
       await housekeeping.inspect(operationsScope, task.id, { passed: true });
       expect((await post(path, body)).status).toBe(201);
       await assertConsistent();

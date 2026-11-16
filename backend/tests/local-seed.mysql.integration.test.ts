@@ -1,10 +1,11 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { parseEnv } from '../src/config/env.js';
 import { isolatedMySql } from './isolated-mysql.js';
 import { seedLocalDataset } from '../scripts/local-seed/dataset.js';
 import { verifyLocalDataset } from '../scripts/local-seed/verify.js';
 import { LOCAL_PASSWORD, LOCAL_INITIAL_PASSWORD } from '../scripts/local-seed/catalog.js';
+import { backfillLocalSupplies } from '../scripts/local-seed/supply-backfill.js';
 import {
   planReservationCodeChanges,
   applyReservationCodeChanges,
@@ -43,6 +44,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       expect(report.counts.guests).toBe(78);
       expect(report.counts.reservations).toBeGreaterThanOrEqual(60);
       expect(report.counts.room_occupancies).toBe(9);
+      expect(report.counts.inventory_items).toBe(120);
+      expect(report.counts.housekeeping_material_presets).toBe(216);
+      const openingReceipts = await database.prisma.stockReceipt.findMany({
+        where: { receiptNumber: { startsWith: 'NHAP-BP-' } },
+        include: { supplierPayments: true, items: true },
+      });
+      expect(openingReceipts).toHaveLength(3);
+      expect(
+        openingReceipts.every(
+          (receipt) =>
+            receipt.paymentTracking === 'TRACKED' &&
+            receipt.supplierPayments.length === 0 &&
+            receipt.items.length === 34,
+        ),
+      ).toBe(true);
       const codes = (await database.prisma.reservation.findMany()).map(
         (row) => row.confirmationCode,
       );
@@ -185,6 +201,100 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
             data: { confirmationCode: originals[index]! },
           });
       }
+    });
+    it('fills only missing local supply configuration, preserves custom presets and all stock/financial history, and supports reruns', async () => {
+      const db = database.prisma;
+      await db.housekeepingMaterialPreset.deleteMany();
+      const legacyCodes = ['ITEM_1', 'ITEM_2', 'ITEM_3', 'ITEM_4', 'ITEM_5', 'ITEM_6'];
+      await db.inventoryItem.updateMany({
+        where: { code: { in: legacyCodes } },
+        data: { materialType: 'UNCLASSIFIED' },
+      });
+      await db.inventoryItem.updateMany({
+        where: { code: { in: ['ITEM_4', 'ITEM_5', 'ITEM_6'] } },
+        data: { unit: 'chai' },
+      });
+      const roomType = await db.roomType.findFirstOrThrow();
+      const brush = await db.inventoryItem.findFirstOrThrow({
+        where: { hotelId: roomType.hotelId, code: 'ITEM_3' },
+      });
+      await db.housekeepingMaterialPreset.create({
+        data: {
+          hotelId: roomType.hotelId,
+          roomTypeId: roomType.id,
+          itemId: brush.id,
+          quantity: '7.25',
+        },
+      });
+      const originalItems = await db.inventoryItem.findMany({ orderBy: { id: 'asc' } });
+      const snapshot = async () =>
+        createHash('sha256')
+          .update(
+            JSON.stringify(
+              await Promise.all([
+                db.reservation.findMany({ orderBy: { id: 'asc' } }),
+                db.stay.findMany({ orderBy: { id: 'asc' } }),
+                db.inventoryMovement.findMany({ orderBy: { id: 'asc' } }),
+                db.stockReceipt.findMany({ orderBy: { id: 'asc' } }),
+                db.supplierPayment.findMany({ orderBy: { id: 'asc' } }),
+                db.payment.findMany({ orderBy: { id: 'asc' } }),
+              ]),
+              (_key, value) => (typeof value === 'bigint' ? String(value) : value),
+            ),
+          )
+          .digest('hex');
+      const before = await snapshot();
+      const planned = await backfillLocalSupplies(db, env);
+      expect(planned).toMatchObject({
+        applied: false,
+        itemsClassified: 18,
+        roomTypesConfigured: 12,
+        presetLinesAdded: 215,
+      });
+      expect(await db.housekeepingMaterialPreset.count()).toBe(1);
+      expect(
+        (await db.inventoryItem.findMany({ where: { code: { in: legacyCodes } } })).every(
+          (item) => item.materialType === 'UNCLASSIFIED',
+        ),
+      ).toBe(true);
+      const applied = await backfillLocalSupplies(db, env, true);
+      expect(applied).toMatchObject({
+        applied: true,
+        itemsClassified: 18,
+        roomTypesConfigured: 12,
+        presetLinesAdded: 215,
+      });
+      expect(await snapshot()).toBe(before);
+      const updatedItems = await db.inventoryItem.findMany({ orderBy: { id: 'asc' } });
+      for (const [index, item] of updatedItems.entries()) {
+        const original = originalItems[index]!;
+        expect(item.currentStock).toEqual(original.currentStock);
+        expect(item.unit).toBe(original.unit);
+        expect(item.updatedAt).toEqual(original.updatedAt);
+        expect(item.materialType).toBe(
+          legacyCodes.includes(item.code)
+            ? item.code === 'ITEM_1'
+              ? 'REUSABLE'
+              : 'CONSUMABLE'
+            : original.materialType,
+        );
+      }
+      expect(
+        (
+          await db.housekeepingMaterialPreset.findFirstOrThrow({
+            where: { roomTypeId: roomType.id, itemId: brush.id },
+          })
+        ).quantity.toString(),
+      ).toBe('7.25');
+      expect(await backfillLocalSupplies(db, env, true)).toMatchObject({
+        itemsClassified: 0,
+        roomTypesConfigured: 0,
+        presetLinesAdded: 0,
+      });
+      expect((await verifyLocalDataset(db, env)).ok).toBe(true);
+      await expect(
+        backfillLocalSupplies(db, { ...env, NODE_ENV: 'production' }, true),
+      ).rejects.toThrow('local Innvyra');
     });
   },
 );

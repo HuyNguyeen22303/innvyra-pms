@@ -155,7 +155,9 @@ export function memoryInventory() {
         ...cat,
         ...(data.code ? { code: String(data.code) } : {}),
         ...(data.name ? { name: String(data.name) } : {}),
-        ...(data.description !== undefined ? { description: data.description as string | null } : {}),
+        ...(data.description !== undefined
+          ? { description: data.description as string | null }
+          : {}),
         ...(data.isActive !== undefined ? { isActive: Boolean(data.isActive) } : {}),
         updatedAt: new Date(),
       };
@@ -235,18 +237,16 @@ export function memoryInventory() {
       return { ...sup };
     },
 
-    async updateSupplier(
-      hotelId: bigint,
-      id: bigint,
-      data: Prisma.SupplierUncheckedUpdateInput,
-    ) {
+    async updateSupplier(hotelId: bigint, id: bigint, data: Prisma.SupplierUncheckedUpdateInput) {
       const sup = suppliers.get(id);
       if (!sup || sup.hotelId !== hotelId) throw new Error('Not found');
       const updated: Supplier = {
         ...sup,
         ...(data.code ? { code: String(data.code) } : {}),
         ...(data.name ? { name: String(data.name) } : {}),
-        ...(data.contactPerson !== undefined ? { contactPerson: data.contactPerson as string | null } : {}),
+        ...(data.contactPerson !== undefined
+          ? { contactPerson: data.contactPerson as string | null }
+          : {}),
         ...(data.phone !== undefined ? { phone: data.phone as string | null } : {}),
         ...(data.email !== undefined ? { email: data.email as string | null } : {}),
         ...(data.address !== undefined ? { address: data.address as string | null } : {}),
@@ -359,6 +359,7 @@ export function memoryInventory() {
         code: data.code,
         name: data.name,
         unit: data.unit,
+        materialType: data.materialType ?? 'UNCLASSIFIED',
         description: data.description ?? null,
         currentStock: new Prisma.Decimal(String(data.currentStock ?? 0)),
         minStockLevel: new Prisma.Decimal(String(data.minStockLevel ?? 0)),
@@ -387,14 +388,26 @@ export function memoryInventory() {
         ...item,
         ...(data.code ? { code: String(data.code) } : {}),
         ...(data.name ? { name: String(data.name) } : {}),
-        ...(data.categoryId ? { categoryId: BigInt(data.categoryId as number | bigint | string) } : {}),
+        ...(data.categoryId
+          ? { categoryId: BigInt(data.categoryId as number | bigint | string) }
+          : {}),
         ...(data.unit ? { unit: String(data.unit) } : {}),
-        ...(data.description !== undefined ? { description: data.description as string | null } : {}),
+        ...(data.description !== undefined
+          ? { description: data.description as string | null }
+          : {}),
         ...(data.currentStock !== undefined
-          ? { currentStock: new Prisma.Decimal(data.currentStock as number | string | Prisma.Decimal) }
+          ? {
+              currentStock: new Prisma.Decimal(
+                data.currentStock as number | string | Prisma.Decimal,
+              ),
+            }
           : {}),
         ...(data.minStockLevel !== undefined
-          ? { minStockLevel: new Prisma.Decimal(data.minStockLevel as number | string | Prisma.Decimal) }
+          ? {
+              minStockLevel: new Prisma.Decimal(
+                data.minStockLevel as number | string | Prisma.Decimal,
+              ),
+            }
           : {}),
         ...(data.isActive !== undefined ? { isActive: Boolean(data.isActive) } : {}),
         updatedAt: new Date(),
@@ -430,6 +443,10 @@ export function memoryInventory() {
         hotelId: BigInt(receiptData.hotelId),
         supplierId: receiptData.supplierId ? BigInt(receiptData.supplierId) : null,
         receiptNumber: receiptData.receiptNumber,
+        paymentTracking: receiptData.paymentTracking ?? 'UNRECONCILED',
+        reconciledById: null,
+        reconciledAt: null,
+        reconciliationReason: null,
         receiptDate: new Date(receiptData.receiptDate as string | Date),
         totalAmount: new Prisma.Decimal(String(receiptData.totalAmount ?? 0)),
         notes: receiptData.notes ?? null,
@@ -556,6 +573,9 @@ export function memoryInventory() {
         id,
         hotelId: BigInt(issueData.hotelId),
         issueNumber: issueData.issueNumber,
+        housekeepingCompletionId: issueData.housekeepingCompletionId
+          ? BigInt(issueData.housekeepingCompletionId)
+          : null,
         issueDate: new Date(issueData.issueDate as string | Date),
         department: issueData.department,
         purpose: issueData.purpose ?? null,

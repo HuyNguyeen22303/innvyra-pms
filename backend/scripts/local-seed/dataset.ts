@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { Prisma } from '../../src/generated/prisma/client.js';
 import type { Env } from '../../src/config/env.js';
@@ -9,6 +10,9 @@ import { ScenarioHttp as SeedHttp, type ScenarioSession } from '../phase6/client
 import { dayOffset } from '../phase6/scenario.js';
 import { seedLocalHistory } from './history.js';
 import { localStaff } from './staff.js';
+import { isLocalDatabaseName } from './config.js';
+import { defaultCleaningMaterials } from './supply-defaults.js';
+import { backfillLocalSupplies } from './supply-backfill.js';
 import {
   LOCAL_PASSWORD,
   LOCAL_INITIAL_PASSWORD,
@@ -24,9 +28,7 @@ import {
 type Entity = { id: string };
 type Staff = Entity & { username: string; session: ScenarioSession };
 type Booking = Entity & { rooms: Entity[]; totalAmount: string };
-export const isLocalSeedName = (name: string) =>
-  /^innvyra_pms_multi_hotel(?:_[a-zA-Z0-9_]+)?$/.test(name) ||
-  /^innvyra_local_seed_[a-f0-9]{32}_test$/.test(name);
+export const isLocalSeedName = isLocalDatabaseName;
 export const sqlIdentifier = (value: string) => {
   if (!/^[A-Za-z0-9_]+$/.test(value)) throw new Error('Unexpected SQL identifier');
   return `\`${value}\``;
@@ -150,7 +152,7 @@ export async function seedLocalDataset(
       }
     }
     await prisma.staffUser.updateMany({ where: { hotelId }, data: { createdAt: importedAt } });
-    const types: { id: string; rate: string; code: string }[] = [];
+    const types: { id: string; rate: string; code: string; maxAdults: number }[] = [];
     for (const type of localRoomTypes) {
       const rate = String(Math.round(type.basePrice * config.rateFactor));
       const created = await http.ok<Entity>(
@@ -160,7 +162,7 @@ export async function seedLocalDataset(
         { ...type, basePrice: rate, description: `Hạng phòng tại ${config.name}` },
         201,
       );
-      types.push({ id: created.id, rate, code: type.code });
+      types.push({ id: created.id, rate, code: type.code, maxAdults: type.maxAdults });
     }
     const rooms: { id: string; number: string; typeId: string; rate: string }[] = [];
     async function finishCleaning(taskId: string) {
@@ -569,31 +571,72 @@ export async function seedLocalDataset(
             {
               code: `ITEM_${index + 1}`,
               name,
-              categoryId: categories[Math.floor(index / 2)]!,
-              unit: index < 3 ? 'cái' : 'chai',
-              minStockLevel: index === 4 ? '20' : '10',
+              categoryId: categories[index === 0 ? 0 : index < 3 ? 1 : 2]!,
+              materialType: index === 0 ? 'REUSABLE' : 'CONSUMABLE',
+              unit: index === 1 ? 'chai' : index < 3 ? 'cái' : 'ml',
+              minStockLevel: index >= 3 ? (index === 4 ? '20000' : '10000') : '10',
             },
             201,
           )
         ).id,
       );
-    for (let receipt = 0; receipt < 2; receipt++)
-      await http.ok(
+    for (let receipt = 0; receipt < 2; receipt++) {
+      const rawQuantities = receipt ? [100, 100, 50, 30, 10] : [200, 300, 150, 90, 20];
+      const receiptTotal = rawQuantities.reduce(
+        (sum, qty, index) =>
+          sum.add(new Prisma.Decimal(qty).mul([75000, 5000, 15000, 45000, 120000][index]!)),
+        new Prisma.Decimal(0),
+      );
+      const paidRatio = [
+        [1, 0.4],
+        [0, 1],
+        [0.5, 0],
+      ][hotelIndex]![receipt]!;
+      const seededReceipt = await http.ok<Entity>(
         'post',
         '/inventory/receipts',
         admin.accessToken,
         {
           receiptNumber: `NHAP-${receipt + 1}`,
+          ...(paidRatio > 0
+            ? {
+                initialPayment: {
+                  requestKey: randomUUID(),
+                  amount: receiptTotal.mul(paidRatio).toFixed(2),
+                  paymentMethod: receipt === 0 ? 'BANK_TRANSFER' : 'CASH',
+                  referenceNumber: receipt === 0 ? `NCC-${config.code}-${receipt + 1}` : undefined,
+                  paidAt: `${dayOffset(today, receipt ? -4 : -19)}T09:00:00+07:00`,
+                },
+              }
+            : {}),
           supplierId: suppliers[receipt]!,
           receiptDate: `${dayOffset(today, receipt ? -5 : -20)}T09:00:00+07:00`,
           items: items.slice(0, 5).map((itemId, index) => ({
             itemId,
-            quantity: String((receipt ? [100, 100, 50, 30, 10] : [200, 300, 150, 90, 20])[index]),
-            unitPrice: String([75000, 5000, 15000, 45000, 120000][index]),
+            quantity: String(rawQuantities[index]! * (index >= 3 ? 1000 : 1)),
+            unitPrice: String([75000, 5000, 15000, 45, 120][index]),
           })),
         },
         201,
       );
+      // Two genuine installments on different dates; some invoices remain partly unpaid.
+      const secondRatio =
+        hotelIndex === 0 && receipt === 1 ? 0.2 : hotelIndex === 2 && receipt === 0 ? 0.5 : 0;
+      if (secondRatio > 0)
+        await http.ok(
+          'post',
+          `/inventory/receipts/${seededReceipt.id}/payments`,
+          staff.ACCOUNTANT.session.accessToken,
+          {
+            requestKey: randomUUID(),
+            amount: receiptTotal.mul(secondRatio).toFixed(2),
+            paymentMethod: 'BANK_TRANSFER',
+            referenceNumber: `NCC-${config.code}-${receipt + 1}-LAN2`,
+            paidAt: `${dayOffset(today, -2)}T10:30:00+07:00`,
+          },
+          201,
+        );
+    }
     for (let issue = 0; issue < 3; issue++)
       await http.ok(
         'post',
@@ -610,7 +653,7 @@ export async function seedLocalDataset(
                 [40, 60, 30, 10, 5],
                 [10, 20, 10, 5, 5],
                 [5, 10, 5, 5, 5],
-              ][issue]![index],
+              ][issue]![index]! * (index >= 3 ? 1000 : 1),
             ),
           })),
         },
@@ -628,6 +671,64 @@ export async function seedLocalDataset(
       },
       201,
     );
+
+    // Imported legacy receipt: goods and stock are known, settlement is not assumed.
+    const legacyReceipt = await http.ok<Entity>(
+      'post',
+      '/inventory/receipts',
+      admin.accessToken,
+      {
+        receiptNumber: 'NHAP-CHUYENTIEP',
+        supplierId: suppliers[0],
+        receiptDate: `${dayOffset(today, -60)}T09:00:00+07:00`,
+        items: [{ itemId: items[1], quantity: '10', unitPrice: '5000' }],
+        notes: 'Chứng từ chuyển tiếp đang chờ đối chiếu lịch sử thanh toán.',
+      },
+      201,
+    );
+    await prisma.stockReceipt.update({
+      where: { id: BigInt(legacyReceipt.id) },
+      data: { paymentTracking: 'UNRECONCILED' },
+    });
+    const supplyItems = await prisma.inventoryItem.findMany({ where: { hotelId } });
+    for (const type of types)
+      await http.ok('put', `/room-types/${type.id}/housekeeping-materials`, admin.accessToken, {
+        materials: defaultCleaningMaterials(type, supplyItems),
+      });
+    const awaiting = await http.ok<{ items: Entity[] }>(
+      'get',
+      '/housekeeping/tasks?status=AWAITING_INSPECTION',
+      staff.HOUSEKEEPING.session.accessToken,
+    );
+    if (awaiting.items[0]) {
+      const taskId = awaiting.items[0].id;
+      await http.ok(
+        'post',
+        `/housekeeping/tasks/${taskId}/inspect`,
+        staff.MANAGER.session.accessToken,
+        { passed: false, notes: 'Bổ sung vật tư phòng và vệ sinh lại khu vực sàn.' },
+      );
+      const active = await http.ok<Entity & { workToken: string }>(
+        'post',
+        `/housekeeping/tasks/${taskId}/start`,
+        staff.HOUSEKEEPING.session.accessToken,
+        {},
+      );
+      await http.ok(
+        'post',
+        `/housekeeping/tasks/${taskId}/complete`,
+        staff.HOUSEKEEPING.session.accessToken,
+        {
+          workToken: active.workToken,
+          materials: [
+            { itemId: items[1], quantity: '2' },
+            { itemId: items[2], quantity: '1' },
+            { itemId: items[3], quantity: '75.50' },
+          ],
+          notes: 'Đã bổ sung đồ dùng phòng theo thực tế và vệ sinh lại sàn.',
+        },
+      );
+    }
     hotels.push({
       id: String(hotelId),
       code: config.code,
@@ -653,6 +754,7 @@ export async function seedLocalDataset(
     });
   }
   await prisma.platformAdmin.updateMany({ data: { createdAt: importedAt } });
+  await backfillLocalSupplies(prisma, env, true);
   return {
     app,
     http,

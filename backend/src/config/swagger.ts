@@ -1,4 +1,5 @@
 import { subscriptionPaths, subscriptionSchemas } from './subscriptions.openapi.js';
+import { supplyPaths, supplySchemas } from './supply-workflow.openapi.js';
 import { roomPaths, roomSchemas } from './rooms.openapi.js';
 import { guestPaths, guestSchemas } from './guests.openapi.js';
 import { reservationPaths, reservationSchemas } from './reservations.openapi.js';
@@ -140,6 +141,7 @@ export const openApiDocument = {
       ...reportSchemas,
       ...employeeSchemas,
       ...inventorySchemas,
+      ...supplySchemas,
       ...platformSchemas,
       ...hotelSchemas,
       ...subscriptionSchemas,
@@ -208,6 +210,7 @@ export const openApiDocument = {
     ...guestPaths,
     ...employeePaths,
     ...inventoryPaths,
+    ...supplyPaths,
     ...platformPaths,
     ...hotelPaths,
     ...subscriptionPaths,

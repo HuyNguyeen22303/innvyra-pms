@@ -1,4 +1,5 @@
 import { apiClient } from './axiosClient.ts';
+import { formatInventoryQuantity } from '../utils/inventoryQuantity.ts';
 import type { ApiResponse, PaginatedResult } from '../types/api.types.ts';
 import type {
   InventoryCategoryView,
@@ -44,6 +45,16 @@ export const getInventoryErrorMessage = (error: any, fallbackMessage: string): s
   const message = error?.response?.data?.error?.message || error?.response?.data?.message;
 
   switch (code) {
+    case 'PREPARATION_EXCEEDS_CAPACITY': return 'Số người lớn hoặc trẻ em cần chuẩn bị vượt sức chứa của hạng phòng.';
+    case 'ITEM_UNIT_IN_USE': return 'Vật tư đã có nhập/xuất nên không thể đổi đơn vị tính. Hãy tạo mã vật tư riêng cho đơn vị mới.';
+    case 'MATERIAL_NOT_CONSUMABLE': return 'Chỉ chọn vật tư tiêu hao đang hoạt động. Kiểm tra lại phân loại hoặc định mức.';
+    case 'HOUSEKEEPING_ATTEMPT_CHANGED': return 'Lượt dọn đã thay đổi. Vui lòng tải lại nhiệm vụ trước khi gửi.';
+    case 'IDEMPOTENCY_CONFLICT': return 'Thao tác này đã được ghi nhận với dữ liệu khác. Tải lại danh sách để kiểm tra trước khi thử lại.';
+    case 'SUPPLIER_PAYMENT_EXCEEDS_BALANCE': return 'Số tiền trả vượt quá số còn phải trả của phiếu nhập.';
+    case 'RECEIPT_UNRECONCILED': return 'Cần đối soát lịch sử thanh toán của phiếu nhập trước.';
+    case 'RECEIPT_ALREADY_RECONCILED': return 'Phiếu đã được đối soát. Vui lòng tải lại thông tin thanh toán.';
+    case 'PAYMENT_DATE_IN_FUTURE': return 'Ngày trả tiền không được ở tương lai.';
+    case 'DUPLICATE_MATERIAL': return 'Mỗi vật tư chỉ được chọn một lần trong định mức.';
     case 'CATEGORY_CODE_EXISTS':
       return 'Mã danh mục đã tồn tại trong khách sạn.';
     case 'CATEGORY_NOT_FOUND':
@@ -63,6 +74,10 @@ export const getInventoryErrorMessage = (error: any, fallbackMessage: string): s
     case 'ITEM_INACTIVE':
       return 'Vật tư đang bị ngừng hoạt động, không thể nhập/xuất/kiểm kê.';
     case 'INSUFFICIENT_STOCK':
+      if (Array.isArray(error?.response?.data?.error?.details)) {
+        const detail = (path:string) => error.response.data.error.details.find((row:{path:string;message:string})=>row.path===path)?.message;
+        if (detail('itemName')) return `Không đủ ${detail('itemName')}: còn ${formatInventoryQuantity(detail('available'))}, cần ${formatInventoryQuantity(detail('requested'))} ${detail('unit')??''}.`;
+      }
       return message || 'Tồn kho khả dụng không đủ để thực hiện xuất kho.';
     case 'RECEIPT_NUMBER_EXISTS':
       return 'Mã số phiếu nhập kho đã tồn tại.';

@@ -1,7 +1,10 @@
+import { SupplierPaymentFields } from './SupplierSettlementPanel.tsx';
+import { supplierPaymentFromForm } from '../../../utils/supplierPayments.ts';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
+  Checkbox,
   Button,
   Space,
   Tag,
@@ -71,6 +74,8 @@ export const InventoryReceiptsTab: React.FC = () => {
   // Create Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm] = Form.useForm();
+  const payNow = Form.useWatch('payNow', createForm);
+  const [receiptRequestKey, setReceiptRequestKey] = useState(() => crypto.randomUUID());
   const [receiptLines, setReceiptLines] = useState<FormLineItem[]>([
     { key: 'line-1', itemId: '', quantity: 1, unitPrice: 0, notes: '' },
   ]);
@@ -118,6 +123,10 @@ export const InventoryReceiptsTab: React.FC = () => {
     mutationFn: (dto: CreateReceiptDto) => inventoryApi.createReceipt(dto),
     onSuccess: () => {
       appMessage.success('Đã lập phiếu nhập kho và cập nhật tồn kho thành công!');
+      queryClient.invalidateQueries({
+        predicate: query => typeof query.queryKey[0] === 'string'
+          && /report|dashboard/.test(query.queryKey[0]),
+      });
       setIsCreateOpen(false);
       createForm.resetFields();
       setReceiptLines([{ key: 'line-1', itemId: '', quantity: 1, unitPrice: 0, notes: '' }]);
@@ -236,7 +245,10 @@ export const InventoryReceiptsTab: React.FC = () => {
       );
 
       const dto: CreateReceiptDto = {
-        receiptNumber: values.receiptNumber?.trim() || undefined,
+        receiptNumber: values.receiptNumber?.trim() || `NHAP-${receiptRequestKey}`,
+        ...(values.payNow
+          ? { initialPayment: supplierPaymentFromForm(values, receiptRequestKey) }
+          : {}),
         supplierId: values.supplierId || null,
         receiptDate: values.receiptDate ? values.receiptDate.format('YYYY-MM-DD') : undefined,
         notes: values.notes?.trim() || null,
@@ -391,6 +403,10 @@ export const InventoryReceiptsTab: React.FC = () => {
                 setReceiptLines([
                   { key: 'line-1', itemId: '', quantity: 1, unitPrice: 0, notes: '' },
                 ]);
+                setReceiptRequestKey(crypto.randomUUID());
+                createForm.setFieldsValue({
+                  supplierMethod: 'CASH', supplierPaidAt: dayjs(), payNow: false,
+                });
                 setIsCreateOpen(true);
               }}
               style={{ backgroundColor: '#1b4d3e', borderColor: '#1b4d3e' }}
@@ -454,7 +470,7 @@ export const InventoryReceiptsTab: React.FC = () => {
           form={createForm}
           layout="vertical"
           style={{ marginTop: 12 }}
-          initialValues={{ receiptDate: dayjs() }}
+          initialValues={{ receiptDate: dayjs(), supplierMethod: 'CASH', supplierPaidAt: dayjs() }}
         >
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -653,6 +669,10 @@ export const InventoryReceiptsTab: React.FC = () => {
               </Text>
             </div>
           </div>
+          <Form.Item name="payNow" valuePropName="checked">
+            <Checkbox>Thanh toán ngay cho nhà cung cấp</Checkbox>
+          </Form.Item>
+          {payNow && <SupplierPaymentFields maxAmount={estimatedTotal} />}
         </Form>
       </Modal>
     </div>

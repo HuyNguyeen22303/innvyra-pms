@@ -1,3 +1,4 @@
+import { SupplyCashSummary } from './SupplyCashSummary.tsx';
 import React, { useMemo } from 'react';
 import {
   Row,
@@ -240,6 +241,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = React.memo(({
         </Col>
       </Row>
 
+      <SupplyCashSummary paid={summary?.netSupplierPaid} net={summary?.netCashAfterSupplies} />
       {/* Payment Charts */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} lg={15}>

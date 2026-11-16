@@ -1,10 +1,10 @@
 # Database local đa khách sạn mới
 
-Ngày tạo: 12/11/2026.
+Ngày tạo: 12/11/2026. Cập nhật tên database và cấu hình vật tư: 16/11/2026.
 
 ## Database sử dụng
 
-- Database mới: **`innvyra_pms_multi_hotel`**, MySQL local hiện có.
+- Database ứng dụng: **`innvyra`**, MySQL local hiện có. Tên cũ `innvyra_pms_multi_hotel` đã được đổi bằng cách chuyển nguyên các bảng, giữ ID và dữ liệu.
 - Database cũ **`innvyra_pms` được giữ nguyên**, không dùng seed cũ để reset/chỉnh sửa.
 - Database mới được giữ lại khi dừng backend, frontend hoặc máy tính; không phải database demo tạm của Phase 6.
 - Sau khi kiểm chứng, chỉ `DATABASE_URL` trong `backend/.env` được chuyển sang database mới. Giữ nguyên thông tin kết nối, JWT và các khóa mã hóa giấy tờ khách.
@@ -71,7 +71,7 @@ Tại thư mục `backend`:
 npm run db:check:multi
 ```
 
-Lệnh chỉ đọc database đa khách sạn đang cấu hình trong `.env`, không reset hoặc seed lại. Kết quả chi tiết được lưu ở `backend/.tmp/local-seed/<tên-db>.verification.json` (Git ignore). Có thể chỉ định database khác bằng `-- --database innvyra_pms_multi_hotel_2`.
+Lệnh chỉ đọc database đa khách sạn đang cấu hình trong `.env`, không reset hoặc seed lại. Kết quả chi tiết được lưu ở `backend/.tmp/local-seed/<tên-db>.verification.json` (Git ignore). Có thể chỉ định database khác bằng `-- --database innvyra_sandbox`.
 
 Nội dung kiểm tra:
 
@@ -91,7 +91,7 @@ Nếu sau này chủ động chỉnh dữ liệu bằng SQL, chạy lại lệnh
 Seed mới từ chối tên database đã tồn tại và từ chối chạy lại trên dữ liệu đã có. Không có chế độ reset/truncate và không tự xóa database khi lỗi.
 
 ```powershell
-npm run db:seed:multi -- --database innvyra_pms_multi_hotel_2 --activate
+npm run db:seed:multi -- --database innvyra_sandbox --activate
 ```
 
 Lệnh tạo database tên mới, áp dụng migration, seed và kiểm chứng rồi mới chuyển `.env`. Bỏ `--activate` nếu chỉ muốn tạo mà chưa chuyển ứng dụng. Cần tài khoản MySQL local có quyền tạo database.
@@ -100,11 +100,36 @@ Lệnh tạo database tên mới, áp dụng migration, seed và kiểm chứng 
 
 Manifest tại `backend/.tmp/local-seed/<tên-db>.manifest.json` ghi ngày tạo, tài khoản mẫu, khách sạn và database trước đó; không lưu token phiên hoặc thông tin kết nối MySQL.
 
-## Quay lại database cũ
+## Đổi kết nối database
 
-Trong `backend/.env`, đổi **phần tên database cuối `DATABASE_URL`** từ `innvyra_pms_multi_hotel` về `innvyra_pms`, giữ nguyên các phần khác. Khởi động lại backend nếu không dùng nodemon. Database mới vẫn còn và có thể chuyển lại bất cứ lúc nào.
+Database ứng dụng hiện tại là `innvyra`. Chỉ sửa phần tên cuối `DATABASE_URL` khi chủ động chuyển sang một database khác đã được kiểm chứng. Khởi động lại backend nếu không dùng nodemon. Tên `innvyra_pms_multi_hotel` đã được chuyển hết bảng sang `innvyra` và schema nguồn rỗng được xóa; không đổi cấu hình về tên này. Bản sao lưu SQL trước khi chuyển nằm ở `backend/.tmp/maintenance/`, chỉ lưu local.
 
 Không thay/xóa khóa `GUEST_ENCRYPTION_KEY` hoặc `GUEST_HASH_KEY` khi đổi database, vì chúng cần để đọc giấy tờ đã mã hóa. Seed giữ nguyên hai khóa này.
+
+## Bổ sung cấu hình kho trên database đang dùng
+
+Ngày 16/11/2026 đã chuyển nguyên 48 bảng sang tên `innvyra`, đối chiếu từng bảng bằng hash dữ liệu trước/sau khi chuyển. Đã bổ sung phân loại cho 18 vật tư (3 tái sử dụng, 15 tiêu hao), chỉnh nhóm dầu gội/nước lau sàn và thêm 24 dòng định mức cho 12 hạng phòng của ba khách sạn.
+
+| Hạng phòng | Dầu gội mini / lượt | Bàn chải / lượt |
+| --- | ---: | ---: |
+| Standard Double | 2 | 2 |
+| Superior Twin | 2 | 2 |
+| Deluxe Balcony | 3 | 3 |
+| Family Suite | 4 | 4 |
+
+Đây là lượng gợi ý; nhân viên sửa theo lượng thực dùng. Các chai hóa chất cũ giữ nguyên đơn vị và tồn, không tự quy đổi dung tích. Seed mới dùng hóa chất theo ml và gợi ý 50 ml nước lau sàn, Suite 100 ml. Chưa suy diễn việc đã trả tiền hoặc lượng đã dùng của các chứng từ cũ.
+
+Máy khác đã có bộ dữ liệu Lotus/Ocean/Pine chạy từ `backend` sau khi pull code:
+
+```powershell
+npm ci
+npm run prisma:generate
+npm run db:migrate
+npm run db:backfill:supplies -- --apply
+npm run db:check:multi
+```
+
+Backfill dùng database local đang cấu hình, không đổi tên DB của máy khác, không tạo lại đơn/phòng/chứng từ. Chạy lại không ghi đè phân loại và định mức đã có. Máy mới chưa có dữ liệu dùng `npm run db:seed:multi -- --activate` để tạo `innvyra` từ đầu; không chạy seed toàn bộ trên dữ liệu đang sử dụng.
 
 ## Kết quả kiểm chứng ngày 12/11/2026
 

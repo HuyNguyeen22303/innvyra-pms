@@ -9,6 +9,8 @@ import type {
 } from './report.types.js';
 
 export const financialFields = [
+  'supplierPayments',
+  'supplierReversals',
   'roomCharges',
   'serviceCharges',
   'adjustmentDebits',
@@ -22,6 +24,8 @@ export const financialFields = [
   'bankTransferPayments',
 ] as const;
 export const paymentFields = [
+  'supplierPayments',
+  'supplierReversals',
   'successfulPayments',
   'successfulDeposits',
   'successfulRefunds',
@@ -87,9 +91,15 @@ export function aggregateSeries(
   return { summary, series };
 }
 export function financialDerived(row: MetricRecord, charges: boolean) {
+  row.netSupplierPaid = new Money(String(row.supplierPayments ?? '0'))
+    .sub(String(row.supplierReversals ?? '0'))
+    .toFixed(2);
   row.netCashCollected = new Money(String(row.successfulPayments))
     .add(String(row.successfulDeposits))
     .sub(String(row.successfulRefunds))
+    .toFixed(2);
+  row.netCashAfterSupplies = new Money(String(row.netCashCollected))
+    .sub(String(row.netSupplierPaid))
     .toFixed(2);
   if (charges) {
     row.totalDebits = new Money(String(row.roomCharges))

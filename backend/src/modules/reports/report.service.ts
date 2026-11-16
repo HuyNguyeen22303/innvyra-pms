@@ -134,6 +134,8 @@ export class ReportService {
       },
       filters: { paymentMethod: query.paymentMethod ?? null },
       basis: {
+        supplierCash: 'SUPPLIER_PAYMENT_PAID_AT_AND_REVERSAL_REVERSED_AT',
+        netCashAfterSupplies: 'CUSTOMER_NET_CASH_MINUS_NET_SUPPLIER_DISBURSEMENTS',
         charges: 'FOLIO_POSTED_AT',
         cash: 'CONFIRMED_PAYMENT_PROCESSED_AT',
         balance: 'ALL_LEDGER_ACTIVITY_BEFORE_CUTOFF',
@@ -386,14 +388,13 @@ export class ReportService {
       const until = ctx.days.at(-1)!.until;
       const [seriesRows, byCategory, bySupplier, topItems] = await Promise.all([
         repo.procurementSeries(scope.hotelId, ctx.days, query.supplierId, query.categoryId),
-        repo.procurementByCategory(scope.hotelId, from, until, query.supplierId),
-        repo.procurementBySupplier(scope.hotelId, from, until, query.categoryId),
-        repo.procurementTopItems(scope.hotelId, from, until, query.supplierId),
+        repo.procurementByCategory(scope.hotelId, from, until, query.supplierId, query.categoryId),
+        repo.procurementBySupplier(scope.hotelId, from, until, query.categoryId, query.supplierId),
+        repo.procurementTopItems(scope.hotelId, from, until, query.supplierId, query.categoryId),
       ]);
 
       // Aggregate series by groupBy
-      const key = (date: string) =>
-        query.groupBy === 'month' ? date.slice(0, 7) + '-01' : date;
+      const key = (date: string) => (query.groupBy === 'month' ? date.slice(0, 7) + '-01' : date);
       const seriesBuckets = new Map<string, ProcurementSeriesItem>();
       for (const day of ctx.days) {
         const dk = key(day.date);
@@ -419,12 +420,12 @@ export class ReportService {
         totalReceipts += row.receiptCount;
       }
       for (const item of byCategory) {
-        totalItems += count(item.totalQuantity);
+        totalItems += count(item.distinctItems);
       }
 
       // Top supplier
       const bySupplierMapped: ProcurementSupplierItem[] = bySupplier.map((s) => ({
-        supplierId: String(s.supplierId),
+        supplierId: s.supplierId == null ? null : String(s.supplierId),
         supplierName: s.supplierName,
         receiptCount: count(s.receiptCount),
         totalAmount: money(String(s.totalAmount)),
@@ -457,15 +458,13 @@ export class ReportService {
       }
 
       const avg =
-        totalReceipts > 0
-          ? new Money(totalExpense).div(totalReceipts).toFixed(2)
-          : '0.00';
+        totalReceipts > 0 ? new Money(totalExpense).div(totalReceipts).toFixed(2) : '0.00';
 
       const summary: ProcurementSummary = {
         totalExpense: totalStr,
         receiptCount: totalReceipts,
         averageReceiptValue: avg,
-        totalItemsPurchased: totalItems,
+        distinctItemCount: totalItems,
         topSupplier,
       };
 
@@ -487,7 +486,7 @@ export class ReportService {
           name: item.name,
           categoryName: item.categoryName,
           unit: item.unit,
-          totalQuantity: count(item.totalQuantity),
+          totalQuantity: money(String(item.totalQuantity)),
           totalAmount: money(String(item.totalAmount)),
         })),
       } satisfies ProcurementReportDto;

@@ -1,3 +1,4 @@
+import { materialTypeLabels } from '../../../api/supplies.api.ts';
 import React from 'react';
 import { Modal, Descriptions, Tag, Typography, Button, Space } from 'antd';
 import {
@@ -66,6 +67,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         column={2}
         style={{ marginTop: 16 }}
         items={[
+          {key:'materialType',label:'Loại sử dụng',children:materialTypeLabels[item.materialType]||'Chưa phân loại'},
           {
             key: 'code',
             label: 'Mã vật tư',

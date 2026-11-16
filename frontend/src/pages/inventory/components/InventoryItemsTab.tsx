@@ -1,3 +1,4 @@
+import { materialTypeLabels } from '../../../api/supplies.api.ts';
 import React, { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
@@ -187,6 +188,7 @@ export const InventoryItemsTab: React.FC = () => {
       name: item.name,
       categoryId: item.categoryId,
       unit: item.unit,
+      materialType: item.materialType,
       minStockLevel: parseFloat(item.minStockLevel) || 0,
       description: item.description,
     });
@@ -203,6 +205,7 @@ export const InventoryItemsTab: React.FC = () => {
         name: values.name.trim(),
         categoryId: values.categoryId,
         unit: values.unit.trim(),
+        materialType: values.materialType,
         minStockLevel: Number(values.minStockLevel ?? 0).toFixed(2),
         description: values.description?.trim() || null,
       });
@@ -222,6 +225,7 @@ export const InventoryItemsTab: React.FC = () => {
           name: values.name.trim(),
           categoryId: values.categoryId,
           unit: values.unit.trim(),
+        materialType: values.materialType,
           minStockLevel: Number(values.minStockLevel ?? 0).toFixed(2),
           description:
             values.description !== undefined
@@ -278,6 +282,9 @@ export const InventoryItemsTab: React.FC = () => {
           {catName || "Chưa phân loại"}
         </Tag>
       ),
+    },
+    {
+      title: "Loại sử dụng", key:"materialType", dataIndex:"materialType", width:140, render:(value: keyof typeof materialTypeLabels)=><Tag color={value==='CONSUMABLE'?'green':value==='REUSABLE'?'blue':'warning'}>{materialTypeLabels[value]||'Chưa phân loại'}</Tag>,
     },
     {
       title: "Đơn vị",
@@ -581,6 +588,8 @@ export const InventoryItemsTab: React.FC = () => {
             </Form.Item>
           </Space>
 
+          <Form.Item name="materialType" label="Loại sử dụng" rules={[{required:true,message:'Chọn loại sử dụng vật tư'}]} extra="Chỉ vật tư tiêu hao được sử dụng trong định mức dọn phòng."><Select options={Object.entries(materialTypeLabels).map(([value,label])=>({value,label}))}/></Form.Item>
+
           <Form.Item
             name="name"
             label="Tên vật tư"
@@ -699,6 +708,8 @@ export const InventoryItemsTab: React.FC = () => {
               <Input placeholder="Đơn vị tính..." />
             </Form.Item>
           </Space>
+
+          <Form.Item name="materialType" label="Loại sử dụng" rules={[{required:true,message:'Chọn loại sử dụng vật tư'}]} extra="Chỉ vật tư tiêu hao được sử dụng trong định mức dọn phòng."><Select options={Object.entries(materialTypeLabels).map(([value,label])=>({value,label}))}/></Form.Item>
 
           <Form.Item
             name="name"

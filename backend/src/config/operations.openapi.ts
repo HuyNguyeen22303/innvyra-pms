@@ -79,6 +79,7 @@ const hkFields = {
   status: hkStatus,
   priority: hkPriority,
   assignedTo: nullable(id),
+  workToken: nullable({ type: 'string', format: 'uuid' }),
   createdBy: id,
   notes: nullable(text),
   startedAt: nullable(time),
@@ -376,6 +377,14 @@ add(
   'Submit cleaning for inspection',
   cleaners,
   'HousekeepingTask',
+  'CompleteCleaningMaterials',
+);
+add(
+  'get',
+  '/housekeeping/tasks/{id}/materials',
+  'Read material suggestions and immutable consumption history',
+  cleaners,
+  'TaskMaterials',
 );
 add(
   'post',

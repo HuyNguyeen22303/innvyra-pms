@@ -1042,3 +1042,20 @@ export const inventoryPaths = {
     },
   },
 };
+
+Object.assign(inventorySchemas.InventoryItem.properties, { materialType: ref('MaterialType') });
+Object.assign(inventorySchemas.CreateInventoryItem.properties, {
+  materialType: ref('MaterialType'),
+});
+Object.assign(inventorySchemas.UpdateInventoryItem.properties, {
+  materialType: ref('MaterialType'),
+});
+Object.assign(inventorySchemas.StockReceipt.properties, {
+  paymentTracking: { type: 'string', enum: ['TRACKED', 'UNRECONCILED'] },
+});
+Object.assign(inventorySchemas.CreateStockReceipt.properties, {
+  initialPayment: ref('SupplierPaymentInput'),
+});
+Object.assign(inventorySchemas.StockIssue.properties, {
+  housekeepingCompletionId: { type: 'string', nullable: true },
+});

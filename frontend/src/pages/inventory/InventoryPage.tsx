@@ -1,3 +1,4 @@
+import { HousekeepingPresetsTab } from './components/HousekeepingPresetsTab.tsx';
 import React, { useMemo, useCallback } from 'react';
 import { Tabs, Typography, Space } from 'antd';
 import {
@@ -78,6 +79,14 @@ export const InventoryPage: React.FC = () => {
       children: <InventoryCategoriesTab />,
     });
 
+    if (['ADMIN', 'MANAGER'].includes(userRole)) {
+      tabs.push({
+        key: 'housekeeping-presets',
+        label: 'Định mức dọn phòng',
+        children: <HousekeepingPresetsTab />,
+      });
+    }
+
     // Suppliers Tab (ADMIN, MANAGER, ACCOUNTANT)
     if (isManagementOrAccountant) {
       tabs.push({
@@ -133,7 +142,7 @@ export const InventoryPage: React.FC = () => {
     }
 
     return tabs;
-  }, [isManagementOrAccountant, handleTabChange]);
+  }, [isManagementOrAccountant, handleTabChange, userRole]);
 
   // Valid tab keys
   const validKeys = useMemo(

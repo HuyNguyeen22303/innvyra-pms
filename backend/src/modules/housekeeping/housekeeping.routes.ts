@@ -18,15 +18,17 @@ import {
   taskQuery,
 } from './housekeeping.schema.js';
 import type { HousekeepingService } from './housekeeping.service.js';
+import { completeMaterialsBody } from '../inventory/supply-workflow.schema.js';
 export function housekeepingRoutes(service: HousekeepingService, auth: AuthService, env: Env) {
   const { router, add } = operationsRouter(auth, env),
     c = housekeepingController(service);
   add('get', '/tasks', housekeepingReaders, c.list, { query: taskQuery });
   add('get', '/tasks/:id', housekeepingReaders, c.detail);
+  add('get', '/tasks/:id/materials', cleaners, c.materials);
   add('post', '/tasks', requesters, c.create, { body: createTaskBody });
   add('patch', '/tasks/:id/assign', managers, c.assign, { body: assignBody });
   add('post', '/tasks/:id/start', cleaners, c.start, { body: taskNotesBody });
-  add('post', '/tasks/:id/complete', cleaners, c.complete, { body: taskNotesBody });
+  add('post', '/tasks/:id/complete', cleaners, c.complete, { body: completeMaterialsBody });
   add('post', '/tasks/:id/inspect', managers, c.inspect, { body: inspectBody });
   add('post', '/tasks/:id/cancel', managers, c.cancel, { body: cancelTaskBody });
   add('get', '/dirty-rooms', requesters, c.dirtyRooms, { query: dirtyRoomQuery });

@@ -44,12 +44,28 @@ describe.skipIf(!testUrl)(
       request(app)
         .get('/api/v1' + path)
         .auth(tokens[role], { type: 'bearer' });
-    const post = (path: string, body: object = {}, target = app, role: RoleCode = 'ADMIN') =>
-      request(target)
+    const post = async (
+      path: string,
+      body: object = {},
+      target = app,
+      role: RoleCode = 'ADMIN',
+    ) => {
+      if (/\/housekeeping\/tasks\/[^/]+\/complete$/.test(path) && !('workToken' in body)) {
+        const id = path.split('/')[3]!;
+        const current = await db.housekeepingTask.findFirst({ where: { id: BigInt(id) } });
+        body = {
+          ...body,
+          workToken: current?.workToken ?? randomUUID(),
+          materials: [],
+          noMaterialsReason: 'Không sử dụng vật tư tiêu hao trong ca kiểm thử này',
+        };
+      }
+      return request(target)
         .post('/api/v1' + path)
         .auth(tokens[role], { type: 'bearer' })
         .set('X-CSRF-Protection', '1')
         .send(body);
+    };
     const patch = (path: string, body: object, role: RoleCode = 'ADMIN') =>
       request(app)
         .patch('/api/v1' + path)
@@ -259,6 +275,7 @@ describe.skipIf(!testUrl)(
       if (!db || !hotels.length) return;
       const where = { hotelId: { in: hotels } };
       await db.operationsAuditLog.deleteMany({ where });
+      await db.housekeepingMaterialCompletion.deleteMany({ where });
       await db.housekeepingTask.deleteMany({ where });
       await db.maintenanceBlock.deleteMany({ where });
       await db.maintenanceTicket.deleteMany({ where });
@@ -703,7 +720,15 @@ describe.skipIf(!testUrl)(
           post(taskPath(id, action), body, app, role),
           post(taskPath(id, action), body, otherApp, role),
         ]);
-        expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+        expect(responses.map((r) => r.status).sort()).toEqual(
+          action === 'complete' ? [200, 200] : [200, 409],
+        );
+        if (action === 'complete')
+          expect(
+            await db.housekeepingMaterialCompletion.count({
+              where: { hotelId: scope.hotelId, taskId: BigInt(id) },
+            }),
+          ).toBe(1);
         expect((await state()).housekeepingStatus).toBe(
           action === 'start' ? 'CLEANING' : action === 'complete' ? 'INSPECTION' : 'READY',
         );
@@ -964,7 +989,7 @@ describe.skipIf(!testUrl)(
       expect((await get('/maintenance/blocks/' + id)).body.data.status).toBe('ACTIVE');
       expect((await state()).housekeepingStatus).toBe('DIRTY');
     });
-    it('serves Swagger UI and all 23 documented operations with response schemas, auth and errors', async () => {
+    it('serves Swagger UI and all 24 documented operations with response schemas, auth and errors', async () => {
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;
       const paths = Object.entries(spec.paths).filter(
@@ -975,7 +1000,7 @@ describe.skipIf(!testUrl)(
           path as Record<string, { security: object[]; responses: object; description: string }>,
         ),
       );
-      expect(operations).toHaveLength(23);
+      expect(operations).toHaveLength(24);
       expect(spec.paths['/maintenance/tickets/stats']).toHaveProperty('get');
       for (const operation of operations) {
         expect(operation.security).toEqual([{ bearerAuth: [] }]);

@@ -59,6 +59,7 @@ export type HousekeepingTaskStatus =
 export type HousekeepingTaskType = 'TURNOVER_CLEANING';
 
 export interface HousekeepingTaskItem {
+  workToken: string|null;
   id: string;
   hotelId: string;
   roomId: string;

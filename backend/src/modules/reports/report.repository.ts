@@ -76,6 +76,15 @@ export class PrismaReportRepository {
           ELSE 'refundCount' END, n, '' FROM receipts
       UNION ALL SELECT date, CASE payment_method WHEN 'CASH' THEN 'cashPayments' ELSE 'bankTransferPayments' END,
         amount, '' FROM receipts WHERE payment_type <> 'REFUND'
+      UNION ALL SELECT d.date, 'supplierPayments', SUM(p.amount), ''
+        FROM days d JOIN supplier_payments p ON p.hotel_id=${hotelId} AND p.paid_at>=d.starts AND p.paid_at<d.ends
+        ${method ? Prisma.sql`AND p.payment_method=${method}` : Prisma.empty}
+        GROUP BY d.date
+      UNION ALL SELECT d.date, 'supplierReversals', SUM(p.amount), ''
+        FROM days d JOIN supplier_payment_reversals r ON r.hotel_id=${hotelId} AND r.reversed_at>=d.starts AND r.reversed_at<d.ends
+        JOIN supplier_payments p ON p.hotel_id=r.hotel_id AND p.id=r.payment_id
+        ${method ? Prisma.sql`WHERE p.payment_method=${method}` : Prisma.empty}
+        GROUP BY d.date
       ${chargeQuery}`);
   }
   private balanceTable(hotelId: bigint, cutoff: Date) {
@@ -224,89 +233,83 @@ export class PrismaReportRepository {
       UNION ALL SELECT 'activeMaintenanceBlocks', COUNT(*) FROM maintenance_blocks
         WHERE hotel_id = ${hotelId} AND status IN ('ACTIVE', 'SCHEDULED') AND start_date <= CAST(${today} AS DATE)`);
   }
+
+  private purchaseRows(
+    hotelId: bigint,
+    from: Date,
+    until: Date,
+    supplierId?: string,
+    categoryId?: string,
+  ) {
+    return Prisma.sql`SELECT sr.id receipt_id,sr.receipt_date purchased_at,sr.supplier_id,
+      COALESCE(s.name,'Mua trực tiếp / Chưa có NCC') supplier_name,
+      ii.id item_id,ii.code sku,ii.name,ii.unit,c.id category_id,c.name category_name,sri.quantity,sri.line_total
+      FROM stock_receipts sr JOIN stock_receipt_items sri ON sri.hotel_id=sr.hotel_id AND sri.receipt_id=sr.id
+      JOIN inventory_items ii ON ii.hotel_id=sri.hotel_id AND ii.id=sri.item_id
+      JOIN inventory_categories c ON c.hotel_id=ii.hotel_id AND c.id=ii.category_id
+      LEFT JOIN suppliers s ON s.hotel_id=sr.hotel_id AND s.id=sr.supplier_id
+      WHERE sr.hotel_id=${hotelId} AND sr.receipt_date>=${from} AND sr.receipt_date<${until}
+      ${supplierId ? Prisma.sql`AND sr.supplier_id=${BigInt(supplierId)}` : Prisma.empty}
+      ${categoryId ? Prisma.sql`AND ii.category_id=${BigInt(categoryId)}` : Prisma.empty}`;
+  }
   async procurementSeries(
     hotelId: bigint,
     days: ReportDay[],
     supplierId?: string,
     categoryId?: string,
   ) {
-    return this.db.$queryRaw<{ date: string; totalExpense: Prisma.Decimal; receiptCount: DbNumber }[]>(
-      Prisma.sql`
-      WITH days AS (${dayTable(days)})
-      SELECT /*+ MAX_EXECUTION_TIME(10000) */ d.date,
-        COALESCE(SUM(sr.total_amount), 0) AS totalExpense,
-        COUNT(sr.id) AS receiptCount
-      FROM days d
-      LEFT JOIN stock_receipts sr ON sr.hotel_id = ${hotelId}
-        AND sr.receipt_date >= d.starts AND sr.receipt_date < d.ends
-        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
-        ${
-          categoryId
-            ? Prisma.sql`AND EXISTS(SELECT 1 FROM stock_receipt_items sri
-                JOIN inventory_items ii ON ii.id = sri.item_id
-                WHERE sri.receipt_id = sr.id AND ii.category_id = ${BigInt(categoryId)})`
-            : Prisma.empty
-        }
-      GROUP BY d.date
-      ORDER BY d.date ASC`,
-    );
+    return this.db.$queryRaw<
+      { date: string; totalExpense: Prisma.Decimal; receiptCount: DbNumber }[]
+    >(Prisma.sql`
+      WITH days AS (${dayTable(days)}), purchases AS (${this.purchaseRows(hotelId, days[0]!.from, days.at(-1)!.until, supplierId, categoryId)})
+      SELECT d.date,COALESCE(SUM(p.line_total),0) totalExpense,COUNT(DISTINCT p.receipt_id) receiptCount
+      FROM days d LEFT JOIN purchases p ON p.purchased_at>=d.starts AND p.purchased_at<d.ends GROUP BY d.date ORDER BY d.date`);
   }
   async procurementByCategory(
     hotelId: bigint,
     from: Date,
     until: Date,
     supplierId?: string,
+    categoryId?: string,
   ) {
     return this.db.$queryRaw<
-      { categoryId: DbNumber; categoryName: string; totalAmount: Prisma.Decimal; totalQuantity: Prisma.Decimal }[]
+      {
+        categoryId: DbNumber;
+        categoryName: string;
+        totalAmount: Prisma.Decimal;
+        distinctItems: DbNumber;
+      }[]
     >(Prisma.sql`
-      SELECT /*+ MAX_EXECUTION_TIME(10000) */ c.id AS categoryId,
-        c.name AS categoryName,
-        SUM(sri.line_total) AS totalAmount,
-        SUM(sri.quantity) AS totalQuantity
-      FROM stock_receipt_items sri
-      JOIN stock_receipts sr ON sr.id = sri.receipt_id
-      JOIN inventory_items ii ON ii.id = sri.item_id
-      JOIN inventory_categories c ON c.id = ii.category_id
-      WHERE sr.hotel_id = ${hotelId}
-        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
-        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
-      GROUP BY c.id, c.name
-      ORDER BY totalAmount DESC`);
+      WITH purchases AS (${this.purchaseRows(hotelId, from, until, supplierId, categoryId)})
+      SELECT category_id categoryId,category_name categoryName,SUM(line_total) totalAmount,COUNT(DISTINCT item_id) distinctItems
+      FROM purchases GROUP BY category_id,category_name ORDER BY totalAmount DESC`);
   }
   async procurementBySupplier(
     hotelId: bigint,
     from: Date,
     until: Date,
     categoryId?: string,
+    supplierId?: string,
   ) {
     return this.db.$queryRaw<
       {
-        supplierId: DbNumber;
+        supplierId: DbNumber | null;
         supplierName: string;
         receiptCount: DbNumber;
         totalAmount: Prisma.Decimal;
       }[]
     >(Prisma.sql`
-      SELECT /*+ MAX_EXECUTION_TIME(10000) */ s.id AS supplierId,
-        s.name AS supplierName,
-        COUNT(DISTINCT sr.id) AS receiptCount,
-        SUM(sr.total_amount) AS totalAmount
-      FROM stock_receipts sr
-      LEFT JOIN suppliers s ON s.id = sr.supplier_id AND s.hotel_id = ${hotelId}
-      WHERE sr.hotel_id = ${hotelId}
-        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
-        ${
-          categoryId
-            ? Prisma.sql`AND EXISTS(SELECT 1 FROM stock_receipt_items sri
-                JOIN inventory_items ii ON ii.id = sri.item_id
-                WHERE sri.receipt_id = sr.id AND ii.category_id = ${BigInt(categoryId)})`
-            : Prisma.empty
-        }
-      GROUP BY s.id, s.name
-      ORDER BY totalAmount DESC`);
+      WITH purchases AS (${this.purchaseRows(hotelId, from, until, supplierId, categoryId)})
+      SELECT supplier_id supplierId,supplier_name supplierName,COUNT(DISTINCT receipt_id) receiptCount,SUM(line_total) totalAmount
+      FROM purchases GROUP BY supplier_id,supplier_name ORDER BY totalAmount DESC`);
   }
-  async procurementTopItems(hotelId: bigint, from: Date, until: Date, supplierId?: string) {
+  async procurementTopItems(
+    hotelId: bigint,
+    from: Date,
+    until: Date,
+    supplierId?: string,
+    categoryId?: string,
+  ) {
     return this.db.$queryRaw<
       {
         itemId: DbNumber;
@@ -318,22 +321,8 @@ export class PrismaReportRepository {
         totalAmount: Prisma.Decimal;
       }[]
     >(Prisma.sql`
-      SELECT /*+ MAX_EXECUTION_TIME(10000) */ ii.id AS itemId,
-        ii.code AS sku,
-        ii.name,
-        c.name AS categoryName,
-        ii.unit,
-        SUM(sri.quantity) AS totalQuantity,
-        SUM(sri.line_total) AS totalAmount
-      FROM stock_receipt_items sri
-      JOIN stock_receipts sr ON sr.id = sri.receipt_id
-      JOIN inventory_items ii ON ii.id = sri.item_id
-      JOIN inventory_categories c ON c.id = ii.category_id
-      WHERE sr.hotel_id = ${hotelId}
-        AND sr.receipt_date >= ${from} AND sr.receipt_date < ${until}
-        ${supplierId ? Prisma.sql`AND sr.supplier_id = ${BigInt(supplierId)}` : Prisma.empty}
-      GROUP BY ii.id, ii.code, ii.name, c.name, ii.unit
-      ORDER BY totalAmount DESC
-      LIMIT 10`);
+      WITH purchases AS (${this.purchaseRows(hotelId, from, until, supplierId, categoryId)})
+      SELECT item_id itemId,sku,name,category_name categoryName,unit,SUM(quantity) totalQuantity,SUM(line_total) totalAmount
+      FROM purchases GROUP BY item_id,sku,name,category_name,unit ORDER BY totalAmount DESC,item_id LIMIT 10`);
   }
 }

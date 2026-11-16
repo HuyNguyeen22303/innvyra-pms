@@ -1,3 +1,7 @@
+import { CompleteCleaningModal as CompleteTaskModal } from './CompleteCleaningModal.tsx';
+import { CleaningMaterialHistory } from './CleaningMaterialHistory.tsx';
+import type { CompleteMaterialsDto } from '../../api/supplies.api.ts';
+import { getInventoryErrorMessage } from '../../api/inventory.api.ts';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -63,78 +67,6 @@ import type {
 } from "../../types/operations.types.ts";
 
 const { Title, Text, Paragraph } = Typography;
-
-interface CompleteTaskModalProps {
-  open: boolean;
-  task: HousekeepingTaskItem | null;
-  confirmLoading: boolean;
-  onCancel: () => void;
-  onConfirm: (notes?: string) => void;
-}
-
-const CompleteTaskModal: React.FC<CompleteTaskModalProps> = React.memo(
-  ({ open, task, confirmLoading, onCancel, onConfirm }) => {
-    const [notes, setNotes] = useState<string>("");
-    const [prevOpen, setPrevOpen] = useState(open);
-
-    if (open && !prevOpen) {
-      setPrevOpen(true);
-      setNotes("");
-    } else if (!open && prevOpen) {
-      setPrevOpen(false);
-    }
-
-    const handleOk = () => {
-      onConfirm(notes.trim() ? notes.trim() : undefined);
-    };
-
-    return (
-      <Modal
-        title={
-          <Space>
-            <CheckCircleOutlined style={{ color: "#722ed1" }} />
-            <span>
-              Hoàn thành dọn dẹp & Gửi kiểm tra — Phòng #{task?.room.roomNumber}
-            </span>
-          </Space>
-        }
-        open={open}
-        onCancel={onCancel}
-        onOk={handleOk}
-        okText="Gửi nghiệm thu"
-        cancelText="Hủy"
-        confirmLoading={confirmLoading}
-      >
-        <Space
-          orientation="vertical"
-          size={16}
-          style={{ width: "100%", marginTop: 8 }}
-        >
-          <Alert
-            type="info"
-            showIcon
-            title="Xác nhận hoàn tất vệ sinh"
-            description="Sau khi gửi, trạng thái phòng sẽ chuyển sang INSPECTION (Chờ kiểm tra). Quản lý hoặc Giám sát buồng phòng sẽ tiến hành nghiệm thu thực tế trước khi phòng chuyển thành READY."
-          />
-
-          <div style={{ paddingBottom: 16 }}>
-            <Text strong style={{ display: "block", marginBottom: 6 }}>
-              Ghi chú công việc đã làm (tùy chọn):
-            </Text>
-            <Input.TextArea
-              rows={3}
-              placeholder="VD: Đã hút bụi, khử khuẩn, thay mới toàn bộ chăn ga gối, kiểm tra minibar..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              maxLength={2000}
-              showCount
-            />
-          </div>
-        </Space>
-      </Modal>
-    );
-  },
-);
 
 interface InspectTaskModalProps {
   open: boolean;
@@ -591,24 +523,23 @@ export const HousekeepingPage: React.FC = () => {
   });
 
   const completeMutation = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
-      housekeepingApi.complete(id, notes),
-    onSuccess: () => {
+    mutationFn: ({ id, dto }: { id: string; dto: CompleteMaterialsDto }) =>
+      housekeepingApi.complete(id, dto),
+    onSuccess: (result) => {
       appMessage.success(
-        "Đã gửi yêu cầu nghiệm thu! Trạng thái phòng: INSPECTION.",
+        result.data.status === "AWAITING_INSPECTION"
+          ? "Đã ghi nhận vật tư và gửi phòng chờ nghiệm thu."
+          : "Lượt dọn đã được ghi nhận trước đó. Đã cập nhật trạng thái hiện tại.",
       );
       setIsCompleteModalOpen(false);
       setActionTask(null);
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["housekeeping-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       if (selectedTaskForDetail) refetchDetail();
     },
     onError: (err: any) => {
-      appMessage.error(
-        err.response?.data?.message ||
-          err.response?.data?.error?.message ||
-          "Không thể hoàn thành dọn phòng.",
-      );
+      appMessage.error(getInventoryErrorMessage(err, "Không thể hoàn thành dọn phòng."));
     },
   });
 
@@ -1618,11 +1549,11 @@ export const HousekeepingPage: React.FC = () => {
           setIsCompleteModalOpen(false);
           setActionTask(null);
         }}
-        onConfirm={(notes) => {
+        onConfirm={(dto) => {
           if (actionTask) {
             completeMutation.mutate({
               id: actionTask.id,
-              notes,
+              dto,
             });
           }
         }}
@@ -1687,6 +1618,9 @@ export const HousekeepingPage: React.FC = () => {
           setSelectedTaskForDetail(null);
         }}
       >
+        {isDetailDrawerOpen && selectedTaskForDetail && (
+          <CleaningMaterialHistory taskId={selectedTaskForDetail.id} />
+        )}
         {isDetailLoading ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <Spin size="large" />

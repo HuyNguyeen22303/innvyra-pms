@@ -1,3 +1,4 @@
+import { SupplyCashSummary } from '../reports/components/SupplyCashSummary.tsx';
 import React, { useState } from 'react';
 import {
   Row,
@@ -518,6 +519,11 @@ export const DashboardPage: React.FC = () => {
                 </Row>
               )}
 
+              {dashboardData?.finance && <SupplyCashSummary
+                paid={dashboardData.finance.netSupplierPaid}
+                net={dashboardData.finance.netCashAfterSupplies}
+                label={`ngày ${selectedDate.format('DD/MM/YYYY')}`}
+              />}
               {/* Real Arrivals & Departures Lists */}
               <Card
                 style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
@@ -646,6 +652,11 @@ export const DashboardPage: React.FC = () => {
             </Col>
           </Row>
 
+          <SupplyCashSummary
+            paid={accountantRevRes?.data?.summary?.netSupplierPaid}
+            net={accountantRevRes?.data?.summary?.netCashAfterSupplies}
+            label="30 ngày"
+          />
           <Card
             title={
               <Space>

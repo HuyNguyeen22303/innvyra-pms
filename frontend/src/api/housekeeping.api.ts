@@ -1,3 +1,4 @@
+import type { CompleteMaterialsDto } from './supplies.api.ts';
 import { apiClient } from './axiosClient.ts';
 import type { ApiResponse, PaginatedResult } from '../types/api.types.ts';
 import type {
@@ -80,15 +81,8 @@ export const housekeepingApi = {
    * Hoàn thành dọn dẹp, gửi yêu cầu nghiệm thu (phòng sang INSPECTION, nhiệm vụ sang AWAITING_INSPECTION)
    * POST /housekeeping/tasks/:id/complete
    */
-  complete: async (
-    id: string,
-    notes?: string
-  ): Promise<ApiResponse<HousekeepingTaskItem>> => {
-    const res = await apiClient.post<ApiResponse<HousekeepingTaskItem>>(
-      `/housekeeping/tasks/${id}/complete`,
-      notes ? { notes } : {}
-    );
-    return res.data;
+  complete: async (id: string, body: CompleteMaterialsDto): Promise<ApiResponse<HousekeepingTaskItem>> => {
+    return (await apiClient.post<ApiResponse<HousekeepingTaskItem>>(`/housekeeping/tasks/${id}/complete`, body)).data;
   },
 
   /**

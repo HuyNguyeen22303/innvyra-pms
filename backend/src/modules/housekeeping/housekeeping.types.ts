@@ -10,7 +10,7 @@ export type CreateTaskInput = z.infer<typeof createTaskBody>;
 export type TaskQuery = z.infer<typeof taskQuery>;
 export type DirtyRoomQuery = z.infer<typeof dirtyRoomQuery>;
 export type InspectInput = z.infer<typeof inspectBody>;
-export type HousekeepingRepository = Pick<
-  PrismaHousekeepingRepository,
-  keyof PrismaHousekeepingRepository
->;
+export type HousekeepingRepository = Omit<
+  Pick<PrismaHousekeepingRepository, keyof PrismaHousekeepingRepository>,
+  'workflow'
+> & { workflow?: PrismaHousekeepingRepository['workflow'] };

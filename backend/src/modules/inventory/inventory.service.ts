@@ -1,3 +1,4 @@
+import { postStockIssue } from './inventory-posting.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { pageResult } from '../../shared/validation/room-input.js';
@@ -208,6 +209,7 @@ export class InventoryService {
       code: input.code,
       name: input.name,
       unit: input.unit,
+      materialType: input.materialType ?? 'UNCLASSIFIED',
       description: input.description ?? null,
       minStockLevel: new Prisma.Decimal(input.minStockLevel ?? '0.00'),
       currentStock: new Prisma.Decimal('0.00'), // Cannot be set directly via create
@@ -230,40 +232,51 @@ export class InventoryService {
   }
 
   async updateItem(scope: InventoryScope, id: bigint, input: UpdateItemInput) {
-    const existing = await this.repository.findItemById(scope.hotelId, id);
-    if (!existing) {
-      throw new AppError(404, 'ITEM_NOT_FOUND', 'Item not found');
-    }
-
-    if (input.code && input.code !== existing.code) {
-      const duplicate = await this.repository.findItemByCode(scope.hotelId, input.code, id);
-      if (duplicate) {
-        throw new AppError(409, 'ITEM_CODE_EXISTS', 'Item code already exists in this hotel');
+    return this.repository.withHotelLock(scope.hotelId, async (repo) => {
+      const existing = await repo.findItemById(scope.hotelId, id);
+      if (!existing) {
+        throw new AppError(404, 'ITEM_NOT_FOUND', 'Item not found');
       }
-    }
 
-    if (input.categoryId && BigInt(input.categoryId) !== existing.categoryId) {
-      const category = await this.repository.findCategoryById(
-        scope.hotelId,
-        BigInt(input.categoryId),
-      );
-      if (!category || !category.isActive) {
-        throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found or inactive');
+      if (input.code && input.code !== existing.code) {
+        const duplicate = await repo.findItemByCode(scope.hotelId, input.code, id);
+        if (duplicate) {
+          throw new AppError(409, 'ITEM_CODE_EXISTS', 'Item code already exists in this hotel');
+        }
       }
-    }
 
-    // Direct update of currentStock is forbidden! We deliberately exclude currentStock.
-    const updated = await this.repository.updateItem(scope.hotelId, id, {
-      ...(input.code ? { code: input.code } : {}),
-      ...(input.name ? { name: input.name } : {}),
-      ...(input.categoryId ? { categoryId: BigInt(input.categoryId) } : {}),
-      ...(input.unit ? { unit: input.unit } : {}),
-      ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(input.minStockLevel !== undefined
-        ? { minStockLevel: new Prisma.Decimal(input.minStockLevel) }
-        : {}),
+      if (input.categoryId && BigInt(input.categoryId) !== existing.categoryId) {
+        const category = await repo.findCategoryById(scope.hotelId, BigInt(input.categoryId));
+        if (!category || !category.isActive) {
+          throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found or inactive');
+        }
+      }
+
+      if (
+        input.unit &&
+        input.unit !== existing.unit &&
+        (await repo.countMovementsUsingItem(scope.hotelId, id))
+      )
+        throw new AppError(
+          409,
+          'ITEM_UNIT_IN_USE',
+          'Cannot change units after stock movements; create a separate material SKU',
+        );
+
+      // Direct update of currentStock is forbidden! We deliberately exclude currentStock.
+      const updated = await repo.updateItem(scope.hotelId, id, {
+        ...(input.code ? { code: input.code } : {}),
+        ...(input.name ? { name: input.name } : {}),
+        ...(input.categoryId ? { categoryId: BigInt(input.categoryId) } : {}),
+        ...(input.unit ? { unit: input.unit } : {}),
+        ...(input.materialType ? { materialType: input.materialType } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.minStockLevel !== undefined
+          ? { minStockLevel: new Prisma.Decimal(input.minStockLevel) }
+          : {}),
+      });
+      return itemView(updated);
     });
-    return itemView(updated);
   }
 
   async deactivateItem(scope: InventoryScope, id: bigint) {
@@ -355,6 +368,7 @@ export class InventoryService {
           receiptNumber,
           receiptDate,
           totalAmount: receiptTotalAmount,
+          paymentTracking: 'TRACKED',
           notes: input.notes ?? null,
           createdBy: scope.actorId,
         },
@@ -400,6 +414,11 @@ export class InventoryService {
         });
       }
 
+      if (input.initialPayment) {
+        if (!repo.workflow)
+          throw new AppError(503, 'SUPPLIER_PAYMENTS_UNAVAILABLE', 'Supplier payments unavailable');
+        await repo.workflow.pay(scope, receipt.id, input.initialPayment);
+      }
       return receiptView(receipt);
     });
   }
@@ -419,118 +438,9 @@ export class InventoryService {
 
   // ==================== ISSUES (XUẤT KHO) ====================
   async createIssue(scope: InventoryScope, input: CreateIssueInput) {
-    return this.repository.withHotelLock(scope.hotelId, async (repo) => {
-      const issueNumber =
-        input.issueNumber?.trim() ||
-        `ISS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-      const existingIssue = await repo.findIssueByNumber(scope.hotelId, issueNumber);
-      if (existingIssue) {
-        throw new AppError(
-          409,
-          'ISSUE_NUMBER_EXISTS',
-          `Issue number ${issueNumber} already exists in this hotel`,
-        );
-      }
-
-      // Collect item IDs and lock items FOR UPDATE (concurrency control)
-      const itemIds = Array.from(new Set(input.items.map((i) => BigInt(i.itemId))));
-      const lockedItems = await repo.lockItemsForUpdate(scope.hotelId, itemIds);
-      const itemMap = new Map(lockedItems.map((item) => [item.id, item]));
-
-      // Verify all items exist and are active
-      for (const line of input.items) {
-        const item = itemMap.get(BigInt(line.itemId));
-        if (!item) {
-          throw new AppError(404, 'ITEM_NOT_FOUND', `Item with ID ${line.itemId} not found`);
-        }
-        if (!item.isActive) {
-          throw new AppError(
-            409,
-            'ITEM_INACTIVE',
-            `Item ${item.name} (${item.code}) is inactive and cannot be issued`,
-          );
-        }
-      }
-
-      // Aggregate requested quantities per itemId to handle duplicate lines in the same request
-      const requestedQuantities = new Map<bigint, Prisma.Decimal>();
-      for (const line of input.items) {
-        const id = BigInt(line.itemId);
-        const qty = new Prisma.Decimal(line.quantity);
-        const current = requestedQuantities.get(id) ?? new Prisma.Decimal('0.00');
-        requestedQuantities.set(id, current.add(qty));
-      }
-
-      // Check sufficient stock for EVERY item - fail fast if any item is insufficient!
-      for (const [id, reqQty] of requestedQuantities.entries()) {
-        const item = itemMap.get(id)!;
-        if (item.currentStock.lessThan(reqQty)) {
-          throw new AppError(
-            409,
-            'INSUFFICIENT_STOCK',
-            `Insufficient stock for item "${item.name}" (${item.code}). Available: ${item.currentStock.toString()}, Requested: ${reqQty.toString()}`,
-          );
-        }
-      }
-
-      // Prepare line items
-      const preparedLines = input.items.map((line) => ({
-        itemId: BigInt(line.itemId),
-        quantity: new Prisma.Decimal(line.quantity),
-        notes: line.notes ?? null,
-      }));
-
-      // Create issue
-      const issueDate = input.issueDate ? new Date(input.issueDate) : new Date();
-      const issue = await repo.createIssue(
-        {
-          hotelId: scope.hotelId,
-          issueNumber,
-          issueDate,
-          department: input.department,
-          purpose: input.purpose ?? null,
-          notes: input.notes ?? null,
-          createdBy: scope.actorId,
-        },
-        preparedLines,
-      );
-
-      // Decrease stock and create movements for aggregated items
-      for (const [id, reqQty] of requestedQuantities.entries()) {
-        const item = itemMap.get(id)!;
-        const prevStock = item.currentStock;
-        const newStock = prevStock.sub(reqQty);
-
-        if (newStock.isNegative()) {
-          throw new AppError(
-            409,
-            'INSUFFICIENT_STOCK',
-            `Stock cannot become negative for item "${item.name}" (${item.code})`,
-          );
-        }
-
-        await repo.updateItem(scope.hotelId, id, {
-          currentStock: newStock,
-        });
-
-        await repo.createMovement({
-          hotelId: scope.hotelId,
-          itemId: id,
-          type: 'ISSUE',
-          quantity: reqQty.negated(),
-          previousStock: prevStock,
-          currentStock: newStock,
-          referenceType: 'STOCK_ISSUE',
-          referenceId: issue.id,
-          referenceNumber: issue.issueNumber,
-          notes: `Issued to ${input.department}${input.purpose ? ` (${input.purpose})` : ''}`,
-          createdBy: scope.actorId,
-        });
-      }
-
-      return issueView(issue);
-    });
+    return this.repository.withHotelLock(scope.hotelId, (repo) =>
+      postStockIssue(repo, scope, input),
+    );
   }
 
   async getIssues(scope: InventoryScope, query: IssueQuery) {

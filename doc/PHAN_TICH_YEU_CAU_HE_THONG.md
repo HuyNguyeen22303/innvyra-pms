@@ -10,7 +10,7 @@ Dữ liệu được tổ chức theo khách sạn và quyền của nhân viên
 
 Phạm vi gồm các chức năng nội bộ đã có màn hình và đường xử lý tương ứng: tài khoản nhân viên, hạng/phòng/lịch phòng, khách hàng, đặt phòng, lưu trú, dịch vụ, Folio / Thu ngân, buồng phòng, bảo trì, kho, tổng quan và báo cáo.
 
-Khách và nhà cung cấp được nhân viên ghi nhận thông tin; chưa có cổng tự đặt phòng, kết nối OTA, thanh toán trực tuyến hoặc quy trình chi trả nhà cung cấp. Folio là sổ theo dõi phí và khoản thu, không được mặc định là hóa đơn điện tử.
+Khách và nhà cung cấp được nhân viên ghi nhận thông tin. Phiếu nhập hỗ trợ ghi nhận tiền đã trả ngay hoặc nhiều lần, đối soát chứng từ cũ và đảo khoản chi có lý do. Chưa có cổng tự đặt phòng, kết nối OTA hoặc thanh toán trực tuyến. Folio là sổ theo dõi phí và khoản thu, không được mặc định là hóa đơn điện tử.
 
 ## 7.1.3. Các tác nhân hệ thống
 
@@ -164,7 +164,7 @@ UC-10 Quản lý bảo trì. Tiếp nhận sự cố, điều phối sửa chữ
 [Xem sơ đồ trong draw.io — tab UC-10](Innvyra_13UC.drawio)
 Hình 7.1.7-11. Use Case phân rã quản lý bảo trì
 
-UC-11 Quản lý vật tư và kho. Quản lý danh mục, chứng từ và số lượng vật tư phục vụ khách sạn. Nhập/xuất/kiểm kê có kiểm tra và cập nhật tồn trong giao dịch; không sửa currentStock qua form danh mục vật tư.
+UC-11 Quản lý vật tư và kho. Quản lý danh mục, chứng từ và số lượng vật tư phục vụ khách sạn. Nhập/xuất/kiểm kê có kiểm tra và cập nhật tồn trong giao dịch; không sửa currentStock qua form danh mục vật tư. Vật tư tiêu hao được cấu hình định mức theo hạng phòng, ghi thực dùng và xuất kho khi hoàn thành lượt dọn. Phiếu nhập có các lần thanh toán, đối soát và đảo khoản chi; báo cáo tách giá trị nhập, tiền thực chi và công nợ nhà cung cấp.
 
 [Xem sơ đồ trong draw.io — tab UC-11](Innvyra_13UC.drawio)
 Hình 7.1.7-12. Use Case phân rã quản lý vật tư và kho

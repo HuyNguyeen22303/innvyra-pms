@@ -201,11 +201,15 @@ Quản lý danh mục, chứng từ và số lượng vật tư phục vụ khá
 |---|---|
 | Quản lý danh mục vật tư và NCC | A/Q: Xem / xử lý; K: Xem; B/T: Xem vật tư / nhóm |
 | Nhập kho | A/Q: Xem / xử lý; K: Xem |
+| Định mức vật tư tiêu hao theo hạng phòng | A/Q: Xem / xử lý; B: Xem khi dọn |
+| Ghi nhận / đối soát / đảo khoản chi nhà cung cấp | A/Q/K: Xem / xử lý |
 | Xuất kho | A/Q/B/T: Xem / xử lý; K: Xem |
 | Kiểm kê tồn kho | A/Q: Xử lý |
 | Theo dõi tồn và biến động | A/Q/K: Xem; B/T: Xem tồn thấp |
 
 Nhập/xuất/kiểm kê có kiểm tra và cập nhật tồn trong giao dịch; không sửa currentStock qua form danh mục vật tư.
+
+Hoàn thành lượt dọn ghi vật tư thực dùng và tự tạo phiếu xuất trong cùng giao dịch. Thiếu tồn giữ việc đang dọn; gửi lại cùng lượt không xuất thêm. Đồ vải tái sử dụng không được đưa vào tiêu hao. Phiếu nhập mới hỗ trợ trả ngay hoặc trả nhiều lần; phiếu cũ cần đối soát trước khi xác nhận công nợ.
 
 B/T chỉ đọc vật tư và nhóm, không đọc nhà cung cấp.
 B/T xem tồn thấp, không xem tổng quan định giá hoặc sổ biến động.
@@ -240,7 +244,7 @@ Phân tích hoạt động theo kỳ, loại báo cáo và quyền được cấ
 | Xem báo cáo vận hành | A/Q/L/B/T: Xem |
 | Xuất CSV theo loại được hỗ trợ | A/Q: Xuất CSV; K: Xuất CSV tài chính |
 
-Báo cáo khác màn hình tổng quan. Không thêm giao diện procurement hoặc báo cáo chi trả NCC khi frontend chưa có.
+Báo cáo có tab Mua hàng & NCC, gồm giá trị hàng nhập theo ngày nhập, chi tiền theo ngày trả và công nợ nhà cung cấp lũy kế đến hết kỳ. Phiếu chưa đối soát được hiển thị riêng. Tổng quan và báo cáo dòng tiền có chi vật tư thuần và dòng tiền sau chi vật tư; các chỉ số này không phải lợi nhuận.
 
 L không nhận các trường tiền roomSalesValue, ADR và RevPAR của công suất.
 B chỉ khối buồng, T chỉ khối bảo trì.

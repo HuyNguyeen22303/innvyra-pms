@@ -1,3 +1,4 @@
+import { ProcurementTab } from './components/ProcurementTab.tsx';
 import React, { useState, useMemo } from 'react';
 import {
   Row,
@@ -61,6 +62,7 @@ export const ReportsPage: React.FC = () => {
     if (canViewFinancial) {
       tabs.push({ key: 'revenue', label: 'Doanh thu & Bán phòng', icon: <DollarOutlined /> });
       tabs.push({ key: 'payments', label: 'Dòng tiền & Thu chi', icon: <CreditCardOutlined /> });
+      tabs.push({ key: 'procurement', label: 'Mua vật tư & Công nợ NCC', icon: <FileTextOutlined /> });
     }
     if (canViewFrontDeskReports) {
       tabs.push({ key: 'occupancy', label: 'Công suất & ADR / RevPAR', icon: <CalendarOutlined /> });
@@ -224,6 +226,18 @@ export const ReportsPage: React.FC = () => {
       });
     }
 
+    if (canViewFinancial) {
+      items.push({
+        key: 'procurement',
+        label: <Space><FileTextOutlined /><span>Mua vật tư & Công nợ NCC</span></Space>,
+        children: <ProcurementTab
+          key={`${startDateStr}:${endDateStr}`}
+          startDateStr={startDateStr}
+          endDateStr={endDateStr}
+          groupBy={groupBy}
+        />,
+      });
+    }
     if (canViewFrontDeskReports) {
       items.push({
         key: 'occupancy',
@@ -391,7 +405,7 @@ export const ReportsPage: React.FC = () => {
           </Col>
 
           <Col xs={24} lg={10} style={{ textAlign: screens.xs ? 'left' : 'right' }}>
-            {['revenue', 'payments', 'occupancy', 'reservations'].includes(activeTab) && (
+            {['revenue', 'payments', 'occupancy', 'reservations', 'procurement'].includes(activeTab) && (
               <Space wrap>
                 <Text strong>Gộp nhóm chuỗi dữ liệu:</Text>
                 <Radio.Group

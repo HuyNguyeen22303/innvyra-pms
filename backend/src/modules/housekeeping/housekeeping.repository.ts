@@ -7,6 +7,7 @@ import {
 } from '../operations/operations.repository.js';
 import type { CreateTaskInput, TaskQuery, DirtyRoomQuery } from './housekeeping.types.js';
 import type { OperationsScope } from '../operations/operations.shared.js';
+import { SupplyWorkflow } from '../inventory/supply-workflow.service.js';
 const include = { room: { select: operationRoomSelect }, history: historyInclude } as const;
 
 // Caller already holds the shared hotel lock. Checkout, transfer and reopening use this
@@ -31,6 +32,9 @@ export async function ensureTurnoverTask(
   return task;
 }
 export class PrismaHousekeepingRepository extends OperationsRepository {
+  get workflow() {
+    return new SupplyWorkflow(this.prisma, this.tx);
+  }
   constructor(prisma: PrismaClient, tx?: Prisma.TransactionClient) {
     super(prisma, tx);
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid } from 'antd';
+import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid, Alert } from 'antd';
 import { ExportOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -83,6 +83,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       ]}
       width={screens.xs ? '100%' : 780}
     >
+      {issue.housekeepingCompletionId&&<Alert type="info" showIcon style={{marginTop:12,marginBottom:12}} title="Phiếu xuất theo lượt dọn phòng" description="Vật tư của lượt này đã được trừ kho khi gửi nghiệm thu. Không lập lại phiếu xuất thủ công cho cùng lượng sử dụng."/>}
       <Descriptions
         bordered
         size="small"

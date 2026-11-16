@@ -1,6 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { SupplyWorkflow } from './supply-workflow.service.js';
 import type {
   CategoryQuery,
   SupplierQuery,
@@ -19,6 +20,9 @@ import type {
 } from './inventory.types.js';
 
 export class PrismaInventoryRepository {
+  get workflow() {
+    return new SupplyWorkflow(this.prisma, this.tx);
+  }
   constructor(
     private readonly prisma: PrismaClient,
     private readonly tx?: Prisma.TransactionClient,
@@ -32,6 +36,7 @@ export class PrismaInventoryRepository {
     hotelId: bigint,
     action: (repository: InventoryOperations) => Promise<T>,
   ): Promise<T> {
+    if (this.tx) return action(this);
     for (let attempt = 0; ; attempt++) {
       try {
         return await this.prisma.$transaction(
@@ -86,10 +91,7 @@ export class PrismaInventoryRepository {
       ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
       ...(query.search
         ? {
-            OR: [
-              { code: { contains: query.search } },
-              { name: { contains: query.search } },
-            ],
+            OR: [{ code: { contains: query.search } }, { name: { contains: query.search } }],
           }
         : {}),
     };
@@ -175,11 +177,7 @@ export class PrismaInventoryRepository {
     return this.db.supplier.create({ data });
   }
 
-  async updateSupplier(
-    hotelId: bigint,
-    id: bigint,
-    data: Prisma.SupplierUncheckedUpdateInput,
-  ) {
+  async updateSupplier(hotelId: bigint, id: bigint, data: Prisma.SupplierUncheckedUpdateInput) {
     return this.db.supplier.update({
       where: { hotelId_id: { hotelId, id } },
       data,
@@ -241,10 +239,7 @@ export class PrismaInventoryRepository {
       ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
       ...(query.search
         ? {
-            OR: [
-              { code: { contains: query.search } },
-              { name: { contains: query.search } },
-            ],
+            OR: [{ code: { contains: query.search } }, { name: { contains: query.search } }],
           }
         : {}),
     };
@@ -555,10 +550,7 @@ export class PrismaInventoryRepository {
       (item) => Number(item.currentStock) <= Number(item.minStockLevel),
     );
     const total = lowStock.length;
-    const paginatedItems = lowStock.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
-    );
+    const paginatedItems = lowStock.slice((query.page - 1) * query.limit, query.page * query.limit);
     return { items: paginatedItems, total };
   }
 

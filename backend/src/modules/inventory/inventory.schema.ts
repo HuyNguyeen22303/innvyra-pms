@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { supplierPaymentBody } from './supply-workflow.schema.js';
 import {
   emptyQuery,
   idParams,
@@ -131,6 +132,7 @@ export const itemCreateBody = z
     name: nameSchema,
     categoryId: idSchema,
     unit: unitSchema,
+    materialType: z.enum(['CONSUMABLE', 'REUSABLE', 'UNCLASSIFIED']).default('UNCLASSIFIED'),
     description: textSchema,
     minStockLevel: nonNegativeQuantitySchema.default('0.00'),
   })
@@ -142,6 +144,7 @@ export const itemUpdateBody = z
     name: nameSchema.optional(),
     categoryId: idSchema.optional(),
     unit: unitSchema.optional(),
+    materialType: z.enum(['CONSUMABLE', 'REUSABLE', 'UNCLASSIFIED']).optional(),
     description: textSchema,
     minStockLevel: nonNegativeQuantitySchema.optional(),
   })
@@ -182,6 +185,7 @@ const receiptItemInputSchema = z
 export const receiptCreateBody = z
   .object({
     receiptNumber: z.string().trim().max(50).optional(),
+    initialPayment: supplierPaymentBody.optional(),
     supplierId: idSchema.nullable().optional(),
     receiptDate: z
       .string()

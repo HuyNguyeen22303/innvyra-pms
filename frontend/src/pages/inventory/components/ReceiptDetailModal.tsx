@@ -1,3 +1,4 @@
+import { SupplierSettlementPanel } from './SupplierSettlementPanel.tsx';
 import React from 'react';
 import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid } from 'antd';
 import { FileDoneOutlined } from '@ant-design/icons';
@@ -171,6 +172,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
         bordered
         scroll={{ x: 940 }}
       />
+      <SupplierSettlementPanel key={receipt.id} receiptId={receipt.id} open={open} />
     </Modal>
   );
 };

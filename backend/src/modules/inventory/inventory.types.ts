@@ -78,10 +78,10 @@ export type CreateAdjustmentInput = z.infer<typeof adjustmentCreateBody>;
 export type MovementQuery = z.infer<typeof movementListQuery>;
 export type LowStockQuery = z.infer<typeof lowStockListQuery>;
 
-export type InventoryRepository = Pick<
-  PrismaInventoryRepository,
-  keyof PrismaInventoryRepository
->;
+export type InventoryRepository = Omit<
+  Pick<PrismaInventoryRepository, keyof PrismaInventoryRepository>,
+  'workflow'
+> & { workflow?: PrismaInventoryRepository['workflow'] };
 export type InventoryOperations = Omit<InventoryRepository, 'withHotelLock'>;
 
 export type ItemWithCategory = InventoryItem & {
@@ -139,8 +139,7 @@ export const supplierView = (sup: Supplier) => ({
   updatedAt: sup.updatedAt,
 });
 
-const formatDecimal = (val: Prisma.Decimal | number | string) =>
-  new Prisma.Decimal(val).toFixed(2);
+const formatDecimal = (val: Prisma.Decimal | number | string) => new Prisma.Decimal(val).toFixed(2);
 
 export const itemView = (item: ItemWithCategory) => {
   const currentStock = Number(item.currentStock);
@@ -158,6 +157,7 @@ export const itemView = (item: ItemWithCategory) => {
     code: item.code,
     name: item.name,
     unit: item.unit,
+    materialType: item.materialType,
     description: item.description,
     currentStock: formatDecimal(item.currentStock),
     minStockLevel: formatDecimal(item.minStockLevel),
@@ -183,6 +183,7 @@ export const receiptView = (receipt: ReceiptWithDetails) => ({
       }
     : null,
   totalAmount: formatDecimal(receipt.totalAmount),
+  paymentTracking: receipt.paymentTracking,
   notes: receipt.notes,
   createdBy: receipt.createdBy.toString(),
   creator: receipt.creator
@@ -212,6 +213,7 @@ export const receiptView = (receipt: ReceiptWithDetails) => ({
 });
 
 export const issueView = (issue: IssueWithDetails) => ({
+  housekeepingCompletionId: issue.housekeepingCompletionId?.toString() ?? null,
   id: issue.id.toString(),
   hotelId: issue.hotelId.toString(),
   issueNumber: issue.issueNumber,

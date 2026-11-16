@@ -50,8 +50,8 @@ export interface ProcurementSummary {
   totalExpense: string;
   receiptCount: number;
   averageReceiptValue: string;
-  totalItemsPurchased: number;
-  topSupplier: { id: string; name: string; totalAmount: string } | null;
+  distinctItemCount: number;
+  topSupplier: { id: string | null; name: string; totalAmount: string } | null;
 }
 export interface ProcurementSeriesItem {
   date: string;
@@ -65,7 +65,7 @@ export interface ProcurementCategoryItem {
   percentage: number;
 }
 export interface ProcurementSupplierItem {
-  supplierId: string;
+  supplierId: string | null;
   supplierName: string;
   receiptCount: number;
   totalAmount: string;
@@ -77,7 +77,7 @@ export interface ProcurementTopItem {
   name: string;
   categoryName: string;
   unit: string;
-  totalQuantity: number;
+  totalQuantity: string;
   totalAmount: string;
 }
 export interface ProcurementReportDto {

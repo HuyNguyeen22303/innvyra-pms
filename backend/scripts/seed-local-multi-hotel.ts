@@ -45,7 +45,11 @@ async function main() {
         : LOCAL_DATABASE_NAME;
   if (current.NODE_ENV === 'production')
     throw new Error('Local seeding is unavailable in production');
-  const targetUrl = localDatabaseUrl(current.DATABASE_URL, name, !checking);
+  const sameTarget = new URL(current.DATABASE_URL).pathname === `/${name}`;
+  // A fresh install may already configure /innvyra before that schema exists.
+  // Exclusive CREATE below still refuses every existing schema, including empty
+  // ones; this never authorizes reseeding the current application's data.
+  const targetUrl = localDatabaseUrl(current.DATABASE_URL, name, !checking && !sameTarget);
   const envFile = resolve(root, '.env');
   const originalEnv = activate ? await readFile(envFile, 'utf8') : '';
   if (activate) {
@@ -79,6 +83,16 @@ async function main() {
       void _database;
       const server = await createConnection({ ...options, allowPublicKeyRetrieval: true });
       try {
+        const existing = await server.query<{ name: string }[]>(
+          'SELECT SCHEMA_NAME name FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?',
+          [name],
+        );
+        if (existing.length)
+          throw new Error(
+            sameTarget
+              ? 'Current application database cannot be seeded again'
+              : 'Choose a separate local innvyra database; the requested name already exists',
+          );
         // Exclusive CREATE, never IF NOT EXISTS/reset/drop. A conflict leaves the
         // existing schema untouched. Failures retain our new schema for inspection.
         await server.query(

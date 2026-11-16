@@ -51,13 +51,22 @@ const financeBasis = obj({
   balance: text,
   recognition: text,
   cashPayments: text,
+  supplierCash: text,
+  netCashAfterSupplies: text,
 });
 const financialMetrics = {
-  ...amounts([...financialFields, 'netBilledCharges', 'netCashCollected', 'balanceMovement']),
+  ...amounts([
+    ...financialFields,
+    'netBilledCharges',
+    'netCashCollected',
+    'netSupplierPaid',
+    'netCashAfterSupplies',
+    'balanceMovement',
+  ]),
   ...counts(paymentCounts),
 };
 const paymentMetrics = {
-  ...amounts([...paymentFields, 'netCashCollected']),
+  ...amounts([...paymentFields, 'netCashCollected', 'netSupplierPaid', 'netCashAfterSupplies']),
   ...counts(paymentCounts),
 };
 const occupancyMetrics = {
@@ -222,11 +231,12 @@ export const reportSchemas = {
       totalExpense: amount,
       receiptCount: integer,
       averageReceiptValue: amount,
-      totalItemsPurchased: integer,
-      topSupplier: obj(
-        { id: text, name: text, totalAmount: amount },
-        ['id', 'name', 'totalAmount'],
-      ),
+      distinctItemCount: integer,
+      topSupplier: obj({ id: text, name: text, totalAmount: amount }, [
+        'id',
+        'name',
+        'totalAmount',
+      ]),
     }),
     series: {
       type: 'array',
@@ -259,7 +269,7 @@ export const reportSchemas = {
         name: text,
         categoryName: text,
         unit: text,
-        totalQuantity: integer,
+        totalQuantity: amount,
         totalAmount: amount,
       }),
     },
@@ -330,7 +340,10 @@ const exampleCommon = {
 const zero = (fields: readonly string[], value: string | number) =>
   Object.fromEntries(fields.map((f) => [f, value]));
 const emptyPayments = {
-  ...zero([...paymentFields, 'netCashCollected'], '0.00'),
+  ...zero(
+    [...paymentFields, 'netCashCollected', 'netSupplierPaid', 'netCashAfterSupplies'],
+    '0.00',
+  ),
   ...zero(paymentCounts, 0),
 };
 const emptyBalance = {
@@ -360,6 +373,8 @@ const exampleFinance = (charges: boolean) => {
       balance: 'ALL_LEDGER_ACTIVITY_BEFORE_CUTOFF',
       recognition: 'NOT_ACCOUNTING_RECOGNIZED_REVENUE',
       cashPayments: 'CONFIRMED_PAYMENTS_AND_DEPOSITS_BEFORE_REFUNDS',
+      supplierCash: 'SUPPLIER_PAYMENT_PAID_AT_AND_REVERSAL_REVERSED_AT',
+      netCashAfterSupplies: 'CUSTOMER_NET_CASH_MINUS_NET_SUPPLIER_DISBURSEMENTS',
     },
   };
 };
@@ -444,7 +459,7 @@ export const reportPaths = {
     'payments',
     'PaymentReport',
     'Payment and refund statistics',
-    'CONFIRMED only. Payment count excludes deposits/refunds, which have separate counts. Cash/bank totals include payments + deposits, before refunds. Net Cash Collected = payments + deposits − refunds. Balance is cumulative, unfiltered by paymentMethod.',
+    'CONFIRMED only. Payment count excludes deposits/refunds, which have separate counts. Cash/bank totals include payments + deposits, before refunds. Net Cash Collected = payments + deposits − refunds. Net Supplier Paid = supplier disbursements − reversals. Net Cash After Supplies = Net Cash Collected − Net Supplier Paid; excludes other operating expenses and is not profit. Balance is cumulative, unfiltered by paymentMethod.',
     [...periodParams, method],
     exampleFinance(false),
   ),
@@ -539,11 +554,21 @@ export const reportPaths = {
     'procurement',
     'ProcurementReport',
     'Procurement expense summary',
-    'Total purchase costs from stock receipts, aggregated by category, supplier, and top items. Charts/groups by category, supplier share, and top 10 highest-cost items. startDate inclusive, endDate exclusive hotel-local dates. Optional supplierId or categoryId filters refine all sections. Summary includes total expense, receipt count, average receipt value, total items purchased and top supplier. Percentages use exact Money arithmetic rounded to 2 decimal places.',
+    'Total purchase costs from stock receipts, aggregated by category, supplier, and top items. Charts/groups by category, supplier share, and top 10 highest-cost items. startDate inclusive, endDate exclusive hotel-local dates. Optional supplierId or categoryId filters refine all sections. Summary includes total expense, receipt count, average receipt value, distinct material SKUs purchased and top supplier. Percentages use exact Money arithmetic rounded to 2 decimal places.',
     [
       ...periodParams,
-      param('supplierId', { ...text, pattern: '^[1-9]\\d{0,19}$' }, false, 'Filter by supplier; applies to series, category breakdown and top items.'),
-      param('categoryId', { ...text, pattern: '^[1-9]\\d{0,19}$' }, false, 'Filter by inventory category; applies to series and supplier breakdown.'),
+      param(
+        'supplierId',
+        { ...text, pattern: '^[1-9]\\d{0,19}$' },
+        false,
+        'Filter by supplier; applies to series, category breakdown and top items.',
+      ),
+      param(
+        'categoryId',
+        { ...text, pattern: '^[1-9]\\d{0,19}$' },
+        false,
+        'Filter by inventory category; applies to series and supplier breakdown.',
+      ),
     ],
     {
       ...exampleCommon,
@@ -552,18 +577,41 @@ export const reportPaths = {
         totalExpense: '45200000.00',
         receiptCount: 12,
         averageReceiptValue: '3766666.67',
-        totalItemsPurchased: 1450,
-        topSupplier: { id: '5', name: 'Công ty TNHH Cung Ứng Khách Sạn Việt', totalAmount: '24000000.00' },
+        distinctItemCount: 1450,
+        topSupplier: {
+          id: '5',
+          name: 'Công ty TNHH Cung Ứng Khách Sạn Việt',
+          totalAmount: '24000000.00',
+        },
       },
       series: [{ date: '2026-10-01', totalExpense: '5000000.00', receiptCount: 1 }],
       byCategory: [
-        { categoryId: '1', categoryName: 'Đồ dùng Buồng phòng', totalAmount: '22000000.00', percentage: 48.67 },
+        {
+          categoryId: '1',
+          categoryName: 'Đồ dùng Buồng phòng',
+          totalAmount: '22000000.00',
+          percentage: 48.67,
+        },
       ],
       bySupplier: [
-        { supplierId: '5', supplierName: 'Công ty TNHH Cung Ứng Khách Sạn Việt', receiptCount: 6, totalAmount: '24000000.00', percentage: 53.10 },
+        {
+          supplierId: '5',
+          supplierName: 'Công ty TNHH Cung Ứng Khách Sạn Việt',
+          receiptCount: 6,
+          totalAmount: '24000000.00',
+          percentage: 53.1,
+        },
       ],
       topItems: [
-        { itemId: '10', sku: 'LIN-TWL-01', name: 'Khăn tắm cao cấp', categoryName: 'Đồ dùng Buồng phòng', unit: 'Cái', totalQuantity: 200, totalAmount: '16000000.00' },
+        {
+          itemId: '10',
+          sku: 'LIN-TWL-01',
+          name: 'Khăn tắm cao cấp',
+          categoryName: 'Đồ dùng Buồng phòng',
+          unit: 'Cái',
+          totalQuantity: 200,
+          totalAmount: '16000000.00',
+        },
       ],
     },
   ),

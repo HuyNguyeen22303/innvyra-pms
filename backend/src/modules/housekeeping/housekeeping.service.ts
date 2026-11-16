@@ -1,4 +1,9 @@
 import { AppError } from '../../shared/errors/app-error.js';
+import { randomUUID } from 'node:crypto';
+import {
+  completeMaterialsBody,
+  type CompleteMaterialsInput,
+} from '../inventory/supply-workflow.schema.js';
 import { pageResult } from '../../shared/validation/room-input.js';
 import {
   allowed,
@@ -123,12 +128,20 @@ export class HousekeepingService {
     id: bigint,
     action: 'start' | 'complete' | 'inspect' | 'cancel',
     input?: InspectInput | string,
+    completion?: CompleteMaterialsInput,
   ) {
     allowed(scope, action === 'inspect' || action === 'cancel' ? managers : cleaners);
     return this.repository.withHotelLock(
       scope.hotelId,
       async (repo: PrismaHousekeepingRepository) => {
         const task = await this.requireTask(repo, scope, id);
+        if (
+          action === 'complete' &&
+          completion &&
+          repo.workflow &&
+          (await repo.workflow.replayCompletion(scope, task, completion))
+        )
+          return view(task);
         const expected =
           action === 'start'
             ? 'PENDING'
@@ -169,11 +182,26 @@ export class HousekeepingService {
                 ? 'READY'
                 : 'DIRTY';
         const now = new Date();
+        if (action === 'complete' && completion) {
+          if (!repo.workflow)
+            throw new AppError(
+              503,
+              'MATERIAL_TRACKING_UNAVAILABLE',
+              'Material tracking unavailable',
+            );
+          await repo.workflow.recordCompletion(scope, task, completion);
+        }
         await repo.update(scope.hotelId, id, {
           status,
           ...(['COMPLETED', 'CANCELLED'].includes(status) ? { activeRoomId: null } : {}),
           ...(action === 'start'
-            ? { startedAt: now, completedAt: null, inspectedAt: null, inspectedBy: null }
+            ? {
+                workToken: randomUUID(),
+                startedAt: now,
+                completedAt: null,
+                inspectedAt: null,
+                inspectedBy: null,
+              }
             : {}),
           ...(action === 'complete' ? { completedAt: now } : {}),
           ...(action === 'inspect' ? { inspectedAt: now, inspectedBy: scope.actorId } : {}),
@@ -200,8 +228,14 @@ export class HousekeepingService {
   start(scope: OperationsScope, id: bigint, notes?: string) {
     return this.transition(scope, id, 'start', notes);
   }
-  complete(scope: OperationsScope, id: bigint, notes?: string) {
-    return this.transition(scope, id, 'complete', notes);
+  complete(scope: OperationsScope, id: bigint, raw: CompleteMaterialsInput) {
+    const input = completeMaterialsBody.parse(raw);
+    return this.transition(scope, id, 'complete', input.notes, input);
+  }
+  materials(scope: OperationsScope, id: bigint) {
+    if (!this.repository.workflow)
+      throw new AppError(503, 'MATERIAL_TRACKING_UNAVAILABLE', 'Material tracking unavailable');
+    return this.repository.workflow.taskMaterials(scope, id);
   }
   inspect(scope: OperationsScope, id: bigint, input: InspectInput) {
     return this.transition(scope, id, 'inspect', input);

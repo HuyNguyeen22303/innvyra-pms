@@ -32,6 +32,7 @@ export interface InventoryItemCategoryInfo {
 }
 
 export interface InventoryItemView {
+  materialType: import('../api/supplies.api.ts').MaterialType;
   id: string;
   hotelId: string;
   categoryId: string;
@@ -66,6 +67,7 @@ export interface StockReceiptItemView {
 }
 
 export interface StockReceiptView {
+  paymentTracking: 'TRACKED'|'UNRECONCILED';
   id: string;
   hotelId: string;
   receiptNumber: string;
@@ -104,6 +106,7 @@ export interface StockIssueItemView {
 }
 
 export interface StockIssueView {
+  housekeepingCompletionId: string|null;
   id: string;
   hotelId: string;
   issueNumber: string;
@@ -242,6 +245,7 @@ export interface SupplierQueryParams {
 }
 
 export interface CreateItemDto {
+  materialType?: import('../api/supplies.api.ts').MaterialType;
   code: string;
   name: string;
   categoryId: string;
@@ -251,6 +255,7 @@ export interface CreateItemDto {
 }
 
 export interface UpdateItemDto {
+  materialType?: import('../api/supplies.api.ts').MaterialType;
   code?: string;
   name?: string;
   categoryId?: string;
@@ -278,6 +283,7 @@ export interface CreateReceiptItemDto {
 }
 
 export interface CreateReceiptDto {
+  initialPayment?: import('../api/supplies.api.ts').SupplierPaymentDto;
   receiptNumber?: string;
   supplierId?: string | null;
   receiptDate?: string;

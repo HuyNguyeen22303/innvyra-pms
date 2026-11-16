@@ -4,6 +4,14 @@ import { localDatabaseUrl, replaceDatabaseUrl } from '../scripts/local-seed/conf
 const original = 'mysql://fixture:fixture%23test@127.0.0.1:3306/innvyra_pms';
 const target = 'mysql://fixture:fixture%23test@127.0.0.1:3306/innvyra_pms_multi_hotel';
 describe('Persistent local seed: safe configuration switch', () => {
+  it('supports the short canonical database name without altering credentials', () => {
+    expect(localDatabaseUrl(original, 'innvyra')).toBe(
+      original.replace('/innvyra_pms', '/innvyra'),
+    );
+    expect(() => localDatabaseUrl(original.replace('/innvyra_pms', '/innvyra'), 'innvyra')).toThrow(
+      'cannot be seeded again',
+    );
+  });
   it('changes only the schema name while retaining encoded connection credentials', () =>
     expect(localDatabaseUrl(original, 'innvyra_pms_multi_hotel')).toBe(target));
   it.each([

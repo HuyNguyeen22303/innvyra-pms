@@ -10,7 +10,7 @@ export interface ScenarioSession {
   refreshCookie: string;
   user: CurrentUser;
 }
-export type Method = 'get' | 'post' | 'patch' | 'delete';
+export type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 export class ScenarioHttp {
   constructor(
     readonly app: Express,
@@ -43,6 +43,27 @@ export class ScenarioHttp {
     expected = 200,
     key?: string,
   ): Promise<T> {
+    // Fixture preparation explicitly records cleanings without consumables.
+    // Real material scenarios pass their own workToken and actual quantities.
+    if (
+      method === 'post' &&
+      /\/housekeeping\/tasks\/[^/]+\/complete$/.test(path) &&
+      expected === 200 &&
+      !('workToken' in (body ?? {}))
+    ) {
+      const task = await this.request(
+        'get',
+        path.replace(/\/complete$/, ''),
+        token ? { token } : {},
+      );
+      if (task.status !== 200) throw new Error('Cannot read cleaning attempt for fixture');
+      body = {
+        ...body,
+        workToken: task.body.data.workToken,
+        materials: [],
+        noMaterialsReason: 'Vệ sinh chuẩn bị phòng, không cấp vật tư tiêu hao trong lượt này.',
+      };
+    }
     const response = await this.request(method, path, {
       ...(token ? { token } : {}),
       ...(body ? { body } : {}),

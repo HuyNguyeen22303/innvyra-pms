@@ -6,6 +6,18 @@ import { sqlIdentifier } from './dataset.js';
 
 const checks: [string, string][] = [
   [
+    'supplier_payment_balances',
+    `SELECT COUNT(*) n FROM stock_receipts r JOIN (SELECT p.receipt_id,SUM(CASE WHEN v.id IS NULL THEN p.amount ELSE 0 END) paid FROM supplier_payments p LEFT JOIN supplier_payment_reversals v ON v.hotel_id=p.hotel_id AND v.payment_id=p.id GROUP BY p.receipt_id) s ON s.receipt_id=r.id WHERE s.paid>r.total_amount OR s.paid<0 OR (r.payment_tracking='UNRECONCILED' AND s.paid<>0)`,
+  ],
+  [
+    'housekeeping_material_documents',
+    `SELECT COUNT(*) n FROM housekeeping_material_completions c LEFT JOIN stock_issues s ON s.hotel_id=c.hotel_id AND s.housekeeping_completion_id=c.id WHERE (s.id IS NULL AND COALESCE(TRIM(c.no_materials_reason),'')='') OR (s.id IS NOT NULL AND (s.department<>'HOUSEKEEPING' OR NOT EXISTS(SELECT 1 FROM stock_issue_items i WHERE i.hotel_id=s.hotel_id AND i.issue_id=s.id)))`,
+  ],
+  [
+    'consumable_presets',
+    `SELECT COUNT(*) n FROM housekeeping_material_presets p JOIN inventory_items i ON i.hotel_id=p.hotel_id AND i.id=p.item_id WHERE p.quantity<=0 OR i.material_type<>'CONSUMABLE'`,
+  ],
+  [
     'reservation_nights',
     `SELECT COUNT(*) n FROM (
     SELECT r.id FROM reservations r LEFT JOIN reservation_rooms rr ON rr.reservation_id=r.id

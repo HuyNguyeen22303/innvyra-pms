@@ -35,6 +35,7 @@ import { employeeRoutes } from '../modules/employees/employee.routes.js';
 import type { InventoryRepository } from '../modules/inventory/inventory.types.js';
 import { InventoryService } from '../modules/inventory/inventory.service.js';
 import { inventoryRoutes } from '../modules/inventory/inventory.routes.js';
+import { supplyWorkflowRoutes } from '../modules/inventory/supply-workflow.routes.js';
 
 export function apiRoutes(
   service: AuthService,
@@ -50,9 +51,12 @@ export function apiRoutes(
   inventory?: InventoryRepository,
 ) {
   const router = Router();
+  if (inventory?.workflow) router.use(supplyWorkflowRoutes(inventory.workflow, service, env));
   router.use('/auth', authRoutes(service, env));
-  if (employees) router.use('/employees', employeeRoutes(new EmployeeService(employees), service, env));
-  if (inventory) router.use('/inventory', inventoryRoutes(new InventoryService(inventory), service, env));
+  if (employees)
+    router.use('/employees', employeeRoutes(new EmployeeService(employees), service, env));
+  if (inventory)
+    router.use('/inventory', inventoryRoutes(new InventoryService(inventory), service, env));
   if (reports) router.use('/reports', reportRoutes(new ReportService(reports, env), service, env));
   if (operations) {
     router.use(

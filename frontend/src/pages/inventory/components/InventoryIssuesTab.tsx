@@ -470,6 +470,13 @@ export const InventoryIssuesTab: React.FC = () => {
           />
         )}
 
+        <Alert
+          type="info"
+          showIcon
+          title="Vật tư dùng khi dọn phòng được ghi tại nhiệm vụ buồng phòng"
+          description="Phiếu xuất được tạo tự động khi gửi nghiệm thu. Kiểm tra lịch sử nhiệm vụ trước khi lập phiếu thủ công để tránh xuất trùng."
+          style={{ marginBottom: 16 }}
+        />
         <Form
           form={createForm}
           layout="vertical"
