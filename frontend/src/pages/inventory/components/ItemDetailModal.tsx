@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { InventoryItemView } from '../../../types/inventory.types.ts';
+import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
 const { Text } = Typography;
 
@@ -104,7 +105,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     : '#15803d',
                 }}
               >
-                {item.currentStock} {item.unit}
+                {formatInventoryQuantity(item.currentStock)} {item.unit}
               </Text>
             ),
           },
@@ -113,7 +114,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             label: 'Định mức tồn tối thiểu',
             children: (
               <span>
-                {item.minStockLevel} {item.unit}
+                {formatInventoryQuantity(item.minStockLevel)} {item.unit}
               </span>
             ),
           },

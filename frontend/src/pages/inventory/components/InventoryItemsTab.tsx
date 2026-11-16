@@ -45,6 +45,10 @@ import type {
 import { ItemDetailModal } from "./ItemDetailModal.tsx";
 import { StockAdjustmentModal } from "./StockAdjustmentModal.tsx";
 import { DebouncedSearchInput } from "../../../components/DebouncedSearchInput.tsx";
+import {
+  formatInventoryQuantity,
+  inventoryQuantityInputProps,
+} from "../../../utils/inventoryQuantity.ts";
 
 const { Text, Paragraph } = Typography;
 
@@ -302,10 +306,10 @@ export const InventoryItemsTab: React.FC = () => {
                   : "#15803d",
             }}
           >
-            {stock}
+            {formatInventoryQuantity(stock)}
           </Text>
           <div style={{ fontSize: 11, color: "#64748b" }}>
-            Tối thiểu: {record.minStockLevel}
+            Tối thiểu: {formatInventoryQuantity(record.minStockLevel)}
           </div>
         </div>
       ),
@@ -617,7 +621,8 @@ export const InventoryItemsTab: React.FC = () => {
                 style={{ width: "100%" }}
                 min={0}
                 precision={2}
-                placeholder="0.00"
+                {...inventoryQuantityInputProps}
+                placeholder="0"
               />
             </Form.Item>
           </Space>
@@ -641,7 +646,7 @@ export const InventoryItemsTab: React.FC = () => {
             }}
           >
             💡 <strong>Quy định nghiệp vụ tồn kho:</strong> Vật tư tạo mới có số
-            lượng tồn ban đầu là <strong>0.00</strong>. Để bổ sung tồn kho thực
+            lượng tồn ban đầu là <strong>0</strong>. Để bổ sung tồn kho thực
             tế, vui lòng lập <strong>Phiếu nhập kho</strong> hoặc sử dụng chức
             năng <strong>Kiểm kê tồn kho</strong> sau khi tạo.
           </div>
@@ -730,7 +735,12 @@ export const InventoryItemsTab: React.FC = () => {
                 { required: true, message: "Vui lòng nhập định mức tồn" },
               ]}
             >
-              <InputNumber style={{ width: "100%" }} min={0} precision={2} />
+              <InputNumber
+                style={{ width: "100%" }}
+                min={0}
+                precision={2}
+                {...inventoryQuantityInputProps}
+              />
             </Form.Item>
           </Space>
 

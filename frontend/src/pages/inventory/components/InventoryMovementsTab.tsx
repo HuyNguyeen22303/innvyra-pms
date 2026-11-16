@@ -21,6 +21,7 @@ import {
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { inventoryApi } from '../../../api/inventory.api.ts';
+import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 import type {
   InventoryMovementView,
   InventoryMovementType,
@@ -145,14 +146,14 @@ export const InventoryMovementsTab: React.FC = () => {
         if (record.type === 'RECEIPT') {
           return (
             <Text strong style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
-              +{Math.abs(num).toFixed(2)} {unit}
+              +{formatInventoryQuantity(Math.abs(num))} {unit}
             </Text>
           );
         }
         if (record.type === 'ISSUE') {
           return (
             <Text strong style={{ color: '#b91c1c', whiteSpace: 'nowrap' }}>
-              -{Math.abs(num).toFixed(2)} {unit}
+              -{formatInventoryQuantity(Math.abs(num))} {unit}
             </Text>
           );
         }
@@ -160,20 +161,20 @@ export const InventoryMovementsTab: React.FC = () => {
         if (num > 0) {
           return (
             <Text strong style={{ color: '#15803d', whiteSpace: 'nowrap' }}>
-              +{num.toFixed(2)} {unit}
+              +{formatInventoryQuantity(num)} {unit}
             </Text>
           );
         }
         if (num < 0) {
           return (
             <Text strong style={{ color: '#b91c1c', whiteSpace: 'nowrap' }}>
-              {num.toFixed(2)} {unit}
+              {formatInventoryQuantity(num)} {unit}
             </Text>
           );
         }
         return (
           <Text strong style={{ color: '#64748b', whiteSpace: 'nowrap' }}>
-            0.00 {unit}
+            0 {unit}
           </Text>
         );
       },
@@ -184,7 +185,7 @@ export const InventoryMovementsTab: React.FC = () => {
       key: 'previousStock',
       width: 100,
       align: 'right',
-      render: (val, record) => <span style={{ whiteSpace: 'nowrap' }}>{`${val} ${record.item?.unit || ''}`}</span>,
+      render: (val, record) => <span style={{ whiteSpace: 'nowrap' }}>{`${formatInventoryQuantity(val)} ${record.item?.unit || ''}`}</span>,
     },
     {
       title: 'Tồn sau',
@@ -194,7 +195,7 @@ export const InventoryMovementsTab: React.FC = () => {
       align: 'right',
       render: (val, record) => (
         <Text strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>
-          {val} {record.item?.unit || ''}
+          {formatInventoryQuantity(val)} {record.item?.unit || ''}
         </Text>
       ),
     },

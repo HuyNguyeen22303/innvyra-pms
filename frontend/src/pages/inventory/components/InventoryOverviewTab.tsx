@@ -33,6 +33,7 @@ import type {
 } from '../../../types/inventory.types.ts';
 import { ItemDetailModal } from './ItemDetailModal.tsx';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -179,7 +180,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
             whiteSpace: 'nowrap',
           }}
         >
-          {stock}
+          {formatInventoryQuantity(stock)}
         </Text>
       ),
     },
@@ -189,7 +190,7 @@ export const InventoryOverviewTab: React.FC<InventoryOverviewTabProps> = ({
       key: 'minStockLevel',
       align: 'right',
       width: 110,
-      render: (minStock) => <span style={{ whiteSpace: 'nowrap' }}>{minStock}</span>,
+      render: (minStock) => <span style={{ whiteSpace: 'nowrap' }}>{formatInventoryQuantity(minStock)}</span>,
     },
     {
       title: 'Tình trạng',

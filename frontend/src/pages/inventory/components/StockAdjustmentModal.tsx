@@ -15,6 +15,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FormOutlined, AlertOutlined } from '@ant-design/icons';
 import { inventoryApi, getInventoryErrorMessage } from '../../../api/inventory.api.ts';
 import type { InventoryItemView, CreateAdjustmentDto } from '../../../types/inventory.types.ts';
+import {
+  formatInventoryQuantity,
+  inventoryQuantityInputProps,
+} from '../../../utils/inventoryQuantity.ts';
 
 const { Text } = Typography;
 
@@ -135,7 +139,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                 label: 'Tồn hệ thống',
                 children: (
                   <Text strong style={{ fontSize: 15, color: '#1b4d3e' }}>
-                    {item.currentStock} {item.unit}
+                    {formatInventoryQuantity(item.currentStock)} {item.unit}
                   </Text>
                 ),
               },
@@ -149,7 +153,9 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                     }
                     style={{ fontWeight: 600, fontSize: 13 }}
                   >
-                    {diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)} {item.unit}
+                    {diff > 0
+                      ? `+${formatInventoryQuantity(diff)}`
+                      : formatInventoryQuantity(diff)} {item.unit}
                   </Tag>
                 ),
               },
@@ -190,6 +196,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                 min={0}
                 step={1}
                 precision={2}
+                {...inventoryQuantityInputProps}
                 placeholder="Nhập số lượng đếm được thực tế trong kho"
               />
             </Form.Item>

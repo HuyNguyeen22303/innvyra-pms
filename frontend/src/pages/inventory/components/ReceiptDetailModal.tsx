@@ -4,6 +4,7 @@ import { FileDoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import type { StockReceiptView, StockReceiptItemView } from '../../../types/inventory.types.ts';
+import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
 const { Text } = Typography;
 
@@ -52,7 +53,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       align: 'right',
       render: (qty, record) => (
         <Text strong style={{ whiteSpace: 'nowrap' }}>
-          {qty} {record.item?.unit}
+          {formatInventoryQuantity(qty)} {record.item?.unit}
         </Text>
       ),
     },

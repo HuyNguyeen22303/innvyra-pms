@@ -40,6 +40,10 @@ import type {
 } from '../../../types/inventory.types.ts';
 import { IssueDetailModal } from './IssueDetailModal.tsx';
 import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
+import {
+  formatInventoryQuantity,
+  inventoryQuantityInputProps,
+} from '../../../utils/inventoryQuantity.ts';
 
 const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -221,7 +225,7 @@ export const InventoryIssuesTab: React.FC = () => {
           const availableStock = parseFloat(itemInfo.currentStock) || 0;
           if (line.quantity > availableStock) {
             appMessage.warning(
-              `Cảnh báo: Dòng ${i + 1} (${itemInfo.name}) yêu cầu xuất ${line.quantity} trong khi tồn kho hiện tại chỉ có ${availableStock} ${itemInfo.unit}`,
+              `Cảnh báo: Dòng ${i + 1} (${itemInfo.name}) yêu cầu xuất ${formatInventoryQuantity(line.quantity)} trong khi tồn kho hiện tại chỉ có ${formatInventoryQuantity(availableStock)} ${itemInfo.unit}`,
             );
           }
         }
@@ -586,7 +590,7 @@ export const InventoryIssuesTab: React.FC = () => {
                       showSearch
                       optionFilterProp="label"
                       options={activeItems.map((item) => ({
-                        label: `${item.name} (${item.code}) [Tồn: ${item.currentStock} ${item.unit}]`,
+                        label: `${item.name} (${item.code}) [Tồn: ${formatInventoryQuantity(item.currentStock)} ${item.unit}]`,
                         value: item.id,
                       }))}
                     />
@@ -598,6 +602,7 @@ export const InventoryIssuesTab: React.FC = () => {
                         min={0.01}
                         step={1}
                         precision={2}
+                        {...inventoryQuantityInputProps}
                         placeholder="Số lượng"
                         value={line.quantity}
                         onChange={(val) =>
@@ -623,7 +628,7 @@ export const InventoryIssuesTab: React.FC = () => {
                           fontSize: 12,
                         }}
                       >
-                        {selectedItem ? `${selectedItem.currentStock} ${selectedItem.unit}` : '-'}
+                        {selectedItem ? `${formatInventoryQuantity(selectedItem.currentStock)} ${selectedItem.unit}` : '-'}
                       </Text>
                     </div>
                   </Col>

@@ -38,6 +38,7 @@ import type {
   InventoryItemView,
 } from '../../../types/inventory.types.ts';
 import { ReceiptDetailModal } from './ReceiptDetailModal.tsx';
+import { inventoryQuantityInputProps } from '../../../utils/inventoryQuantity.ts';
 
 const { Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -569,6 +570,7 @@ export const InventoryReceiptsTab: React.FC = () => {
                         min={0.01}
                         step={1}
                         precision={2}
+                        {...inventoryQuantityInputProps}
                         placeholder="Số lượng"
                         value={line.quantity}
                         onChange={(val) =>

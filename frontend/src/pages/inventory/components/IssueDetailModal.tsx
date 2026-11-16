@@ -4,6 +4,7 @@ import { ExportOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import type { StockIssueView, StockIssueItemView } from '../../../types/inventory.types.ts';
+import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
 const { Text } = Typography;
 
@@ -52,7 +53,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
       align: 'right',
       render: (qty, record) => (
         <Text strong style={{ color: '#d97706', whiteSpace: 'nowrap' }}>
-          {qty} {record.item?.unit}
+          {formatInventoryQuantity(qty)} {record.item?.unit}
         </Text>
       ),
     },
