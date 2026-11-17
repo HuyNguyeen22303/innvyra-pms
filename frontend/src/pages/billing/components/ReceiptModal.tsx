@@ -1,9 +1,12 @@
 import React from 'react';
-import { Modal, Typography, Divider, Row, Col, Tag, Button } from 'antd';
+import { Modal, Typography, Divider, Row, Col, Tag, Button, Alert, Spin } from 'antd';
+import { useQuery } from '@tanstack/react-query';
 import { PrinterOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { PaymentRecord, FolioDetailItem } from '../../../types/billing.types.ts';
 import { getStaffDisplay } from '../../../utils/staffDirectory.ts';
+import { ownHotelApi } from '../../../api/hotels.api.ts';
+import { useAuthStore } from '../../../store/authStore.ts';
 
 const { Title, Text } = Typography;
 
@@ -24,6 +27,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   guestName,
   roomNumber,
 }) => {
+  const user = useAuthStore((state) => state.user);
+  const hotelQuery = useQuery({
+    queryKey: ['receipt-hotel-profile', user?.hotelId, user?.id],
+    queryFn: ({ signal }) => ownHotelApi.get(signal),
+    enabled: open && !!payment && !!user?.hotelId,
+    staleTime: 0,
+  });
+  const hotel = hotelQuery.data?.id === user?.hotelId ? hotelQuery.data : undefined;
+  const hotelReady = !!hotel && hotelQuery.isSuccess && !hotelQuery.isFetching;
+  const hotelContact = [
+    hotel?.address?.trim() ? `Địa chỉ: ${hotel.address.trim()}` : null,
+    hotel?.contactPhone?.trim() ? `Điện thoại: ${hotel.contactPhone.trim()}` : null,
+    hotel?.contactEmail?.trim() ? `Email: ${hotel.contactEmail.trim()}` : null,
+  ].filter(Boolean).join(' — ');
   if (!payment) return null;
 
   const staff = getStaffDisplay(payment.processedBy);
@@ -35,7 +52,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    if (hotelReady) window.print();
   };
 
   const isRefund = payment.paymentType === 'REFUND';
@@ -61,6 +78,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           icon={<PrinterOutlined />}
           style={{ background: '#1b4d3e', borderColor: '#1b4d3e' }}
           onClick={handlePrint}
+          disabled={!hotelReady}
         >
           In phiếu thu
         </Button>,
@@ -69,12 +87,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       <div id="receipt-print-area" style={{ padding: '16px 8px', color: '#0f172a' }}>
         {/* Hotel Header */}
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Title level={4} style={{ margin: 0, color: '#1b4d3e', textTransform: 'uppercase' }}>
-            🏨 Khách Sạn Innvyra (Innvyra Boutique Hotel)
-          </Title>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Địa chỉ: 123 Đường Bờ Biển, Phường Hải Châu, Đà Nẵng — Hotline: 0236 888 9999
-          </Text>
+          {hotelReady ? <>
+            <Title level={4} style={{ margin: 0, color: '#1b4d3e', textTransform: 'uppercase', overflowWrap: 'anywhere' }}>
+              {hotel.name}
+            </Title>
+            {hotelContact && <Text type="secondary" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>{hotelContact}</Text>}
+          </> : hotelQuery.isError ? <Alert type="error" showIcon
+            title="Chưa tải được thông tin khách sạn để in phiếu"
+            action={<Button onClick={() => void hotelQuery.refetch()}>Thử lại</Button>} />
+            : <Spin description="Đang tải thông tin khách sạn..." />}
           <Divider style={{ margin: '14px 0 10px 0' }} />
           <Title level={3} style={{ margin: '8px 0 4px 0', color: isRefund ? '#cf1322' : '#1b4d3e' }}>
             {titleType}
