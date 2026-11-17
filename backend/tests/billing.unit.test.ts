@@ -17,6 +17,7 @@ import {
   paymentBody,
   refundBody,
   serviceQuery,
+  terminalSettlementBody,
 } from '../src/modules/billing/billing.schema.js';
 import { canonicalJson } from '../src/modules/billing/billing.service.js';
 import { openApiDocument } from '../src/config/swagger.js';
@@ -216,9 +217,28 @@ describe('Billing Decimal and validation policy', () => {
     expect(orderQuery.safeParse({ search: ['101'] }).success).toBe(false);
     expect(orderQuery.safeParse({ search: 'Nguyễn Văn An' }).success).toBe(true);
   });
-  it('documents all 19 Billing operations, auth, roles, errors and resolvable references', () => {
+  it('requires explicit reviewed whole-VND terminal charges, a reason and a revision', () => {
+    const body = {
+      finalChargeAmount: '0',
+      reason: 'Free cancellation',
+      expectedRevision: 'a'.repeat(64),
+      confirmedReviewed: true,
+    };
+    expect(terminalSettlementBody.parse(body).finalChargeAmount).toBe('0.00');
+    for (const invalid of [
+      { finalChargeAmount: '-1' },
+      { finalChargeAmount: '1.01' },
+      { finalChargeAmount: 100 },
+      { confirmedReviewed: false },
+      { reason: ' ' },
+      { expectedRevision: 'old' },
+      { hotelId: '2' },
+    ])
+      expect(terminalSettlementBody.safeParse({ ...body, ...invalid }).success).toBe(false);
+  });
+  it('documents all 21 Billing operations, auth, roles, errors and resolvable references', () => {
     const operations = Object.values(billingPaths).flatMap(Object.values);
-    expect(operations).toHaveLength(19);
+    expect(operations).toHaveLength(21);
     for (const operation of operations) {
       expect(operation.security).toEqual([{ bearerAuth: [] }]);
       expect(operation['x-required-roles'].length).toBeGreaterThan(0);

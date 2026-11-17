@@ -40,7 +40,9 @@ Outstanding Balance = Net Charges - Net Paid
 
 Reads aggregate entries and payments in a RepeatableRead snapshot. Pending/failed money is excluded. Deposits have a separate total and never create a duplicate credit. Imported/admin-created negative balances are exposed, never clamped to zero.
 
-- Folio opening is explicit and idempotent, including retrieving an existing CLOSED folio. GET returns `404 FOLIO_NOT_FOUND` if unopened. A new folio cannot open for CANCELLED/NO_SHOW.
+- Folio opening is idempotent: manual opening remains available, reservation creation with initialDeposit opens it atomically, and check-in ensures an OPEN folio in its arrival transaction. Check-in reuses prepaid folios and rejects CLOSED ones. GET never opens a folio. A new CANCELLED/NO_SHOW folio starts empty for explicit terminal settlement. Existing pre-arrival room charges remain intact until reviewed.
+
+The reservation/deposit and arrival workflows use transaction-bound billing repositories under their existing hotel lock, without nested transactions. See `../doc/DAT_PHONG_COC_CHECKIN_FOLIO.md` for the full UI/API workflow. No schema migration or historical data rewrite is needed.
 - New orders require an active stay. Supplied stayId must be active and belong to the same reservation/hotel, with live occupancy. Without stayId the order is reservation-level during an active stay. Prices snapshot when the order is created. Completion and charges commit atomically. Previously requested services may complete after physical checkout. Only REQUESTED orders can cancel.
 - `GET /service-orders?search=` uses one term: numeric input matches a physical room-number prefix (for example `2` finds 201/202 but not 102); text matches guest name, confirmation code or room number (case/diacritic-insensitive via the database collation). Internal order/reservation/stay IDs are not searchable. Guest-name matching is excluded for ACCOUNTANT; room/code search still works.
 - Physical checkout performs no billing mutation. Cancellation creates no automatic refund/credit and deletes no charges. Folios may remain OPEN with debt after checkout.
@@ -48,8 +50,35 @@ Reads aggregate entries and payments in a RepeatableRead snapshot. Pending/faile
 - ADMIN/MANAGER/ACCOUNTANT may approve and record manual refunds with a mandatory reason and `confirmedRefunded:true`; bank refunds require the outgoing reference. The recording employee is the approver under this MVP policy; two-person approval is not implemented. Cumulative refunds cannot exceed the original confirmed receipt or folio net money received. Refunds cannot themselves be refunded.
 - Refund returns money and **increases outstanding**; it does not reduce charges. For a paid concession or cancellation settlement, record the approved actual refund first, then a CREDIT adjustment. This avoids creating unsupported credit balances. No cancellation event triggers automatic refund.
 - Adjustments append a DEBIT/CREDIT with staff/reason and optional same-folio original item reference. CREDIT cannot create a negative balance. Old entries and payment amounts are never changed.
-- Close requires exactly zero balance, no REQUESTED orders or PENDING payments, and all booked rooms checked out with reservation CHECKED_OUT, or a valid cancelled reservation. Closing is idempotent. CLOSED rejects new postings; replay of an already committed request still succeeds.
+- Close requires exactly zero balance, no REQUESTED orders or PENDING payments, no active stays, and reservation CHECKED_OUT, CANCELLED or NO_SHOW. Closing is idempotent. CLOSED rejects new postings; replay of an already committed request still succeeds.
 - Phase 6 creates only staff-confirmed payment rows. Imported/future PENDING rows block receipts/refunds and closure until resolved through an audited operational process. No pending-payment resolution API is introduced here.
+
+## Cancellation / no-show review
+
+`GET /folios/:id/terminal-settlement` reads a snapshot of the open terminal folio,
+money totals, blockers and a revision. `POST` to the same path requires settle
+permission, an Idempotency-Key, `expectedRevision`, `finalChargeAmount`, `reason`
+and `confirmedReviewed:true`. The amount is the **final total for the whole folio**,
+including retained cancellation/no-show fees and every other agreed charge. Zero
+explicitly waives all charges; no policy or deposit forfeiture is inferred.
+
+Within the existing hotel lock/transaction, the difference from net charges is
+appended as MANUAL_ADJUSTMENT. Original room/service rows remain immutable.
+Unlike a general CREDIT adjustment, this explicit review may make outstanding
+negative to show the actual refund due. No payment/refund is fabricated. If the
+result is zero, close/audit/idempotency commit atomically; otherwise the folio
+remains open for actual receipts/refunds, then explicit closure. Stale reviews
+return `SETTLEMENT_STALE` without writing. Pending activity or active stays block.
+
+After explicit terminal review, refunds are also limited by the remaining
+customer credit. Legacy refund-then-credit API workflows remain supported on
+folios without a terminal review. Receipt-list rows expose `refundableAmount`
+after confirmed/pending refunds to guide partial/multiple-receipt returns.
+Reports already include these immutable adjustment credits/debits in net billed
+charges; cash totals change only for actual confirmed payment/refund records.
+
+No schema migration, new database, seed rerun or automatic historical adjustment
+is needed. See `../doc/QUYET_TOAN_DON_HUY_KHONG_DEN.md` for the plan and UI workflow.
 
 ## Idempotency, locks and audit
 
@@ -85,6 +114,8 @@ All paths are under `/api/v1`, use Bearer authentication and `success/message/da
 | GET /folios/:id/items                        | Paginated immutable entries                                                          |
 | POST /folios/:id/adjustments                 | DEBIT/CREDIT; Idempotency-Key required                                               |
 | POST /folios/:id/close                       | Close settled eligible folio                                                         |
+| GET /folios/:id/terminal-settlement          | Read terminal folio balances, blockers and review revision                            |
+| POST /folios/:id/terminal-settlement         | Approve final total charges with reason/revision; Idempotency-Key required              |
 | POST /folios/:folioId/payments               | PAYMENT/DEPOSIT; Idempotency-Key required                                            |
 | GET /folios/:folioId/payments                | Paginated receipts/refunds                                                           |
 | POST /payments/:id/refunds                   | Linked REFUND; Idempotency-Key required                                              |

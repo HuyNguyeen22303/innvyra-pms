@@ -39,6 +39,11 @@ export interface CreateGuestDto {
 }
 
 export type UpdateGuestDto = Partial<CreateGuestDto>;
+export interface GuestWarning {
+  code: 'POSSIBLE_DUPLICATE';
+  message: string;
+  candidateIds: string[];
+}
 
 export interface GuestFilterParams {
   page?: number;

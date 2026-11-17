@@ -25,13 +25,11 @@ export function reservationController(service: ReservationService) {
   };
   const create: RequestHandler = async (req, res) => {
     const { body } = res.locals.validated as { body: CreateReservationInput };
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: 'Reservation created successfully',
-        data: await service.create(scope(req), body),
-      });
+    res.status(201).json({
+      success: true,
+      message: 'Reservation created successfully',
+      data: await service.create(scope(req), body, req.get('Idempotency-Key')),
+    });
   };
   const list: RequestHandler = async (req, res) => {
     const { query } = res.locals.validated as { query: ReservationQuery };

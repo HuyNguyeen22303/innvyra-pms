@@ -160,6 +160,22 @@ export interface CreateAdjustmentDto {
   relatedItemId?: string;
 }
 
+export interface TerminalSettlementPreview {
+  folio: FolioDetailItem;
+  reservationStatus: 'CANCELLED' | 'NO_SHOW';
+  revision: string;
+  pendingOrders: number;
+  pendingPayments: number;
+  activeStays: number;
+}
+
+export interface TerminalSettlementDto {
+  finalChargeAmount: string;
+  reason: string;
+  expectedRevision: string;
+  confirmedReviewed: true;
+}
+
 export interface LedgerQueryParams {
   page?: number;
   limit?: number;
@@ -182,6 +198,7 @@ export interface PaymentRecord {
   processedBy: string;
   processedAt: string;
   createdAt: string;
+  refundableAmount?: string;
 }
 
 export interface CreatePaymentDto {

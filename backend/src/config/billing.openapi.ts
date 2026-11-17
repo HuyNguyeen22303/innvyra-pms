@@ -143,6 +143,24 @@ export const billingSchemas = {
     'amount',
     'confirmedReceived',
   ]),
+  BillingTerminalSettlement: object({
+    finalChargeAmount: {
+      ...money,
+      description:
+        'Final total charges for the whole folio, including all retained fees. Zero explicitly waives all charges.',
+    },
+    reason,
+    expectedRevision: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+    confirmedReviewed: { type: 'boolean', enum: [true] },
+  }),
+  BillingTerminalPreview: object({
+    folio: ref('BillingFolio'),
+    reservationStatus: { type: 'string', enum: ['CANCELLED', 'NO_SHOW'] },
+    revision: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+    pendingOrders: { type: 'integer', minimum: 0 },
+    pendingPayments: { type: 'integer', minimum: 0 },
+    activeStays: { type: 'integer', minimum: 0 },
+  }),
   BillingRefundCreate: object(
     {
       amount: money,
@@ -156,20 +174,41 @@ export const billingSchemas = {
     },
     ['amount', 'reason', 'confirmedRefunded'],
   ),
-  BillingPayment: object({
-    id,
-    folioId: id,
-    paymentType: { type: 'string', enum: ['PAYMENT', 'DEPOSIT', 'REFUND'] },
-    paymentMethod: paymentFields.paymentMethod,
-    amount: money,
-    status: { type: 'string', enum: ['CONFIRMED', 'PENDING', 'FAILED'] },
-    referenceNumber: paymentFields.referenceNumber,
-    originalPaymentId: { ...id, nullable: true },
-    reason: nullableText,
-    processedBy: id,
-    processedAt: date,
-    createdAt: date,
-  }),
+  BillingPayment: object(
+    {
+      id,
+      folioId: id,
+      paymentType: { type: 'string', enum: ['PAYMENT', 'DEPOSIT', 'REFUND'] },
+      paymentMethod: paymentFields.paymentMethod,
+      amount: money,
+      status: { type: 'string', enum: ['CONFIRMED', 'PENDING', 'FAILED'] },
+      referenceNumber: paymentFields.referenceNumber,
+      originalPaymentId: { ...id, nullable: true },
+      reason: nullableText,
+      processedBy: id,
+      processedAt: date,
+      createdAt: date,
+      refundableAmount: {
+        ...total,
+        description:
+          'Only on payment-list rows: original receipt less confirmed/pending refunds, before folio-level limits.',
+      },
+    },
+    [
+      'id',
+      'folioId',
+      'paymentType',
+      'paymentMethod',
+      'amount',
+      'status',
+      'referenceNumber',
+      'originalPaymentId',
+      'reason',
+      'processedBy',
+      'processedAt',
+      'createdAt',
+    ],
+  ),
 };
 const json = (schema: object, example?: object) => ({
   'application/json': { schema, ...(example ? { example } : {}) },
@@ -309,6 +348,14 @@ const examples: Record<string, object> = {
   BillingFolio: folioExample,
   BillingItem: itemExample,
   BillingPayment: paymentExample,
+  BillingTerminalPreview: {
+    folio: folioExample,
+    reservationStatus: 'CANCELLED',
+    revision: 'a'.repeat(64),
+    pendingOrders: 0,
+    pendingPayments: 0,
+    activeStays: 0,
+  },
 };
 function operation(
   tag: string,
@@ -368,7 +415,7 @@ function operation(
           401: 'UNAUTHORIZED: missing, invalid or revoked authentication',
           403: 'FORBIDDEN: current role or CSRF/origin check denied',
           404: 'Resource not found in current hotel; foreign IDs are indistinguishable',
-          409: 'Business conflict: FOLIO_NOT_OPEN, FOLIO_UNSETTLED, FOLIO_PENDING_ACTIVITY, STAYS_NOT_FINISHED, SERVICE_INACTIVE, INVALID_ORDER_STATUS, INSUFFICIENT_OUTSTANDING_BALANCE, REFUND_AMOUNT_EXCEEDED, REFUND_NOT_ALLOWED, IDEMPOTENCY_CONFLICT or FINANCIAL_CONFLICT',
+          409: 'Business conflict: FOLIO_NOT_OPEN, FOLIO_UNSETTLED, FOLIO_PENDING_ACTIVITY, STAYS_NOT_FINISHED, RESERVATION_NOT_TERMINAL, SETTLEMENT_STALE, SERVICE_INACTIVE, INVALID_ORDER_STATUS, INSUFFICIENT_OUTSTANDING_BALANCE, REFUND_AMOUNT_EXCEEDED, REFUND_EXCEEDS_SETTLEMENT, REFUND_NOT_ALLOWED, IDEMPOTENCY_CONFLICT or FINANCIAL_CONFLICT',
           422: 'VALIDATION_ERROR, INVALID_IDEMPOTENCY_KEY, INVALID_PAYMENT_AMOUNT or REFUND_REFERENCE_REQUIRED',
           500: 'Sanitized internal error; no SQL, credentials or stack traces',
         }).map(([code, description]) => [code, { description, content: json(ref('Error')) }]),
@@ -533,7 +580,7 @@ export const billingPaths = {
     post: operation(
       'Folios',
       'Open reservation folio',
-      'One folio per reservation. Posts every booked night once using nightlyRate snapshot rounded half-up per night to whole VND, retaining originals. Existing folios are returned unchanged. New opening for CANCELLED/NO_SHOW is denied. Contract charges are not daily revenue recognition.',
+      'One folio per reservation. Active bookings post every booked night once using rounded snapshots. CANCELLED/NO_SHOW open an empty folio for explicit fee settlement. Existing folios are returned unchanged. Contract charges are not daily revenue recognition.',
       'pay',
       'BillingFolio',
       { mutation: true, params: ['reservationId'] },
@@ -590,7 +637,7 @@ export const billingPaths = {
     post: operation(
       'Folios',
       'Close settled folio',
-      'Balance must equal zero, no requested services/pending payments, and all stays ended or reservation cancelled. CLOSED is final in MVP. Physical checkout does not pay, repost charges or close the folio.',
+      'Balance must equal zero, no requested services/pending payments, no active stays; reservation must be CHECKED_OUT, CANCELLED or NO_SHOW. CLOSED is final. Physical checkout does not pay, repost charges or close the folio.',
       'settle',
       'BillingFolio',
       {
@@ -611,7 +658,7 @@ export const billingPaths = {
     get: operation(
       'Payments',
       'List receipts and refunds',
-      'Separate immutable rows, ordered by ID.',
+      'Separate immutable rows, ordered by ID. List rows additionally include refundableAmount, the unrefunded receipt amount after confirmed/pending refunds; folio-level refund constraints still apply.',
       'read',
       'BillingPayment',
       { params: ['folioId'], queries: paging, list: true },
@@ -637,11 +684,40 @@ export const billingPaths = {
       },
     ),
   },
+  '/folios/{id}/terminal-settlement': {
+    get: operation(
+      'Folios',
+      'Preview cancellation/no-show settlement',
+      'Read-only balance and ledger revision for an OPEN CANCELLED/NO_SHOW folio. No charge, receipt or refund is created.',
+      'read',
+      'BillingTerminalPreview',
+      { params: ['id'] },
+    ),
+    post: operation(
+      'Folios',
+      'Settle cancelled or no-show folio',
+      'Privileged review of final total charges, including all retained fees. Appends the difference as an immutable adjustment with reason; negative outstanding means an actual refund is due. Never creates money movement. Zero outstanding closes atomically. Pending activity/active stays block. Stale revision returns SETTLEMENT_STALE. Replay the same key and payload after timeouts.',
+      'settle',
+      'BillingFolio',
+      {
+        params: ['id'],
+        mutation: true,
+        key: true,
+        body: 'BillingTerminalSettlement',
+        example: {
+          finalChargeAmount: '300000.00',
+          reason: 'Approved retained cancellation fee',
+          expectedRevision: 'a'.repeat(64),
+          confirmedReviewed: true,
+        },
+      },
+    ),
+  },
   '/payments/{id}/refunds': {
     post: operation(
       'Payments',
       'Record approved actual refund',
-      'Manual approval by ADMIN/MANAGER/ACCOUNTANT with reason and actual-refund attestation. Cumulative refunds cannot exceed original confirmed receipt or net money received. Bank refunds require outgoing reference. Refund increases outstanding; it never deletes the original payment, reverses a charge or sends bank funds. CLOSED folios reject new refunds.',
+      'Manual approval by ADMIN/MANAGER/ACCOUNTANT with reason and actual-refund attestation. Cumulative refunds cannot exceed original confirmed receipt or net money received. After explicit terminal settlement, also limited to the remaining customer credit. Bank refunds require outgoing reference. Refund increases outstanding; it never deletes the original payment, reverses a charge or sends bank funds. CLOSED folios reject new refunds.',
       'settle',
       'BillingPayment',
       {

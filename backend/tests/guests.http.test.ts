@@ -96,6 +96,28 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
       expect((await patch({ notes: 'Revised' })).status).toBe(200);
     },
   );
+  it('finds phone matches beyond the initial 100 guests, paginates and hides phone inference from accountants', async () => {
+    const service = new GuestService(store.repository, new GuestCrypto(guestEnv));
+    for (let index = 0; index < 105; index++)
+      await service.createGuest(
+        scope,
+        guestCreateBody.parse({
+          fullName: `Synthetic extra guest ${String(index).padStart(3, '0')}`,
+          phone: index === 104 ? '0909123456' : null,
+        }),
+      );
+    const found = await get('?search=0909%20123%20456');
+    expect(found.body.data.pagination.total).toBe(1);
+    expect(found.body.data.items[0].fullName).toBe('Synthetic extra guest 104');
+    expect((await get('?search=Synthetic%20extra&limit=20&page=6')).body.data.items).toHaveLength(
+      5,
+    );
+    auth.users.get('admin')!.role.code = 'ACCOUNTANT';
+    expect((await get('?search=0909123456')).body.data.pagination.total).toBe(0);
+    expect((await get('?search=Synthetic%20extra%20guest%20104')).body.data.pagination.total).toBe(
+      1,
+    );
+  });
   it.each(['HOUSEKEEPING', 'TECHNICIAN'])('%s cannot access any Guest operation', async (role) => {
     auth.users.get('admin')!.role.code = role;
     for (const res of [
@@ -349,11 +371,11 @@ describe('Guests HTTP: real JWT, RBAC, validation, service and privacy policies'
       log.mockRestore();
     }
   });
-  it('documents all 143 operations, role projections, warnings and soft delete', async () => {
+  it('documents all 145 operations, role projections, warnings and soft delete', async () => {
     expect((await request(app).get('/api-docs/')).status).toBe(200);
     const spec = (await request(app).get('/api-docs/openapi.json')).body;
     expect(Object.values(spec.paths).flatMap((value) => Object.keys(value as object))).toHaveLength(
-      143,
+      145,
     );
     expect(spec.tags).toContainEqual({ name: 'Guests' });
     for (const path of ['/guests', '/guests/{id}'])

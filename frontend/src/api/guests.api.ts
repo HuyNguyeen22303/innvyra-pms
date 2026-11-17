@@ -6,7 +6,9 @@ import type {
   CreateGuestDto,
   UpdateGuestDto,
   GuestFilterParams,
+  GuestWarning,
 } from '../types/guests.types.ts';
+export type GuestWriteResponse = Omit<ApiResponse<GuestDetail>, 'warnings'> & { warnings?: GuestWarning[] };
 
 export const guestsApi = {
   getAll: async (
@@ -26,16 +28,16 @@ export const guestsApi = {
     return res.data;
   },
 
-  create: async (data: CreateGuestDto): Promise<ApiResponse<GuestDetail>> => {
-    const res = await apiClient.post<ApiResponse<GuestDetail>>('/guests', data);
+  create: async (data: CreateGuestDto): Promise<GuestWriteResponse> => {
+    const res = await apiClient.post<GuestWriteResponse>('/guests', data);
     return res.data;
   },
 
   update: async (
     id: string,
     data: UpdateGuestDto
-  ): Promise<ApiResponse<GuestDetail>> => {
-    const res = await apiClient.patch<ApiResponse<GuestDetail>>(
+  ): Promise<GuestWriteResponse> => {
+    const res = await apiClient.patch<GuestWriteResponse>(
       `/guests/${id}`,
       data
     );

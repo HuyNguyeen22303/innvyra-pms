@@ -106,4 +106,12 @@ export const refundBody = z
   })
   .strict();
 export const cancelOrderBody = z.object({ reason: reasonInput }).strict();
+export const terminalSettlementBody = z
+  .object({
+    finalChargeAmount: moneyInput,
+    reason: reasonInput,
+    expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+    confirmedReviewed: z.literal(true),
+  })
+  .strict();
 export const emptyBody = z.object({}).strict().default({});

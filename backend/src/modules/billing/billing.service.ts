@@ -17,32 +17,25 @@ import {
   type PaymentInput,
   type RefundInput,
   type AdjustmentInput,
+  type TerminalSettlementInput,
 } from './billing.types.js';
 import {
   adjustmentBody,
   createOrderBody,
   createServiceBody,
-  idempotencyKey,
   paymentBody,
   refundBody,
   reasonInput,
+  terminalSettlementBody,
   updateServiceBody,
 } from './billing.schema.js';
-import { Money, calculateBalance, checkedAmount, roomCharge } from './billing.money.js';
+import { Money, balanceDto, calculateBalance, checkedAmount, roomCharge } from './billing.money.js';
 import { folioDto, itemDto, orderDto, paymentDto, serviceDto } from './billing.mapper.js';
+import { billingIdempotent, canonicalJson } from './billing.idempotency.js';
+export { canonicalJson } from './billing.idempotency.js';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 // Sort object keys recursively; only validated JSON is fingerprinted, never staff/client identity.
-export function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (value !== null && typeof value === 'object')
-    return `{${Object.entries(value)
-      .filter(([, item]) => item !== undefined)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
-      .join(',')}}`;
-  return JSON.stringify(value) ?? 'null';
-}
 export class BillingService {
   constructor(private readonly repository: BillingRepository) {}
   private authorize(scope: BillingScope, permission: BillingPermission) {
@@ -72,28 +65,7 @@ export class BillingService {
     input: unknown,
     action: () => Promise<T>,
   ): Promise<T> {
-    const parsed = idempotencyKey.safeParse(key);
-    if (!parsed.success)
-      throw new AppError(
-        422,
-        'INVALID_IDEMPOTENCY_KEY',
-        'Idempotency-Key must contain 8-128 permitted ASCII characters',
-      );
-    const keyHash = hash(parsed.data);
-    const requestHash = hash(canonicalJson({ operation, target: target.toString(), input }));
-    const existing = await repository.key(scope.hotelId, keyHash);
-    if (existing) {
-      if (existing.requestHash !== requestHash)
-        throw new AppError(
-          409,
-          'IDEMPOTENCY_CONFLICT',
-          'Key was already used for a different request',
-        );
-      return existing.response as T;
-    }
-    const result = await action();
-    await repository.saveKey(scope.hotelId, keyHash, requestHash, result);
-    return result;
+    return billingIdempotent(repository, scope, key, operation, target, input, action);
   }
   async listServices(scope: BillingScope, query: ServiceQuery) {
     this.authorize(scope, 'read');
@@ -274,9 +246,14 @@ export class BillingService {
       const reservation = await r.reservation(scope.hotelId, reservationId);
       if (!reservation) throw new AppError(404, 'RESERVATION_NOT_FOUND', 'Reservation not found');
       if (
-        !['CONFIRMED', 'CHECKED_IN', 'PARTIALLY_CHECKED_IN', 'CHECKED_OUT'].includes(
-          reservation.status,
-        )
+        ![
+          'CONFIRMED',
+          'CHECKED_IN',
+          'PARTIALLY_CHECKED_IN',
+          'CHECKED_OUT',
+          'CANCELLED',
+          'NO_SHOW',
+        ].includes(reservation.status)
       )
         throw new AppError(
           409,
@@ -285,6 +262,12 @@ export class BillingService {
         );
       if (reservation.currency !== 'VND')
         throw new AppError(409, 'UNSUPPORTED_CURRENCY', 'Only VND is supported');
+      // Terminal reservations have no presumed stay charge. Any retained fee is reviewed explicitly.
+      if (['CANCELLED', 'NO_SHOW'].includes(reservation.status)) {
+        const folio = await r.createFolio(scope.hotelId, reservationId);
+        await r.audit(scope, 'FOLIO_OPENED', folio.id);
+        return folioDto(folio, await this.balance(r, scope, folio.id));
+      }
       const expectedNights =
         (reservation.checkOutDate.getTime() - reservation.checkInDate.getTime()) / 86400000;
       if (
@@ -397,7 +380,8 @@ export class BillingService {
       if (
         !reservation ||
         !(
-          reservation.status === 'CANCELLED' ||
+          (['CANCELLED', 'NO_SHOW'].includes(reservation.status) &&
+            reservation.rooms.every((room) => !room.stay || room.stay.status === 'CHECKED_OUT')) ||
           (reservation.status === 'CHECKED_OUT' &&
             reservation.rooms.every((room) => room.stay?.status === 'CHECKED_OUT'))
         )
@@ -405,11 +389,110 @@ export class BillingService {
         throw new AppError(
           409,
           'STAYS_NOT_FINISHED',
-          'All stays must end or the reservation must be cancelled',
+          'All stays must end; reservation must be checked out, cancelled or no-show',
         );
       const closed = await r.closeFolio(scope.hotelId, id);
       await r.audit(scope, 'FOLIO_CLOSED', id);
       return folioDto(closed, balance);
+    });
+  }
+  private async terminalSettlementState(r: BillingOperations, scope: BillingScope, id: bigint) {
+    const folio = await this.requireFolio(r, scope, id);
+    this.open(folio);
+    const reservation = await r.reservation(scope.hotelId, folio.reservationId);
+    if (!reservation || !['CANCELLED', 'NO_SHOW'].includes(reservation.status))
+      throw new AppError(
+        409,
+        'RESERVATION_NOT_TERMINAL',
+        'Chỉ quyết toán đơn đã hủy hoặc không đến',
+      );
+    const balance = await this.balance(r, scope, id);
+    const pendingOrders = await r.pendingOrders(scope.hotelId, folio.reservationId);
+    const pendingPayments = await r.pendingPayments(scope.hotelId, id);
+    const activeStays = reservation.rooms.filter(
+      (room) => room.stay && room.stay.status !== 'CHECKED_OUT',
+    ).length;
+    const revision = hash(
+      canonicalJson({
+        folioId: id.toString(),
+        status: reservation.status,
+        balance: balanceDto(balance),
+        pendingOrders,
+        pendingPayments,
+        activeStays,
+        ledger: await r.settlementRevision(scope.hotelId, id),
+      }),
+    );
+    return { folio, reservation, balance, pendingOrders, pendingPayments, activeStays, revision };
+  }
+  async getTerminalSettlement(scope: BillingScope, id: bigint) {
+    this.authorize(scope, 'read');
+    return this.repository.snapshot(async (r) => {
+      const state = await this.terminalSettlementState(r, scope, id);
+      return {
+        folio: folioDto(state.folio, state.balance),
+        reservationStatus: state.reservation.status,
+        revision: state.revision,
+        pendingOrders: state.pendingOrders,
+        pendingPayments: state.pendingPayments,
+        activeStays: state.activeStays,
+      };
+    });
+  }
+  async settleTerminalFolio(
+    scope: BillingScope,
+    id: bigint,
+    raw: TerminalSettlementInput,
+    key: string,
+  ) {
+    this.authorize(scope, 'settle');
+    const input = terminalSettlementBody.parse(raw);
+    return this.repository.write(scope.hotelId, async (r) => {
+      await this.requireFolio(r, scope, id);
+      return this.idempotent(r, scope, key, 'TERMINAL_SETTLEMENT', id, input, async () => {
+        const state = await this.terminalSettlementState(r, scope, id);
+        if (state.revision !== input.expectedRevision)
+          throw new AppError(
+            409,
+            'SETTLEMENT_STALE',
+            'Sổ đã thay đổi. Tải lại đối soát và kiểm tra trước khi xác nhận',
+          );
+        if (state.activeStays)
+          throw new AppError(409, 'STAYS_NOT_FINISHED', 'Vẫn còn khách đang lưu trú');
+        if (state.pendingOrders || state.pendingPayments)
+          throw new AppError(
+            409,
+            'FOLIO_PENDING_ACTIVITY',
+            'Xử lý dịch vụ và thanh toán đang chờ trước khi quyết toán',
+          );
+        const finalCharge = new Money(input.finalChargeAmount);
+        const difference = finalCharge.sub(state.balance.netCharges);
+        if (!difference.isZero()) {
+          // Unlike a general concession, terminal settlement may expose money owed back to the guest.
+          // A negative outstanding is retained until staff records the actual refund against its receipt.
+          await r.createItem({
+            hotelId: scope.hotelId,
+            folioId: id,
+            entryType: difference.isNegative() ? 'CREDIT' : 'DEBIT',
+            sourceType: 'MANUAL_ADJUSTMENT',
+            amount: checkedAmount(difference.abs()),
+            description:
+              `Quyết toán ${state.reservation.status}; tổng phí ${finalCharge.toFixed(2)} VND. ${input.reason}`.slice(
+                0,
+                2000,
+              ),
+            createdBy: scope.actorId,
+          });
+        }
+        await r.audit(scope, 'TERMINAL_FOLIO_SETTLED', id, input.reason);
+        const balance = await this.balance(r, scope, id);
+        let folio = state.folio;
+        if (balance.outstandingBalance.isZero()) {
+          folio = await r.closeFolio(scope.hotelId, id);
+          await r.audit(scope, 'FOLIO_CLOSED', id);
+        }
+        return folioDto(folio, balance);
+      });
     });
   }
   async recordPayment(scope: BillingScope, id: bigint, raw: PaymentInput, key: string) {
@@ -468,7 +551,22 @@ export class BillingService {
     return this.repository.snapshot(async (r) => {
       await this.requireFolio(r, scope, id);
       const result = await r.payments(scope.hotelId, id, query);
-      return pageResult(result.items.map(paymentDto), result.total, query);
+      return pageResult(
+        result.items.map((payment) => ({
+          ...paymentDto(payment),
+          refundableAmount:
+            payment.status === 'CONFIRMED' && payment.paymentType !== 'REFUND'
+              ? Money.max(
+                  0,
+                  new Money(payment.amount).sub(
+                    payment.refunds.reduce((sum, refund) => sum.add(refund.amount), new Money(0)),
+                  ),
+                ).toFixed(2)
+              : '0.00',
+        })),
+        result.total,
+        query,
+      );
     });
   }
   async refund(scope: BillingScope, id: bigint, raw: RefundInput, key: string) {
@@ -512,6 +610,18 @@ export class BillingService {
               'Refund exceeds the unrefunded receipt amount',
             );
           const balance = await this.balance(r, scope, folio.id);
+          const reservation = await r.reservation(scope.hotelId, folio.reservationId);
+          if (
+            reservation &&
+            ['CANCELLED', 'NO_SHOW'].includes(reservation.status) &&
+            (await r.settlementRevision(scope.hotelId, folio.id)).lastSettlement !== null &&
+            new Money(input.amount).gt(Money.max(0, balance.outstandingBalance.neg()))
+          )
+            throw new AppError(
+              409,
+              'REFUND_EXCEEDS_SETTLEMENT',
+              'Quyết toán tổng phí trước; số tiền hoàn không được vượt phần dư cần trả khách',
+            );
           if (new Money(input.amount).gt(balance.netPaid))
             throw new AppError(409, 'REFUND_NOT_ALLOWED', 'Refund exceeds net money received');
           // MVP manual approval by ADMIN/MANAGER/ACCOUNTANT with reason and actual refund attestation.

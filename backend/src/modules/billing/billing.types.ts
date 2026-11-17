@@ -10,6 +10,7 @@ import type {
   paymentBody,
   refundBody,
   serviceQuery,
+  terminalSettlementBody,
   updateServiceBody,
 } from './billing.schema.js';
 
@@ -20,6 +21,7 @@ export type CreateOrderInput = z.infer<typeof createOrderBody>;
 export type AdjustmentInput = z.infer<typeof adjustmentBody>;
 export type PaymentInput = z.infer<typeof paymentBody>;
 export type RefundInput = z.infer<typeof refundBody>;
+export type TerminalSettlementInput = z.infer<typeof terminalSettlementBody>;
 export type ServiceQuery = z.infer<typeof serviceQuery>;
 export type OrderQuery = z.infer<typeof orderQuery>;
 export type LedgerQuery = z.infer<typeof ledgerQuery>;

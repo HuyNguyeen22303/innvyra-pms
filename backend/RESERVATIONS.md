@@ -38,7 +38,7 @@ Availability GET dùng transaction snapshot `RepeatableRead`, không giữ chỗ
 - Create xác nhận ngay: `CONFIRMED`. Không có PENDING giữ phòng vô hạn.
 - Chuyển trạng thái duy nhất: `CONFIRMED → CANCELLED`. Hủy lại trả 200, giữ nguyên reason/cancelledAt/cancelledBy đầu tiên. Chuyển status trong cùng transaction khiến mọi đêm ngừng giữ tồn đúng một lần, vẫn giữ đầy đủ price snapshots.
 - Phase 5 suy ra `PARTIALLY_CHECKED_IN`, `CHECKED_IN`, `CHECKED_OUT` từ từng Stay. API hủy từ chối cả ba và `NO_SHOW`; chưa có workflow đánh dấu no-show. Không có PATCH status, khôi phục hoặc sửa ngày; physical assignment/transfer thuộc Stay.
-- Không sửa/xóa payment, deposit hay thực hiện refund. Payments/Billing sau này xử lý chính sách hoàn tiền riêng.
+- Hủy đơn không tự sửa/xóa payment, deposit hay hoàn tiền. Dùng luồng quyết toán CANCELLED/NO_SHOW trong Billing để xác nhận phí và ghi tiền thực tế.
 - Giá MVP dùng `RoomType.basePrice` tại thời điểm xác nhận. Mỗi unit/đêm lưu Decimal(14,2); tổng chỉ tính bằng Prisma.Decimal. Giá hiện tại thay đổi không ảnh hưởng đơn cũ. Không tính VAT/phụ thu/giảm giá. Giới hạn tổng tiền `999999999999.99`.
 - DATE nhập/xuất dạng `YYYY-MM-DD`, lưu `@db.Date` qua UTC midnight để không dịch ngày. Ngày check-out không phải một đêm. Kiểm tra quá khứ dựa trên hotel.timezone.
 - Cấu hình `RESERVATION_MAX_NIGHTS=30`, `RESERVATION_MAX_ROOMS=20`; giới hạn cứng cấu hình lần lượt 366 và 100. `rooms` không rỗng, mỗi roomTypeId chỉ xuất hiện một lần; quantity nguyên dương. Adults/children là **số người cho mỗi phòng** và phải nằm trong maxAdults/maxChildren.
@@ -165,7 +165,7 @@ Prisma Client được generate trong `src/generated/prisma` (gitignored). Depen
 
 - Khóa hotel nối tiếp mọi mutation của một hotel, phù hợp MVP; chưa benchmark throughput/load. Availability hiện query theo type; cần đo tải trước khi mở rộng số lượng type/horizon.
 - Capacity phản ánh trạng thái vật lý hiện tại cho toàn bộ kỳ tương lai. Chưa có khoảng bảo trì theo lịch, room blocks, OTA hoặc rate plan/daily rate. Reservation creation không nhận `roomId`; Stay workflows từ Phase 5 quản lý physical assignment và kiểm tra chồng lịch trong transaction.
-- Chưa có idempotency key cho POST create: retry sau mất response có thể tạo một đơn mới nếu còn capacity. Client nên tra mã/đơn đã tạo trước khi gửi lại; cancellation đã idempotent.
-- Không có API sửa ngày/loại phòng/khôi phục đơn. Các workflow này phải điều chỉnh tồn nguyên tử trong phase riêng. Stay workflows từ Phase 5 suy ra trạng thái nhận/trả theo từng phòng; chưa có workflow NO_SHOW.
+- POST create nhận `initialDeposit?` để lưu đơn, mở folio và ghi cọc nguyên tử. `Idempotency-Key` bắt buộc khi có cọc; giao diện gửi khóa cho mọi lần tạo đơn. Cùng khóa/nội dung trả kết quả đã lưu, nội dung khác trả 409. Client cũ không cọc/không khóa vẫn được hỗ trợ và không được đảm bảo chống trùng khi gửi lại. Phản hồi tạo đơn thêm `folioId` và `initialPaymentId` (null khi không có cọc). Xem `../doc/DAT_PHONG_COC_CHECKIN_FOLIO.md`.
+- Không có API sửa ngày/loại phòng/khôi phục đơn. Các workflow này phải điều chỉnh tồn nguyên tử trong phase riêng. Stay workflows suy ra trạng thái nhận/trả theo từng phòng; NO_SHOW giải phóng tồn và dùng luồng quyết toán riêng.
 - Việc đổi timezone, sửa DB trực tiếp hoặc thêm writer bỏ qua khóa có thể phá giả định tồn. Quản trị production cần giới hạn quyền ghi DB và dùng workflow có kiểm tra.
 - Migration ứng dụng và kiểm thử tải là bước vận hành còn lại; không tự áp dụng migration lên database đang dùng.

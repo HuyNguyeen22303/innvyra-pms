@@ -107,6 +107,27 @@ export const reservationSchemas = {
       rooms: { type: 'array', minItems: 1, maxItems: 100, items: roomInput },
       bookingSource: source,
       notes: { type: 'string', nullable: true, maxLength: 5000 },
+      initialDeposit: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['amount', 'paymentMethod', 'confirmedReceived'],
+        properties: {
+          amount: {
+            type: 'string',
+            pattern: '^(0|[1-9][0-9]{0,15})(\\.0{1,2})?$',
+            description: 'Positive whole VND, capped by confirmed folio room charges.',
+          },
+          paymentMethod: { type: 'string', enum: ['CASH', 'BANK_TRANSFER'] },
+          referenceNumber: {
+            type: 'string',
+            nullable: true,
+            minLength: 1,
+            maxLength: 100,
+            description: 'Required for a confirmed bank transfer.',
+          },
+          confirmedReceived: { type: 'boolean', enum: [true] },
+        },
+      },
     },
     description:
       'adults/children are PER ROOM. Each roomTypeId must occur once. Total rooms limited by RESERVATION_MAX_ROOMS (default 20). No roomId, hotelId, status, price or creator fields allowed.',
@@ -127,6 +148,16 @@ export const reservationSchemas = {
     required: [...Object.keys(summaryFields), 'createdBy', 'updatedAt', 'rooms', 'cancellation'],
     properties: {
       ...summaryFields,
+      folioId: {
+        ...id,
+        nullable: true,
+        description: 'Creation response: folio opened for initialDeposit, otherwise null.',
+      },
+      initialPaymentId: {
+        ...id,
+        nullable: true,
+        description: 'Creation response: recorded deposit, otherwise null.',
+      },
       createdBy: identity,
       updatedAt: timestamp,
       notes: { type: 'string', nullable: true, description: 'Omitted for ACCOUNTANT.' },
@@ -349,9 +380,24 @@ export const reservationPaths = {
       ...operation(
         'Create a confirmed multi-room reservation',
         write,
-        'One transaction locks hotel capacity, validates scoped active guest/types, checks each night, snapshots Decimal prices and confirms all rooms. No temporary hold. Max rooms 20 and nights 30 by default (server configuration). Capacity or partial-write failures roll back the entire reservation. Hotel and actor IDs come from server context; supplied guest/type IDs are checked within that hotel. No physical assignment, tax, discounts or payments. A retried POST is a new booking; creation has no idempotency key.',
+        'One hotel-locked transaction validates capacity, snapshots prices and creates the reservation. Optional initialDeposit opens one folio and records actual DEPOSIT in the same transaction; any failure rolls everything back. Without deposit no folio is created. Idempotency-Key is required with initialDeposit and optional for legacy clients without it; same key/payload replays the original result, changed payload conflicts. Amounts use existing whole-VND per-night folio rounding. Tenant and actor come from authentication. No physical assignment, tax or discounts.',
       ),
-      parameters: [csrf],
+      parameters: [
+        csrf,
+        {
+          in: 'header',
+          name: 'Idempotency-Key',
+          required: false,
+          description:
+            'Required with initialDeposit. Send the same key and payload after timeouts; recommended for every creation.',
+          schema: {
+            type: 'string',
+            minLength: 8,
+            maxLength: 128,
+            pattern: '^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$',
+          },
+        },
+      ],
       requestBody: {
         required: true,
         content: json(ref('CreateReservation'), {

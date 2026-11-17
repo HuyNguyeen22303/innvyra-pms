@@ -31,12 +31,16 @@ export function memoryGuests() {
     const row = records.get(id);
     return row?.hotelId === hotelId && row.deletedAt === null ? row : null;
   };
-  const matching = (hotelId: bigint, query: GuestQuery) =>
+  const matching = (hotelId: bigint, query: GuestQuery, searchPhone = false) =>
     [...records.values()].filter(
       (row) =>
         row.hotelId === hotelId &&
         row.deletedAt === null &&
-        (!query.search || row.fullName.toLowerCase().includes(query.search.toLowerCase())) &&
+        (!query.search ||
+          row.fullName.toLowerCase().includes(query.search.toLowerCase()) ||
+          (searchPhone &&
+            /^[+\d() .-]+$/.test(query.search) &&
+            !!row.phone?.includes(query.search.replace(/[() .-]/g, '')))) &&
         (!query.nationality || row.nationality === query.nationality),
     );
   const repository: GuestRepository = {
@@ -55,8 +59,8 @@ export function memoryGuests() {
     async findById(hotelId, id) {
       return find(hotelId, id);
     },
-    async findMany(hotelId, query) {
-      const rows = matching(hotelId, query).sort((a, b) => {
+    async findMany(hotelId, query, searchPhone = false) {
+      const rows = matching(hotelId, query, searchPhone).sort((a, b) => {
         const left = a[query.sortBy],
           right = b[query.sortBy];
         const comparison = left < right ? -1 : left > right ? 1 : 0;
@@ -68,13 +72,13 @@ export function memoryGuests() {
       });
       return rows.slice((query.page - 1) * query.limit, query.page * query.limit);
     },
-    async count(hotelId, query) {
-      return matching(hotelId, query).length;
+    async count(hotelId, query, searchPhone = false) {
+      return matching(hotelId, query, searchPhone).length;
     },
-    async list(hotelId, query) {
+    async list(hotelId, query, searchPhone = false) {
       return {
-        items: await repository.findMany(hotelId, query),
-        total: await repository.count(hotelId, query),
+        items: await repository.findMany(hotelId, query, searchPhone),
+        total: await repository.count(hotelId, query, searchPhone),
       };
     },
     async create(hotelId, input) {

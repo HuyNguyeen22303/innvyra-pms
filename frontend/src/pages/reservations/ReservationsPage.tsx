@@ -24,6 +24,7 @@ import {
   Spin,
   Tooltip,
   Grid,
+  ConfigProvider,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -239,7 +240,10 @@ const NoShowReservationModal: React.FC<NoShowReservationModalProps> = React.memo
 );
 import dayjs, { type Dayjs } from 'dayjs';
 import { reservationsApi } from '../../api/reservations.api.ts';
-import { guestsApi } from '../../api/guests.api.ts';
+import { createIdempotencyKey } from '../../api/billing.api.ts';
+import { BookingGuestPicker } from '../../components/guests/BookingGuestPicker.tsx';
+import { BookingDepositFields } from './BookingDepositFields.tsx';
+import { bookingDepositPayload, bookingRoomCharge, emptyBookingDeposit, prepareBookingAttempt, type BookingAttempt } from '../../utils/bookingWorkflow.ts';
 import { roomTypesApi, roomsApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
 import type {
@@ -250,7 +254,6 @@ import type {
   RoomAvailabilityItem,
   CreateReservationDto,
 } from '../../types/reservations.types.ts';
-import type { GuestSummary } from '../../types/guests.types.ts';
 import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
@@ -628,23 +631,13 @@ export const ReservationsPage: React.FC = () => {
 
   // Booker Guest and Extra fields
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+  const [initialDeposit, setInitialDeposit] = useState(emptyBookingDeposit);
+  const [bookingUncertain, setBookingUncertain] = useState(false);
+  const bookingAttempt = useRef<BookingAttempt | null>(null);
+  const bookingSubmitting = useRef(false);
   const [selectedSource, setSelectedSource] = useState<BookingSource>('DIRECT');
   const bookingNotesRef = useRef<string>('');
   const [bookingNotesResetKey, setBookingNotesResetKey] = useState<number>(0);
-
-  // Fetch Guest list for Guest Selector Dropdown
-  const { data: guestsRes, isLoading: isLoadingGuests } = useQuery({
-    queryKey: ['guestsForBooking'],
-    queryFn: () => guestsApi.getAll({ limit: 100 }),
-    enabled: canWrite,
-  });
-  const guestsList: GuestSummary[] = useMemo(
-    () =>
-      Array.isArray(guestsRes?.data)
-        ? guestsRes.data
-        : guestsRes?.data?.items || [],
-    [guestsRes]
-  );
 
   // Fetch Room Types to know max occupancy and base details
   const { data: roomTypesRes } = useQuery({
@@ -746,12 +739,21 @@ export const ReservationsPage: React.FC = () => {
   }, [selectedRoomsMap]);
 
   // Create Reservation Mutation
+  const maximumDeposit = useMemo(() => bookingRoomCharge(selectedRoomsMap, availableRoomsList, totalNightsStay),
+    [selectedRoomsMap, availableRoomsList, totalNightsStay]);
   const createMutation = useMutation({
-    mutationFn: (data: CreateReservationDto) => reservationsApi.create(data),
+    mutationFn: (attempt: BookingAttempt) => reservationsApi.create(attempt.payload, attempt.key),
     onSuccess: (res) => {
       const code = res?.data?.confirmationCode || 'Thành công';
-      appMessage.success(`Đặt phòng thành công! Mã xác nhận: ${code}`, 6);
+      appMessage.success(<Space>Đặt phòng thành công! Mã xác nhận: {code}
+        {res.data.folioId && <Button type="link" onClick={() => navigate(`/folios?reservationId=${res.data.id}`)}>Xem folio</Button>}</Space>, 8);
+      bookingAttempt.current = null;
+      setBookingUncertain(false);
+      setInitialDeposit(emptyBookingDeposit());
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['roomAvailability'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', res.data.id] });
+      queryClient.invalidateQueries({ predicate: ({ queryKey }) => /^(report|dashboard)/.test(String(queryKey[0])) });
       // Reset form
       setSelectedRoomsMap({});
       setSelectedGuestId(null);
@@ -761,12 +763,16 @@ export const ReservationsPage: React.FC = () => {
       setActiveTab('list');
     },
     onError: (err: any) => {
+      const uncertain = !err.response || err.response.status >= 500 || err.response?.data?.error?.code === 'IDEMPOTENCY_CONFLICT';
+      setBookingUncertain(uncertain);
+      if (!uncertain) bookingAttempt.current = null;
       const errorMsg =
         err?.response?.data?.error?.message ||
         err?.response?.data?.message ||
         'Không thể tạo đặt phòng. Vui lòng kiểm tra lại tính khả dụng của phòng.';
       appMessage.error(errorMsg);
     },
+    onSettled: () => { bookingSubmitting.current = false; },
   });
 
   // Stable mutate/pending handles so memoized panes are not invalidated by the
@@ -774,6 +780,12 @@ export const ReservationsPage: React.FC = () => {
   const { mutate: createReservation, isPending: isCreatingReservation } = createMutation;
 
   const handleCreateReservation = useCallback(() => {
+    if (bookingSubmitting.current) return;
+    if (bookingUncertain && bookingAttempt.current) {
+      bookingSubmitting.current = true;
+      createReservation(bookingAttempt.current);
+      return;
+    }
     if (!selectedGuestId) {
       appMessage.warning('Vui lòng chọn khách hàng đặt phòng!');
       return;
@@ -797,14 +809,22 @@ export const ReservationsPage: React.FC = () => {
       return;
     }
 
-    createReservation({
+    let deposit: CreateReservationDto['initialDeposit'];
+    try { deposit = bookingDepositPayload(initialDeposit, maximumDeposit); }
+    catch (error) { appMessage.warning(error instanceof Error ? error.message : 'Kiểm tra lại thông tin cọc'); return; }
+    const payload: CreateReservationDto = {
       guestId: selectedGuestId,
       checkInDate: availDateRange[0].format('YYYY-MM-DD'),
       checkOutDate: availDateRange[1].format('YYYY-MM-DD'),
       rooms: roomsPayload,
       bookingSource: selectedSource,
       notes: bookingNotesRef.current.trim() || null,
-    });
+      ...(deposit ? { initialDeposit: deposit } : {}),
+    };
+    const attempt = prepareBookingAttempt(bookingAttempt.current, payload, false, () => createIdempotencyKey('booking'));
+    bookingAttempt.current = attempt;
+    bookingSubmitting.current = true;
+    createReservation(attempt);
   }, [
     appMessage,
     availDateRange,
@@ -813,6 +833,7 @@ export const ReservationsPage: React.FC = () => {
     selectedRoomsMap,
     selectedSource,
     totalSelectedRoomsCount,
+    initialDeposit, maximumDeposit, bookingUncertain,
   ]);
 
   // ----------------------------------------------------
@@ -1004,7 +1025,13 @@ export const ReservationsPage: React.FC = () => {
   // modals) no longer re-renders this subtree.
   const reservationCreatePane = useMemo(
     () => (
-                      <div>
+                      <>
+                      {bookingUncertain && <Alert type="warning" showIcon style={{ marginBottom: 16 }}
+                        title="Chưa xác định được kết quả đặt phòng"
+                        description="Giữ nguyên lần xác nhận trước. Bấm kiểm tra để gửi lại cùng yêu cầu, tránh tạo trùng đơn hoặc cọc."
+                        action={<Button loading={isCreatingReservation} onClick={handleCreateReservation}>Kiểm tra kết quả / Thử lại</Button>} />}
+                      <ConfigProvider componentDisabled={isCreatingReservation || bookingUncertain}>
+                      <div style={{ pointerEvents: bookingUncertain ? 'none' : undefined, opacity: bookingUncertain ? 0.65 : 1 }}>
                         {/* Step 1: Availability Search Filter */}
                         <Card
                           title={
@@ -1272,21 +1299,8 @@ export const ReservationsPage: React.FC = () => {
                                   <Text strong style={{ display: 'block', marginBottom: 6 }}>
                                     Khách hàng đặt phòng (Booker Guest): <span style={{ color: '#ff4d4f' }}>*</span>
                                   </Text>
-                                  <Select
-                                    showSearch
-                                    placeholder="Tìm kiếm theo họ tên hoặc số điện thoại khách hàng"
-                                    value={selectedGuestId}
-                                    onChange={(val) => setSelectedGuestId(val)}
-                                    loading={isLoadingGuests}
-                                    style={{ width: '100%' }}
-                                    filterOption={(input, option) =>
-                                      (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                                    }
-                                    options={guestsList.map((g) => ({
-                                      value: g.id,
-                                      label: `${g.fullName} - ${g.phone || 'Không có SĐT'} (${g.nationality || 'VN'})`,
-                                    }))}
-                                  />
+                                  <BookingGuestPicker value={selectedGuestId} onChange={setSelectedGuestId}
+                                    disabled={isCreatingReservation || bookingUncertain} />
                                 </div>
 
                                 <div style={{ marginBottom: 16 }}>
@@ -1362,16 +1376,17 @@ export const ReservationsPage: React.FC = () => {
                                     </Text>
                                   </div>
 
+                                  <BookingDepositFields value={initialDeposit} onChange={setInitialDeposit} maximum={maximumDeposit} />
                                   <Button
                                     type="primary"
                                     size="large"
                                     block
                                     icon={<CheckCircleOutlined />}
-                                    disabled={totalSelectedRoomsCount === 0 || !selectedGuestId}
+                                    disabled={bookingUncertain || totalSelectedRoomsCount === 0 || !selectedGuestId}
                                     loading={isCreatingReservation}
                                     onClick={handleCreateReservation}
                                   >
-                                    Xác nhận Tạo Đặt phòng
+                                    {initialDeposit.enabled ? 'Tạo đặt phòng & nhận cọc' : 'Xác nhận Tạo Đặt phòng'}
                                   </Button>
                                   {totalSelectedRoomsCount === 0 && (
                                     <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: 12 }}>
@@ -1384,8 +1399,10 @@ export const ReservationsPage: React.FC = () => {
                           </Card>
                         )}
                       </div>
+                      </ConfigProvider>
+                      </>
     ),
-    [adultsCount, availDateRange, availableRoomsList, bookingNotesRef, bookingNotesResetKey, calculatedTotalAmount, childrenCount, guestsList, handleCreateReservation, handleSearchAvailability, hasSearchedAvail, isCreatingReservation, isLoadingAvailability, isLoadingGuests, roomTypesList, selectedGuestId, selectedRoomsMap, selectedSource, setAdultsCount, setAvailDateRange, setChildrenCount, setSelectedGuestId, setSelectedRoomsMap, setSelectedSource, totalNightsStay, totalSelectedRoomsCount]
+    [adultsCount, availDateRange, availableRoomsList, bookingNotesRef, bookingNotesResetKey, calculatedTotalAmount, childrenCount, handleCreateReservation, handleSearchAvailability, hasSearchedAvail, isCreatingReservation, isLoadingAvailability, roomTypesList, selectedGuestId, selectedRoomsMap, selectedSource, setAdultsCount, setAvailDateRange, setChildrenCount, setSelectedGuestId, setSelectedRoomsMap, setSelectedSource, totalNightsStay, totalSelectedRoomsCount, initialDeposit, maximumDeposit, bookingUncertain]
   );
 
   // Memoized tab pane: the element identity only changes when the values it

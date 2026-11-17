@@ -6,6 +6,9 @@ import { PricingService } from './pricing.service.js';
 import { asDate } from './reservation.dates.js';
 import { createReservationBody } from './reservation.schema.js';
 import { reservationDetail, reservationSummary } from './reservation.mapper.js';
+import { BillingService } from '../billing/billing.service.js';
+import { idempotencyKey } from '../billing/billing.schema.js';
+import { billingIdempotent, requestHash } from '../billing/billing.idempotency.js';
 import {
   reservationPermissions,
   type CancelReservationInput,
@@ -29,9 +32,15 @@ export class ReservationService {
     if (!(reservationPermissions[permission] as readonly string[]).includes(scope.role))
       throw new AppError(403, 'FORBIDDEN', 'Forbidden');
   }
-  async create(scope: ReservationScope, raw: CreateReservationInput) {
+  async create(scope: ReservationScope, raw: CreateReservationInput, key?: string) {
     this.authorize(scope, 'write');
     const input = createReservationBody.parse(raw);
+    if ((input.initialDeposit || key !== undefined) && !idempotencyKey.safeParse(key).success)
+      throw new AppError(
+        422,
+        'INVALID_IDEMPOTENCY_KEY',
+        'A valid Idempotency-Key is required when receiving a deposit',
+      );
     if (input.rooms.reduce((sum, line) => sum + line.quantity, 0) > this.env.RESERVATION_MAX_ROOMS)
       throw new AppError(
         422,
@@ -39,53 +48,86 @@ export class ReservationService {
         `At most ${this.env.RESERVATION_MAX_ROOMS} rooms per reservation`,
       );
     return this.repository.withHotelLock(scope.hotelId, async (repository) => {
-      const dates = await this.availability.dates(
-        repository,
-        scope.hotelId,
-        input.checkInDate,
-        input.checkOutDate,
-      );
-      if (!(await repository.guest(scope.hotelId, BigInt(input.guestId))))
-        throw new AppError(404, 'GUEST_NOT_FOUND', 'Guest not found');
-      const types = await repository.roomTypes(
-        scope.hotelId,
-        input.rooms.map((line) => BigInt(line.roomTypeId)),
-      );
-      for (const line of input.rooms) {
-        const type = types.find((row) => row.id === BigInt(line.roomTypeId));
-        if (!type) throw new AppError(404, 'ROOM_TYPE_NOT_FOUND', 'Room type not found');
-        if (!type.isActive) throw new AppError(409, 'ROOM_TYPE_INACTIVE', 'Room type is inactive');
-        if (line.adults > type.maxAdults || line.children > type.maxChildren)
-          throw new AppError(
-            422,
-            'ROOM_CAPACITY_EXCEEDED',
-            'Guest count exceeds capacity per room',
+      const create = async () => {
+        const dates = await this.availability.dates(
+          repository,
+          scope.hotelId,
+          input.checkInDate,
+          input.checkOutDate,
+        );
+        if (!(await repository.guest(scope.hotelId, BigInt(input.guestId))))
+          throw new AppError(404, 'GUEST_NOT_FOUND', 'Guest not found');
+        const types = await repository.roomTypes(
+          scope.hotelId,
+          input.rooms.map((line) => BigInt(line.roomTypeId)),
+        );
+        for (const line of input.rooms) {
+          const type = types.find((row) => row.id === BigInt(line.roomTypeId));
+          if (!type) throw new AppError(404, 'ROOM_TYPE_NOT_FOUND', 'Room type not found');
+          if (!type.isActive)
+            throw new AppError(409, 'ROOM_TYPE_INACTIVE', 'Room type is inactive');
+          if (line.adults > type.maxAdults || line.children > type.maxChildren)
+            throw new AppError(
+              422,
+              'ROOM_CAPACITY_EXCEEDED',
+              'Guest count exceeds capacity per room',
+            );
+          if (
+            (await this.availability.available(
+              repository,
+              scope.hotelId,
+              type.id,
+              asDate(input.checkInDate),
+              asDate(input.checkOutDate),
+            )) < line.quantity
+          )
+            throw new AppError(
+              409,
+              'INSUFFICIENT_AVAILABILITY',
+              'Insufficient rooms for one or more nights',
+            );
+        }
+        const priced = this.pricing.price(input.rooms, types, dates);
+        const reservation = await repository.create(scope.hotelId, scope.actorId, {
+          ...priced,
+          guestId: BigInt(input.guestId),
+          checkInDate: asDate(input.checkInDate),
+          checkOutDate: asDate(input.checkOutDate),
+          bookingSource: input.bookingSource,
+          notes: input.notes ?? null,
+        });
+        let folioId: string | null = null,
+          initialPaymentId: string | null = null;
+        if (input.initialDeposit) {
+          const billing = new BillingService(repository.transactionBilling());
+          const folio = await billing.openFolio(scope, reservation.id);
+          const payment = await billing.recordPayment(
+            scope,
+            BigInt(folio.id),
+            {
+              ...input.initialDeposit,
+              paymentType: 'DEPOSIT',
+            },
+            requestHash(`reservation-deposit:${key!}`),
           );
-        if (
-          (await this.availability.available(
-            repository,
+          folioId = folio.id;
+          initialPaymentId = payment.id;
+        }
+        if (key)
+          await repository.transactionBilling().audit(scope, 'RESERVATION_CREATED', reservation.id);
+        return { ...reservationDetail(reservation, scope.role), folioId, initialPaymentId };
+      };
+      return key
+        ? billingIdempotent(
+            repository.transactionBilling(),
+            scope,
+            key,
+            'RESERVATION_CREATE',
             scope.hotelId,
-            type.id,
-            asDate(input.checkInDate),
-            asDate(input.checkOutDate),
-          )) < line.quantity
-        )
-          throw new AppError(
-            409,
-            'INSUFFICIENT_AVAILABILITY',
-            'Insufficient rooms for one or more nights',
-          );
-      }
-      const priced = this.pricing.price(input.rooms, types, dates);
-      const reservation = await repository.create(scope.hotelId, scope.actorId, {
-        ...priced,
-        guestId: BigInt(input.guestId),
-        checkInDate: asDate(input.checkInDate),
-        checkOutDate: asDate(input.checkOutDate),
-        bookingSource: input.bookingSource,
-        notes: input.notes ?? null,
-      });
-      return reservationDetail(reservation, scope.role);
+            input,
+            create,
+          )
+        : create();
     });
   }
   async list(scope: ReservationScope, query: ReservationQuery) {

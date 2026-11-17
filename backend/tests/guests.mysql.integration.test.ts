@@ -120,6 +120,33 @@ describe.skipIf(!testUrl)(
         .auth(token, { type: 'bearer' })
         .set('X-CSRF-Protection', '1');
 
+    it('looks up phone contacts beyond 100 profiles with tenant and accountant privacy filters', async () => {
+      await prisma.guest.createMany({
+        data: Array.from({ length: 105 }, (_, index) => ({
+          hotelId: scope.hotelId,
+          fullName: `Lookup person ${String(index).padStart(3, '0')}`,
+          phone: index === 104 ? '0909123456' : null,
+        })),
+      });
+      await prisma.guest.create({
+        data: { hotelId: otherHotelId, fullName: 'Foreign phone contact', phone: '0909123456' },
+      });
+      const query = guestListQuery.parse({ search: '0909 123 456' });
+      const found = await service.getGuests(scope, query);
+      expect(found.pagination.total).toBe(1);
+      expect(found.items[0]!.fullName).toBe('Lookup person 104');
+      expect(
+        (await service.getGuests({ ...scope, role: 'ACCOUNTANT' }, query)).pagination.total,
+      ).toBe(0);
+      expect(
+        (
+          await service.getGuests(
+            scope,
+            guestListQuery.parse({ search: 'Lookup person', limit: '20', page: '6' }),
+          )
+        ).items,
+      ).toHaveLength(5);
+    });
     it('stores ciphertext and tenant-keyed hash, round-trips DATE and exposes no internal fields', async () => {
       const created = await request(app)
         .post('/api/v1/guests')

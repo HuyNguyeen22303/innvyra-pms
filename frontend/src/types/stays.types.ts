@@ -28,6 +28,7 @@ export interface StaySummaryItem {
 }
 
 export interface StayDetailItem extends StaySummaryItem {
+  folioId?: string;
   reservation: {
     id: string;
     confirmationCode: string;

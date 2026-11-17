@@ -28,7 +28,12 @@ import {
 
 type Entity = { id: string };
 type Staff = Entity & { username: string; session: ScenarioSession };
-type Booking = Entity & { rooms: Entity[]; totalAmount: string };
+type Booking = Entity & {
+  rooms: Entity[];
+  totalAmount: string;
+  folioId: string | null;
+  initialPaymentId: string | null;
+};
 export const isLocalSeedName = isLocalDatabaseName;
 export const sqlIdentifier = (value: string) => {
   if (!/^[A-Za-z0-9_]+$/.test(value)) throw new Error('Unexpected SQL identifier');
@@ -282,7 +287,19 @@ export async function seedLocalDataset(
       cleanerId: BigInt(staff.HOUSEKEEPING.id),
       service: { id: BigInt(services.LAUNDRY!), name: 'Giặt ủi', unit: 'kg', price: '45000' },
     });
-    const book = (guest: number, typeId: string, from: number, nights = 2) =>
+    let bookingSequence = 0;
+    const book = (
+      guest: number,
+      typeId: string,
+      from: number,
+      nights = 2,
+      initialDeposit?: {
+        amount: string;
+        paymentMethod: 'CASH' | 'BANK_TRANSFER';
+        referenceNumber?: string;
+        confirmedReceived: true;
+      },
+    ) =>
       http.ok<Booking>(
         'post',
         '/reservations',
@@ -293,8 +310,10 @@ export async function seedLocalDataset(
           checkOutDate: dayOffset(today, from + nights),
           rooms: [{ roomTypeId: typeId, quantity: 1, adults: 2 }],
           bookingSource: ['DIRECT', 'PHONE', 'EMAIL', 'AGENT'][guest % 4],
+          ...(initialDeposit ? { initialDeposit } : {}),
         },
         201,
+        `local-${config.code}-booking-${++bookingSequence}`,
       );
     const pay = (
       folioId: string,
@@ -320,19 +339,14 @@ export async function seedLocalDataset(
       );
     // A complete current-day departure, service charge and receipt.
     const closedBooking = await book(8, rooms[0]!.typeId, 0, 1);
-    const closedStay = await http.ok<{ stayId: string }>(
+    const closedStay = await http.ok<{ stayId: string; folioId: string }>(
       'post',
       `/reservations/${closedBooking.id}/rooms/${closedBooking.rooms[0]!.id}/check-in`,
       staff.RECEPTIONIST.session.accessToken,
       { roomId: rooms[0]!.id },
       201,
     );
-    const closedFolio = await http.ok<Entity>(
-      'post',
-      `/reservations/${closedBooking.id}/folio/open`,
-      staff.ACCOUNTANT.session.accessToken,
-      {},
-    );
+    const closedFolio = { id: closedStay.folioId };
     const water = await http.ok<Entity>(
       'post',
       '/service-orders',
@@ -370,8 +384,21 @@ export async function seedLocalDataset(
       .map((number) => rooms.find((room) => room.number === number)!);
     const activeStays: string[] = [];
     for (const [index, room] of occupiedRooms.entries()) {
-      const booking = await book(10 + index, room.typeId, 0, 2 + (index % 2));
-      const stay = await http.ok<{ stayId: string }>(
+      const booking = await book(
+        10 + index,
+        room.typeId,
+        0,
+        2 + (index % 2),
+        index === 0
+          ? {
+              amount: '150000',
+              paymentMethod: 'BANK_TRANSFER',
+              referenceNumber: `LOCAL-${config.code}-ARRIVAL-DEPOSIT`,
+              confirmedReceived: true,
+            }
+          : undefined,
+      );
+      const stay = await http.ok<{ stayId: string; folioId: string }>(
         'post',
         `/reservations/${booking.id}/rooms/${booking.rooms[0]!.id}/check-in`,
         staff.RECEPTIONIST.session.accessToken,
@@ -379,13 +406,11 @@ export async function seedLocalDataset(
         201,
       );
       activeStays.push(stay.stayId);
-      const folio = await http.ok<Entity>(
-        'post',
-        `/reservations/${booking.id}/folio/open`,
-        staff.ACCOUNTANT.session.accessToken,
-        {},
-      );
-      await pay(folio.id, '150000', index % 2 ? 'CASH' : 'BANK_TRANSFER', 'DEPOSIT');
+      const folio = { id: stay.folioId };
+      if (booking.folioId && booking.folioId !== folio.id)
+        throw new Error('Arrival must reuse the prepaid folio');
+      if (!booking.initialPaymentId)
+        await pay(folio.id, '150000', index % 2 ? 'CASH' : 'BANK_TRANSFER', 'DEPOSIT');
       const breakfast = await http.ok<Entity>(
         'post',
         '/service-orders',
@@ -417,14 +442,12 @@ export async function seedLocalDataset(
         );
     }
     for (let index = 0; index < 8; index++) {
-      const booking = await book(15 + index, types[index % types.length]!.id, 5 + index * 2, 2);
-      const folio = await http.ok<Entity>(
-        'post',
-        `/reservations/${booking.id}/folio/open`,
-        staff.ACCOUNTANT.session.accessToken,
-        {},
-      );
-      await pay(folio.id, '100000', 'BANK_TRANSFER', 'DEPOSIT');
+      await book(15 + index, types[index % types.length]!.id, 5 + index * 2, 2, {
+        amount: '100000',
+        paymentMethod: 'BANK_TRANSFER',
+        referenceNumber: `LOCAL-${config.code}-FUTURE-${index}`,
+        confirmedReceived: true,
+      });
     }
     for (const index of [0, 2]) await book(24 + index, types[index]!.id, 0, 1);
     const cancelled = await book(26, types[0]!.id, 23, 2);

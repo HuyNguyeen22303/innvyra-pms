@@ -68,8 +68,9 @@ export const reservationsApi = {
   /**
    * Tạo đơn đặt phòng mới
    */
-  create: async (data: CreateReservationDto): Promise<ApiResponse<ReservationDetailItem>> => {
-    const res = await apiClient.post<ApiResponse<ReservationDetailItem>>('/reservations', data);
+  create: async (data: CreateReservationDto, key?: string): Promise<ApiResponse<ReservationDetailItem>> => {
+    const res = await apiClient.post<ApiResponse<ReservationDetailItem>>('/reservations', data,
+      key ? { headers: { 'Idempotency-Key': key } } : undefined);
     return res.data;
   },
 

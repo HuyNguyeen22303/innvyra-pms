@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueries, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
@@ -55,6 +55,8 @@ import type {
 import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 import { ReceiptModal } from './ReceiptModal.tsx';
 import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
+import { TerminalSettlementModal } from './TerminalSettlementModal.tsx';
+import { formatFolioMoney, refundableAmount, validFinalCharge } from '../../../utils/folioSettlement.ts';
 
 const { Text } = Typography;
 
@@ -104,6 +106,21 @@ export const FolioTab: React.FC = () => {
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState<boolean>(false);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState<boolean>(false);
   const [isCloseFolioModalOpen, setIsCloseFolioModalOpen] = useState<boolean>(false);
+  const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
+  const financialAttempts = useRef(new Map<string, { payload: string; key: string }>());
+  const financialKey = (operation: string, target: string, dto: object) => {
+    const payload = JSON.stringify({ target, dto });
+    let attempt = financialAttempts.current.get(operation);
+    if (attempt?.payload !== payload) {
+      attempt = { payload, key: createIdempotencyKey(operation) };
+      financialAttempts.current.set(operation, attempt);
+    }
+    return attempt!.key;
+  };
+  const refreshFinancialReports = () => {
+    void queryClient.invalidateQueries({ predicate: ({ queryKey }) =>
+      /^(report|dashboard)/.test(String(queryKey[0])) });
+  };
 
   // Receipt Modal
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentRecord | null>(null);
@@ -293,6 +310,10 @@ export const FolioTab: React.FC = () => {
   });
 
   const reservationDetail = reservationDetailRes?.data;
+  const isTerminalReservation = ['CANCELLED', 'NO_SHOW'].includes(reservationDetail?.status ?? '');
+  const staysFinished = !!reservationDetail?.rooms.every((room) => !room.stay || room.stay.status === 'CHECKED_OUT');
+  const canCloseReservation = isTerminalReservation ? staysFinished : reservationDetail?.status === 'CHECKED_OUT'
+    && reservationDetail.rooms.every((room) => room.stay?.status === 'CHECKED_OUT');
 
   // 3. Folio Query for selected reservation
   const {
@@ -311,6 +332,10 @@ export const FolioTab: React.FC = () => {
   });
 
   const folio: FolioDetailItem | null = folioRes?.data || null;
+  const availableRefund = (payment: PaymentRecord) => refundableAmount(
+    payment.refundableAmount ?? payment.amount, folio?.netPaid ?? '0',
+    isTerminalReservation ? folio?.outstandingBalance ?? '0' : undefined,
+  );
   const isFolioNotFound =
     (folioError as any)?.response?.status === 404 ||
     (folioError as any)?.response?.data?.error?.code === 'FOLIO_NOT_FOUND';
@@ -369,7 +394,7 @@ export const FolioTab: React.FC = () => {
   const openFolioMutation = useMutation({
     mutationFn: (resId: string) => billingApi.openFolio(resId),
     onSuccess: (response, resId) => {
-      appMessage.success('Đã mở Sổ công nợ Folio thành công! Toàn bộ tiền phòng đã được ghi nợ.');
+      appMessage.success('Đã mở Sổ công nợ Folio thành công.');
       const targetResId = String(resId);
       const openedFolio = response?.data;
       if (openedFolio) {
@@ -396,8 +421,10 @@ export const FolioTab: React.FC = () => {
   // 2. Create Payment / Deposit
   const paymentMutation = useMutation({
     mutationFn: ({ folioId, dto }: { folioId: string; dto: CreatePaymentDto }) =>
-      billingApi.createPayment(folioId, dto, createIdempotencyKey('pay')),
+      billingApi.createPayment(folioId, dto, financialKey('pay', folioId, dto)),
     onSuccess: () => {
+      financialAttempts.current.delete('pay');
+      refreshFinancialReports();
       appMessage.success('Ghi nhận giao dịch thu tiền thành công!');
       setIsPaymentModalOpen(false);
       paymentForm.resetFields();
@@ -418,8 +445,10 @@ export const FolioTab: React.FC = () => {
   // 3. Create Adjustment
   const adjustmentMutation = useMutation({
     mutationFn: ({ folioId, dto }: { folioId: string; dto: CreateAdjustmentDto }) =>
-      billingApi.createAdjustment(folioId, dto, createIdempotencyKey('adj')),
+      billingApi.createAdjustment(folioId, dto, financialKey('adj', folioId, dto)),
     onSuccess: () => {
+      financialAttempts.current.delete('adj');
+      refreshFinancialReports();
       appMessage.success('Điều chỉnh công nợ Folio thành công!');
       setIsAdjustmentModalOpen(false);
       adjustmentForm.resetFields();
@@ -440,8 +469,10 @@ export const FolioTab: React.FC = () => {
   // 4. Create Refund
   const refundMutation = useMutation({
     mutationFn: ({ paymentId, dto }: { paymentId: string; dto: CreateRefundDto }) =>
-      billingApi.createRefund(paymentId, dto, createIdempotencyKey('ref')),
+      billingApi.createRefund(paymentId, dto, financialKey('ref', paymentId, dto)),
     onSuccess: () => {
+      financialAttempts.current.delete('ref');
+      refreshFinancialReports();
       appMessage.success('Ghi nhận hoàn tiền thành công! Số dư nợ đã được cập nhật.');
       setIsRefundModalOpen(false);
       setTargetPaymentForRefund(null);
@@ -489,7 +520,7 @@ export const FolioTab: React.FC = () => {
       appMessage.error(
         getApiErrorMessage(
           err,
-          'Không thể đóng Folio. Vui lòng kiểm tra: số dư phải bằng 0, không còn order requested và khách đã check-out.'
+          'Không thể đóng Folio. Kiểm tra số dư bằng 0, hết giao dịch chờ và đơn đã checkout, hủy hoặc không đến.'
         )
       );
     },
@@ -497,6 +528,7 @@ export const FolioTab: React.FC = () => {
 
   const formatVND = (amount: string | number | null | undefined): string => {
     if (!amount) return '0 ₫';
+    if (typeof amount === 'string' && /^-?\d+(?:\.\d{1,2})?$/.test(amount)) return formatFolioMoney(amount);
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
   };
@@ -715,7 +747,7 @@ export const FolioTab: React.FC = () => {
           canSettleOrAdjust &&
           record.status === 'CONFIRMED' &&
           ['PAYMENT', 'DEPOSIT'].includes(record.paymentType) &&
-          folio?.status === 'OPEN';
+          folio?.status === 'OPEN' && availableRefund(record) !== '0.00';
 
         return (
           <Space size={6} style={{ whiteSpace: 'nowrap' }}>
@@ -738,7 +770,7 @@ export const FolioTab: React.FC = () => {
                   onClick={() => {
                     setTargetPaymentForRefund(record);
                     refundForm.setFieldsValue({
-                      amount: parseFloat(record.amount),
+                      amount: availableRefund(record),
                       reason: undefined,
                       referenceNumber: undefined,
                       confirmedRefunded: false,
@@ -1119,7 +1151,9 @@ export const FolioTab: React.FC = () => {
             type="warning"
             showIcon
             title="Chưa mở Sổ công nợ Folio cho Đơn đặt phòng này"
-            description="Theo quy trình khách sạn, khi mở Folio, toàn bộ tiền phòng theo hợp đồng của các đêm lưu trú sẽ được tính toán và ghi nhận thành công nợ hợp đồng. Sau khi mở, bạn có thể nhận tiền đặt cọc, thanh toán và ghi nhận chi phí dịch vụ."
+            description={isTerminalReservation
+              ? 'Mở folio để đối soát phí hủy/không đến và tiền thực tế. Tổng phí cuối cùng cần người có quyền quyết toán xác nhận.'
+              : 'Mở folio để ghi nhận tiền phòng theo đặt phòng, nhận tiền đặt cọc và theo dõi thanh toán.'}
             style={{ maxWidth: 700, margin: '0 auto 24px auto', textAlign: 'left' }}
           />
 
@@ -1140,6 +1174,16 @@ export const FolioTab: React.FC = () => {
         </Card>
       ) : folio ? (
         <div>
+          {isTerminalReservation && folio.status === 'OPEN' && (
+            <Alert type="warning" showIcon style={{ marginBottom: 16 }}
+              title="Đơn đã hủy / Khách không đến — cần đối soát folio"
+              description={Number(folio.outstandingBalance) < 0
+                ? `Cần hoàn khách ${formatFolioMoney(folio.outstandingBalance.replace('-', ''))}. Chọn tab thanh toán để ghi nhận hoàn từ từng phiếu thu, sau đó đóng folio.`
+                : canSettleOrAdjust
+                  ? 'Kiểm tra tổng phí cuối cùng và tiền đã thu trước khi thu thêm hoặc đóng folio.'
+                  : 'Quản lý hoặc kế toán xác nhận tổng phí và hoàn tiền; lễ tân có thể ghi nhận khoản thực thu theo quyền.'}
+              action={canSettleOrAdjust && <Button onClick={() => setIsSettlementModalOpen(true)}>Quyết toán đơn hủy / Không đến</Button>} />
+          )}
           {/* Folio Header & Financial KPI Cards */}
           <Card
             size="small"
@@ -1327,19 +1371,20 @@ export const FolioTab: React.FC = () => {
                     type="primary"
                     icon={<DollarOutlined />}
                     style={{ background: '#1b4d3e', borderColor: '#1b4d3e' }}
+                    disabled={Number(folio.outstandingBalance) <= 0}
                     onClick={() => {
                       paymentForm.resetFields();
                       const balance = parseFloat(folio.outstandingBalance);
                       paymentForm.setFieldsValue({
                         paymentType: 'PAYMENT',
                         paymentMethod: 'CASH',
-                        amount: balance > 0 ? balance : undefined,
+                        amount: balance > 0 ? folio.outstandingBalance : undefined,
                         confirmedReceived: false,
                       });
                       setIsPaymentModalOpen(true);
                     }}
                   >
-                    Thu tiền / Đặt cọc
+                    {isTerminalReservation ? 'Thu tiền còn thiếu' : 'Thu tiền / Đặt cọc'}
                   </Button>
                 )}
 
@@ -1363,15 +1408,15 @@ export const FolioTab: React.FC = () => {
                 {canSettleOrAdjust && folio.status === 'OPEN' && (
                   <Tooltip
                     title={
-                      parseFloat(folio.outstandingBalance) !== 0
-                        ? 'Chỉ có thể đóng khi số dư đã thanh toán hết (0 ₫)'
+                      !canCloseReservation ? 'Đơn phải đã checkout, hủy hoặc không đến và hết lượt lưu trú đang hoạt động' : parseFloat(folio.outstandingBalance) !== 0
+                        ? 'Chỉ đóng khi số dư bằng 0 sau khi xử lý các khoản thu/hoàn'
                         : 'Quyết toán và đóng Sổ công nợ Folio'
                     }
                   >
                     <Button
                       danger
                       icon={<LockOutlined />}
-                      disabled={parseFloat(folio.outstandingBalance) !== 0}
+                      disabled={!canCloseReservation || parseFloat(folio.outstandingBalance) !== 0}
                       onClick={() => setIsCloseFolioModalOpen(true)}
                     >
                       Đóng Sổ Folio (Close)
@@ -1474,7 +1519,7 @@ export const FolioTab: React.FC = () => {
               dto: {
                 paymentType: values.paymentType,
                 paymentMethod: values.paymentMethod,
-                amount: `${Math.round(values.amount)}.00`,
+                amount: String(values.amount),
                 referenceNumber: values.referenceNumber?.trim() || null,
                 confirmedReceived: true,
               },
@@ -1484,7 +1529,7 @@ export const FolioTab: React.FC = () => {
           <Form.Item name="paymentType" label="Loại giao dịch" rules={[{ required: true }]}>
             <Radio.Group buttonStyle="solid">
               <Radio.Button value="PAYMENT">Thanh toán công nợ (PAYMENT)</Radio.Button>
-              <Radio.Button value="DEPOSIT">Nhận tiền đặt cọc (DEPOSIT)</Radio.Button>
+              <Radio.Button value="DEPOSIT" disabled={isTerminalReservation}>Nhận tiền đặt cọc (DEPOSIT)</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
@@ -1501,13 +1546,13 @@ export const FolioTab: React.FC = () => {
             rules={[
               { required: true, message: 'Vui lòng nhập số tiền' },
               {
-                type: 'number',
-                min: 1,
-                message: 'Số tiền phải lớn hơn 0',
+                validator: async (_, value) => {
+                  if (!validFinalCharge(value) || Number(value) <= 0) throw new Error('Nhập số đồng nguyên lớn hơn 0');
+                },
               },
             ]}
           >
-            <InputNumber
+            <InputNumber<string> stringMode precision={0} min="1" max="9999999999999999"
               style={{ width: '100%' }}
               formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               parser={(val) => val!.replace(/\$\s?|(,*)/g, '') as any}
@@ -1680,7 +1725,9 @@ export const FolioTab: React.FC = () => {
           type="warning"
           showIcon
           title="Quy tắc hoàn tiền"
-          description="Hoàn tiền là thao tác trả lại tiền cho khách và làm TĂNG số dư nợ trên Folio. Số tiền hoàn không được vượt quá số tiền của giao dịch gốc."
+          description={isTerminalReservation
+            ? 'Ghi nhận khoản đã thực trả khách sau đối soát. Mức hoàn được giới hạn bởi tiền dư của folio và phần chưa hoàn của phiếu thu gốc.'
+            : 'Hoàn tiền làm tăng số dư folio. Mức hoàn được giới hạn bởi phần chưa hoàn của phiếu thu gốc và tiền thực giữ.'}
           style={{ marginBottom: 16 }}
         />
 
@@ -1692,7 +1739,7 @@ export const FolioTab: React.FC = () => {
             refundMutation.mutate({
               paymentId: targetPaymentForRefund.id,
               dto: {
-                amount: `${Math.round(values.amount)}.00`,
+                amount: String(values.amount),
                 reason: values.reason.trim(),
                 referenceNumber: values.referenceNumber?.trim() || null,
                 confirmedRefunded: true,
@@ -1702,18 +1749,19 @@ export const FolioTab: React.FC = () => {
         >
           <Form.Item
             name="amount"
-            label={`Số tiền hoàn trả (Tối đa: ${formatVND(targetPaymentForRefund?.amount)})`}
+            label={`Số tiền hoàn trả (Tối đa: ${targetPaymentForRefund ? formatFolioMoney(availableRefund(targetPaymentForRefund)) : '0 ₫'})`}
             rules={[
               { required: true, message: 'Vui lòng nhập số tiền hoàn trả' },
               {
-                type: 'number',
-                min: 1,
-                max: targetPaymentForRefund ? parseFloat(targetPaymentForRefund.amount) : undefined,
-                message: 'Số tiền hoàn không hợp lệ hoặc vượt quá giao dịch gốc',
+                validator: async (_, value) => {
+                  const max = targetPaymentForRefund ? availableRefund(targetPaymentForRefund) : '0';
+                  if (!validFinalCharge(value) || Number(value) <= 0 || BigInt(value.split('.')[0]) > BigInt(max.split('.')[0]))
+                    throw new Error('Số tiền hoàn vượt mức có thể hoàn hoặc không hợp lệ');
+                },
               },
             ]}
           >
-            <InputNumber
+            <InputNumber<string> stringMode precision={0} min="1" max="9999999999999999"
               style={{ width: '100%' }}
               formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               parser={(val) => val!.replace(/\$\s?|(,*)/g, '') as any}
@@ -1736,6 +1784,8 @@ export const FolioTab: React.FC = () => {
           <Form.Item
             name="referenceNumber"
             label="Mã tham chiếu ngân hàng chuyển khoản đi (nếu hoàn qua bank)"
+            rules={[{ required: targetPaymentForRefund?.paymentMethod === 'BANK_TRANSFER', whitespace: true,
+              message: 'Nhập mã giao dịch chuyển khoản hoàn trả thực tế' }]}
           >
             <Input placeholder="VD: REF_MB_883921..." />
           </Form.Item>
@@ -1789,9 +1839,10 @@ export const FolioTab: React.FC = () => {
             title="Điều kiện bắt buộc để đóng Folio"
             description={
               <ul style={{ margin: 0, paddingLeft: 18 }}>
-                <li>Số dư còn lại phải đúng bằng 0 ₫ (đã thanh toán hết).</li>
+                <li>Số dư còn lại phải đúng bằng 0 ₫ sau khi xử lý xong các khoản thu/hoàn.</li>
                 <li>Không còn yêu cầu dịch vụ nào đang ở trạng thái REQUESTED.</li>
-                <li>Tất cả các phòng trong đơn đặt phòng đã thực hiện Check-out hoặc đơn đã hủy.</li>
+                <li>Đơn đã checkout, hủy hoặc không đến; không còn lượt lưu trú đang hoạt động.</li>
+                <li>Không còn giao dịch thanh toán đang chờ xác nhận.</li>
               </ul>
             }
           />
@@ -1804,6 +1855,18 @@ export const FolioTab: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* RECEIPT MODAL */}
       {/* ---------------------------------------------------- */}
+      {folio && <TerminalSettlementModal key={folio.id} folioId={folio.id}
+        open={isSettlementModalOpen && isTerminalReservation && folio.status === 'OPEN'}
+        onCancel={() => setIsSettlementModalOpen(false)}
+        onSettled={(settled) => {
+          setIsSettlementModalOpen(false);
+          const response = { success: true, message: 'Đã quyết toán', data: settled };
+          queryClient.setQueryData(['billing-folio', settled.reservationId], response);
+          queryClient.invalidateQueries({ queryKey: ['billing-folio-check', settled.reservationId] });
+          queryClient.invalidateQueries({ queryKey: ['billing-folio-items', settled.id] });
+          refreshFinancialReports();
+          setActiveLedgerTab(settled.outstandingBalance.startsWith('-') ? 'payments' : 'items');
+        }} />}
       <ReceiptModal
         open={isReceiptModalOpen}
         onClose={() => {

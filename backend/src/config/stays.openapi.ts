@@ -78,6 +78,11 @@ export const staySchemas = {
     required: [...requiredSummary, 'reservation'],
     properties: {
       ...summary,
+      folioId: {
+        ...id,
+        description:
+          'Check-in response: the shared reservation folio ensured atomically with arrival.',
+      },
       reservation: {
         type: 'object',
         required: ['id', 'confirmationCode', 'status', 'checkInDate', 'checkOutDate'],
@@ -280,7 +285,7 @@ export const stayPaths = {
       ...base(true),
       summary: 'Check in one booked room',
       description:
-        'ADMIN, MANAGER, RECEPTIONIST. Booked hotel-local arrival date only, any time on that day; no early/late arrival override. Requires same-type ACTIVE and READY unoccupied room without conflicting assignment. Partial arrival sets PARTIALLY_CHECKED_IN; all arrived sets CHECKED_IN. Server timestamps and actor only. Atomic stay/occupancy/assignment; inventory and prices unchanged. Repeated arrival returns 409; no Idempotency-Key support.',
+        'ADMIN, MANAGER, RECEPTIONIST. Booked hotel-local arrival day only. Requires same-type ACTIVE, READY, unoccupied room without conflicting assignment. Atomically ensures one OPEN reservation folio, posts all booked nights once if new, and creates stay/occupancy/assignment. Reuses prepaid folios; CLOSED rejects arrival. Folio failure rolls back physical arrival. Partial arrival sets PARTIALLY_CHECKED_IN; all arrived sets CHECKED_IN. Returns folioId. Historical price snapshots remain unchanged. Repeated arrival returns 409 without duplicate folio/charges; no Idempotency-Key support.',
       parameters: [path('reservationId'), path('reservationRoomId'), csrf],
       requestBody: body('StayCheckin', { roomId: '301', notes: 'Guest arrived at reception' }),
       responses: { 201: response('StayDetail', 'Check-in successful', detailExample), ...errors },

@@ -18,18 +18,18 @@ export function reservationSummary(record: SummaryRecord) {
     bookingSource: record.bookingSource,
     totalAmount: record.totalAmount.toFixed(2),
     currency: record.currency,
-    createdAt: record.createdAt,
+    createdAt: record.createdAt.toISOString(),
   };
 }
 export function reservationDetail(record: ReservationRecord, role: RoleCode) {
   return {
     ...reservationSummary(record),
     createdBy: { id: record.creator.id.toString(), fullName: record.creator.fullName },
-    updatedAt: record.updatedAt,
+    updatedAt: record.updatedAt.toISOString(),
     ...(role !== 'ACCOUNTANT' ? { notes: record.notes } : {}),
     cancellation: record.cancelledAt
       ? {
-          cancelledAt: record.cancelledAt,
+          cancelledAt: record.cancelledAt.toISOString(),
           cancelledBy: record.canceller
             ? { id: record.canceller.id.toString(), fullName: record.canceller.fullName }
             : null,
@@ -40,7 +40,14 @@ export function reservationDetail(record: ReservationRecord, role: RoleCode) {
       id: room.id.toString(),
       roomType: { ...room.roomType, id: room.roomType.id.toString() },
       roomId: room.roomId?.toString() ?? null,
-      stay: room.stay ? { ...room.stay, id: room.stay.id.toString() } : null,
+      stay: room.stay
+        ? {
+            ...room.stay,
+            id: room.stay.id.toString(),
+            actualCheckinAt: room.stay.actualCheckinAt.toISOString(),
+            actualCheckoutAt: room.stay.actualCheckoutAt?.toISOString() ?? null,
+          }
+        : null,
       adults: room.adults,
       children: room.children,
       nights: room.nights.map((night) => ({

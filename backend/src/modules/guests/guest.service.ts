@@ -97,7 +97,11 @@ export class GuestService {
     // Prevent inference of nationality through filtered counts for the minimal billing role.
     if (scope.role === 'ACCOUNTANT' && query.nationality !== undefined)
       throw new AppError(403, 'FORBIDDEN', 'Filter is not available for this role');
-    const { items, total } = await this.repository.list(scope.hotelId, query);
+    const { items, total } = await this.repository.list(
+      scope.hotelId,
+      query,
+      (guestPermissions.sensitive as readonly string[]).includes(scope.role),
+    );
     return pageResult(
       items.map((record) => guestSummary(record, scope.role)),
       total,

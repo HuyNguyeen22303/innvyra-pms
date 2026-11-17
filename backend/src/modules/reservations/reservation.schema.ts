@@ -7,6 +7,20 @@ import {
   paginationFields,
 } from '../../shared/validation/room-input.js';
 import { dateOnly } from './reservation.dates.js';
+import { paymentBody } from '../billing/billing.schema.js';
+
+export const initialDepositBody = z
+  .object({
+    amount: paymentBody.shape.amount,
+    paymentMethod: paymentBody.shape.paymentMethod,
+    referenceNumber: paymentBody.shape.referenceNumber.transform((value) => value ?? null),
+    confirmedReceived: paymentBody.shape.confirmedReceived,
+  })
+  .strict()
+  .refine(
+    (value) => value.paymentMethod !== 'BANK_TRANSFER' || !!value.referenceNumber,
+    'Bank transfers require a reference number',
+  );
 
 export const BOOKING_SOURCES = ['DIRECT', 'PHONE', 'EMAIL', 'WALK_IN', 'AGENT', 'OTHER'] as const;
 const dates = { checkInDate: dateOnly, checkOutDate: dateOnly };
@@ -32,6 +46,7 @@ export const createReservationBody = z
       .max(100),
     bookingSource: z.enum(BOOKING_SOURCES).default('DIRECT'),
     notes: z.string().trim().max(5000).nullable().optional(),
+    initialDeposit: initialDepositBody.optional(),
   })
   .strict()
   .refine(ordered, rangeError)

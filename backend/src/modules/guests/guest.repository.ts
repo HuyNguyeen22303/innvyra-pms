@@ -2,11 +2,20 @@ import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import type { GuestAudit, GuestOperations, GuestQuery, GuestWrite } from './guest.types.js';
 
-function filter(hotelId: bigint, query: GuestQuery): Prisma.GuestWhereInput {
+function filter(hotelId: bigint, query: GuestQuery, searchPhone = false): Prisma.GuestWhereInput {
+  const phone =
+    query.search && /^[+\d() .-]+$/.test(query.search) ? query.search.replace(/[() .-]/g, '') : '';
   return {
     hotelId,
     deletedAt: null,
-    ...(query.search ? { fullName: { contains: query.search } } : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { fullName: { contains: query.search } },
+            ...(searchPhone && phone ? [{ phone: { contains: phone } }] : []),
+          ],
+        }
+      : {}),
     ...(query.nationality ? { nationality: query.nationality } : {}),
   };
 }
@@ -51,9 +60,9 @@ export class PrismaGuestRepository {
   async findById(hotelId: bigint, id: bigint) {
     return this.db.guest.findFirst({ where: { hotelId, id, deletedAt: null } });
   }
-  async findMany(hotelId: bigint, query: GuestQuery) {
+  async findMany(hotelId: bigint, query: GuestQuery, searchPhone = false) {
     return this.db.guest.findMany({
-      where: filter(hotelId, query),
+      where: filter(hotelId, query, searchPhone),
       orderBy: [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }],
       skip: (query.page - 1) * query.limit,
       take: query.limit,
@@ -69,16 +78,16 @@ export class PrismaGuestRepository {
       },
     });
   }
-  async count(hotelId: bigint, query: GuestQuery) {
-    return this.db.guest.count({ where: filter(hotelId, query) });
+  async count(hotelId: bigint, query: GuestQuery, searchPhone = false) {
+    return this.db.guest.count({ where: filter(hotelId, query, searchPhone) });
   }
-  list(hotelId: bigint, query: GuestQuery) {
+  list(hotelId: bigint, query: GuestQuery, searchPhone = false) {
     return this.prisma.$transaction(
       async (tx) => {
         const repository = new PrismaGuestRepository(this.prisma, tx);
         return {
-          items: await repository.findMany(hotelId, query),
-          total: await repository.count(hotelId, query),
+          items: await repository.findMany(hotelId, query, searchPhone),
+          total: await repository.count(hotelId, query, searchPhone),
         };
       },
       { isolationLevel: 'RepeatableRead' },

@@ -16,6 +16,8 @@ import { asDate, asDateOnly, hotelToday } from '../src/modules/reservations/rese
 import { PrismaStayRepository } from '../src/modules/stays/stay.repository.js';
 import { StayService } from '../src/modules/stays/stay.service.js';
 import { PrismaBillingRepository } from '../src/modules/billing/billing.repository.js';
+import { PrismaReportRepository } from '../src/modules/reports/report.repository.js';
+import { nextDate } from '../src/modules/reports/report.dates.js';
 import type { BillingScope } from '../src/modules/billing/billing.types.js';
 import { hashPassword } from '../src/shared/utils/password.js';
 import type { RoleCode } from '../src/shared/types/roles.js';
@@ -139,6 +141,25 @@ describe.skipIf(!testUrl)(
         key,
         target,
       );
+    const terminal = async (status: 'CANCELLED' | 'NO_SHOW' = 'CANCELLED') => {
+      const response = await post(
+        `/reservations/${booking.id}/${status === 'CANCELLED' ? 'cancel' : 'no-show'}`,
+        { reason: 'Guest did not stay' },
+      );
+      expect(response.status, JSON.stringify(response.body)).toBe(200);
+    };
+    const settlementBody = async (folioId: string, amount = '0') => {
+      const preview = await get(`/folios/${folioId}/terminal-settlement`);
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200);
+      return {
+        finalChargeAmount: amount,
+        reason: 'Approved cancellation policy',
+        expectedRevision: String(preview.body.data.revision),
+        confirmedReviewed: true,
+      };
+    };
+    const settle = async (folioId: string, amount = '0') =>
+      post(`/folios/${folioId}/terminal-settlement`, await settlementBody(folioId, amount));
     const changeRole = async (code: RoleCode) => {
       const role = await db.role.upsert({
         where: { code },
@@ -237,6 +258,8 @@ describe.skipIf(!testUrl)(
           new PrismaReservationRepository(prisma),
           new PrismaStayRepository(prisma),
           new PrismaBillingRepository(prisma),
+          undefined,
+          new PrismaReportRepository(prisma),
         );
       app = build(db);
       otherApp = build(second);
@@ -439,15 +462,187 @@ describe.skipIf(!testUrl)(
       expect((await get(`${base}&search=Synthetic`)).body.data.pagination.total).toBe(0);
       expect((await get(`${base}&search=101`)).body.data.pagination.total).toBe(1);
     });
-    it('GET never opens a folio and completion before opening leaves an order REQUESTED', async () => {
+    it('GET never opens a folio; successful check-in opens it before service completion', async () => {
       expect((await get(`/reservations/${booking.id}/folio`)).status).toBe(404);
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
       await active();
       const orderId = await order(await catalog());
-      expect((await post(`/service-orders/${orderId}/complete`)).body.error.code).toBe(
-        'FOLIO_NOT_OPEN',
-      );
-      expect((await get(`/service-orders/${orderId}`)).body.data.status).toBe('REQUESTED');
+      expect((await post(`/service-orders/${orderId}/complete`)).status).toBe(200);
+      expect((await get(`/service-orders/${orderId}`)).body.data.status).toBe('COMPLETED');
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+    });
+    const bookingBody = (deposit?: object) => ({
+      guestId: guestId.toString(),
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      rooms: [{ roomTypeId: typeId.toString(), quantity: 1, adults: 2 }],
+      ...(deposit ? { initialDeposit: deposit } : {}),
+    });
+    const depositBody = (amount = '500000', extra: object = {}) => ({
+      amount,
+      paymentMethod: 'CASH',
+      confirmedReceived: true,
+      ...extra,
+    });
+    it('creates an idempotent reservation without a folio when no deposit is received', async () => {
+      const key = randomUUID(),
+        body = bookingBody();
+      const result = await post('/reservations', body, key);
+      expect(result.status, JSON.stringify(result.body)).toBe(201);
+      expect(result.body.data).toMatchObject({ folioId: null, initialPaymentId: null });
+      expect((await post('/reservations', body, key)).body).toEqual(result.body);
+      expect(await db.reservation.count({ where: { hotelId: scope.hotelId } })).toBe(2);
       expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it.each(['CASH', 'BANK_TRANSFER'])(
+      'creates booking, folio and %s deposit once under concurrent confirmation',
+      async (method) => {
+        const body = bookingBody(
+          depositBody('500000', {
+            paymentMethod: method,
+            ...(method === 'BANK_TRANSFER' ? { referenceNumber: 'BANK-BOOK-500K' } : {}),
+          }),
+        );
+        const key = randomUUID();
+        const [a, b] = await Promise.all([
+          post('/reservations', body, key),
+          post('/reservations', body, key, otherApp),
+        ]);
+        expect(a.status, JSON.stringify(a.body)).toBe(201);
+        expect(b.body).toEqual(a.body);
+        expect(a.body.data.folioId).toBeTruthy();
+        expect(a.body.data.initialPaymentId).toBeTruthy();
+        expect((await get(`/folios/${a.body.data.folioId}`)).body.data).toMatchObject({
+          totalDeposits: '500000.00',
+          outstandingBalance: '1300000.00',
+        });
+        expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+        expect(
+          (await post('/reservations', bookingBody(depositBody('400000')), key)).body.error.code,
+        ).toBe('IDEMPOTENCY_CONFLICT');
+      },
+    );
+    it('supports full deposits using the same per-night rounding as folio opening', async () => {
+      await db.roomType.update({ where: { id: typeId }, data: { basePrice: '900000.50' } });
+      const result = await post('/reservations', bookingBody(depositBody('1800002')));
+      expect(result.status, JSON.stringify(result.body)).toBe(201);
+      expect(result.body.data.totalAmount).toBe('1800001.00');
+      expect((await get(`/folios/${result.body.data.folioId}`)).body.data).toMatchObject({
+        totalCharges: '1800002.00',
+        totalDeposits: '1800002.00',
+        outstandingBalance: '0.00',
+        status: 'OPEN',
+      });
+    });
+    it.each([
+      depositBody('0'),
+      depositBody('1.5'),
+      depositBody('1', { confirmedReceived: false }),
+      depositBody('1', { paymentMethod: 'BANK_TRANSFER' }),
+      depositBody('1', { hotelId: '2' }),
+    ])('rejects invalid initial deposit without creating a booking', async (deposit) => {
+      expect((await post('/reservations', bookingBody(deposit))).status).toBe(422);
+      expect(await db.reservation.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+    });
+    it('requires a key for deposits and rolls back a booking whose deposit exceeds confirmed charges', async () => {
+      const body = bookingBody(depositBody());
+      expect(
+        (
+          await request(app)
+            .post('/api/v1/reservations')
+            .auth(token, { type: 'bearer' })
+            .set('X-CSRF-Protection', '1')
+            .send(body)
+        ).body.error.code,
+      ).toBe('INVALID_IDEMPOTENCY_KEY');
+      expect(
+        (await post('/reservations', bookingBody(depositBody('1800001')))).body.error.code,
+      ).toBe('INSUFFICIENT_OUTSTANDING_BALANCE');
+      expect(await db.reservation.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(await db.billingIdempotency.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it.each(['createItems', 'createPayment', 'audit', 'saveKey'] as const)(
+      'rolls back the entire booking/deposit when %s fails and safely retries',
+      async (method) => {
+        const key = randomUUID(),
+          body = bookingBody(depositBody());
+        vi.spyOn(PrismaBillingRepository.prototype, method).mockRejectedValueOnce(
+          new Error('Synthetic workflow failure'),
+        );
+        expect((await post('/reservations', body, key)).status).toBe(500);
+        expect(await db.reservation.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+        for (const count of [
+          await db.folio.count({ where: { hotelId: scope.hotelId } }),
+          await db.payment.count({ where: { hotelId: scope.hotelId } }),
+          await db.billingIdempotency.count({ where: { hotelId: scope.hotelId } }),
+        ])
+          expect(count).toBe(0);
+        const retry = await post('/reservations', body, key);
+        expect(retry.status, JSON.stringify(retry.body)).toBe(201);
+        expect((await post('/reservations', body, key)).body).toEqual(retry.body);
+      },
+    );
+    it('reuses the prepaid folio at check-in without reposting charges or deposits', async () => {
+      const result = await post('/reservations', bookingBody(depositBody()));
+      booking = result.body.data;
+      const before = await get(`/folios/${result.body.data.folioId}`);
+      await active();
+      expect((await get(`/reservations/${booking.id}/folio`)).body.data).toEqual(before.body.data);
+      expect(
+        await db.folioItem.count({ where: { folioId: BigInt(result.body.data.folioId) } }),
+      ).toBe(2);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+    });
+    it('concurrent room arrivals share one reservation folio and post all booked nights once', async () => {
+      booking = await createBooking(2);
+      const path = (index: number) =>
+        `/reservations/${booking.id}/rooms/${booking.rooms[index]!.id}/check-in`;
+      const [a, b] = await Promise.all([
+        post(path(0), { roomId: roomIds[0]!.toString() }),
+        post(path(1), { roomId: roomIds[1]!.toString() }, randomUUID(), otherApp),
+      ]);
+      expect(a.status, JSON.stringify(a.body)).toBe(201);
+      expect(b.status).toBe(201);
+      expect(a.body.data.folioId).toBe(b.body.data.folioId);
+      expect(await db.folioItem.count({ where: { hotelId: scope.hotelId } })).toBe(4);
+      expect((await get(`/folios/${a.body.data.folioId}`)).body.data.totalCharges).toBe(
+        '3600000.00',
+      );
+    });
+    it('failed automatic folio creation rolls back physical check-in and room assignment', async () => {
+      vi.spyOn(PrismaBillingRepository.prototype, 'createItems').mockRejectedValueOnce(
+        new Error('Synthetic folio failure'),
+      );
+      const path = `/reservations/${booking.id}/rooms/${booking.rooms[0]!.id}/check-in`;
+      expect((await post(path, { roomId: roomIds[0]!.toString() })).status).toBe(500);
+      expect(await db.stay.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(await db.roomOccupancy.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(
+        (
+          await db.reservationRoom.findUniqueOrThrow({
+            where: { id: BigInt(booking.rooms[0]!.id) },
+          })
+        ).roomId,
+      ).toBeNull();
+      expect((await post(path, { roomId: roomIds[0]!.toString() })).status).toBe(201);
+    });
+    it('refuses a closed legacy folio at arrival without reopening or occupying a room', async () => {
+      const folioId = await open();
+      await db.folio.update({
+        where: { id: BigInt(folioId) },
+        data: { status: 'CLOSED', closedAt: new Date() },
+      });
+      expect(
+        (
+          await post(`/reservations/${booking.id}/rooms/${booking.rooms[0]!.id}/check-in`, {
+            roomId: roomIds[0]!.toString(),
+          })
+        ).body.error.code,
+      ).toBe('FOLIO_NOT_OPEN');
+      expect(await db.stay.count({ where: { hotelId: scope.hotelId } })).toBe(0);
     });
     it('opens exactly once under concurrent requests and uses original nightly snapshots', async () => {
       await db.roomType.update({ where: { id: typeId }, data: { basePrice: '9900000' } });
@@ -473,13 +668,295 @@ describe.skipIf(!testUrl)(
       });
       expect(snapshots.every((night) => night.nightlyRate.toFixed(2) === '900000.50')).toBe(true);
     });
-    it('refuses a new folio for a cancelled reservation', async () => {
+    it.each(['CANCELLED', 'NO_SHOW'] as const)(
+      'opens a terminal %s folio empty for explicit fees',
+      async (status) => {
+        await terminal(status);
+        const folioId = await open();
+        expect((await get(`/folios/${folioId}`)).body.data).toMatchObject({
+          totalCharges: '0.00',
+          outstandingBalance: '0.00',
+        });
+        expect(await db.folioItem.count({ where: { folioId: BigInt(folioId) } })).toBe(0);
+        const result = await settle(folioId, '300000');
+        expect(result.status).toBe(200);
+        expect(result.body.data).toMatchObject({ status: 'OPEN', outstandingBalance: '300000.00' });
+      },
+    );
+    it.each(['CANCELLED', 'NO_SHOW'] as const)(
+      'waives an existing %s folio and closes atomically without fictitious cash',
+      async (status) => {
+        const folioId = await open();
+        const originalItems = await db.folioItem.findMany({ where: { folioId: BigInt(folioId) } });
+        await terminal(status);
+        const body = await settlementBody(folioId);
+        body.reason = 'Approved waiver with recorded policy. '.repeat(60).slice(0, 2000);
+        const key = randomUUID();
+        const result = await post(`/folios/${folioId}/terminal-settlement`, body, key);
+        expect(result.status, JSON.stringify(result.body)).toBe(200);
+        expect(result.body.data).toMatchObject({
+          status: 'CLOSED',
+          netCharges: '0.00',
+          netPaid: '0.00',
+          totalCredits: '1800000.00',
+          outstandingBalance: '0.00',
+        });
+        expect(await db.payment.count({ where: { folioId: BigInt(folioId) } })).toBe(0);
+        expect(
+          await db.folioItem.findMany({
+            where: { id: { in: originalItems.map((item) => item.id) } },
+          }),
+        ).toEqual(originalItems);
+        expect((await post(`/folios/${folioId}/terminal-settlement`, body, key)).body).toEqual(
+          result.body,
+        );
+        expect(
+          (
+            await post(
+              `/folios/${folioId}/terminal-settlement`,
+              { ...body, finalChargeAmount: '1' },
+              key,
+            )
+          ).body.error.code,
+        ).toBe('IDEMPOTENCY_CONFLICT');
+        expect(await db.folioItem.count({ where: { folioId: BigInt(folioId) } })).toBe(3);
+        expect(
+          await db.billingAuditLog.count({
+            where: {
+              hotelId: scope.hotelId,
+              action: 'TERMINAL_FOLIO_SETTLED',
+              reason: body.reason,
+            },
+          }),
+        ).toBe(1);
+      },
+    );
+    it('retains the agreed deposit as fees and closes without a second charge or receipt', async () => {
+      const folioId = await open();
+      await pay(folioId, '300000', randomUUID(), app, { paymentType: 'DEPOSIT' });
+      await terminal('NO_SHOW');
+      const result = await settle(folioId, '300000');
+      expect(result.body.data).toMatchObject({
+        status: 'CLOSED',
+        netCharges: '300000.00',
+        netPaid: '300000.00',
+        totalRefunds: '0.00',
+      });
+      expect(await db.payment.count({ where: { folioId: BigInt(folioId) } })).toBe(1);
+    });
+    it('settles prepaid cancellation, refunds multiple original receipts, and reconciles reporting', async () => {
+      const folioId = await open();
+      const cash = await pay(folioId, '300000', randomUUID(), app, { paymentType: 'DEPOSIT' });
+      const bank = await pay(folioId, '200000', randomUUID(), app, {
+        paymentMethod: 'BANK_TRANSFER',
+        referenceNumber: 'BANK-IN-200K',
+      });
+      await terminal();
+      expect((await settle(folioId, '100000')).body.data).toMatchObject({
+        status: 'OPEN',
+        netCharges: '100000.00',
+        netPaid: '500000.00',
+        outstandingBalance: '-400000.00',
+        totalRefunds: '0.00',
+      });
+      expect((await post(`/folios/${folioId}/close`)).body.error.code).toBe('FOLIO_UNSETTLED');
+      expect((await refund(String(cash.body.data.id), '200000')).status).toBe(201);
+      const receipts = (await get(`/folios/${folioId}/payments`)).body.data.items;
       expect(
-        (await post(`/reservations/${booking.id}/cancel`, { reason: 'Cancelled' })).status,
-      ).toBe(200);
-      expect((await post(`/reservations/${booking.id}/folio/open`)).body.error.code).toBe(
-        'RESERVATION_NOT_BILLABLE',
+        receipts.find((row: { id: string }) => row.id === String(cash.body.data.id))
+          .refundableAmount,
+      ).toBe('100000.00');
+      expect((await refund(String(bank.body.data.id), '200000')).body.error.code).toBe(
+        'REFUND_REFERENCE_REQUIRED',
       );
+      expect(
+        (
+          await refund(String(bank.body.data.id), '200000', randomUUID(), app, {
+            referenceNumber: 'BANK-OUT-200K',
+          })
+        ).status,
+      ).toBe(201);
+      expect((await refund(String(cash.body.data.id), '1')).body.error.code).toBe(
+        'REFUND_EXCEEDS_SETTLEMENT',
+      );
+      expect((await post(`/folios/${folioId}/close`)).body.data.status).toBe('CLOSED');
+      const today = hotelToday('Asia/Ho_Chi_Minh');
+      const report = await get(`/reports/revenue?startDate=${today}&endDate=${nextDate(today)}`);
+      expect(report.status, JSON.stringify(report.body)).toBe(200);
+      expect(report.body.data.summary).toMatchObject({
+        netBilledCharges: '100000.00',
+        successfulDeposits: '300000.00',
+        successfulPayments: '200000.00',
+        successfulRefunds: '400000.00',
+        netCashCollected: '100000.00',
+        balanceMovement: '0.00',
+      });
+    });
+    it('keeps the folio open for a fee above prepaid money until actual collection', async () => {
+      const folioId = await open();
+      await pay(folioId, '300000');
+      await terminal('NO_SHOW');
+      expect((await settle(folioId, '500000')).body.data.outstandingBalance).toBe('200000.00');
+      expect(
+        (await pay(folioId, '1', randomUUID(), app, { paymentType: 'DEPOSIT' })).body.error.code,
+      ).toBe('DEPOSIT_NOT_ALLOWED');
+      expect((await pay(folioId, '200001')).body.error.code).toBe(
+        'INSUFFICIENT_OUTSTANDING_BALANCE',
+      );
+      expect((await pay(folioId, '200000')).status).toBe(201);
+      expect((await post(`/folios/${folioId}/close`)).body.data.status).toBe('CLOSED');
+    });
+    it('rejects stale settlement after money changed and handles concurrent duplicate submissions once', async () => {
+      const folioId = await open();
+      await terminal();
+      const body = await settlementBody(folioId, '500000');
+      await pay(folioId, '100000');
+      expect((await post(`/folios/${folioId}/terminal-settlement`, body)).body.error.code).toBe(
+        'SETTLEMENT_STALE',
+      );
+      const refreshed = await settlementBody(folioId, '300000');
+      const key = randomUUID();
+      const [a, b] = await Promise.all([
+        post(`/folios/${folioId}/terminal-settlement`, refreshed, key),
+        post(`/folios/${folioId}/terminal-settlement`, refreshed, key, otherApp),
+      ]);
+      expect(a.status).toBe(200);
+      expect(b.body).toEqual(a.body);
+      expect(await db.folioItem.count({ where: { folioId: BigInt(folioId) } })).toBe(3);
+      expect(
+        (await post(`/folios/${folioId}/terminal-settlement`, refreshed)).body.error.code,
+      ).toBe('SETTLEMENT_STALE');
+    });
+    it('rolls back adjustment and closure if the audit cannot be saved', async () => {
+      const folioId = await open();
+      await terminal();
+      const body = await settlementBody(folioId);
+      vi.spyOn(PrismaBillingRepository.prototype, 'audit').mockRejectedValueOnce(
+        new Error('Synthetic audit failure'),
+      );
+      expect((await post(`/folios/${folioId}/terminal-settlement`, body)).status).toBe(500);
+      expect((await get(`/folios/${folioId}`)).body.data).toMatchObject({
+        status: 'OPEN',
+        totalCredits: '0.00',
+      });
+      expect(await db.billingIdempotency.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it('blocks settlement for live reservations, pending activity and corrupted active terminal stays', async () => {
+      const folioId = await open();
+      expect((await get(`/folios/${folioId}/terminal-settlement`)).body.error.code).toBe(
+        'RESERVATION_NOT_TERMINAL',
+      );
+      const stayId = await active();
+      const serviceId = await catalog();
+      const orderId = await order(serviceId, 1, stayId);
+      // Emulate imported inconsistent terminal data; settlement must never hide a live stay.
+      await db.reservation.update({
+        where: { id: BigInt(booking.id) },
+        data: {
+          status: 'NO_SHOW',
+          cancellationReason: 'Imported no-show',
+          cancelledAt: new Date(),
+          cancelledBy: scope.actorId,
+        },
+      });
+      expect((await settle(folioId)).body.error.code).toBe('STAYS_NOT_FINISHED');
+      await db.stay.update({
+        where: { id: BigInt(stayId) },
+        data: {
+          status: 'CHECKED_OUT',
+          actualCheckoutAt: new Date(),
+          checkoutStaffId: scope.actorId,
+        },
+      });
+      expect((await settle(folioId)).body.error.code).toBe('FOLIO_PENDING_ACTIVITY');
+      await post(`/service-orders/${orderId}/cancel`, { reason: 'Service not used' });
+      await db.payment.create({
+        data: {
+          hotelId: scope.hotelId,
+          folioId: BigInt(folioId),
+          paymentType: 'PAYMENT',
+          paymentMethod: 'CASH',
+          amount: '1',
+          status: 'PENDING',
+          processedBy: scope.actorId,
+        },
+      });
+      expect((await settle(folioId)).body.error.code).toBe('FOLIO_PENDING_ACTIVITY');
+      expect((await get(`/folios/${folioId}`)).body.data.totalCredits).toBe('0.00');
+    });
+    it('preserves exact settlement and collection for amounts above JS safe integer', async () => {
+      await terminal();
+      const folioId = await open();
+      expect((await settle(folioId, '9999999999999999')).body.data.netCharges).toBe(
+        '9999999999999999.00',
+      );
+      expect((await pay(folioId, '9999999999999999')).status).toBe(201);
+      expect((await post(`/folios/${folioId}/close`)).body.data.outstandingBalance).toBe('0.00');
+    });
+    it.each(['RECEPTIONIST', 'HOUSEKEEPING', 'TECHNICIAN'] as const)(
+      'denies %s settlement while enforcing tenant isolation',
+      async (role) => {
+        const folioId = await open();
+        await terminal();
+        const body = await settlementBody(folioId);
+        expect((await get(`/folios/${folioId}/terminal-settlement`, foreignToken)).status).toBe(
+          404,
+        );
+        expect(
+          (
+            await post(
+              `/folios/${folioId}/terminal-settlement`,
+              body,
+              randomUUID(),
+              app,
+              foreignToken,
+            )
+          ).status,
+        ).toBe(404);
+        await changeRole(role);
+        expect((await post(`/folios/${folioId}/terminal-settlement`, body)).status).toBe(403);
+      },
+    );
+    it.each(['MANAGER', 'ACCOUNTANT'] as const)(
+      'allows %s to approve terminal fees under existing settlement permissions',
+      async (role) => {
+        const folioId = await open();
+        await terminal();
+        const body = await settlementBody(folioId);
+        await changeRole(role);
+        expect((await post(`/folios/${folioId}/terminal-settlement`, body)).body.data.status).toBe(
+          'CLOSED',
+        );
+      },
+    );
+    it('requires CSRF, an idempotency key and reviewed fields on the terminal endpoint', async () => {
+      const folioId = await open();
+      await terminal();
+      const body = await settlementBody(folioId);
+      expect(
+        (
+          await request(app)
+            .post(`/api/v1/folios/${folioId}/terminal-settlement`)
+            .auth(token, { type: 'bearer' })
+            .set('Idempotency-Key', randomUUID())
+            .send(body)
+        ).status,
+      ).toBe(403);
+      expect((await post(`/folios/${folioId}/terminal-settlement`, body, 'invalid')).status).toBe(
+        422,
+      );
+      expect(
+        (
+          await post(`/folios/${folioId}/terminal-settlement`, {
+            ...body,
+            confirmedReviewed: false,
+          })
+        ).status,
+      ).toBe(422);
+      expect(
+        (await post(`/folios/${folioId}/terminal-settlement`, { ...body, hotelId: '2' })).status,
+      ).toBe(422);
+      expect((await get(`/folios/${folioId}`)).body.data.totalCredits).toBe('0.00');
     });
     it('cancellation retains charges and receipts without automatic refund or closure', async () => {
       const folioId = await open();

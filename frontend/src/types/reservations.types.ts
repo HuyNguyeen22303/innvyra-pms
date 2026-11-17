@@ -42,6 +42,8 @@ export interface ReservationSummaryItem {
 }
 
 export interface ReservationDetailItem extends ReservationSummaryItem {
+  folioId?: string | null;
+  initialPaymentId?: string | null;
   createdBy: {
     id: string;
     fullName: string;
@@ -78,6 +80,7 @@ export interface ReservationDetailItem extends ReservationSummaryItem {
 }
 
 export interface CreateReservationDto {
+  initialDeposit?: InitialDepositDto;
   guestId: string;
   checkInDate: string;
   checkOutDate: string;
@@ -89,6 +92,13 @@ export interface CreateReservationDto {
   }>;
   bookingSource?: BookingSource;
   notes?: string | null;
+}
+
+export interface InitialDepositDto {
+  amount: string;
+  paymentMethod: 'CASH' | 'BANK_TRANSFER';
+  referenceNumber?: string | null;
+  confirmedReceived: true;
 }
 
 export interface CancelReservationDto {

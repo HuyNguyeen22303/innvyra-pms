@@ -40,7 +40,7 @@ Check-in:
 2. Tìm reservation/room trong hotel, kiểm tra membership, booking state và chưa từng có Stay.
 3. Chỉ nhận phòng **đúng ngày đến đã đặt**, bất kỳ giờ nào trong ngày đó theo `Hotel.timezone`. Default hiện có là `Asia/Ho_Chi_Minh`; timezone lỗi trả 503. Không có override nhận sớm/muộn.
 4. Phòng cùng loại đã đặt, active, physical ACTIVE, housekeeping READY, không occupancy và không assigned reservation khác chồng lịch `[arrival, departure)`.
-5. Tạo Stay, tạo occupancy, cập nhật assignment và aggregate reservation state; commit. Không tạo/thay đổi room nights, giá hoặc tổng tiền.
+5. Bảo đảm có folio OPEN của đơn trong cùng transaction: tạo và ghi phí phòng một lần nếu chưa có, dùng lại folio đã cọc, chặn folio đã đóng. Tạo Stay, occupancy, assignment và trạng thái đơn rồi commit; trả thêm `folioId`. Lỗi bất kỳ bước nào rollback cả nhận phòng và folio mới. Không thay đổi room nights, giá đặt phòng hoặc tổng tiền hợp đồng.
 
 Check-out:
 

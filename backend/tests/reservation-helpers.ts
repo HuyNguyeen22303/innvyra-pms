@@ -28,6 +28,9 @@ export function memoryReservations(hotelId = 9007199254740995n) {
     capacities.set(id, 3);
   }
   const repository: ReservationRepository = {
+    transactionBilling: () => {
+      throw new Error('Use MySQL fixtures for transactional billing');
+    },
     withHotelLock: async (_id, action) => action(repository),
     snapshot: async (action) => action(repository),
     hotel: async (id) => (id === hotelId ? { timezone: 'Asia/Ho_Chi_Minh' } : null),

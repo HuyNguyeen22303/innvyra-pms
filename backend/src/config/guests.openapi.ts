@@ -207,7 +207,7 @@ export const guestPaths = {
         query(
           'search',
           { type: 'string', minLength: 1, maxLength: 150 },
-          'Contains fullName, using database collation',
+          'Name substring; ADMIN/MANAGER/RECEPTIONIST may also match normalized phone digits. ACCOUNTANT searches names only. Tenant scope and identical filters apply to rows and counts.',
         ),
         query('nationality', text(100), 'Exact nationality; not available to ACCOUNTANT'),
         query(

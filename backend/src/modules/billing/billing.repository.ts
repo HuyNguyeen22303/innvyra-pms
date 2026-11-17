@@ -64,6 +64,7 @@ export class PrismaBillingRepository {
     hotelId: bigint,
     action: (repository: BillingOperations) => Promise<T>,
   ): Promise<T> {
+    if (this.tx) return action(this);
     for (let attempt = 0; ; attempt++) {
       try {
         return await this.prisma.$transaction(
@@ -247,6 +248,22 @@ export class PrismaBillingRepository {
   payment(hotelId: bigint, id: bigint) {
     return this.db.payment.findFirst({ where: { hotelId, id } });
   }
+  async settlementRevision(hotelId: bigint, folioId: bigint) {
+    const where = { hotelId, folioId };
+    const items = await this.db.folioItem.aggregate({ where, _count: true, _max: { id: true } });
+    const payments = await this.db.payment.aggregate({ where, _count: true, _max: { id: true } });
+    const audit = await this.db.billingAuditLog.aggregate({
+      where: { hotelId, entityId: folioId, action: 'TERMINAL_FOLIO_SETTLED' },
+      _max: { id: true },
+    });
+    return {
+      itemCount: items._count,
+      lastItem: items._max.id?.toString() ?? null,
+      paymentCount: payments._count,
+      lastPayment: payments._max.id?.toString() ?? null,
+      lastSettlement: audit._max.id?.toString() ?? null,
+    };
+  }
   createPayment(data: Prisma.PaymentUncheckedCreateInput) {
     return this.db.payment.create({ data });
   }
@@ -269,6 +286,12 @@ export class PrismaBillingRepository {
     return {
       items: await this.db.payment.findMany({
         where,
+        include: {
+          refunds: {
+            where: { status: { in: ['CONFIRMED', 'PENDING'] } },
+            select: { amount: true },
+          },
+        },
         orderBy: { id: 'asc' },
         skip: (query.page - 1) * query.limit,
         take: query.limit,

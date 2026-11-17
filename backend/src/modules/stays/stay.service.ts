@@ -1,4 +1,5 @@
 import { AppError } from '../../shared/errors/app-error.js';
+import { BillingService } from '../billing/billing.service.js';
 import { pageResult } from '../../shared/validation/room-input.js';
 import { asDate, asDateOnly, hotelToday } from '../reservations/reservation.dates.js';
 import { validateArrival } from './stay.dates.js';
@@ -79,6 +80,16 @@ export class StayService {
         reservation.checkInDate,
         reservation.checkOutDate,
       );
+      const folio = await new BillingService(repository.transactionBilling()).openFolio(
+        scope,
+        reservation.id,
+      );
+      if (folio.status !== 'OPEN')
+        throw new AppError(
+          409,
+          'FOLIO_NOT_OPEN',
+          'Folio đã đóng; cần kiểm tra trước khi nhận phòng',
+        );
       const stay = await repository.createStay(
         scope,
         booked.id,
@@ -90,7 +101,10 @@ export class StayService {
       await repository.occupy(stay, now);
       await repository.assign(scope.hotelId, booked.id, room.id);
       await repository.syncReservation(scope.hotelId, reservation.id);
-      return stayDetail(await this.requireStay(repository, scope, stay.id), scope.role);
+      return {
+        ...stayDetail(await this.requireStay(repository, scope, stay.id), scope.role),
+        folioId: folio.id,
+      };
     });
   }
   async list(scope: StayScope, query: StayQuery) {

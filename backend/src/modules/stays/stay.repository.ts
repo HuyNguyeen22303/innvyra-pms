@@ -5,6 +5,7 @@ import type { StayOperations, StayQuery, StayScope } from './stay.types.js';
 import { localDateRange } from './stay.dates.js';
 import { ensureTurnoverTask } from '../housekeeping/housekeeping.repository.js';
 import { asDate, hotelToday } from '../reservations/reservation.dates.js';
+import { PrismaBillingRepository } from '../billing/billing.repository.js';
 
 const identity = { select: { id: true, fullName: true } } as const;
 const roomIdentity = { select: { id: true, roomNumber: true } } as const;
@@ -51,6 +52,10 @@ export class PrismaStayRepository {
   ) {}
   private get db() {
     return this.tx ?? this.prisma;
+  }
+  transactionBilling() {
+    if (!this.tx) throw new Error('Billing requires the active hotel transaction');
+    return new PrismaBillingRepository(this.prisma, this.tx);
   }
 
   async withHotelLock<T>(
@@ -173,8 +178,14 @@ export class PrismaStayRepository {
             // must be wrapped in OR - a plain object would AND them and return
             // no rows at all.
             OR: [
-              { reservationRoom: { reservation: { confirmationCode: { contains: query.search } } } },
-              { reservationRoom: { reservation: { bookerGuest: { fullName: { contains: query.search } } } } },
+              {
+                reservationRoom: { reservation: { confirmationCode: { contains: query.search } } },
+              },
+              {
+                reservationRoom: {
+                  reservation: { bookerGuest: { fullName: { contains: query.search } } },
+                },
+              },
               { currentRoom: { roomNumber: { contains: query.search } } },
             ],
           }

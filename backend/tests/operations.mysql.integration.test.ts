@@ -274,6 +274,13 @@ describe.skipIf(!testUrl)(
       vi.restoreAllMocks();
       if (!db || !hotels.length) return;
       const where = { hotelId: { in: hotels } };
+      await db.billingAuditLog.deleteMany({ where });
+      await db.billingIdempotency.deleteMany({ where });
+      await db.payment.deleteMany({ where: { ...where, originalPaymentId: { not: null } } });
+      await db.payment.deleteMany({ where });
+      await db.folioItem.deleteMany({ where: { ...where, relatedItemId: { not: null } } });
+      await db.folioItem.deleteMany({ where });
+      await db.folio.deleteMany({ where });
       await db.operationsAuditLog.deleteMany({ where });
       await db.housekeepingMaterialCompletion.deleteMany({ where });
       await db.housekeepingTask.deleteMany({ where });

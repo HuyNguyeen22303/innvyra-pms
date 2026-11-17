@@ -16,6 +16,8 @@ import type {
   PaymentRecord,
   CreatePaymentDto,
   CreateRefundDto,
+  TerminalSettlementDto,
+  TerminalSettlementPreview,
 } from '../types/billing.types.ts';
 
 /**
@@ -28,6 +30,15 @@ export const createIdempotencyKey = (prefix: string = 'idemp'): string => {
 };
 
 export const billingApi = {
+  getTerminalSettlement: async (id: string): Promise<ApiResponse<TerminalSettlementPreview>> => {
+    const res = await apiClient.get<ApiResponse<TerminalSettlementPreview>>(`/folios/${id}/terminal-settlement`);
+    return res.data;
+  },
+  settleTerminalFolio: async (id: string, data: TerminalSettlementDto, key: string): Promise<ApiResponse<FolioDetailItem>> => {
+    const res = await apiClient.post<ApiResponse<FolioDetailItem>>(`/folios/${id}/terminal-settlement`, data,
+      { headers: { 'Idempotency-Key': key } });
+    return res.data;
+  },
   // ==========================================
   // 1. SERVICE CATALOG (DANH MỤC DỊCH VỤ)
   // ==========================================

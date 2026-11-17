@@ -23,6 +23,7 @@ import {
   paymentBody,
   refundBody,
   serviceQuery,
+  terminalSettlementBody,
   updateServiceBody,
 } from './billing.schema.js';
 
@@ -97,6 +98,12 @@ export function billingRoutes(service: BillingService, auth: AuthService, env: E
     key: true,
   });
   add('post', '/folios/:id/close', 'settle', c.close, { params: idParams });
+  add('get', '/folios/:id/terminal-settlement', 'read', c.terminalSettlement, { params: idParams });
+  add('post', '/folios/:id/terminal-settlement', 'settle', c.settleTerminal, {
+    params: idParams,
+    body: terminalSettlementBody,
+    key: true,
+  });
   const folioParams = z.object({ folioId: idSchema }).strict();
   add('post', '/folios/:folioId/payments', 'pay', c.pay, {
     params: folioParams,

@@ -260,6 +260,13 @@ describe.skipIf(!testUrl)(
       await db.housekeepingMaterialCompletion.deleteMany({ where });
       await db.housekeepingTask.deleteMany({ where });
       // Delete only synthetic fixtures created by this test, in foreign-key order.
+      await db.billingAuditLog.deleteMany({ where });
+      await db.billingIdempotency.deleteMany({ where });
+      await db.payment.deleteMany({ where: { ...where, originalPaymentId: { not: null } } });
+      await db.payment.deleteMany({ where });
+      await db.folioItem.deleteMany({ where: { ...where, relatedItemId: { not: null } } });
+      await db.folioItem.deleteMany({ where });
+      await db.folio.deleteMany({ where });
       await db.roomOccupancy.deleteMany({ where });
       await db.roomTransfer.deleteMany({ where });
       await db.stay.deleteMany({ where });

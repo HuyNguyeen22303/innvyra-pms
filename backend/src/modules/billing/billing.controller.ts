@@ -12,6 +12,7 @@ import type {
   RefundInput,
   ServiceQuery,
   UpdateServiceInput,
+  TerminalSettlementInput,
 } from './billing.types.js';
 
 export const billingScope = (req: Request): BillingScope => {
@@ -88,6 +89,14 @@ export function billingController(service: BillingService) {
     ),
     close: handler('Folio closed', (scope, { params }) =>
       service.closeFolio(scope, BigInt(params.id!)),
+    ),
+    terminalSettlement: handler('Terminal settlement preview retrieved', (scope, { params }) =>
+      service.getTerminalSettlement(scope, BigInt(params.id!)),
+    ),
+    settleTerminal: handler<TerminalSettlementInput>(
+      'Terminal folio settled',
+      (scope, { params, body }, key) =>
+        service.settleTerminalFolio(scope, BigInt(params.id!), body, key),
     ),
     payments: handler<object, LedgerQuery>('Payments retrieved', (scope, { params, query }) =>
       service.listPayments(scope, BigInt(params.folioId!), query),

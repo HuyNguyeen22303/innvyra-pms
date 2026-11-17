@@ -38,7 +38,7 @@ import {
   WarningOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
@@ -689,7 +689,11 @@ export const StaysPage: React.FC = () => {
     }) => staysApi.checkin(reservationId, reservationRoomId, data),
     onSuccess: (res) => {
       const roomNum = res.data?.room?.roomNumber || '';
-      appMessage.success(`Check-in thành công cho phòng #${roomNum}!`, 5);
+      appMessage.success(<Space>Check-in thành công cho phòng #{roomNum}!
+        {res.data?.folioId && <Link to={`/folios?reservationId=${res.data.reservationId}`}>Xem folio</Link>}</Space>, 6);
+      queryClient.invalidateQueries({ queryKey: ['billing-folio', res.data.reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', res.data.reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-items', res.data.folioId] });
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['arrivalReservations'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });

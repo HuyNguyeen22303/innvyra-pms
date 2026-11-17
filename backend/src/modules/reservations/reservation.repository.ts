@@ -4,6 +4,7 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { inventoryNights, sellableRoomWhere } from './inventory.repository.js';
 import { asDate } from './reservation.dates.js';
 import { generateReservationCode } from './reservation-code.js';
+import { PrismaBillingRepository } from '../billing/billing.repository.js';
 import type {
   ReservationOperations,
   ReservationQuery,
@@ -34,6 +35,10 @@ export class PrismaReservationRepository {
   ) {}
   private get db() {
     return this.tx ?? this.prisma;
+  }
+  transactionBilling() {
+    if (!this.tx) throw new Error('Billing requires the active hotel transaction');
+    return new PrismaBillingRepository(this.prisma, this.tx);
   }
   async withHotelLock<T>(
     hotelId: bigint,

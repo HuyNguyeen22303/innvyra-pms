@@ -1,4 +1,4 @@
-export const LOCAL_SEED_VERSION = 'innvyra-multi-hotel-local-v4';
+export const LOCAL_SEED_VERSION = 'innvyra-multi-hotel-local-v5';
 export const LOCAL_DATABASE_NAME = 'innvyra';
 // Deliberately public credentials for this local sample database only.
 export const LOCAL_PASSWORD = 'Innvyra@Demo2026!';
