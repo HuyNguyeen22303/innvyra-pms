@@ -37,7 +37,6 @@ import {
   FileTextOutlined,
   WarningOutlined,
   RightOutlined,
-  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
@@ -1299,15 +1298,6 @@ export const StaysPage: React.FC = () => {
   const staysArrivalsPane = useMemo(
     () => (
                 <>
-                  <Alert
-                    type="info"
-                    showIcon
-                    icon={<ClockCircleOutlined />}
-                    style={{ marginBottom: 16 }}
-                    title="Quy trình Nhận phòng (Check-in Arrival SOP)"
-                    description="Khi khách đến nhận phòng, chọn 'Làm thủ tục' để gán phòng vật lý đang ở trạng thái READY (Đã vệ sinh sạch sẽ). Hệ thống chỉ kích hoạt check-in vào đúng ngày nhận phòng đã đăng ký theo chính sách của khách sạn."
-                  />
-
                   <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
                     <Table
                       columns={arrivalColumns}
