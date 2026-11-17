@@ -47,6 +47,8 @@ model Hotel {
   stockIssues         StockIssue[]
   stockAdjustments    StockAdjustment[]
   inventoryMovements  InventoryMovement[]
+  bankAccount         HotelBankAccount?
+  paymentRequests     PaymentRequest[]
 
   @@index([status])
   @@map("hotels")
@@ -62,6 +64,9 @@ model Role {
 }
 
 model StaffUser {
+  bankAccountsUpdated      HotelBankAccount[]
+  qrRequestsCreated        PaymentRequest[]                 @relation("QrCreator")
+  qrRequestsConfirmed      PaymentRequest[]                 @relation("QrConfirmer")
   materialCompletions      HousekeepingMaterialCompletion[]
   supplierPayments         SupplierPayment[]
   supplierPaymentReversals SupplierPaymentReversal[]
@@ -490,6 +495,7 @@ enum ReservationStatus {
 }
 
 model Reservation {
+  paymentRequests    PaymentRequest[]
   id                 BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
   folio              Folio?
   serviceOrders      ServiceOrder[]
@@ -963,27 +969,82 @@ model FolioItem {
 }
 
 model Payment {
-  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  hotelId           BigInt        @map("hotel_id") @db.UnsignedBigInt
-  folioId           BigInt        @map("folio_id") @db.UnsignedBigInt
-  paymentType       PaymentType   @map("payment_type")
-  paymentMethod     PaymentMethod @map("payment_method")
-  amount            Decimal       @db.Decimal(18, 2)
+  qrRequest         PaymentRequest?
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId           BigInt          @map("hotel_id") @db.UnsignedBigInt
+  folioId           BigInt          @map("folio_id") @db.UnsignedBigInt
+  paymentType       PaymentType     @map("payment_type")
+  paymentMethod     PaymentMethod   @map("payment_method")
+  amount            Decimal         @db.Decimal(18, 2)
   status            PaymentStatus
-  referenceNumber   String?       @map("reference_number") @db.VarChar(100)
-  originalPaymentId BigInt?       @map("original_payment_id") @db.UnsignedBigInt
-  reason            String?       @db.VarChar(2000)
-  processedBy       BigInt        @map("processed_by") @db.UnsignedBigInt
-  processedAt       DateTime      @default(now()) @map("processed_at") @db.DateTime(3)
-  createdAt         DateTime      @default(now()) @map("created_at") @db.DateTime(3)
-  folio             Folio         @relation(fields: [hotelId, folioId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
-  processor         StaffUser     @relation(fields: [hotelId, processedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
-  originalPayment   Payment?      @relation("PaymentRefund", fields: [hotelId, folioId, originalPaymentId], references: [hotelId, folioId, id], onDelete: Restrict, onUpdate: Restrict)
-  refunds           Payment[]     @relation("PaymentRefund")
+  referenceNumber   String?         @map("reference_number") @db.VarChar(100)
+  originalPaymentId BigInt?         @map("original_payment_id") @db.UnsignedBigInt
+  reason            String?         @db.VarChar(2000)
+  processedBy       BigInt          @map("processed_by") @db.UnsignedBigInt
+  processedAt       DateTime        @default(now()) @map("processed_at") @db.DateTime(3)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.DateTime(3)
+  folio             Folio           @relation(fields: [hotelId, folioId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  processor         StaffUser       @relation(fields: [hotelId, processedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  originalPayment   Payment?        @relation("PaymentRefund", fields: [hotelId, folioId, originalPaymentId], references: [hotelId, folioId, id], onDelete: Restrict, onUpdate: Restrict)
+  refunds           Payment[]       @relation("PaymentRefund")
 
   @@unique([hotelId, folioId, id])
   @@index([hotelId, folioId, status, createdAt])
   @@map("payments")
+}
+
+model HotelBankAccount {
+  updatedByStaff StaffUser @relation(fields: [hotelId, updatedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId        BigInt    @unique @map("hotel_id") @db.UnsignedBigInt
+  bankBin        String    @map("bank_bin") @db.Char(6)
+  bankName       String    @map("bank_name") @db.VarChar(191)
+  accountNumber  String    @map("account_number") @db.VarChar(19)
+  accountName    String    @map("account_name") @db.VarChar(50)
+  enabled        Boolean   @default(true)
+  version        Int       @default(1) @db.UnsignedInt
+  updatedBy      BigInt    @map("updated_by") @db.UnsignedBigInt
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
+  hotel          Hotel     @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+
+  @@map("hotel_bank_accounts")
+}
+
+enum PaymentRequestStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model PaymentRequest {
+  creator         StaffUser            @relation("QrCreator", fields: [hotelId, createdBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  confirmer       StaffUser?           @relation("QrConfirmer", fields: [hotelId, confirmedBy], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  id              BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  hotelId         BigInt               @map("hotel_id") @db.UnsignedBigInt
+  reservationId   BigInt               @map("reservation_id") @db.UnsignedBigInt
+  folioId         BigInt?              @map("folio_id") @db.UnsignedBigInt
+  paymentId       BigInt?              @unique @map("payment_id") @db.UnsignedBigInt
+  paymentType     PaymentType          @map("payment_type")
+  amount          Decimal              @db.Decimal(18, 2)
+  memo            String               @unique @db.VarChar(19)
+  status          PaymentRequestStatus @default(PENDING)
+  bankVersion     Int                  @map("bank_version") @db.UnsignedInt
+  bankBin         String               @map("bank_bin") @db.Char(6)
+  bankName        String               @map("bank_name") @db.VarChar(191)
+  accountNumber   String               @map("account_number") @db.VarChar(19)
+  accountName     String               @map("account_name") @db.VarChar(50)
+  createdBy       BigInt               @map("created_by") @db.UnsignedBigInt
+  confirmedBy     BigInt?              @map("confirmed_by") @db.UnsignedBigInt
+  confirmedAt     DateTime?            @map("confirmed_at") @db.DateTime(3)
+  cancelledReason String?              @map("cancelled_reason") @db.VarChar(2000)
+  createdAt       DateTime             @default(now()) @map("created_at") @db.DateTime(3)
+  hotel           Hotel                @relation(fields: [hotelId], references: [id], onDelete: Restrict)
+  reservation     Reservation          @relation(fields: [hotelId, reservationId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
+  payment         Payment?             @relation(fields: [hotelId, folioId, paymentId], references: [hotelId, folioId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([hotelId, folioId, paymentId])
+  @@index([hotelId, reservationId, status, id])
+  @@map("payment_requests")
 }
 
 model BillingIdempotency {

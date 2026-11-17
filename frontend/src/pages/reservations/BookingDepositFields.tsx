@@ -63,13 +63,19 @@ export function BookingDepositFields({
             aria-label="Phương thức nhận cọc"
             value={value.paymentMethod}
             onChange={(event) =>
-              change({ paymentMethod: event.target.value, referenceNumber: "" })
+              change({ paymentMethod: event.target.value, referenceNumber: "", useQr: event.target.value === 'BANK_TRANSFER' })
             }
           >
             <Radio.Button value="CASH">Tiền mặt</Radio.Button>
             <Radio.Button value="BANK_TRANSFER">Chuyển khoản</Radio.Button>
           </Radio.Group>
           {value.paymentMethod === "BANK_TRANSFER" && (
+            <Radio.Group aria-label="Cách nhận cọc chuyển khoản" value={value.useQr ? 'QR' : 'RECEIVED'} onChange={(event) => change({ useQr: event.target.value === 'QR', referenceNumber: '' })}>
+              <Radio.Button value="QR">Hiển thị QR để khách chuyển</Radio.Button>
+              <Radio.Button value="RECEIVED">Tiền đã nhận</Radio.Button>
+            </Radio.Group>
+          )}
+          {value.paymentMethod === "BANK_TRANSFER" && !value.useQr && (
             <Input
               aria-label="Mã giao dịch nhận cọc"
               maxLength={100}
@@ -80,14 +86,14 @@ export function BookingDepositFields({
               }
             />
           )}
-          <Checkbox
+          {value.paymentMethod === 'BANK_TRANSFER' && value.useQr ? <Typography.Text type="secondary">Đơn sẽ được lưu trước khi hiện QR. Chưa ghi nhận cọc hoặc mở folio cho đến khi xác nhận tiền về.</Typography.Text> : <Checkbox
             checked={value.confirmedReceived}
             onChange={(event) =>
               onChange({ ...value, confirmedReceived: event.target.checked })
             }
           >
             Tôi xác nhận khách sạn đã thực nhận số tiền cọc trên.
-          </Checkbox>
+          </Checkbox>}
         </>
       )}
     </Space>

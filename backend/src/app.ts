@@ -27,6 +27,8 @@ import { PlatformAuthService } from './modules/platform-auth/platform-auth.servi
 import { platformRoutes } from './modules/platform-auth/platform-auth.routes.js';
 import type { HotelManagementService } from './modules/hotels/hotel.service.js';
 import { ownHotelRoutes, platformHotelRoutes } from './modules/hotels/hotel.routes.js';
+import { paymentQrRoutes } from './modules/payment-qr/payment-qr.routes.js';
+import type { PrismaPaymentQrRepository } from './modules/payment-qr/payment-qr.repository.js';
 export type OperationsRepositories = {
   housekeeping: HousekeepingRepository;
   maintenance: MaintenanceRepository;
@@ -48,6 +50,7 @@ export function createApp(
   inventory?: InventoryRepository,
   platformAuth?: PlatformAuthRepository,
   hotels?: HotelManagementService,
+  paymentQr?: PrismaPaymentQrRepository,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -66,6 +69,8 @@ export function createApp(
   app.use(cors(corsOptions(env)));
   app.use(express.json({ limit: '16kb' }));
   app.use(cookieParser());
+  if (paymentQr)
+    app.use('/api/v1', paymentQrRoutes(paymentQr, new AuthService(repository, env), env));
   if (platformAuth) {
     const platformService = new PlatformAuthService(platformAuth, env);
     app.use(

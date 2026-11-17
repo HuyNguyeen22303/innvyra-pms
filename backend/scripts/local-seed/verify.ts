@@ -6,6 +6,14 @@ import { sqlIdentifier } from './dataset.js';
 
 const checks: [string, string][] = [
   [
+    'qr_receipt_links',
+    `SELECT COUNT(*) n FROM payment_requests q LEFT JOIN payments p ON p.hotel_id=q.hotel_id AND p.folio_id=q.folio_id AND p.id=q.payment_id LEFT JOIN folios f ON f.hotel_id=q.hotel_id AND f.id=q.folio_id WHERE q.payment_type='REFUND' OR q.amount<=0 OR (q.status='CONFIRMED' AND (p.id IS NULL OR p.status<>'CONFIRMED' OR p.payment_method<>'BANK_TRANSFER' OR p.payment_type<>q.payment_type OR p.amount<>q.amount OR f.reservation_id<>q.reservation_id)) OR (q.status<>'CONFIRMED' AND q.payment_id IS NOT NULL)`,
+  ],
+  [
+    'qr_pending_uniqueness',
+    `SELECT COUNT(*) n FROM (SELECT hotel_id,reservation_id FROM payment_requests WHERE status='PENDING' GROUP BY hotel_id,reservation_id HAVING COUNT(*)>1) duplicated`,
+  ],
+  [
     'supplier_payment_balances',
     `SELECT COUNT(*) n FROM stock_receipts r JOIN (SELECT p.receipt_id,SUM(CASE WHEN v.id IS NULL THEN p.amount ELSE 0 END) paid FROM supplier_payments p LEFT JOIN supplier_payment_reversals v ON v.hotel_id=p.hotel_id AND v.payment_id=p.id GROUP BY p.receipt_id) s ON s.receipt_id=r.id WHERE s.paid>r.total_amount OR s.paid<0 OR (r.payment_tracking='UNRECONCILED' AND s.paid<>0)`,
   ],

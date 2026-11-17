@@ -56,6 +56,7 @@ import { useStaffDirectory } from '../../../utils/staffDirectory.ts';
 import { ReceiptModal } from './ReceiptModal.tsx';
 import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 import { TerminalSettlementModal } from './TerminalSettlementModal.tsx';
+import { PaymentQrModal } from '../../../components/payments/PaymentQrModal.tsx';
 import { formatFolioMoney, refundableAmount, validFinalCharge } from '../../../utils/folioSettlement.ts';
 
 const { Text } = Typography;
@@ -103,6 +104,8 @@ export const FolioTab: React.FC = () => {
 
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrDefaults, setQrDefaults] = useState<{ amount: string; paymentType: 'DEPOSIT' | 'PAYMENT' } | null>(null);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState<boolean>(false);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState<boolean>(false);
   const [isCloseFolioModalOpen, setIsCloseFolioModalOpen] = useState<boolean>(false);
@@ -995,6 +998,7 @@ export const FolioTab: React.FC = () => {
           <Row gutter={[16, 16]} align="middle" justify="space-between">
             <Col xs={24} md={16}>
               <Space wrap size={10}>
+                {canOpenOrPay && <Button onClick={() => { setQrDefaults(null); setIsQrModalOpen(true); }}>Nhận chuyển khoản QR</Button>}
                 <Button
                   icon={<LeftOutlined />}
                   onClick={() => {
@@ -1492,6 +1496,7 @@ export const FolioTab: React.FC = () => {
       {/* ---------------------------------------------------- */}
       {/* PAYMENT & DEPOSIT MODAL */}
       {/* ---------------------------------------------------- */}
+      {isQrModalOpen && selectedReservationId && <PaymentQrModal key={selectedReservationId} reservationId={selectedReservationId} initialType={qrDefaults?.paymentType ?? 'PAYMENT'} initialAmount={qrDefaults?.amount ?? folio?.outstandingBalance} autoCreate={!!qrDefaults} allowDeposit={!isTerminalReservation} onClose={() => setIsQrModalOpen(false)} />}
       <Modal
         title={
           <Space>
@@ -1560,6 +1565,12 @@ export const FolioTab: React.FC = () => {
             />
           </Form.Item>
 
+          {paymentMethodWatch === 'BANK_TRANSFER' && (
+            <Button style={{ marginBottom: 16 }} onClick={() => {
+              setQrDefaults({ amount: String(paymentForm.getFieldValue('amount') ?? ''), paymentType: paymentForm.getFieldValue('paymentType') ?? 'PAYMENT' });
+              setIsPaymentModalOpen(false); setIsQrModalOpen(true);
+            }}>Hiển thị QR để khách chuyển khoản</Button>
+          )}
           {paymentMethodWatch === 'BANK_TRANSFER' && (
             <Form.Item
               name="referenceNumber"

@@ -3,6 +3,7 @@
 - [Sơ đồ gốc chỉnh sửa bằng draw.io](Innvyra_13UC.drawio).
 - [Phân tích yêu cầu hệ thống — phần 7.1](PHAN_TICH_YEU_CAU_HE_THONG.md).
 - [Danh mục UC và quyền chức năng](DANH_MUC_UC.md).
+- [QR nhận cọc, thanh toán và cập nhật database](QR_NHAN_COC_THANH_TOAN.md).
 
 File `Innvyra_13UC.drawio` là bản sơ đồ đang sử dụng, gồm 13 UC chính và 41 trang Use Case, Activity, Sequence. Các tài liệu Markdown tham chiếu tên tab trong file này.
 

@@ -11,6 +11,7 @@ import { employeePaths, employeeSchemas } from './employees.openapi.js';
 import { inventoryPaths, inventorySchemas } from './inventory.openapi.js';
 import { platformPaths, platformSchemas } from './platform.openapi.js';
 import { hotelPaths, hotelSchemas } from './hotels.openapi.js';
+import { paymentQrPaths, paymentQrSchemas } from './payment-qr.openapi.js';
 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema: object) => ({ 'application/json': { schema } });
@@ -144,6 +145,7 @@ export const openApiDocument = {
       ...supplySchemas,
       ...platformSchemas,
       ...hotelSchemas,
+      ...paymentQrSchemas,
       ...subscriptionSchemas,
       CurrentUser: {
         type: 'object',
@@ -213,6 +215,7 @@ export const openApiDocument = {
     ...supplyPaths,
     ...platformPaths,
     ...hotelPaths,
+    ...paymentQrPaths,
     ...subscriptionPaths,
     '/auth/login': {
       post: {

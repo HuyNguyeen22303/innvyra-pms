@@ -48,6 +48,7 @@
     "jose": "^6.1.0",
     "mariadb": "3.5.4",
     "swagger-ui-express": "^5.0.1",
+    "vietqr": "1.2.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -56,10 +57,13 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/node": "^22.19.0",
+    "@types/pngjs": "6.0.5",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "10.12.0",
+    "jsqr": "1.4.0",
     "nodemon": "^3.1.14",
+    "pngjs": "7.0.0",
     "prettier": "^3.6.2",
     "prisma": "7.10.0",
     "supertest": "^7.1.4",

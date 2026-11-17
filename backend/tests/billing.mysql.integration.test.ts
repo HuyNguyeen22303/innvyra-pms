@@ -16,6 +16,7 @@ import { asDate, asDateOnly, hotelToday } from '../src/modules/reservations/rese
 import { PrismaStayRepository } from '../src/modules/stays/stay.repository.js';
 import { StayService } from '../src/modules/stays/stay.service.js';
 import { PrismaBillingRepository } from '../src/modules/billing/billing.repository.js';
+import { PrismaPaymentQrRepository } from '../src/modules/payment-qr/payment-qr.repository.js';
 import { PrismaReportRepository } from '../src/modules/reports/report.repository.js';
 import { nextDate } from '../src/modules/reports/report.dates.js';
 import type { BillingScope } from '../src/modules/billing/billing.types.js';
@@ -260,6 +261,11 @@ describe.skipIf(!testUrl)(
           new PrismaBillingRepository(prisma),
           undefined,
           new PrismaReportRepository(prisma),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          new PrismaPaymentQrRepository(prisma),
         );
       app = build(db);
       otherApp = build(second);
@@ -273,6 +279,8 @@ describe.skipIf(!testUrl)(
       // Only fixtures owned by this test are removed, in reference order. No reset/truncate.
       await db.billingAuditLog.deleteMany({ where });
       await db.billingIdempotency.deleteMany({ where });
+      await db.paymentRequest.deleteMany({ where });
+      await db.hotelBankAccount.deleteMany({ where });
       await db.payment.deleteMany({ where: { ...where, originalPaymentId: { not: null } } });
       await db.payment.deleteMany({ where });
       await db.folioItem.deleteMany({ where: { ...where, relatedItemId: { not: null } } });
@@ -1630,6 +1638,266 @@ describe.skipIf(!testUrl)(
         ).toBe(0);
       },
     );
+    const configureQr = (expectedVersion = 0, extra: object = {}, accessToken = token) =>
+      request(app)
+        .put('/api/v1/hotel/bank-account')
+        .auth(accessToken, { type: 'bearer' })
+        .set('X-CSRF-Protection', '1')
+        .send({
+          bankBin: '970415',
+          accountNumber: '000111222333',
+          accountName: 'Nguyễn Văn An',
+          enabled: true,
+          expectedVersion,
+          ...extra,
+        });
+    const qrCreate = (
+      amount = '300000',
+      kind = 'DEPOSIT',
+      key: string = randomUUID(),
+      target = app,
+    ) =>
+      post(
+        `/reservations/${booking.id}/payment-requests`,
+        { amount, paymentType: kind },
+        key,
+        target,
+      );
+    const qrConfirm = (
+      id: string,
+      key: string = randomUUID(),
+      target = app,
+      referenceNumber = 'FT-TEST-100',
+    ) =>
+      post(
+        `/payment-requests/${id}/confirm`,
+        { referenceNumber, confirmedReceived: true },
+        key,
+        target,
+      );
+    it('QR account is scoped, versioned, audited and editable only by hotel ADMIN', async () => {
+      expect((await get('/hotel/bank-account')).body.data).toBeNull();
+      const saved = await configureQr();
+      expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+      expect(saved.body.data).toMatchObject({
+        version: 1,
+        accountNumber: '000111222333',
+        accountName: 'NGUYEN VAN AN',
+      });
+      expect((await configureQr()).body.error.code).toBe('BANK_ACCOUNT_STALE');
+      expect((await get('/hotel/bank-account', foreignToken)).body.data).toBeNull();
+      for (const role of ['MANAGER', 'RECEPTIONIST', 'ACCOUNTANT', 'HOUSEKEEPING'] as const) {
+        await changeRole(role);
+        expect((await configureQr(1)).status).toBe(403);
+      }
+      expect(
+        await db.billingAuditLog.count({
+          where: { hotelId: scope.hotelId, action: 'BANK_ACCOUNT_UPDATED' },
+        }),
+      ).toBe(1);
+    });
+    it('QR creation and rendering do not open a folio, post money or change booking snapshots', async () => {
+      expect((await configureQr()).status).toBe(200);
+      const result = await qrCreate();
+      expect(result.status, JSON.stringify(result.body)).toBe(201);
+      const id = result.body.data.id;
+      expect(result.body.data).toMatchObject({
+        amount: '300000.00',
+        status: 'PENDING',
+        folioId: null,
+        paymentId: null,
+      });
+      expect(result.body.data.memo).toMatch(/^INN[A-F0-9]{16}$/);
+      const detail = await get(`/payment-requests/${id}`);
+      expect(detail.body.data).toMatchObject({
+        canConfirm: true,
+        bankBin: '970415',
+        accountNumber: '000111222333',
+      });
+      expect(detail.body.data.qrDataURL).toMatch(/^data:image\/png;base64,/);
+      expect((await get(`/payment-requests/${id}`, foreignToken)).status).toBe(404);
+      expect((await get(`/reservations/${booking.id}/payment-requests`, foreignToken)).status).toBe(
+        404,
+      );
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it('QR rejects absent account, invalid money, excess amount, missing key and unconfirmed receipt', async () => {
+      expect((await qrCreate()).body.error.code).toBe('BANK_ACCOUNT_UNCONFIGURED');
+      await configureQr();
+      for (const amount of ['0', '1.50', '10000000000000', '-1'])
+        expect((await qrCreate(amount)).status).toBe(422);
+      expect((await qrCreate('1800001')).status).toBe(409);
+      expect((await qrCreate('10', 'REFUND')).status).toBe(422);
+      expect((await qrCreate('10', 'DEPOSIT', '')).status).toBe(422);
+      const id = (await qrCreate()).body.data.id;
+      expect(
+        (
+          await post(`/payment-requests/${id}/confirm`, {
+            referenceNumber: 'FT-TEST',
+            confirmedReceived: false,
+          })
+        ).status,
+      ).toBe(422);
+      expect((await qrConfirm(id, randomUUID(), app, ' ')).status).toBe(422);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it('QR concurrent creation and confirmation with different keys produce one request, one folio and one receipt', async () => {
+      await configureQr();
+      const created = await Promise.all([
+        qrCreate(),
+        qrCreate('300000', 'DEPOSIT', randomUUID(), otherApp),
+      ]);
+      expect(created.map((x) => x.status)).toEqual([201, 201]);
+      const id = created[0]!.body.data.id;
+      expect(created[1]!.body.data.id).toBe(id);
+      const confirmations = await Promise.all([
+        qrConfirm(id),
+        qrConfirm(id, randomUUID(), otherApp),
+      ]);
+      expect(confirmations.map((x) => x.status)).toEqual([200, 200]);
+      expect(confirmations[1]!.body.data.paymentId).toBe(confirmations[0]!.body.data.paymentId);
+      expect(await db.paymentRequest.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+      expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+      const folioId = confirmations[0]!.body.data.folioId;
+      expect((await get(`/folios/${folioId}`)).body.data).toMatchObject({
+        totalDeposits: '300000.00',
+        outstandingBalance: '1500000.00',
+      });
+      expect((await qrConfirm(id, randomUUID(), app, 'OTHER-REF')).status).toBe(409);
+    });
+    it.each(['manual', 'qr'])(
+      'QR refuses a bank reference already recorded through %s receipt',
+      async (source) => {
+        await configureQr();
+        const id = (await qrCreate()).body.data.id;
+        if (source === 'qr') {
+          expect((await qrConfirm(id)).status).toBe(200);
+        } else {
+          const folioId = await open();
+          expect(
+            (
+              await pay(folioId, '300000', randomUUID(), app, {
+                paymentMethod: 'BANK_TRANSFER',
+                referenceNumber: 'FT-TEST-100',
+              })
+            ).status,
+          ).toBe(201);
+        }
+        const pendingId = source === 'qr' ? (await qrCreate()).body.data.id : id;
+        expect((await qrConfirm(pendingId)).body.error.code).toBe(
+          'BANK_REFERENCE_ALREADY_RECORDED',
+        );
+        expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(1);
+      },
+    );
+    it('QR replays stable keys, rejects changed payload and resumes the pending request without duplicating', async () => {
+      await configureQr();
+      const key = randomUUID(),
+        first = await qrCreate('300000', 'DEPOSIT', key);
+      expect((await qrCreate('300000', 'DEPOSIT', key)).body.data).toEqual(first.body.data);
+      expect((await qrCreate('400000', 'DEPOSIT', key)).body.error.code).toBe(
+        'IDEMPOTENCY_CONFLICT',
+      );
+      expect((await qrCreate('400000')).body.error.code).toBe('QR_REQUEST_PENDING');
+      const id = first.body.data.id;
+      expect(
+        (await get(`/reservations/${booking.id}/payment-requests`)).body.data.items[0].id,
+      ).toBe(id);
+      const confirmKey = randomUUID(),
+        confirmed = await qrConfirm(id, confirmKey);
+      expect((await qrConfirm(id, confirmKey)).body.data).toEqual(confirmed.body.data);
+      expect((await qrConfirm(id, confirmKey, app, 'DIFFERENT')).body.error.code).toBe(
+        'IDEMPOTENCY_CONFLICT',
+      );
+    });
+    it.each(['createPayment', 'audit', 'saveKey'] as const)(
+      'QR %s failure rolls back folio, receipt, request status and idempotency result',
+      async (method) => {
+        await configureQr();
+        const id = (await qrCreate()).body.data.id,
+          key = randomUUID();
+        const injection = vi
+          .spyOn(PrismaBillingRepository.prototype, method)
+          .mockRejectedValueOnce(new Error('Synthetic QR failure'));
+        expect((await qrConfirm(id, key)).status).toBe(500);
+        injection.mockRestore();
+        expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+        expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+        expect(
+          (await db.paymentRequest.findUniqueOrThrow({ where: { id: BigInt(id) } })).status,
+        ).toBe('PENDING');
+        expect((await qrConfirm(id, key)).status).toBe(200);
+      },
+    );
+    it('QR detects changed debt, keeps the request immutable and cancels pending QR after closing folio', async () => {
+      await configureQr();
+      const stayId = await active();
+      const folioId = await open();
+      const id = (await qrCreate('1800000', 'PAYMENT')).body.data.id;
+      await pay(folioId, '1800000');
+      expect((await qrConfirm(id)).body.error.code).toBe('INSUFFICIENT_OUTSTANDING_BALANCE');
+      expect((await get(`/payment-requests/${id}`)).body.data).toMatchObject({
+        canConfirm: false,
+        qrDataURL: null,
+        amount: '1800000.00',
+      });
+      expect((await post(`/stays/${stayId}/check-out`)).status).toBe(200);
+      expect((await post(`/folios/${folioId}/close`)).status).toBe(200);
+      expect((await get(`/payment-requests/${id}`)).body.data.status).toBe('CANCELLED');
+    });
+    it('QR bank change or disable cancels pending requests, never changes paid receipts or snapshots', async () => {
+      await configureQr();
+      const id = (await qrCreate()).body.data.id;
+      expect((await configureQr(1, { accountNumber: '999000111222', enabled: false })).status).toBe(
+        200,
+      );
+      expect((await get(`/payment-requests/${id}`)).body.data).toMatchObject({
+        status: 'CANCELLED',
+        accountNumber: '000111222333',
+        qrDataURL: null,
+      });
+      expect((await qrConfirm(id)).status).toBe(409);
+      expect((await qrCreate()).status).toBe(409);
+      expect(await db.payment.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+    });
+    it.each(['cancel', 'no-show'])(
+      'QR %s cancels deposit requests and does not open a folio',
+      async (action) => {
+        await configureQr();
+        const id = (await qrCreate()).body.data.id;
+        expect(
+          (await post(`/reservations/${booking.id}/${action}`, { reason: 'Guest did not arrive' }))
+            .status,
+        ).toBe(200);
+        expect((await get(`/payment-requests/${id}`)).body.data.status).toBe('CANCELLED');
+        expect((await qrConfirm(id)).status).toBe(409);
+        expect(await db.folio.count({ where: { hotelId: scope.hotelId } })).toBe(0);
+      },
+    );
+    it('QR cancellation is idempotent; a replacement has a new memo; confirmation of full deposit reuses folio at check-in', async () => {
+      await configureQr();
+      const original = (await qrCreate()).body.data,
+        key = randomUUID();
+      const cancel = () =>
+        post(
+          `/payment-requests/${original.id}/cancel`,
+          { reason: 'Customer changed deposit' },
+          key,
+        );
+      expect((await cancel()).status).toBe(200);
+      expect((await cancel()).status).toBe(200);
+      const next = await qrCreate('1800000');
+      expect(next.body.data.memo).not.toBe(original.memo);
+      const confirmed = await qrConfirm(next.body.data.id);
+      expect(confirmed.status).toBe(200);
+      const stay = await stays.checkin(scope, BigInt(booking.id), BigInt(booking.rooms[0]!.id), {
+        roomId: roomIds[0]!.toString(),
+      });
+      expect(stay.folioId).toBe(confirmed.body.data.folioId);
+      expect((await get(`/folios/${stay.folioId}`)).body.data.outstandingBalance).toBe('0.00');
+    });
     it('serves Swagger and browser preflight for Idempotency-Key', async () => {
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;

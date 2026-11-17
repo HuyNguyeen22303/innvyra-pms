@@ -46,6 +46,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
+import { PaymentQrModal } from '../../components/payments/PaymentQrModal.tsx';
 
 interface BookingNotesInputProps {
   initialValue?: string;
@@ -632,6 +633,7 @@ export const ReservationsPage: React.FC = () => {
   // Booker Guest and Extra fields
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [initialDeposit, setInitialDeposit] = useState(emptyBookingDeposit);
+  const [qrBooking, setQrBooking] = useState<{ id: string; amount?: string; autoCreate?: boolean; allowDeposit?: boolean; initialType?: 'DEPOSIT' | 'PAYMENT' } | null>(null);
   const [bookingUncertain, setBookingUncertain] = useState(false);
   const bookingAttempt = useRef<BookingAttempt | null>(null);
   const bookingSubmitting = useRef(false);
@@ -743,7 +745,8 @@ export const ReservationsPage: React.FC = () => {
     [selectedRoomsMap, availableRoomsList, totalNightsStay]);
   const createMutation = useMutation({
     mutationFn: (attempt: BookingAttempt) => reservationsApi.create(attempt.payload, attempt.key),
-    onSuccess: (res) => {
+    onSuccess: (res, attempt) => {
+      if (attempt.qrDeposit) setQrBooking({ id: res.data.id, amount: attempt.qrDeposit.amount, autoCreate: true });
       const code = res?.data?.confirmationCode || 'Thành công';
       appMessage.success(<Space>Đặt phòng thành công! Mã xác nhận: {code}
         {res.data.folioId && <Button type="link" onClick={() => navigate(`/folios?reservationId=${res.data.id}`)}>Xem folio</Button>}</Space>, 8);
@@ -822,6 +825,9 @@ export const ReservationsPage: React.FC = () => {
       ...(deposit ? { initialDeposit: deposit } : {}),
     };
     const attempt = prepareBookingAttempt(bookingAttempt.current, payload, false, () => createIdempotencyKey('booking'));
+    if (initialDeposit.enabled && initialDeposit.paymentMethod === 'BANK_TRANSFER' && initialDeposit.useQr) {
+      attempt.qrDeposit = { amount: initialDeposit.amount! };
+    }
     bookingAttempt.current = attempt;
     bookingSubmitting.current = true;
     createReservation(attempt);
@@ -1386,7 +1392,7 @@ export const ReservationsPage: React.FC = () => {
                                     loading={isCreatingReservation}
                                     onClick={handleCreateReservation}
                                   >
-                                    {initialDeposit.enabled ? 'Tạo đặt phòng & nhận cọc' : 'Xác nhận Tạo Đặt phòng'}
+                                    {initialDeposit.enabled ? initialDeposit.paymentMethod === 'BANK_TRANSFER' && initialDeposit.useQr ? 'Tạo đặt phòng & hiển thị QR' : 'Tạo đặt phòng & nhận cọc' : 'Xác nhận Tạo Đặt phòng'}
                                   </Button>
                                   {totalSelectedRoomsCount === 0 && (
                                     <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: 12 }}>
@@ -1914,6 +1920,10 @@ export const ReservationsPage: React.FC = () => {
               ))}
             </div>
 
+            {(canWrite || isAccountant) && <Button onClick={() => {
+              const allowDeposit = ['CONFIRMED', 'PARTIALLY_CHECKED_IN', 'CHECKED_IN'].includes(reservationDetail.status);
+              setQrBooking({ id: reservationDetail.id, allowDeposit, initialType: allowDeposit ? 'DEPOSIT' : 'PAYMENT' });
+            }}>Nhận chuyển khoản QR / Lịch sử QR</Button>}
             {/* Notes */}
             {reservationDetail.notes && (
               <Card size="small" title="4. Ghi chú yêu cầu đặc biệt" style={{ borderRadius: 8 }}>
@@ -1993,6 +2003,7 @@ export const ReservationsPage: React.FC = () => {
         }}
         onConfirm={handleConfirmNoShow}
       />
+      {qrBooking && <PaymentQrModal key={qrBooking.id} reservationId={qrBooking.id} initialAmount={qrBooking.amount} autoCreate={qrBooking.autoCreate} allowDeposit={qrBooking.allowDeposit} initialType={qrBooking.initialType} onClose={() => setQrBooking(null)} />}
     </div>
   );
 };

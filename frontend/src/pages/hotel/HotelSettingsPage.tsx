@@ -15,6 +15,7 @@ import { useAuthStore } from "../../store/authStore.ts";
 import type { HotelEdit } from "../../types/hotel.types.ts";
 import { HotelProfileFields } from "../platform/HotelForms.tsx";
 import { hotelError } from "../../utils/hotelErrors.ts";
+import { BankAccountSettings } from "../../components/payments/BankAccountSettings.tsx";
 
 export function HotelSettingsPage() {
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +120,7 @@ export function HotelSettingsPage() {
           </Button>
         </Form>
       </Card>
+      <BankAccountSettings />
     </div>
   );
 }

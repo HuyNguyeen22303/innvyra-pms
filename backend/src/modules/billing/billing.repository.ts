@@ -194,11 +194,16 @@ export class PrismaBillingRepository {
   createFolio(hotelId: bigint, reservationId: bigint) {
     return this.db.folio.create({ data: { hotelId, reservationId, currency: 'VND' } });
   }
-  closeFolio(hotelId: bigint, id: bigint) {
-    return this.db.folio.update({
+  async closeFolio(hotelId: bigint, id: bigint) {
+    const folio = await this.db.folio.update({
       where: { hotelId, id, status: 'OPEN' },
       data: { status: 'CLOSED', closedAt: new Date() },
     });
+    await this.db.paymentRequest.updateMany({
+      where: { hotelId, reservationId: folio.reservationId, status: 'PENDING' },
+      data: { status: 'CANCELLED', cancelledReason: 'Folio đã đóng' },
+    });
+    return folio;
   }
   item(hotelId: bigint, folioId: bigint, id: bigint) {
     return this.db.folioItem.findFirst({ where: { hotelId, folioId, id } });

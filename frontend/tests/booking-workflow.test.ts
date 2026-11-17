@@ -7,6 +7,17 @@ import {
   prepareBookingAttempt,
 } from "../src/utils/bookingWorkflow.ts";
 import { guestFormPayload } from "../src/utils/guestForm.ts";
+import { validQrAmount } from '../src/utils/paymentQr.ts';
+
+test('QR deposit saves a booking without pretending money was received; limits remain exact', () => {
+  const qr = { ...emptyBookingDeposit(), enabled: true, amount: '300000', paymentMethod: 'BANK_TRANSFER' as const, useQr: true };
+  assert.equal(bookingDepositPayload(qr, '700000.00'), undefined);
+  assert.throws(() => bookingDepositPayload({ ...qr, amount: '700001' }, '700000.00'));
+  assert.throws(() => bookingDepositPayload({ ...qr, amount: '10000000000000' }, '10000000000000'));
+  for (const amount of ['1', '300000', '9999999999999.00']) assert.equal(validQrAmount(amount), true);
+  for (const amount of ['0', '1.50', '10000000000000', '-1']) assert.equal(validQrAmount(amount), false);
+  assert.throws(() => bookingDepositPayload({ ...qr, useQr: false }, '700000.00'));
+});
 
 test("booking without deposit omits money movement; a full attested deposit is allowed", () => {
   assert.equal(

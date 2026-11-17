@@ -169,7 +169,7 @@ export class PrismaReservationRepository {
   }
   async cancel(hotelId: bigint, id: bigint, actorId: bigint, reason: string) {
     // Updating status atomically releases every night; snapshots and financial history survive.
-    return this.db.reservation.update({
+    const reservation = await this.db.reservation.update({
       where: { id, hotelId, status: 'CONFIRMED' },
       data: {
         status: 'CANCELLED',
@@ -179,10 +179,15 @@ export class PrismaReservationRepository {
       },
       include: detailInclude,
     });
+    await this.db.paymentRequest.updateMany({
+      where: { hotelId, reservationId: id, status: 'PENDING', paymentType: 'DEPOSIT' },
+      data: { status: 'CANCELLED', cancelledReason: 'Đơn đặt phòng đã hủy' },
+    });
+    return reservation;
   }
   async noShow(hotelId: bigint, id: bigint, actorId: bigint, reason: string) {
     // Same atomic inventory release as cancel; records NO_SHOW instead and preserves audit trail.
-    return this.db.reservation.update({
+    const reservation = await this.db.reservation.update({
       where: { id, hotelId, status: 'CONFIRMED' },
       data: {
         status: 'NO_SHOW',
@@ -192,5 +197,10 @@ export class PrismaReservationRepository {
       },
       include: detailInclude,
     });
+    await this.db.paymentRequest.updateMany({
+      where: { hotelId, reservationId: id, status: 'PENDING', paymentType: 'DEPOSIT' },
+      data: { status: 'CANCELLED', cancelledReason: 'Khách không đến' },
+    });
+    return reservation;
   }
 }

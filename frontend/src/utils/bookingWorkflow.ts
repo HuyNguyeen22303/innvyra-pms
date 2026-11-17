@@ -4,6 +4,7 @@ import type {
   RoomAvailabilityItem,
 } from "../types/reservations.types.ts";
 import { validFinalCharge } from "./folioSettlement.ts";
+import { validQrAmount } from "./paymentQr.ts";
 
 export interface BookingDepositDraft {
   enabled: boolean;
@@ -11,6 +12,7 @@ export interface BookingDepositDraft {
   paymentMethod: "CASH" | "BANK_TRANSFER";
   referenceNumber: string;
   confirmedReceived: boolean;
+  useQr?: boolean;
 }
 export const emptyBookingDeposit = (): BookingDepositDraft => ({
   enabled: false,
@@ -18,6 +20,7 @@ export const emptyBookingDeposit = (): BookingDepositDraft => ({
   paymentMethod: "CASH",
   referenceNumber: "",
   confirmedReceived: false,
+  useQr: false,
 });
 export function bookingRoomCharge(
   rooms: Record<string, { quantity: number }>,
@@ -49,6 +52,10 @@ export function bookingDepositPayload(
   const amount = `${draft.amount.split(".")[0]}.00`;
   if (BigInt(amount.split(".")[0]!) > BigInt(maximum.split(".")[0]!))
     throw new Error("Tiền cọc không được vượt tiền phòng dự kiến");
+  if (draft.paymentMethod === 'BANK_TRANSFER' && draft.useQr) {
+    if (!validQrAmount(amount)) throw new Error('QR hỗ trợ tối đa 9.999.999.999.999đ');
+    return undefined;
+  }
   const referenceNumber = draft.referenceNumber.trim() || null;
   if (draft.paymentMethod === "BANK_TRANSFER" && !referenceNumber)
     throw new Error("Nhập mã giao dịch chuyển khoản đã nhận");
@@ -64,6 +71,7 @@ export function bookingDepositPayload(
 export interface BookingAttempt {
   key: string;
   payload: CreateReservationDto;
+  qrDeposit?: { amount: string };
 }
 export function prepareBookingAttempt(
   previous: BookingAttempt | null,
