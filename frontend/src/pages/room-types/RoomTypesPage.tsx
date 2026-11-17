@@ -1,6 +1,6 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -447,7 +447,7 @@ export const RoomTypesPage: React.FC = () => {
             />
           </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: screens.xs ? '1fr' : '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: !screens.md ? '1fr' : '1fr 1fr', gap: 16 }}>
             <Form.Item
               name="maxAdults"
               label={<Text strong>Số người lớn tối đa</Text>}

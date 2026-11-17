@@ -64,7 +64,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
       <Descriptions
         bordered
         size="middle"
-        column={2}
+        column={{ xs: 1, sm: 1, md: 2 }}
         style={{ marginTop: 16 }}
         items={[
           {key:'materialType',label:'Loại sử dụng',children:materialTypeLabels[item.materialType]||'Chưa phân loại'},
@@ -147,7 +147,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           {
             key: 'description',
             label: 'Mô tả chi tiết',
-            span: 2,
+            span: 'filled',
             children: item.description || <Text type="secondary">Chưa có mô tả</Text>,
           },
           {

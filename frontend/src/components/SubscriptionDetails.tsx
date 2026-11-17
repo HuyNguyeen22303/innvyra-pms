@@ -62,7 +62,7 @@ export function SubscriptionDetails({
       <Descriptions
         bordered
         size="small"
-        column={{ xs: 1, sm: 2 }}
+        column={{ xs: 1, sm: 1, md: 2 }}
         items={[
           {
             key: "status",

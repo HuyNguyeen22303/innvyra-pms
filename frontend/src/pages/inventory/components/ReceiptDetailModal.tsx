@@ -1,6 +1,7 @@
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import { SupplierSettlementPanel } from './SupplierSettlementPanel.tsx';
 import React from 'react';
-import { Modal, Descriptions, Table, Tag, Typography, Button, Space, Grid } from 'antd';
+import { Modal, Descriptions, Tag, Typography, Button, Space, Grid } from 'antd';
 import { FileDoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -107,7 +108,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
       <Descriptions
         bordered
         size="small"
-        column={2}
+        column={{ xs: 1, sm: 1, md: 2 }}
         style={{ marginTop: 12, marginBottom: 16 }}
         items={[
           {
@@ -151,7 +152,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
           {
             key: 'notes',
             label: 'Ghi chú phiếu',
-            span: 2,
+            span: 'filled',
             children: receipt.notes || <Text type="secondary">Không có ghi chú</Text>,
           },
         ]}

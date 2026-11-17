@@ -1,8 +1,9 @@
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
+import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
 import { materialTypeLabels } from '../../../api/supplies.api.ts';
 import React, { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -450,6 +451,7 @@ export const InventoryItemsTab: React.FC = () => {
               allowClear
             />
 
+            <ResponsiveFilters activeCount={Number(!!categoryFilter) + Number(stockStatusFilter !== 'ALL') + Number(activeFilter !== 'all')} onReset={() => { setCategoryFilter(undefined); setStockStatusFilter('ALL'); setActiveFilter('all'); setPage(1); }}>
             <Select
               placeholder="Lọc theo Danh mục"
               value={categoryFilter}
@@ -497,6 +499,7 @@ export const InventoryItemsTab: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
               Làm mới
             </Button>
+            </ResponsiveFilters>
           </Space>
 
           {canManage && (

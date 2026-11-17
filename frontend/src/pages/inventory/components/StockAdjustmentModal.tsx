@@ -115,7 +115,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           <Descriptions
             bordered
             size="small"
-            column={2}
+            column={{ xs: 1, sm: 1, md: 2 }}
             style={{ marginBottom: 16 }}
             items={[
               {
@@ -131,7 +131,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
               {
                 key: 'name',
                 label: 'Tên vật tư',
-                span: 2,
+                span: 'filled',
                 children: item.name,
               },
               {

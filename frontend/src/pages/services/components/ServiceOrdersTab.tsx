@@ -1,7 +1,8 @@
+import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -538,6 +539,7 @@ export const ServiceOrdersTab: React.FC = () => {
                 style={{ width: 300 }}
                 allowClear
               />
+              <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => { setStatusFilter(undefined); setPage(1); }}>
               <Select
                 value={statusFilter}
                 onChange={(val: any) => {
@@ -557,6 +559,7 @@ export const ServiceOrdersTab: React.FC = () => {
               <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
                 Làm mới
               </Button>
+              </ResponsiveFilters>
             </Space>
           </Col>
           <Col xs={24} sm={8} md={12} style={{ textAlign: 'right' }}>

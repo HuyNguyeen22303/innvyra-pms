@@ -1,6 +1,7 @@
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import { HousekeepingPresetsTab } from './components/HousekeepingPresetsTab.tsx';
 import React, { useMemo, useCallback } from 'react';
-import { Tabs, Typography, Space } from 'antd';
+import { Typography, Space } from 'antd';
 import {
   InboxOutlined,
   DashboardOutlined,

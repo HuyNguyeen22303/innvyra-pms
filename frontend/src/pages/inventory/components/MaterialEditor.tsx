@@ -61,7 +61,7 @@ export function MaterialEditor({
       {value.map((row) => {
         const item = items.find((item) => item.id === row.itemId);
         return (
-          <Row key={row.key} gutter={[8, 8]} align="middle">
+          <Row className="material-editor-row" key={row.key} gutter={[8, 8]} align="middle">
             <Col xs={24} sm={actual ? 13 : 10}>
               <Select
                 style={{ width: "100%" }}

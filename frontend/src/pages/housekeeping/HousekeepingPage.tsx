@@ -1,3 +1,5 @@
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import { CompleteCleaningModal as CompleteTaskModal } from './CompleteCleaningModal.tsx';
 import { CleaningMaterialHistory } from './CleaningMaterialHistory.tsx';
 import type { CompleteMaterialsDto } from '../../api/supplies.api.ts';
@@ -13,7 +15,6 @@ import {
   Tag,
   Button,
   Space,
-  Tabs,
   Badge,
   Modal,
   Drawer,
@@ -27,7 +28,6 @@ import {
   App as AntdApp,
   Empty,
   Spin,
-  Table,
   Grid,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -1096,7 +1096,7 @@ export const HousekeepingPage: React.FC = () => {
       {/* KPI Cards */}
       <Row
         gutter={[16, 16]}
-        className="pms-kpi-row"
+        className="pms-kpi-row pms-kpi-row--counts"
         style={{ marginBottom: 24 }}
       >
         <Col xs={12} sm={6}>

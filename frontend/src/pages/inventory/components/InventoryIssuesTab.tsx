@@ -1,7 +1,9 @@
+import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useDeferredValue } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -46,7 +48,7 @@ import {
 } from '../../../utils/inventoryQuantity.ts';
 
 const { Text, Paragraph } = Typography;
-const { RangePicker } = DatePicker;
+
 
 interface FormLineItem {
   key: string;
@@ -370,6 +372,7 @@ export const InventoryIssuesTab: React.FC = () => {
               allowClear
             />
 
+            <ResponsiveFilters activeCount={Number(Boolean(dateRange))} onReset={() => { setDateRange(null); setPage(1); }}>
             <RangePicker
               value={dateRange}
               onChange={(dates) => {
@@ -384,6 +387,7 @@ export const InventoryIssuesTab: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
               Làm mới
             </Button>
+            </ResponsiveFilters>
           </Space>
 
           {canCreate && (

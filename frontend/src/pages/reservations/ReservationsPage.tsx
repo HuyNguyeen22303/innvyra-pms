@@ -1,6 +1,8 @@
+import { ResponsiveRangePicker as RangePicker } from '../../components/responsive/ResponsiveRangePicker.tsx';
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -8,7 +10,6 @@ import {
   Drawer,
   Input,
   Select,
-  DatePicker,
   Typography,
   App as AntdApp,
   Card,
@@ -19,7 +20,6 @@ import {
   Descriptions,
   InputNumber,
   Badge,
-  Tabs,
   Empty,
   Spin,
   Tooltip,
@@ -47,6 +47,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { PaymentQrModal } from '../../components/payments/PaymentQrModal.tsx';
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 
 interface BookingNotesInputProps {
   initialValue?: string;
@@ -258,7 +259,7 @@ import type {
 import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
-const { RangePicker } = DatePicker;
+
 
 interface ReservationsTableProps {
   columns: ColumnsType<ReservationSummaryItem>;
@@ -387,6 +388,7 @@ const ReservationFilterBar: React.FC<ReservationFilterBarProps> = React.memo(({ 
   />
   </Col>
   )}
+  <ResponsiveFilters activeCount={[statusFilter, sourceFilter, dateRangeFilter].filter(Boolean).length} onReset={() => { setStatusFilter(undefined); setSourceFilter(undefined); setDateRangeFilter(null); }}>
   <Col xs={24} sm={12} md={isAccountant ? 6 : 4}>
   <Select
   placeholder="Trạng thái"
@@ -432,6 +434,7 @@ const ReservationFilterBar: React.FC<ReservationFilterBarProps> = React.memo(({ 
   format="DD/MM/YYYY"
   />
   </Col>
+  </ResponsiveFilters>
   </Row>
   </Card>
 ));
@@ -1418,7 +1421,7 @@ export const ReservationsPage: React.FC = () => {
     () => (
                 <>
                   {/* KPI Stat Cards */}
-                  <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 16]} className="pms-kpi-row pms-kpi-row--counts" style={{ marginBottom: 16 }}>
                     <Col xs={12} sm={8} md={6} lg={4}>
                       <Card
                         size="small"
@@ -1739,7 +1742,7 @@ export const ReservationsPage: React.FC = () => {
             </Card>
 
             {/* Guest & Reservation Metadata */}
-            <Descriptions title="1. Thông tin Người đặt & Kênh bán" bordered size="small" column={{ xs: 1, sm: 2 }}>
+            <Descriptions title="1. Thông tin Người đặt & Kênh bán" bordered size="small" column={{ xs: 1, sm: 1, md: 2 }}>
               <Descriptions.Item label="Khách hàng">
                 <Text strong>{reservationDetail.bookerGuest?.fullName}</Text>
               </Descriptions.Item>

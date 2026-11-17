@@ -35,6 +35,7 @@ export function HotelPasswordChangePage() {
   };
   return (
     <div
+      className="responsive-auth-form"
       style={{
         minHeight: "100vh",
         display: "grid",

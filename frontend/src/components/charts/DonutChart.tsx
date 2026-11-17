@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Typography, Tooltip, Row, Col, Empty } from 'antd';
 
 const { Text } = Typography;
@@ -24,6 +24,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
   size = 200,
   valueFormatter,
 }) => {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const total = data.reduce((acc, d) => acc + d.value, 0);
 
   if (!data.length || total === 0) {
@@ -85,15 +86,23 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
   return (
     <Row gutter={[24, 16]} align="middle">
       <Col xs={24} sm={10} style={{ display: 'flex', justifyContent: 'center' }}>
-        <div style={{ position: 'relative', width: size, height: size }}>
-          <svg width={size} height={size}>
+        <div style={{ position: 'relative', width: size, maxWidth: '100%', aspectRatio: '1', containerType: 'inline-size' }}>
+          <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`}>
             {slices.map((slice) => (
               <Tooltip
+                trigger={['hover', 'focus', 'click']}
                 key={slice.key}
                 title={`${slice.label}: ${valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')} (${slice.percent}%)`}
                 color="#1e293b"
               >
                 <path
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={selectedKey === slice.key}
+                  onClick={() => setSelectedKey(slice.key)}
+                  onFocus={() => setSelectedKey(slice.key)}
+                  onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedKey(slice.key); } }}
+                  aria-label={`${slice.label}: ${valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')} (${slice.percent}%)`}
                   d={slice.path}
                   fill={slice.color}
                   stroke="#ffffff"
@@ -122,12 +131,12 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
               transform: 'translate(-50%, -50%)',
               textAlign: 'center',
               pointerEvents: 'none',
-              width: innerR * 1.8,
+              width: `${innerR * 1.8 / size * 100}%`,
             }}
           >
             <div
               style={{
-                fontSize: total >= 1_000_000 ? 14 : 20,
+                fontSize: total >= 1_000_000 ? 'clamp(10px, 7cqi, 14px)' : 'clamp(12px, 10cqi, 20px)',
                 fontWeight: 700,
                 color: '#1b4d3e',
                 lineHeight: 1.1,
@@ -147,12 +156,18 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
 
       {/* Legend list */}
       <Col xs={24} sm={14}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="donut-legend" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {slices.map((item) => (
             <div
               key={item.key}
+              role="button"
+              tabIndex={0}
+              aria-pressed={selectedKey === item.key}
+              onClick={() => setSelectedKey(item.key)}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedKey(item.key); } }}
               style={{
                 display: 'flex',
+                cursor: 'pointer',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '4px 8px',
@@ -192,6 +207,9 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
           ))}
         </div>
       </Col>
+      {slices.filter((slice) => slice.key === selectedKey).map((slice) => <Col span={24} key={slice.key}>
+        <div className="chart-selected-values" role="status">{slice.label}: <strong>{valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')}</strong> ({slice.percent}%)</div>
+      </Col>)}
     </Row>
   );
 });

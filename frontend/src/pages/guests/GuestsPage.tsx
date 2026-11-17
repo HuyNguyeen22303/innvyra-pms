@@ -1,8 +1,9 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import { GuestFormFields } from '../../components/guests/GuestFormFields.tsx';
 import { guestFormPayload } from '../../utils/guestForm.ts';
 import React, { useState, useMemo, useCallback, useDeferredValue } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -598,7 +599,7 @@ export const GuestsPage: React.FC = () => {
       )}
 
       {/* 3 Metrics Overview Cards */}
-      <Row gutter={[16, 16]} className="pms-kpi-row">
+      <Row gutter={[16, 16]} className="pms-kpi-row pms-kpi-row--counts">
         <Col xs={24} sm={isAccountant ? 24 : 8}>
           <Card
             variant="outlined"
@@ -720,7 +721,7 @@ export const GuestsPage: React.FC = () => {
           </Col>
 
           {!isAccountant && (
-            <>
+            <ResponsiveFilters activeCount={selectedNationality ? 1 : 0} onReset={() => setSelectedNationality(undefined)}>
           <Col xs={12} md={7}>
             <Select
               placeholder="Quốc tịch"
@@ -748,7 +749,7 @@ export const GuestsPage: React.FC = () => {
               ]}
             />
           </Col>
-            </>
+            </ResponsiveFilters>
           )}
         </Row>
       </Card>

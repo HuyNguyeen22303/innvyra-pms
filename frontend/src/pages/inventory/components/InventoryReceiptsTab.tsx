@@ -1,9 +1,11 @@
+import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import { SupplierPaymentFields } from './SupplierSettlementPanel.tsx';
 import { supplierPaymentFromForm } from '../../../utils/supplierPayments.ts';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Table,
   Checkbox,
   Button,
   Space,
@@ -44,7 +46,7 @@ import { ReceiptDetailModal } from './ReceiptDetailModal.tsx';
 import { inventoryQuantityInputProps } from '../../../utils/inventoryQuantity.ts';
 
 const { Text, Paragraph } = Typography;
-const { RangePicker } = DatePicker;
+
 
 interface FormLineItem {
   key: string;
@@ -362,6 +364,7 @@ export const InventoryReceiptsTab: React.FC = () => {
       {/* Filter and Action Bar */}
       <Card style={{ marginBottom: 16, borderRadius: 8 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <ResponsiveFilters activeCount={Number(Boolean(supplierFilter)) + Number(Boolean(dateRange))} onReset={() => { setSupplierFilter(undefined); setDateRange(null); setPage(1); }}>
           <Space wrap size={10}>
             <Select
               placeholder="Lọc theo Nhà cung cấp"
@@ -394,6 +397,7 @@ export const InventoryReceiptsTab: React.FC = () => {
             </Button>
           </Space>
 
+          </ResponsiveFilters>
           {canCreate && (
             <Button
               type="primary"

@@ -1,4 +1,5 @@
 import { HotelSubscriptionCard } from "./HotelSubscriptionCard.tsx";
+import { ResponsiveTable } from '../../components/responsive/ResponsiveTable.tsx';
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -171,7 +172,7 @@ function HotelDetailContent({ id }: { id: string }) {
             </Button>
           }
         >
-          <Table<HotelAdmin>
+          <ResponsiveTable<HotelAdmin>
             rowKey="id"
             dataSource={hotel.staff}
             pagination={false}

@@ -1,3 +1,5 @@
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import { SupplyCashSummary } from '../reports/components/SupplyCashSummary.tsx';
 import React, { useState } from 'react';
 import {
@@ -7,8 +9,6 @@ import {
   Typography,
   Space,
   Tag,
-  Tabs,
-  Table,
   Button,
   DatePicker,
   Alert,
@@ -325,7 +325,7 @@ export const DashboardPage: React.FC = () => {
           ) : (
             <>
               {/* Primary KPI Metrics */}
-              <Row gutter={[12, 12]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
+              <Row gutter={[12, 12]} className="pms-kpi-row pms-kpi-row--counts" style={{ marginBottom: 20 }}>
                 <Col xs={12} sm={12} lg={6}>
                   <Card
                     size="small"

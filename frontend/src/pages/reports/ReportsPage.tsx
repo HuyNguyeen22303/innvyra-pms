@@ -1,3 +1,5 @@
+import { ResponsiveRangePicker as RangePicker } from '../../components/responsive/ResponsiveRangePicker.tsx';
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import { ProcurementTab } from './components/ProcurementTab.tsx';
 import React, { useState, useMemo } from 'react';
 import {
@@ -6,9 +8,7 @@ import {
   Card,
   Typography,
   Space,
-  Tabs,
   Button,
-  DatePicker,
   Radio,
   App as AntdApp,
   Grid,
@@ -33,7 +33,7 @@ import { OperationsTab } from './components/OperationsTab.tsx';
 import { OutstandingTab } from './components/OutstandingTab.tsx';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+
 
 // Report tabs stay mounted once visited. Memoizing them keeps a change that
 // only affects one tab (for example the room-type filter) from re-rendering

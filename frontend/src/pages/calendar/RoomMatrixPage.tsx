@@ -1,3 +1,4 @@
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import React, { useState, useMemo } from "react";
 import {
   Card,
@@ -387,6 +388,7 @@ export const RoomMatrixPage: React.FC = () => {
         }}
       >
         <Row gutter={[10, 10]} align="middle">
+          <ResponsiveFilters activeCount={[floorFilter, roomTypeFilter, statusFilter].filter(value => value !== 'ALL').length} onReset={() => { setFloorFilter('ALL'); setRoomTypeFilter('ALL'); setStatusFilter('ALL'); }}>
           <Col xs={24} sm={12} md={8} lg={5}>
             <Select
               style={{ width: "100%" }}
@@ -428,6 +430,7 @@ export const RoomMatrixPage: React.FC = () => {
             />
           </Col>
 
+          </ResponsiveFilters>
           <Col
             xs={24}
             sm={12}
@@ -465,7 +468,7 @@ export const RoomMatrixPage: React.FC = () => {
             style={{ padding: 50 }}
           />
         ) : (
-          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div className="room-matrix-scroll" tabIndex={0} role="region" aria-label="Sơ đồ phòng theo ngày, cuộn để xem đủ bảy ngày" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table
               style={{
                 width: "100%",
@@ -484,7 +487,7 @@ export const RoomMatrixPage: React.FC = () => {
                   <th
                     style={{
                       padding: "12px 16px",
-                      width: 180,
+                      width: !screens.md ? 120 : !screens.xl ? 150 : 180,
                       position: "sticky",
                       left: 0,
                       backgroundColor: "#f8fafc",

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Typography, Tooltip, Empty } from 'antd';
 
 const { Text } = Typography;
@@ -41,6 +41,8 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
   integerTicks = false,
   height = 280,
 }) => {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const selected = data.find((item) => item.key === selectedKey);
   const chartHeight = height;
   const padding = { top: 30, right: 24, bottom: 45, left: 85 };
   const innerHeight = chartHeight - padding.top - padding.bottom;
@@ -84,6 +86,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
     <div style={{ width: '100%', overflow: 'hidden' }}>
       {/* Legend header */}
       <div
+        className="chart-legend"
         style={{
           display: 'flex',
           justifyContent: 'flex-start',
@@ -224,8 +227,11 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
             );
 
             return (
-              <Tooltip key={item.key} title={tooltipContent} color="#1e293b" placement="top">
-                <g style={{ cursor: 'pointer' }} className="chart-bar-group">
+              <Tooltip trigger={['hover', 'focus', 'click']} key={item.key} title={tooltipContent} color="#1e293b" placement="top">
+                <g tabIndex={0} role="button" aria-pressed={selectedKey === item.key}
+                  onClick={() => setSelectedKey(item.key)} onFocus={() => setSelectedKey(item.key)}
+                  onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedKey(item.key); } }}
+                  aria-label={`${item.tooltipTitle || item.label}: ${series1Label} ${valueFormatter(item.value1)}, ${series2Label} ${valueFormatter(item.value2)}`} style={{ cursor: 'pointer' }} className="chart-bar-group">
                   {/* Subtle hover background highlight */}
                   <rect
                     x={slotCenterX - itemSlotWidth / 2 + 2}
@@ -282,6 +288,11 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
           })}
         </svg>
       </div>
+      {selected && <div className="chart-selected-values" role="status">
+        <strong>{selected.tooltipTitle || selected.label}</strong>
+        <div>{selected.tooltipText1 || <>{series1Label}: <strong>{valueFormatter(selected.value1)}</strong></>}</div>
+        <div>{selected.tooltipText2 || <>{series2Label}: <strong>{valueFormatter(selected.value2)}</strong></>}</div>
+      </div>}
     </div>
   );
 });

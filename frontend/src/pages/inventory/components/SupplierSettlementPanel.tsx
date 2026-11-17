@@ -198,7 +198,7 @@ export function SupplierSettlementPanel({
           <Descriptions
             size="small"
             bordered
-            column={{ xs: 1, sm: 2 }}
+            column={{ xs: 1, sm: 1, md: 2 }}
             items={[
               {
                 key: "status",

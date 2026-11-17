@@ -10,9 +10,11 @@ import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../components/BrandLogo.tsx";
 import { usePlatformAuthStore } from "../store/platformAuthStore.ts";
+import { useResponsiveLayout } from '../components/responsive/useResponsiveLayout.ts';
 
 export function PlatformLayout() {
   const [open, setOpen] = useState(false);
+  const { isCompact } = useResponsiveLayout();
   const { user, logout, isSubmitting } = usePlatformAuthStore();
   const { message } = App.useApp();
   const signOut = async () => {
@@ -63,18 +65,17 @@ export function PlatformLayout() {
   );
   return (
     <Layout className="platform-shell">
-      <Layout.Sider
+      {!isCompact && <Layout.Sider
         width={240}
-        breakpoint="lg"
         collapsedWidth={0}
         trigger={null}
         className="platform-sidebar"
       >
         {navigation}
-      </Layout.Sider>
+      </Layout.Sider>}
       <Drawer
         placement="left"
-        open={open}
+        open={open && isCompact}
         onClose={() => setOpen(false)}
         size={268}
         styles={{ body: { padding: 0, background: "#0f2922" } }}

@@ -1,3 +1,4 @@
+import { ResponsiveTabs as Tabs } from '../../../components/responsive/ResponsiveTabs.tsx';
 import React, { useState, useMemo, useEffect, useDeferredValue, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueries, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
@@ -16,8 +17,6 @@ import {
   InputNumber,
   Radio,
   Checkbox,
-  Table,
-  Tabs,
   Alert,
   Tooltip,
   App as AntdApp,
@@ -57,6 +56,7 @@ import { ReceiptModal } from './ReceiptModal.tsx';
 import { DebouncedSearchInput } from '../../../components/DebouncedSearchInput.tsx';
 import { TerminalSettlementModal } from './TerminalSettlementModal.tsx';
 import { PaymentQrModal } from '../../../components/payments/PaymentQrModal.tsx';
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import { formatFolioMoney, refundableAmount, validFinalCharge } from '../../../utils/folioSettlement.ts';
 
 const { Text } = Typography;
@@ -1198,7 +1198,7 @@ export const FolioTab: React.FC = () => {
               borderTop: '3px solid #1b4d3e',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <Space size={10} wrap>
                 <Tag color="#1b4d3e" style={{ fontSize: 15, fontWeight: 700, padding: '3px 10px' }}>
                   FOLIO #{folio.id}
@@ -1447,6 +1447,7 @@ export const FolioTab: React.FC = () => {
                   ),
                   children: (
                     <Table
+                      mobileLayout="table"
                       columns={itemColumns}
                       dataSource={folioItems}
                       rowKey="id"
@@ -1472,6 +1473,7 @@ export const FolioTab: React.FC = () => {
                   ),
                   children: (
                     <Table
+                      mobileLayout="table"
                       columns={paymentColumns}
                       dataSource={paymentList}
                       rowKey="id"

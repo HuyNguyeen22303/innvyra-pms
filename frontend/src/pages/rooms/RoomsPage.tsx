@@ -1,6 +1,7 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import React, { useState, useCallback, useMemo, useDeferredValue } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -994,6 +995,7 @@ export const RoomsPage: React.FC = () => {
             />
           </Col>
 
+          <ResponsiveFilters activeCount={[selectedFloor, selectedRoomType, selectedHK, selectedPhysical].filter(Boolean).length} onReset={() => { setSelectedFloor(undefined); setSelectedRoomType(undefined); setSelectedHK(undefined); setSelectedPhysical(undefined); }}>
           <Col xs={12} sm={6} md={4}>
             <Select
               placeholder="Chọn Tầng"
@@ -1058,6 +1060,7 @@ export const RoomsPage: React.FC = () => {
               ]}
             />
           </Col>
+          </ResponsiveFilters>
         </Row>
       </Card>
 
@@ -1075,7 +1078,7 @@ export const RoomsPage: React.FC = () => {
         open={isModalOpen}
         editingRoom={editingRoom}
         roomTypes={roomTypes}
-        screensXs={!!screens.xs}
+        screensXs={!screens.md}
         form={form}
         submitting={createMutation.isPending || updateMutation.isPending}
         onSubmit={handleSubmit}

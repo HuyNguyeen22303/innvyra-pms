@@ -1,4 +1,5 @@
-import { Collapse, Table, Typography } from "antd";
+import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
+import { Collapse, Typography } from "antd";
 import type { MaterialItem } from "../../../api/supplies.api.ts";
 import { formatInventoryQuantity } from "../../../utils/inventoryQuantity.ts";
 export function HousekeepingReusableChecklist({

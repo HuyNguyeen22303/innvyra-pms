@@ -1,0 +1,2521 @@
+{
+  "date": "2026-11-17",
+  "browser": "Chromium in-app browser; viewport emulation",
+  "note": "Last route sample per URL and width; verified overlay samples exclude opening/resize animation frames. Screenshots and narrative checklist describe the final corrections.",
+  "routes": [
+    {
+      "path": "/dashboard",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/rooms",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/room-types",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/guests",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/stays",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/housekeeping",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/maintenance",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/services",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory",
+      "cards": 2,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/employees",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/hotel",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/subscription",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/calendar",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=items",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=categories",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=housekeeping-presets",
+      "cards": 0,
+      "outside": [],
+      "page": 375,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=suppliers",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=receipts",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=issues",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/inventory?tab=movements",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/calendar",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/stays",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/guests",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/rooms",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/room-types",
+      "cards": 0,
+      "outside": [],
+      "page": 768,
+      "width": 768
+    },
+    {
+      "path": "/housekeeping",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/maintenance",
+      "cards": 0,
+      "outside": [],
+      "page": 768,
+      "width": 768
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/employees",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/hotel",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/subscription",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/calendar",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/stays",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/guests",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/rooms",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/room-types",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/housekeeping",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/maintenance",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/employees",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/hotel",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/subscription",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=items",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=categories",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=housekeeping-presets",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=suppliers",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=receipts",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=issues",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/inventory?tab=movements",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/platform",
+      "cards": 0,
+      "outside": [],
+      "page": 375,
+      "width": 375
+    },
+    {
+      "path": "/platform/plans",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/platform/hotels/new",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/platform/account",
+      "cards": 0,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/platform",
+      "cards": 0,
+      "outside": [],
+      "page": 768,
+      "width": 768
+    },
+    {
+      "path": "/platform/plans",
+      "cards": 0,
+      "outside": [],
+      "page": 768,
+      "width": 768
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/platform/hotels/new",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/platform/account",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/platform",
+      "cards": 0,
+      "outside": [],
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "path": "/platform/plans",
+      "cards": 0,
+      "outside": [],
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "path": "/platform/hotels/new",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/platform/account",
+      "cards": 0,
+      "outside": [],
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "path": "/dashboard",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/calendar",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/reservations",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/stays",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/guests",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/rooms",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/room-types",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/housekeeping",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/maintenance",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/services",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/inventory",
+      "cards": 2,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/folios",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/employees",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/hotel",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/subscription",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform/plans",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 1,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform/hotels/new",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform/account",
+      "cards": 0,
+      "outside": [],
+      "page": 314,
+      "width": 320
+    },
+    {
+      "path": "/platform/hotels/1",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/platform/hotels/1",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 768
+    },
+    {
+      "path": "/platform/hotels/1",
+      "cards": 0,
+      "outside": [],
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "path": "/reservations",
+      "cards": 1,
+      "outside": [],
+      "page": 370,
+      "width": 375
+    },
+    {
+      "path": "/dashboard",
+      "cards": 1,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/reservations",
+      "cards": 1,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/services",
+      "cards": 1,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/inventory",
+      "cards": 2,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/folios",
+      "cards": 1,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 1,
+      "outside": [],
+      "page": 385,
+      "width": 390
+    },
+    {
+      "path": "/dashboard",
+      "cards": 1,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/reservations",
+      "cards": 1,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/services",
+      "cards": 1,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/inventory",
+      "cards": 2,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/folios",
+      "cards": 1,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 1,
+      "outside": [],
+      "page": 425,
+      "width": 430
+    },
+    {
+      "path": "/dashboard",
+      "cards": 1,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/reservations",
+      "cards": 1,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/services",
+      "cards": 1,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/inventory",
+      "cards": 2,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/folios",
+      "cards": 1,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 1,
+      "outside": [],
+      "page": 762,
+      "width": 767
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1024,
+      "width": 1024
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1199,
+      "width": 1199
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1200,
+      "width": 1200
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "path": "/dashboard",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/reservations",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/services",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/inventory",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/folios",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/reports",
+      "cards": 0,
+      "outside": [],
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "path": "/platform/hotels",
+      "cards": 0,
+      "outside": [],
+      "page": 1920,
+      "width": 1920
+    }
+  ],
+  "tabs": [
+    {
+      "section": "reports",
+      "label": "Doanh thu & Bán phòng",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Dòng tiền & Thu chi",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Mua vật tư & Công nợ NCC",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Công suất & ADR / RevPAR",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Đặt phòng & Nguồn khách",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Vận hành Buồng & Bảo trì",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Sổ theo dõi Công nợ",
+      "page": 370,
+      "panels": [],
+      "width": 375
+    },
+    {
+      "section": "reports",
+      "label": "Doanh thu & Bán phòng",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Dòng tiền & Thu chi",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Mua vật tư & Công nợ NCC",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Công suất & ADR / RevPAR",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Đặt phòng & Nguồn khách",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Vận hành Buồng & Bảo trì",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Sổ theo dõi Công nợ",
+      "page": 762,
+      "panels": [],
+      "width": 768
+    },
+    {
+      "section": "reports",
+      "label": "Doanh thu & Bán phòng",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Dòng tiền & Thu chi",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Mua vật tư & Công nợ NCC",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Công suất & ADR / RevPAR",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Đặt phòng & Nguồn khách",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Vận hành Buồng & Bảo trì",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "reports",
+      "label": "Sổ theo dõi Công nợ",
+      "page": 1434,
+      "panels": [],
+      "width": 1440
+    },
+    {
+      "section": "/reservations",
+      "label": " Danh sách Đơn đặt phòng (27)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/reservations",
+      "label": " Tra cứu Phòng trống & Đặt phòng Mới",
+      "page": 375,
+      "width": 375
+    },
+    {
+      "section": "/stays",
+      "label": " Danh sách Đang lưu trú & Lịch sử (5 đang ở)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/stays",
+      "label": " Quầy làm thủ tục Check-in (0 đơn chờ)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Bảng tiến độ Kanban (20)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Hàng đợi phòng bẩn (3)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/maintenance",
+      "label": " Phiếu sự cố kỹ thuật (1)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/maintenance",
+      "label": " Lệnh khóa phòng bảo trì (1)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/services",
+      "label": "Yêu cầu Dịch vụ (Service Orders)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/services",
+      "label": "Danh mục Dịch vụ (Catalog)",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Tổng quan & Định mức",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Vật tư kho",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhóm danh mục",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Định mức dọn phòng",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhà cung cấp",
+      "page": 375,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Nhập kho",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Xuất kho",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/inventory",
+      "label": "Sổ kho & Biến động",
+      "page": 370,
+      "width": 375
+    },
+    {
+      "section": "/reservations",
+      "label": " Danh sách Đơn đặt phòng (27)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/reservations",
+      "label": " Tra cứu Phòng trống & Đặt phòng Mới",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "section": "/stays",
+      "label": " Danh sách Đang lưu trú & Lịch sử (5 đang ở)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/stays",
+      "label": " Quầy làm thủ tục Check-in (0 đơn chờ)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Bảng tiến độ Kanban (20)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Hàng đợi phòng bẩn (3)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/maintenance",
+      "label": " Phiếu sự cố kỹ thuật (1)",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "section": "/maintenance",
+      "label": " Lệnh khóa phòng bảo trì (1)",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "section": "/services",
+      "label": "Yêu cầu Dịch vụ (Service Orders)",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/services",
+      "label": "Danh mục Dịch vụ (Catalog)",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Tổng quan & Định mức",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Vật tư kho",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhóm danh mục",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Định mức dọn phòng",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhà cung cấp",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Nhập kho",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Xuất kho",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/inventory",
+      "label": "Sổ kho & Biến động",
+      "page": 762,
+      "width": 768
+    },
+    {
+      "section": "/reservations",
+      "label": " Danh sách Đơn đặt phòng (27)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/reservations",
+      "label": " Tra cứu Phòng trống & Đặt phòng Mới",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/stays",
+      "label": " Danh sách Đang lưu trú & Lịch sử (5 đang ở)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/stays",
+      "label": " Quầy làm thủ tục Check-in (0 đơn chờ)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Bảng tiến độ Kanban (20)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/housekeeping",
+      "label": " Hàng đợi phòng bẩn (3)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/maintenance",
+      "label": " Phiếu sự cố kỹ thuật (1)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/maintenance",
+      "label": " Lệnh khóa phòng bảo trì (1)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/services",
+      "label": "Yêu cầu Dịch vụ (Service Orders)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/services",
+      "label": "Danh mục Dịch vụ (Catalog)",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Tổng quan & Định mức",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Vật tư kho",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhóm danh mục",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Định mức dọn phòng",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Nhà cung cấp",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Nhập kho",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Phiếu Xuất kho",
+      "page": 1434,
+      "width": 1440
+    },
+    {
+      "section": "/inventory",
+      "label": "Sổ kho & Biến động",
+      "page": 1434,
+      "width": 1440
+    }
+  ],
+  "additional": [
+    {
+      "label": "/dashboard",
+      "cards": 1,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/reservations",
+      "cards": 1,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/services",
+      "cards": 1,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/inventory",
+      "cards": 2,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/folios",
+      "cards": 1,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 1,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "/dashboard",
+      "cards": 1,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/reservations",
+      "cards": 1,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/services",
+      "cards": 1,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/inventory",
+      "cards": 2,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/folios",
+      "cards": 1,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 1,
+      "client": 385,
+      "page": 385,
+      "width": 390
+    },
+    {
+      "label": "/dashboard",
+      "cards": 1,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/reservations",
+      "cards": 1,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/services",
+      "cards": 1,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/inventory",
+      "cards": 2,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/folios",
+      "cards": 1,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 1,
+      "client": 425,
+      "page": 425,
+      "width": 430
+    },
+    {
+      "label": "/dashboard",
+      "cards": 1,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/reservations",
+      "cards": 1,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/services",
+      "cards": 1,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/inventory",
+      "cards": 2,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/folios",
+      "cards": 1,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 1,
+      "client": 762,
+      "page": 762,
+      "width": 767
+    },
+    {
+      "label": "/dashboard",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/reservations",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/services",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/inventory",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/folios",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 1018,
+      "page": 1018,
+      "width": 1024
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 0,
+      "client": 1024,
+      "page": 1024,
+      "width": 1024
+    },
+    {
+      "label": "/dashboard",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/reservations",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/services",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/inventory",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/folios",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1199
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 0,
+      "client": 1199,
+      "page": 1199,
+      "width": 1199
+    },
+    {
+      "label": "/dashboard",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/reservations",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/services",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/inventory",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/folios",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 1194,
+      "page": 1194,
+      "width": 1200
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 0,
+      "client": 1200,
+      "page": 1200,
+      "width": 1200
+    },
+    {
+      "label": "/dashboard",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/reservations",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/services",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/inventory",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/folios",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 1274,
+      "page": 1274,
+      "width": 1280
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 0,
+      "client": 1280,
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "label": "/dashboard",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/reservations",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/services",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/inventory",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/folios",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/reports",
+      "cards": 0,
+      "client": 1914,
+      "page": 1914,
+      "width": 1920
+    },
+    {
+      "label": "/platform/hotels",
+      "cards": 0,
+      "client": 1920,
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "label": "Danh sách khách rỗng",
+      "cards": 1,
+      "client": 370,
+      "page": 370,
+      "width": 375
+    },
+    {
+      "label": "Đổi mật khẩu",
+      "cards": 0,
+      "client": 320,
+      "page": 320,
+      "width": 320
+    },
+    {
+      "label": "Đổi mật khẩu",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "Đổi mật khẩu",
+      "cards": 0,
+      "client": 768,
+      "page": 768,
+      "width": 768
+    },
+    {
+      "label": "Đổi mật khẩu",
+      "cards": 0,
+      "client": 1440,
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "label": "403",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "404",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "Lỗi không tìm thấy khách sạn",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "404 sau khi tải xong",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "Đăng nhập khách sạn",
+      "cards": 0,
+      "client": 314,
+      "page": 314,
+      "width": 320
+    },
+    {
+      "label": "Đăng nhập khách sạn",
+      "cards": 0,
+      "client": 370,
+      "page": 370,
+      "width": 375
+    },
+    {
+      "label": "Đăng nhập khách sạn",
+      "cards": 0,
+      "client": 370,
+      "page": 370,
+      "width": 375
+    },
+    {
+      "label": "Đăng nhập khách sạn",
+      "cards": 0,
+      "client": 1440,
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "label": "Đăng nhập platform",
+      "cards": 0,
+      "client": 320,
+      "page": 320,
+      "width": 320
+    },
+    {
+      "label": "Đăng nhập platform",
+      "cards": 0,
+      "client": 375,
+      "page": 375,
+      "width": 375
+    },
+    {
+      "label": "Đăng nhập platform",
+      "cards": 0,
+      "client": 768,
+      "page": 768,
+      "width": 768
+    },
+    {
+      "label": "Đăng nhập platform",
+      "cards": 0,
+      "client": 1440,
+      "page": 1440,
+      "width": 1440
+    },
+    {
+      "label": "Đăng nhập khách sạn 768",
+      "cards": 0,
+      "client": 768,
+      "page": 768,
+      "width": 768
+    },
+    {
+      "label": "Biểu đồ công suất sau chạm",
+      "cards": 0,
+      "client": 369,
+      "page": 369,
+      "width": 375
+    },
+    {
+      "label": "Biểu đồ nguồn khách sau chạm chú giải",
+      "cards": 0,
+      "client": 369,
+      "page": 369,
+      "width": 375
+    }
+  ],
+  "overlays": [
+    {
+      "label": "Phiếu nhập mới",
+      "body": {
+        "content": 963,
+        "height": 660,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 800,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Phiếu nhập và thanh toán NCC",
+      "body": {
+        "content": 1356,
+        "height": 660,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 800,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Chi tiết phiếu nhập",
+      "body": {
+        "content": 11539,
+        "height": 604,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 800,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo phòng",
+      "body": {
+        "content": 745,
+        "height": 715,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 777,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo hạng phòng",
+      "body": {
+        "content": 733,
+        "height": 715,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 718,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo nhân viên",
+      "body": {
+        "content": 929,
+        "height": 716,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 784,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo việc dọn phòng",
+      "body": {
+        "content": 381,
+        "height": 381,
+        "scroll": 319,
+        "width": 319
+      },
+      "bottom": 506,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo phiếu xuất",
+      "body": {
+        "content": 1074,
+        "height": 660,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 770,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo danh mục",
+      "body": {
+        "content": 374,
+        "height": 374,
+        "scroll": 319,
+        "width": 319
+      },
+      "bottom": 500,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo nhà cung cấp",
+      "body": {
+        "content": 760,
+        "height": 660,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 770,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Tạo dịch vụ",
+      "body": {
+        "content": 738,
+        "height": 660,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 484,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Báo sự cố",
+      "body": {
+        "content": 483,
+        "height": 483,
+        "scroll": 319,
+        "width": 319
+      },
+      "bottom": 607,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Khóa phòng bảo trì",
+      "body": {
+        "content": 752,
+        "height": 604,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 764,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Nhận phòng",
+      "body": {
+        "content": 469,
+        "height": 463,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 605,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Đổi phòng",
+      "body": {
+        "content": 459,
+        "height": 454,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 655,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Trả phòng",
+      "body": {
+        "content": 495,
+        "height": 489,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 691,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Hồ sơ khách",
+      "body": {
+        "content": 1097,
+        "height": 715,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 565,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Kỳ thuê bao",
+      "body": {
+        "content": 1044,
+        "height": 716,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 726,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Cấp admin",
+      "body": {
+        "content": 333,
+        "height": 333,
+        "scroll": 319,
+        "width": 319
+      },
+      "bottom": 416,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Yêu cầu reset mật khẩu",
+      "body": {
+        "content": 247,
+        "height": 247,
+        "scroll": 319,
+        "width": 319
+      },
+      "bottom": 334,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Gói thuê bao",
+      "body": {
+        "content": 790,
+        "height": 716,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 788,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Phiếu thu 320",
+      "body": {
+        "content": 1151,
+        "height": 585,
+        "scroll": 258,
+        "width": 258
+      },
+      "bottom": 708,
+      "height": 720,
+      "scroll": 296,
+      "viewport": 320,
+      "width": 296
+    },
+    {
+      "label": "Chi tiết vật tư",
+      "body": {
+        "content": 864,
+        "height": 645,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 484,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Kiểm kê tồn",
+      "body": {
+        "content": 803,
+        "height": 645,
+        "scroll": 314,
+        "width": 314
+      },
+      "bottom": 800,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    },
+    {
+      "label": "Phiếu thu ngang ổn định",
+      "body": {
+        "content": 754,
+        "height": 284,
+        "scroll": 596,
+        "width": 596
+      },
+      "bottom": 382,
+      "height": 390,
+      "scroll": 650,
+      "viewport": 844,
+      "width": 650
+    },
+    {
+      "label": "Hồ sơ khách bản cuối",
+      "body": {
+        "content": 1094,
+        "height": 715,
+        "scroll": 313,
+        "width": 313
+      },
+      "bottom": 800,
+      "height": 812,
+      "scroll": 351,
+      "viewport": 375,
+      "width": 351
+    }
+  ]
+}

@@ -1,7 +1,8 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import React, { useCallback, useState, useMemo, useDeferredValue } from 'react';
 import {
   Card,
-  Table,
   Button,
   Space,
   Select,
@@ -666,7 +667,7 @@ export const EmployeesPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Summary */}
-      <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 20 }}>
+      <Row gutter={[16, 16]} className="pms-kpi-row pms-kpi-row--counts" style={{ marginBottom: 20 }}>
         <Col xs={24} sm={8} md={8}>
           <Card
             size="small"
@@ -785,6 +786,7 @@ export const EmployeesPage: React.FC = () => {
             />
           </Col>
 
+          <ResponsiveFilters activeCount={Number(!!roleFilter) + Number(statusFilter !== undefined)} onReset={handleResetFilters}>
           <Col xs={12} sm={6} md={5}>
             <Select
               style={{ width: '100%' }}
@@ -848,6 +850,7 @@ export const EmployeesPage: React.FC = () => {
               Đặt lại
             </Button>
           </Col>
+          </ResponsiveFilters>
         </Row>
       </Card>
 

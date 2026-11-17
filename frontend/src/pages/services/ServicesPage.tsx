@@ -1,5 +1,6 @@
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import React, { useState } from "react";
-import { Tabs, Typography, Space } from "antd";
+import { Typography, Space } from "antd";
 import {
   CustomerServiceOutlined,
   ShoppingOutlined,

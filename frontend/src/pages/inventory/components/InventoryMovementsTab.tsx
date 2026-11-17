@@ -1,3 +1,5 @@
+import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -6,7 +8,6 @@ import {
   Space,
   Tag,
   Select,
-  DatePicker,
   Typography,
   Card,
   Tooltip,
@@ -28,7 +29,7 @@ import type {
 } from '../../../types/inventory.types.ts';
 
 const { Text, Paragraph } = Typography;
-const { RangePicker } = DatePicker;
+
 
 export const InventoryMovementsTab: React.FC = () => {
   // Filter States
@@ -246,6 +247,7 @@ export const InventoryMovementsTab: React.FC = () => {
       {/* Filter and Action bar */}
       <Card style={{ marginBottom: 16, borderRadius: 8 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <ResponsiveFilters activeCount={Number(Boolean(typeFilter)) + Number(Boolean(dateRange))} onReset={() => { setTypeFilter(undefined); setDateRange(null); setPage(1); }}>
           <Space wrap size={10}>
             <Select
               placeholder="Lọc theo Vật tư"
@@ -296,6 +298,7 @@ export const InventoryMovementsTab: React.FC = () => {
               Làm mới
             </Button>
           </Space>
+          </ResponsiveFilters>
         </Space>
       </Card>
 

@@ -11,7 +11,6 @@ import {
   Typography,
   Button,
   Tag,
-  Grid,
   Drawer,
 } from "antd";
 import type { MenuProps } from "antd";
@@ -45,6 +44,7 @@ import { RoleBadge } from "../components/RoleBadge.tsx";
 import { BrandLogo } from "../components/BrandLogo.tsx";
 import "./MainLayout.css";
 import { roomsApi } from "../api/rooms.api.ts";
+import { useResponsiveLayout } from '../components/responsive/useResponsiveLayout.ts';
 import { useStaffDirectory } from "../utils/staffDirectory.ts";
 import type { Role } from "../types/auth.types.ts";
 import {
@@ -55,7 +55,6 @@ import {
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
-const { useBreakpoint } = Grid;
 
 interface MenuItemDef {
   key: string;
@@ -200,7 +199,7 @@ export const MainLayout: React.FC = () => {
   const { message } = AntdApp.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const screens = useBreakpoint();
+  const { screens, isMobile, isCompact } = useResponsiveLayout();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -208,8 +207,7 @@ export const MainLayout: React.FC = () => {
 
   // Keep the full workspace available on tablets and smaller laptops. The
   // persistent sidebar returns once there is room for both navigation and content.
-  const isMobile = !screens.md;
-  const useDrawerNavigation = !screens.xl;
+  const useDrawerNavigation = isCompact;
   const isTablet = screens.md && !screens.lg;
 
   // Automatically close mobile drawer whenever route changes without cascading render effect
@@ -357,7 +355,7 @@ export const MainLayout: React.FC = () => {
     </div>
   );
   return (
-    <Layout className="pms-shell" style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100vw", overflowX: "hidden" }}>
+    <Layout className="pms-shell" style={{ minHeight: "100vh", background: "#f8fafc", maxWidth: "100%" }}>
       {/* Persistent navigation is reserved for wide workspaces. */}
       {!useDrawerNavigation && (
         <Sider
@@ -404,12 +402,26 @@ export const MainLayout: React.FC = () => {
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
           size={270}
-          closable={false}
+          title="Menu điều hướng"
+          closable={{ placement: 'end', 'aria-label': 'Đóng menu điều hướng' }}
           styles={{
+            header: {
+              padding: '8px 12px',
+              background: '#0b241c',
+              borderBottom: '1px solid #c6ad7724',
+              flexShrink: 0,
+            },
+            title: { color: '#f2f0e4' },
+            close: {
+              color: '#f2f0e4',
+              background: '#ffffff0d',
+              width: 44,
+              height: 44,
+              marginInlineEnd: 0,
+            },
             body: {
               padding: 0,
               background: "#0f2922",
-              height: "100%",
               overflowY: "auto",
             },
           }}
@@ -492,6 +504,7 @@ export const MainLayout: React.FC = () => {
               <strong style={{ color: "#0f172a", fontWeight: 600 }}>
                 {useDrawerNavigation ? "INNVYRA PMS" : "Hệ thống quản lý PMS"}
               </strong>
+              {useDrawerNavigation && <span className="pms-header-property" title={user?.hotel?.name}>{user?.hotel?.name}</span>}
             </div>
           </div>
 
@@ -565,7 +578,7 @@ export const MainLayout: React.FC = () => {
             minHeight: "calc(100vh - 84px)",
             border: "1px solid #e2e8f0",
             boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
-            overflowX: "hidden",
+            minWidth: 0,
           }}
         >
           {!isSubscriptionPath(location.pathname) && <SubscriptionNotice />}

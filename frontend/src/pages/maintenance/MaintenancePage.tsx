@@ -1,3 +1,7 @@
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveRangePicker as RangePicker } from '../../components/responsive/ResponsiveRangePicker.tsx';
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useEffect, useMemo } from "react";
 import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -9,7 +13,6 @@ import {
   Tag,
   Button,
   Space,
-  Tabs,
   Modal,
   Drawer,
   Form,
@@ -19,8 +22,6 @@ import {
   Alert,
   Tooltip,
   App as AntdApp,
-  Table,
-  DatePicker,
   Spin,
   Grid,
 } from "antd";
@@ -65,7 +66,7 @@ import type {
 } from "../../types/operations.types.ts";
 
 const { Title, Text, Paragraph } = Typography;
-const { RangePicker } = DatePicker;
+
 
 interface ResolveTicketModalProps {
   open: boolean;
@@ -1317,7 +1318,7 @@ export const MaintenancePage: React.FC = () => {
                   {/* KPI Cards */}
                   <Row
                     gutter={[16, 16]}
-                    className="pms-kpi-row"
+                    className="pms-kpi-row pms-kpi-row--counts"
                     style={{ marginBottom: 20 }}
                   >
                     <Col xs={12} sm={6}>
@@ -1457,6 +1458,7 @@ export const MaintenancePage: React.FC = () => {
                           allowClear
                         />
                       </Col>
+                      <ResponsiveFilters activeCount={Number(Boolean(ticketStatusFilter)) + Number(Boolean(ticketPriorityFilter))} onReset={() => { setTicketStatusFilter(undefined); setTicketPriorityFilter(undefined); setTicketPage(1); }}>
                       <Col xs={12} sm={8}>
                         <Select
                           placeholder="Lọc theo trạng thái phiếu..."
@@ -1513,6 +1515,7 @@ export const MaintenancePage: React.FC = () => {
                           ]}
                         />
                       </Col>
+                      </ResponsiveFilters>
                     </Row>
                   </Card>
 
@@ -1651,6 +1654,7 @@ export const MaintenancePage: React.FC = () => {
                   {/* Filter Toolbar */}
                   <Card style={{ marginBottom: 16, borderRadius: 8 }}>
                     <Row gutter={[12, 12]} align="middle">
+                      <ResponsiveFilters activeCount={Number(Boolean(blockStatusFilter))} onReset={() => setBlockStatusFilter(undefined)}>
                       <Col xs={24} sm={12}>
                         <Select
                           placeholder="Lọc theo trạng thái lệnh khóa..."
@@ -1680,6 +1684,7 @@ export const MaintenancePage: React.FC = () => {
                           ]}
                         />
                       </Col>
+                      </ResponsiveFilters>
                     </Row>
                   </Card>
 

@@ -280,6 +280,7 @@ export function PaymentQrModal({
                 {current.qrDataURL && (
                   <div style={{ textAlign: "center" }}>
                     <img
+                      className="payment-qr-image"
                       src={current.qrDataURL}
                       alt={`QR chuyển khoản ${formatFolioMoney(current.amount)}`}
                       width={280}

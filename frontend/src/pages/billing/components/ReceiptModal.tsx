@@ -194,6 +194,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
         {/* Amount Box */}
         <div
+          className="receipt-amount"
           style={{
             padding: '16px 20px',
             background: isRefund ? '#fff1f0' : '#f6ffed',
@@ -212,14 +213,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <div style={{ fontSize: 11, color: '#8c8c8c' }}>Đơn vị tiền tệ: Việt Nam Đồng (VND)</div>
           </div>
           <div>
-            <Title level={2} style={{ margin: 0, color: isRefund ? '#cf1322' : '#1b4d3e', fontWeight: 700 }}>
+            <Title className={`receipt-amount-value${formatVND(payment.amount).length > 18 ? ' receipt-amount-value--long' : ''}`} level={2} style={{ margin: 0, color: isRefund ? '#cf1322' : '#1b4d3e', fontWeight: 700 }}>
               {formatVND(payment.amount)}
             </Title>
           </div>
         </div>
 
         {/* Signatures */}
-        <Row gutter={24} style={{ marginTop: 24, textAlign: 'center' }}>
+        <Row className="receipt-signatures" gutter={24} style={{ marginTop: 24, textAlign: 'center' }}>
           <Col span={12}>
             <Text strong style={{ display: 'block', marginBottom: 50 }}>
               Khách hàng nộp / nhận tiền

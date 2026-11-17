@@ -12,10 +12,8 @@
  * `html body { overflow-y: hidden }`; with <html> as the scroller that rule has
  * no effect, so the page kept scrolling behind open dialogs.
  *
- * The horizontal clipping therefore lives on <body> only, and uses `clip`
- * instead of `hidden`: `hidden` turns <body> into a scroll container, which
- * breaks the sticky header and can swallow the scroll lock, while `clip`
- * just clips the overflow.
+ * Wide tables and charts own their scroll containers. Do not clip the page to
+ * conceal an overflowing control; keep body as the normal viewport scroller.
  */
 html {
   width: 100%;
@@ -31,7 +29,6 @@ body,
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  overflow-x: clip;
   max-width: 100vw;
 }
 

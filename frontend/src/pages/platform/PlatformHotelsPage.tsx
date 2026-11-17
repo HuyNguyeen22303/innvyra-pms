@@ -1,6 +1,8 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, Input, Select, Space, Table, Tag } from "antd";
+import { Alert, Button, Card, Input, Select, Space, Tag } from "antd";
 import { Link } from "react-router-dom";
 import { hotelsApi } from "../../api/hotels.api.ts";
 import type { HotelRecord } from "../../types/hotel.types.ts";
@@ -57,9 +59,11 @@ export function PlatformHotelsPage() {
             }}
             style={{ width: 290, maxWidth: "100%" }}
           />
+          <ResponsiveFilters activeCount={Number(Boolean(status)) + Number(Boolean(subscriptionStatus))} onReset={() => { setStatus(undefined); setSubscriptionStatus(undefined); setPage(1); }}>
           <Select
             placeholder="Trạng thái"
             aria-label="Trạng thái khách sạn"
+            value={status}
             allowClear
             style={{ width: 170 }}
             options={[
@@ -74,6 +78,7 @@ export function PlatformHotelsPage() {
           <Select
             placeholder="Thời hạn thuê bao"
             aria-label="Thời hạn thuê bao"
+            value={subscriptionStatus}
             allowClear
             style={{ width: 220 }}
             options={[
@@ -91,6 +96,7 @@ export function PlatformHotelsPage() {
           <Button onClick={() => setRevision((value) => value + 1)}>
             Tải lại
           </Button>
+          </ResponsiveFilters>
           <Link to="/platform/hotels/new">
             <Button type="primary">Thêm khách sạn</Button>
           </Link>

@@ -1,6 +1,8 @@
+import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
+import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import React, { useState, useMemo, useEffect, useCallback, useDeferredValue } from 'react';
 import {
-  Table,
   Button,
   Space,
   Tag,
@@ -17,7 +19,6 @@ import {
   Alert,
   Descriptions,
   Badge,
-  Tabs,
   Empty,
   Spin,
   Timeline,
@@ -199,7 +200,7 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
         <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: 8 }}>
           {/* Reservation Summary */}
           <Card size="small" style={{ borderRadius: 8, background: '#f8fafc' }}>
-            <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered={false}>
+            <Descriptions size="small" column={{ xs: 1, sm: 1, md: 2 }} bordered={false}>
               <Descriptions.Item label="Mã đặt phòng">
                 <Text strong style={{ color: '#1677ff' }}>
                   {reservation.confirmationCode}
@@ -1184,7 +1185,7 @@ export const StaysPage: React.FC = () => {
     () => (
                 <>
                   {/* KPI Stat Cards */}
-                  <Row gutter={[16, 16]} className="pms-kpi-row" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 16]} className="pms-kpi-row pms-kpi-row--counts" style={{ marginBottom: 16 }}>
                     <Col xs={12} sm={8} md={8}>
                       <Card
                         size="small"
@@ -1260,6 +1261,7 @@ export const StaysPage: React.FC = () => {
                           debounceMs={180}
                         />
                       </Col>
+                      <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => setStatusFilter(undefined)}>
                       <Col xs={24} sm={10} md={6}>
                         <Select
                           placeholder="Trạng thái lưu trú"
@@ -1274,6 +1276,7 @@ export const StaysPage: React.FC = () => {
                           ]}
                         />
                       </Col>
+                      </ResponsiveFilters>
                     </Row>
                   </Card>
 
@@ -1491,7 +1494,7 @@ export const StaysPage: React.FC = () => {
             </Card>
 
             {/* Guest & Reservation */}
-            <Descriptions title="1. Thông tin Đơn đặt & Khách hàng" bordered size="small" column={{ xs: 1, sm: 2 }}>
+            <Descriptions title="1. Thông tin Đơn đặt & Khách hàng" bordered size="small" column={{ xs: 1, sm: 1, md: 2 }}>
               <Descriptions.Item label="Khách lưu trú">
                 <Text strong>{stayDetail.bookerGuest?.fullName || 'Khách lưu trú'}</Text>
               </Descriptions.Item>
@@ -1509,7 +1512,7 @@ export const StaysPage: React.FC = () => {
             </Descriptions>
 
             {/* Check-in & Check-out Metadata */}
-            <Descriptions title="2. Thời gian thực tế & Nhân viên phụ trách" bordered size="small" column={{ xs: 1, sm: 2 }}>
+            <Descriptions title="2. Thời gian thực tế & Nhân viên phụ trách" bordered size="small" column={{ xs: 1, sm: 1, md: 2 }}>
               <Descriptions.Item label="Giờ nhận phòng">
                 <Text strong>{dayjs(stayDetail.actualCheckinAt).format('DD/MM/YYYY HH:mm:ss')}</Text>
               </Descriptions.Item>

@@ -1,3 +1,4 @@
+import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,7 +11,6 @@ import {
   Modal,
   Space,
   Switch,
-  Table,
   Tag,
 } from "antd";
 import {
