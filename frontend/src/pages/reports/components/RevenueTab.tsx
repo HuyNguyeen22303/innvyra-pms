@@ -24,7 +24,7 @@ import { reportsApi } from '../../../api/reports.api.ts';
 import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
 import { DonutChart, type DonutSlice } from '../../../components/charts/DonutChart.tsx';
 import type { RevenueSeriesItem } from '../../../types/reports.types.ts';
-import { formatVnd } from '../reports.utils.ts';
+import { formatReportTotal, formatVnd } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
@@ -74,10 +74,10 @@ export const RevenueTab: React.FC<RevenueTabProps> = React.memo(({
     const roomChargesNum = parseFloat(summary?.roomCharges || '0');
     const serviceChargesNum = parseFloat(summary?.serviceCharges || '0');
     if (roomChargesNum > 0) {
-      data.push({ key: 'room', label: 'Tiền phòng', value: roomChargesNum, color: '#1b4d3e' });
+      data.push({ key: 'room', label: 'Tiền phòng', value: roomChargesNum, color: '#1b4d3e', displayValue: formatVnd(summary?.roomCharges) });
     }
     if (serviceChargesNum > 0) {
-      data.push({ key: 'service', label: 'Dịch vụ & Minibar', value: serviceChargesNum, color: '#1890ff' });
+      data.push({ key: 'service', label: 'Dịch vụ & Minibar', value: serviceChargesNum, color: '#1890ff', displayValue: formatVnd(summary?.serviceCharges) });
     }
     return data;
   }, [summary?.roomCharges, summary?.serviceCharges]);
@@ -326,6 +326,7 @@ export const RevenueTab: React.FC<RevenueTabProps> = React.memo(({
               <DonutChart
                 data={revenueDonutData}
                 totalLabel="Tổng Billed"
+                displayTotal={formatReportTotal(summary?.roomCharges, summary?.serviceCharges)}
                 valueFormatter={formatVndNumber}
                 size={160}
               />

@@ -192,12 +192,14 @@ export const maintenanceApi = {
    * GET /maintenance/blocks
    */
   getBlocks: async (
-    params?: BlockFilterParams
+    params?: BlockFilterParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<MaintenanceBlockItem>>> => {
     const res = await apiClient.get<ApiResponse<PaginatedResult<MaintenanceBlockItem>>>(
       '/maintenance/blocks',
       {
         params: { limit: 50, ...params },
+        signal,
       }
     );
     return res.data;

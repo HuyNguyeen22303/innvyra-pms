@@ -109,8 +109,8 @@ function PresetForm({ id }: { id: string }) {
 export function HousekeepingPresetsTab() {
   const [id, setId] = useState<string>();
   const types = useQuery({
-    queryKey: ["room-types", "material-presets"],
-    queryFn: () => roomTypesApi.getAll(),
+    queryKey: ["roomTypes", "lookup"],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
   });
   return (
     <Card title="Định mức vật tư dọn phòng">
@@ -125,7 +125,7 @@ export function HousekeepingPresetsTab() {
         loading={types.isLoading}
         value={id}
         onChange={setId}
-        options={types.data?.data.items
+        options={(types.data ?? [])
           .filter((type) => type.isActive)
           .map((type) => ({ value: type.id, label: type.name }))}
       />

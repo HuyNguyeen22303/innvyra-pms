@@ -12,6 +12,7 @@ import {
   Radio,
   App as AntdApp,
   Grid,
+  Alert,
 } from 'antd';
 import {
   DollarOutlined,
@@ -24,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAuthStore } from '../../store/authStore.ts';
+import { useHotelClock } from '../../hooks/useHotelClock.ts';
 import { reportsApi } from '../../api/reports.api.ts';
 import { RevenueTab } from './components/RevenueTab.tsx';
 import { PaymentsTab } from './components/PaymentsTab.tsx';
@@ -46,6 +48,12 @@ const MemoOperationsTab = React.memo(OperationsTab);
 const MemoOutstandingTab = React.memo(OutstandingTab);
 
 export const ReportsPage: React.FC = () => {
+  const clock = useHotelClock();
+  if (!clock) return <Alert type="error" showIcon title="Chưa xác định được múi giờ khách sạn" />;
+  return <Reports hotelDate={clock.date} />;
+};
+
+const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   const { message: appMessage } = AntdApp.useApp();
   const { user } = useAuthStore();
   const screens = Grid.useBreakpoint();
@@ -80,10 +88,12 @@ export const ReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => availableTabs[0]?.key || 'operations');
 
   // Date Range state: default to 30 days up to end of today [today - 30 days, today + 1 day)
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
-    dayjs().subtract(30, 'day').startOf('day'),
-    dayjs().add(1, 'day').startOf('day'),
-  ]);
+  const [rangeOverride, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const today = useMemo(() => dayjs(hotelDate), [hotelDate]);
+  const dateRange = useMemo<[Dayjs, Dayjs]>(
+    () => rangeOverride ?? [today.subtract(30, 'day'), today.add(1, 'day')],
+    [rangeOverride, today],
+  );
 
   const startDateStr = dateRange[0].format('YYYY-MM-DD');
   const endDateStr = dateRange[1].format('YYYY-MM-DD');
@@ -155,32 +165,32 @@ export const ReportsPage: React.FC = () => {
   // Quick period presets
   const handlePreset7Days = () => {
     setDateRange([
-      dayjs().subtract(6, 'day').startOf('day'),
-      dayjs().add(1, 'day').startOf('day'),
+      today.subtract(6, 'day'),
+      today.add(1, 'day'),
     ]);
     setGroupBy('day');
   };
 
   const handlePresetMonth = () => {
     setDateRange([
-      dayjs().startOf('month'),
-      dayjs().add(1, 'day').startOf('day'),
+      today.startOf('month'),
+      today.add(1, 'day'),
     ]);
     setGroupBy('day');
   };
 
   const handlePresetQuarter = () => {
     setDateRange([
-      dayjs().subtract(89, 'day').startOf('day'),
-      dayjs().add(1, 'day').startOf('day'),
+      today.subtract(89, 'day'),
+      today.add(1, 'day'),
     ]);
     setGroupBy('month');
   };
 
   const handlePresetYear = () => {
     setDateRange([
-      dayjs().startOf('year'),
-      dayjs().add(1, 'day').startOf('day'),
+      today.startOf('year'),
+      today.add(1, 'day'),
     ]);
     setGroupBy('month');
   };

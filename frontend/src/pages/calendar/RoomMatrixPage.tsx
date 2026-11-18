@@ -18,6 +18,7 @@ import {
   Empty,
   Collapse,
   Grid,
+  Pagination,
 } from "antd";
 import {
   CalendarOutlined,
@@ -31,26 +32,37 @@ import {
   ApartmentOutlined,
 } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
-import isBetween from "dayjs/plugin/isBetween";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { roomsApi, roomTypesApi } from "../../api/rooms.api.ts";
 import { staysApi } from "../../api/stays.api.ts";
 import { reservationsApi } from "../../api/reservations.api.ts";
 import { maintenanceApi } from "../../api/maintenance.api.ts";
 import { useAuthStore } from "../../store/authStore.ts";
+import { collectPages } from "../../api/pagination.ts";
+import { useHotelClock } from "../../hooks/useHotelClock.ts";
+import { formatHotelDate, hotelClock } from "../../utils/hotelDate.ts";
 import type { RoomItem, RoomTypeItem } from "../../types/rooms.types.ts";
 import type { StaySummaryItem } from "../../types/stays.types.ts";
-import type { ReservationSummaryItem } from "../../types/reservations.types.ts";
 import type { MaintenanceBlockItem } from "../../types/operations.types.ts";
 
-dayjs.extend(isBetween);
-
 const { Title, Text } = Typography;
+const roomsPerPage = 50;
+const noRooms: RoomItem[] = [];
+const noRoomTypes: RoomTypeItem[] = [];
 
 export const RoomMatrixPage: React.FC = () => {
+  const clock = useHotelClock();
+  const timezone = useAuthStore((state) => state.user?.hotel?.timezone);
+  if (!clock || !timezone)
+    return <Alert type="error" showIcon title="Chưa xác định được múi giờ khách sạn" />;
+  return <RoomMatrix today={clock.date} timezone={timezone} />;
+};
+
+const RoomMatrix: React.FC<{ today: string; timezone: string }> = ({ today, timezone }) => {
   const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
   const userRole = user?.role || "";
@@ -69,10 +81,12 @@ export const RoomMatrixPage: React.FC = () => {
   ].includes(userRole);
 
   // Date Navigation State: Default 7 days from today
-  const [startDate, setStartDate] = useState<Dayjs>(() =>
-    dayjs().startOf("day"),
-  );
+  const [startOverride, setStartDate] = useState<Dayjs | null>(null);
+  const startDate = startOverride ?? dayjs(today);
+  const until = startDate.add(7, "day").format("YYYY-MM-DD");
   const daysCount = 7;
+  const [roomPage, setRoomPage] = useState(1);
+  const [reservationPage, setReservationPage] = useState(1);
 
   // Selected cell for Detail Drawer
   const [selectedCell, setSelectedCell] = useState<{
@@ -96,37 +110,19 @@ export const RoomMatrixPage: React.FC = () => {
     return list;
   }, [startDate, daysCount]);
 
-  // 1. Fetch Rooms (All 6 roles have read access)
-  const {
-    data: roomsRes,
-    isLoading: isRoomsLoading,
-    refetch: refetchRooms,
-  } = useQuery({
-    queryKey: ["rooms-all"],
-    queryFn: () => roomsApi.getAll({ limit: 100 }),
+  const roomsQuery = useQuery({
+    queryKey: ["rooms", "lookup"],
+    queryFn: ({ signal }) => roomsApi.getLookup(signal),
     staleTime: 60000,
   });
+  const roomsList = roomsQuery.data ?? noRooms;
 
-  const roomsList: RoomItem[] = useMemo(() => {
-    const raw = roomsRes?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
-    return [];
-  }, [roomsRes]);
-
-  // 2. Fetch Room Types (All 6 roles)
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ["room-types-all"],
-    queryFn: () => roomTypesApi.getAll({ limit: 100 }),
+  const roomTypesQuery = useQuery({
+    queryKey: ["roomTypes", "lookup"],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
     staleTime: 60000,
   });
-
-  const roomTypesList: RoomTypeItem[] = useMemo(() => {
-    const raw = roomTypesRes?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
-    return [];
-  }, [roomTypesRes]);
+  const roomTypesList = roomTypesQuery.data ?? noRoomTypes;
 
   const roomTypeMap = useMemo(() => {
     const map = new Map<string, RoomTypeItem>();
@@ -134,46 +130,55 @@ export const RoomMatrixPage: React.FC = () => {
     return map;
   }, [roomTypesList]);
 
-  // 3. Fetch Stays (Only for authorized roles)
-  const { data: staysRes } = useQuery({
-    queryKey: ["stays-checked-in"],
-    queryFn: () => staysApi.getAll({ status: "CHECKED_IN", limit: 100 }),
+  const staysQuery = useQuery({
+    queryKey: ["stays", "calendar"],
+    queryFn: ({ signal }) => staysApi.getAllPages({ status: "CHECKED_IN" }, signal),
     enabled: canReadStays,
     staleTime: 30000,
   });
 
-  const activeStaysList: StaySummaryItem[] = useMemo(() => {
-    const raw = staysRes?.data?.items;
-    return Array.isArray(raw) ? raw : [];
-  }, [staysRes]);
-
-  // 4. Fetch Maintenance Blocks (Only for authorized roles)
-  const { data: blocksRes } = useQuery({
-    queryKey: ["maintenance-blocks-active"],
-    queryFn: () => maintenanceApi.getBlocks({ status: "ACTIVE", limit: 100 }),
+  const blocksQuery = useQuery({
+    queryKey: ["maintenance-blocks", "calendar", until],
+    queryFn: async ({ signal }) => (await Promise.all(
+      (["ACTIVE", "SCHEDULED"] as const).map((status) =>
+        collectPages((page) => maintenanceApi.getBlocks({ status, toDate: until, limit: 100, page }, signal), signal),
+      ),
+    )).flat(),
     enabled: canReadMaintenance,
     staleTime: 30000,
   });
 
-  const activeBlocksList: MaintenanceBlockItem[] = useMemo(() => {
-    const raw = blocksRes?.data?.items;
-    return Array.isArray(raw) ? raw : [];
-  }, [blocksRes]);
-
-  // 5. Fetch Reservations for Unassigned Bookings Check
-  const { data: reservationsRes } = useQuery({
-    queryKey: ["reservations-confirmed-matrix"],
-    queryFn: () => reservationsApi.getAll({ status: "CONFIRMED", limit: 50 }),
+  const reservationsQuery = useQuery({
+    queryKey: ["reservations", "calendar", reservationPage],
+    queryFn: ({ signal }) => reservationsApi.getAll({ status: "CONFIRMED", limit: 8, page: reservationPage }, signal),
     enabled: canReadStays,
     staleTime: 60000,
   });
 
-  const confirmedReservations: ReservationSummaryItem[] = useMemo(() => {
-    const raw = reservationsRes?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
-    return [];
-  }, [reservationsRes]);
+  const confirmedReservations = reservationsQuery.data?.data.items ?? [];
+  const reservationTotal = reservationsQuery.data?.data.pagination.total;
+  const matrixQueries = [roomsQuery, roomTypesQuery, ...(canReadStays ? [staysQuery] : []), ...(canReadMaintenance ? [blocksQuery] : [])];
+  const queries = [...matrixQueries, ...(canReadStays ? [reservationsQuery] : [])];
+  const refresh = () => {
+    setSelectedCell(null);
+    void queryClient.invalidateQueries({ queryKey: ["rooms", "count"] });
+    void Promise.all(queries.map((query) => query.refetch()));
+  };
+
+  const roomStays = useMemo(() => new Map((staysQuery.data ?? []).flatMap((stay) => {
+    const date = hotelClock(timezone, new Date(stay.actualCheckinAt))?.date;
+    return stay.room && date ? [[stay.room.id, { stay, date }] as const] : [];
+  })), [staysQuery.data, timezone]);
+
+  const roomBlocks = useMemo(() => {
+    const byRoom = new Map<string, MaintenanceBlockItem[]>();
+    for (const block of blocksQuery.data ?? []) {
+      const blocks = byRoom.get(block.roomId) ?? [];
+      blocks.push(block);
+      byRoom.set(block.roomId, blocks);
+    }
+    return byRoom;
+  }, [blocksQuery.data]);
 
   // Filtered Rooms
   const filteredRooms = useMemo(() => {
@@ -199,6 +204,8 @@ export const RoomMatrixPage: React.FC = () => {
       return true;
     });
   }, [roomsList, floorFilter, roomTypeFilter, statusFilter]);
+  const currentPage = Math.min(roomPage, Math.max(1, Math.ceil(filteredRooms.length / roomsPerPage)));
+  const visibleRooms = filteredRooms.slice((currentPage - 1) * roomsPerPage, currentPage * roomsPerPage);
 
   // Distinct floors for filter
   const floors = useMemo(() => {
@@ -210,16 +217,13 @@ export const RoomMatrixPage: React.FC = () => {
   // Helper to determine status of Room on a specific Date
   const getCellStatus = (room: RoomItem, date: Dayjs) => {
     const dateStr = date.format("YYYY-MM-DD");
-    const isToday = date.isSame(dayjs(), "day");
+    const isToday = dateStr === today;
 
     // 1. Check Maintenance Block: [startDate, endDate)
-    const block = activeBlocksList.find((b) => {
-      if (String(b.roomId) !== String(room.id)) return false;
-      return (
-        (dateStr >= b.startDate && dateStr < b.endDate) ||
-        (dateStr === b.startDate && b.status === "ACTIVE")
-      );
-    });
+    const block = roomBlocks.get(room.id)?.find((b) =>
+      dateStr >= b.startDate &&
+      (dateStr < b.endDate || b.status === "ACTIVE" || b.startDate <= today),
+    );
 
     if (block) {
       return {
@@ -233,11 +237,8 @@ export const RoomMatrixPage: React.FC = () => {
     }
 
     // 2. Check Active In-House Stay (For dates >= checkin date and stay is currently checked in)
-    const stay = activeStaysList.find((s) => {
-      if (String(s.room?.id) !== String(room.id)) return false;
-      const checkinDateStr = dayjs(s.actualCheckinAt).format("YYYY-MM-DD");
-      return dateStr >= checkinDateStr;
-    });
+    const active = roomStays.get(room.id);
+    const stay = active && dateStr >= active.date ? active.stay : undefined;
 
     if (stay) {
       return {
@@ -333,11 +334,11 @@ export const RoomMatrixPage: React.FC = () => {
         </div>
 
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refetchRooms()}>
+          <Button icon={<ReloadOutlined />} onClick={refresh} loading={queries.some((query) => query.isFetching)}>
             Làm mới
           </Button>
           <Button
-            onClick={() => setStartDate(dayjs().startOf("day"))}
+            onClick={() => setStartDate(null)}
             style={{ borderColor: "#1b4d3e", color: "#1b4d3e" }}
           >
             Hôm nay
@@ -345,13 +346,13 @@ export const RoomMatrixPage: React.FC = () => {
           <Space.Compact>
             <Button
               icon={<LeftOutlined />}
-              onClick={() => setStartDate((d) => d.subtract(7, "day"))}
+              onClick={() => setStartDate(startDate.subtract(7, "day"))}
             >
               Tuần trước
             </Button>
             <Button
               icon={<RightOutlined />}
-              onClick={() => setStartDate((d) => d.add(7, "day"))}
+              onClick={() => setStartDate(startDate.add(7, "day"))}
             >
               Tuần sau
             </Button>
@@ -388,12 +389,12 @@ export const RoomMatrixPage: React.FC = () => {
         }}
       >
         <Row gutter={[10, 10]} align="middle">
-          <ResponsiveFilters activeCount={[floorFilter, roomTypeFilter, statusFilter].filter(value => value !== 'ALL').length} onReset={() => { setFloorFilter('ALL'); setRoomTypeFilter('ALL'); setStatusFilter('ALL'); }}>
+          <ResponsiveFilters activeCount={[floorFilter, roomTypeFilter, statusFilter].filter(value => value !== 'ALL').length} onReset={() => { setFloorFilter('ALL'); setRoomTypeFilter('ALL'); setStatusFilter('ALL'); setRoomPage(1); }}>
           <Col xs={24} sm={12} md={8} lg={5}>
             <Select
               style={{ width: "100%" }}
               value={floorFilter}
-              onChange={(val) => setFloorFilter(val)}
+              onChange={(val) => { setFloorFilter(val); setRoomPage(1); }}
               options={[
                 { value: "ALL", label: "Tất cả các tầng" },
                 ...floors.map((f) => ({ value: f, label: `Tầng ${f}` })),
@@ -405,7 +406,7 @@ export const RoomMatrixPage: React.FC = () => {
             <Select
               style={{ width: "100%" }}
               value={roomTypeFilter}
-              onChange={(val) => setRoomTypeFilter(val)}
+              onChange={(val) => { setRoomTypeFilter(val); setRoomPage(1); }}
               options={[
                 { value: "ALL", label: "Tất cả hạng phòng" },
                 ...roomTypesList.map((rt) => ({
@@ -420,7 +421,7 @@ export const RoomMatrixPage: React.FC = () => {
             <Select
               style={{ width: "100%" }}
               value={statusFilter}
-              onChange={(val) => setStatusFilter(val)}
+              onChange={(val) => { setStatusFilter(val); setRoomPage(1); }}
               options={[
                 { value: "ALL", label: "Tất cả trạng thái" },
                 { value: "READY", label: "● Phòng sạch (Ready)" },
@@ -458,7 +459,9 @@ export const RoomMatrixPage: React.FC = () => {
           marginBottom: 20,
         }}
       >
-        {isRoomsLoading ? (
+        {matrixQueries.some((query) => query.isError) ? (
+          <Alert type="error" showIcon title="Chưa tải đủ dữ liệu sơ đồ phòng" action={<Button onClick={refresh}>Thử lại</Button>} />
+        ) : matrixQueries.some((query) => query.isPending) ? (
           <div style={{ padding: 60, textAlign: "center" }}>
             <Spin size="large" description="Đang nạp sơ đồ ma trận phòng..." />
           </div>
@@ -500,7 +503,7 @@ export const RoomMatrixPage: React.FC = () => {
                     </Text>
                   </th>
                   {dateColumns.map((colDate) => {
-                    const isToday = colDate.isSame(dayjs(), "day");
+                    const isToday = colDate.format("YYYY-MM-DD") === today;
                     const isWeekend =
                       colDate.day() === 0 || colDate.day() === 6;
                     return (
@@ -542,7 +545,7 @@ export const RoomMatrixPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRooms.map((room) => {
+                {visibleRooms.map((room) => {
                   const roomType = roomTypeMap.get(String(room.roomTypeId));
                   return (
                     <tr
@@ -597,7 +600,7 @@ export const RoomMatrixPage: React.FC = () => {
                       {/* Date Cells */}
                       {dateColumns.map((colDate) => {
                         const cell = getCellStatus(room, colDate);
-                        const isToday = colDate.isSame(dayjs(), "day");
+                        const isToday = colDate.format("YYYY-MM-DD") === today;
 
                         return (
                           <td
@@ -666,6 +669,9 @@ export const RoomMatrixPage: React.FC = () => {
           </div>
         )}
       </Card>
+      {filteredRooms.length > roomsPerPage && matrixQueries.every((query) => query.isSuccess) && (
+        <Pagination style={{ marginBottom: 20 }} current={currentPage} total={filteredRooms.length} pageSize={roomsPerPage} showSizeChanger={false} onChange={setRoomPage} showTotal={(count) => `${count} phòng`} />
+      )}
 
       {/* Unassigned Reservations Section (Complies with requirement) */}
       {canReadStays && (
@@ -682,8 +688,7 @@ export const RoomMatrixPage: React.FC = () => {
                 <Space>
                   <ApartmentOutlined style={{ color: "#1b4d3e" }} />
                   <Text strong style={{ color: "#1b4d3e" }}>
-                    Đơn Đặt Phòng Chưa Gán Phòng Vật Lý (
-                    {confirmedReservations.length} đơn)
+                    Đơn Đặt Phòng Chưa Gán Phòng Vật Lý{reservationTotal === undefined ? "" : ` (${reservationTotal} đơn)`}
                   </Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     (Khách đã xác nhận đặt nhưng chưa chỉ định số phòng cụ thể
@@ -692,14 +697,19 @@ export const RoomMatrixPage: React.FC = () => {
                 </Space>
               ),
               children:
-                confirmedReservations.length === 0 ? (
+                reservationsQuery.isError ? (
+                  <Alert type="error" title="Chưa tải được danh sách đơn" action={<Button onClick={() => reservationsQuery.refetch()}>Thử lại</Button>} />
+                ) : reservationsQuery.isPending ? (
+                  <Spin />
+                ) : confirmedReservations.length === 0 ? (
                   <Text type="secondary">
                     Tất cả các đơn đặt phòng hiện đều đã được gán hoặc đã hoàn
                     tất thủ tục.
                   </Text>
                 ) : (
+                  <>
                   <Row gutter={[12, 12]}>
-                    {confirmedReservations.slice(0, 8).map((r) => (
+                    {confirmedReservations.map((r) => (
                       <Col xs={24} sm={12} md={8} lg={6} key={r.id}>
                         <Card
                           size="small"
@@ -758,6 +768,10 @@ export const RoomMatrixPage: React.FC = () => {
                       </Col>
                     ))}
                   </Row>
+                  {(reservationTotal ?? 0) > 8 && (
+                    <Pagination style={{ marginTop: 12 }} current={reservationPage} total={reservationTotal} pageSize={8} showSizeChanger={false} onChange={setReservationPage} />
+                  )}
+                  </>
                 ),
             },
           ]}
@@ -841,9 +855,7 @@ export const RoomMatrixPage: React.FC = () => {
                   </p>
                   <p style={{ margin: "4px 0" }}>
                     <strong>Nhận phòng lúc:</strong>{" "}
-                    {dayjs(selectedCell.stay.actualCheckinAt).format(
-                      "DD/MM/YYYY HH:mm",
-                    )}
+                    {formatHotelDate(selectedCell.stay.actualCheckinAt, timezone, true)}
                   </p>
                 </div>
                 <Button
@@ -903,7 +915,7 @@ export const RoomMatrixPage: React.FC = () => {
                 showIcon
                 title="Trống / Chưa có booking"
                 description={
-                  selectedCell.date.isSame(dayjs(), "day")
+                  selectedCell.date.format("YYYY-MM-DD") === today
                     ? `Hôm nay phòng đang ở trạng thái ${selectedCell.room.housekeepingStatus} và sẵn sàng phục vụ theo quy định vận hành.`
                     : "Không có thông tin đặt phòng hoặc lệnh bảo trì cho ngày này."
                 }

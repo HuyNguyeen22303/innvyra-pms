@@ -272,8 +272,10 @@ export const inventoryApi = {
     return response.data;
   },
 
-  createIssue: async (dto: CreateIssueDto): Promise<ApiResponse<StockIssueView>> => {
-    const response = await apiClient.post<ApiResponse<StockIssueView>>('/inventory/issues', dto);
+  createIssue: async (dto: CreateIssueDto, key: string): Promise<ApiResponse<StockIssueView>> => {
+    const response = await apiClient.post<ApiResponse<StockIssueView>>('/inventory/issues', dto, {
+      headers: { 'Idempotency-Key': key },
+    });
     return response.data;
   },
 

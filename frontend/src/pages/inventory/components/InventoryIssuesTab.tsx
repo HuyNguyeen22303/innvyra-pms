@@ -1,7 +1,8 @@
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
 import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
 import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
-import React, { useState, useDeferredValue } from 'react';
+import React, { useState, useDeferredValue, useRef } from 'react';
+import { isAxiosError } from 'axios';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Button,
@@ -33,7 +34,10 @@ import {
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { inventoryApi, getInventoryErrorMessage } from '../../../api/inventory.api.ts';
+import { createIdempotencyKey } from '../../../api/billing.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { useHotelClock } from '../../../hooks/useHotelClock.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 import type {
   StockIssueView,
   CreateIssueDto,
@@ -72,6 +76,7 @@ export const InventoryIssuesTab: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const hotelDate = useHotelClock()?.date;
   const canCreate = ['ADMIN', 'MANAGER', 'HOUSEKEEPING', 'TECHNICIAN'].includes(
     user?.role || '',
   );
@@ -90,6 +95,9 @@ export const InventoryIssuesTab: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm] = Form.useForm();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const attempt = useRef<{ dto: CreateIssueDto; key: string } | null>(null);
+  const submitting = useRef(false);
   const [issueLines, setIssueLines] = useState<FormLineItem[]>([
     { key: 'line-1', itemId: '', quantity: 1, notes: '' },
   ]);
@@ -135,8 +143,10 @@ export const InventoryIssuesTab: React.FC = () => {
 
   // Create Mutation
   const createMutation = useMutation({
-    mutationFn: (dto: CreateIssueDto) => inventoryApi.createIssue(dto),
+    mutationFn: ({ dto, key }: { dto: CreateIssueDto; key: string }) => inventoryApi.createIssue(dto, key),
     onSuccess: () => {
+      attempt.current = null;
+      setUncertain(false);
       appMessage.success('Đã xuất kho và cập nhật tồn kho thành công!');
       setIsCreateOpen(false);
       setErrorMessage(null);
@@ -144,12 +154,19 @@ export const InventoryIssuesTab: React.FC = () => {
       setIssueLines([{ key: 'line-1', itemId: '', quantity: 1, notes: '' }]);
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const status = isAxiosError(err) ? err.response?.status : undefined;
+      const ambiguous = status === undefined || status >= 500 || status === 408 ||
+        (uncertain && [401, 403, 429].includes(status));
+      setUncertain(ambiguous);
+      if (!ambiguous) attempt.current = null;
       const msg = getInventoryErrorMessage(err, 'Không thể lập phiếu xuất kho.');
       setErrorMessage(msg);
-      appMessage.error(msg);
+      if (ambiguous) appMessage.warning('Chưa nhận được kết quả xuất kho');
+      else appMessage.error(msg);
       // NOTE: DO NOT close modal or reset form, so the user can easily adjust quantities!
     },
+    onSettled: () => { submitting.current = false; },
   });
 
   // Line item change handlers
@@ -201,6 +218,12 @@ export const InventoryIssuesTab: React.FC = () => {
   };
 
   const handleCreateSubmit = async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    if (attempt.current) {
+      createMutation.mutate(attempt.current);
+      return;
+    }
     try {
       setErrorMessage(null);
       const values = await createForm.validateFields();
@@ -267,9 +290,12 @@ export const InventoryIssuesTab: React.FC = () => {
         items: itemsDto,
       };
 
-      createMutation.mutate(dto);
+      attempt.current = { dto, key: createIdempotencyKey('stock-issue') };
+      createMutation.mutate(attempt.current);
     } catch {
       // validation error
+    } finally {
+      if (!attempt.current) submitting.current = false;
     }
   };
 
@@ -288,7 +314,7 @@ export const InventoryIssuesTab: React.FC = () => {
       width: 130,
       render: (date) => (
         <span style={{ whiteSpace: 'nowrap' }}>
-          {dayjs(date).format('DD/MM/YYYY')}
+          {formatHotelDate(date, user?.hotel?.timezone)}
         </span>
       ),
     },
@@ -396,6 +422,7 @@ export const InventoryIssuesTab: React.FC = () => {
               icon={<PlusOutlined />}
               onClick={() => {
                 createForm.resetFields();
+                createForm.setFieldValue('issueDate', hotelDate ? dayjs(hotelDate) : undefined);
                 setErrorMessage(null);
                 setIssueLines([
                   { key: 'line-1', itemId: '', quantity: 1, notes: '' },
@@ -452,24 +479,28 @@ export const InventoryIssuesTab: React.FC = () => {
         }
         open={isCreateOpen}
         onCancel={() => {
+          if (submitting.current || uncertain) return;
           setIsCreateOpen(false);
           setErrorMessage(null);
         }}
         onOk={handleCreateSubmit}
-        okText="Hoàn tất xuất kho"
+        okText={uncertain ? 'Kiểm tra / Thử lại' : 'Hoàn tất xuất kho'}
         cancelText="Hủy bỏ"
+        cancelButtonProps={{ disabled: uncertain || createMutation.isPending }}
+        maskClosable={false}
+        closable={!uncertain && !createMutation.isPending}
         confirmLoading={createMutation.isPending}
         destroyOnHidden={false}
         width={820}
       >
         {errorMessage && (
           <Alert
-            title="Không thể thực hiện xuất kho"
-            description={errorMessage}
-            type="error"
+            title={uncertain ? 'Chưa nhận được kết quả xuất kho' : 'Không thể thực hiện xuất kho'}
+            description={uncertain ? 'Thử lại cùng phiếu để kiểm tra kết quả. Hệ thống chỉ trừ tồn một lần.' : errorMessage}
+            type={uncertain ? 'warning' : 'error'}
             showIcon
             style={{ marginTop: 12, marginBottom: 12 }}
-            closable
+            closable={!uncertain}
             onClose={() => setErrorMessage(null)}
           />
         )}
@@ -483,9 +514,9 @@ export const InventoryIssuesTab: React.FC = () => {
         />
         <Form
           form={createForm}
+          disabled={uncertain || createMutation.isPending}
           layout="vertical"
           style={{ marginTop: 12 }}
-          initialValues={{ issueDate: dayjs() }}
         >
           <Row gutter={16}>
             <Col xs={24} sm={12}>

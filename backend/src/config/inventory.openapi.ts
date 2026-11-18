@@ -916,9 +916,12 @@ export const inventoryPaths = {
     post: {
       tags: ['Inventory'],
       summary: 'Create stock issue (Xuất kho)',
-      description: `Roles: ${inventoryPermissions.issueWrite.join(', ')}. Decreases stock and logs movements in an atomic transaction with row locking. Rollbacks entirely if any item has insufficient stock.`,
+      description: `Roles: ${inventoryPermissions.issueWrite.join(', ')}. Decreases stock and logs movements in an atomic transaction with row locking. Retry the same request with the same Idempotency-Key to retrieve the original issue without deducting stock again.`,
       security,
-      parameters: [csrf],
+      parameters: [
+        csrf,
+        { name: 'Idempotency-Key', in: 'header', required: false, schema: { type: 'string', minLength: 8, maxLength: 128 } },
+      ],
       requestBody: { required: true, content: json(ref('CreateStockIssue')) },
       responses: {
         201: { description: 'Stock issue created', content: json(envelope(ref('StockIssue'))) },
@@ -926,7 +929,7 @@ export const inventoryPaths = {
         401: error('Unauthorized'),
         403: error('Forbidden / CSRF rejected'),
         404: error('Item not found'),
-        409: error('Insufficient stock or item inactive'),
+        409: error('Insufficient stock, item inactive or idempotency key conflict'),
         422: error('Validation failed'),
         500: error('Internal server error'),
       },

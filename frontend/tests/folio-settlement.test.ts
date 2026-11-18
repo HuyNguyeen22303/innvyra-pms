@@ -6,6 +6,7 @@ import {
   terminalSettlementAmounts,
   validFinalCharge,
 } from "../src/utils/folioSettlement.ts";
+import { divideReportMoney, formatReportTotal, formatVnd, sumReportMoney } from "../src/pages/reports/reports.utils.ts";
 
 test("terminal review distinguishes waived charges, retained deposits, refunds and money still owed", () => {
   assert.deepEqual(terminalSettlementAmounts("700000.00", "0.00", "0"), {
@@ -63,4 +64,10 @@ test("settlement requires an explicit nonnegative whole amount rather than defau
     assert.equal(validFinalCharge(value), false);
   }
   assert.equal(validFinalCharge("0"), true);
+});
+
+test("reports keep decimal amounts exact for labels, chart totals and rates", () => {
+  assert.equal(formatVnd("9007199254740993.00"), "9.007.199.254.740.993\u00a0₫");
+  assert.equal(formatReportTotal("9007199254740993.00", "1.25"), "9.007.199.254.740.994,25\u00a0₫");
+  assert.equal(divideReportMoney(sumReportMoney("9007199254740993.01"), 2), "4503599627370496.51");
 });

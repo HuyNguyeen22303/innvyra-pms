@@ -1,5 +1,5 @@
 import { SubscriptionNotice } from '../components/SubscriptionNotice.tsx';
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import axios from 'axios';
 import {
   Layout,
@@ -38,6 +38,7 @@ import {
 } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import dayjs from "dayjs";
+import { useHotelClock } from "../hooks/useHotelClock.ts";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore.ts";
 import { RoleBadge } from "../components/RoleBadge.tsx";
@@ -221,25 +222,23 @@ export const MainLayout: React.FC = () => {
   useStaffDirectory();
 
   // Dynamic room count from backend API
-  const { data: roomsRes } = useQuery({
-    queryKey: ["rooms-count"],
+  const { data: roomsRes, isError: roomCountError } = useQuery({
+    queryKey: ["rooms", "count"],
     enabled: canLoadHotelOperations(user),
-    queryFn: () => roomsApi.getAll(),
+    queryFn: ({ signal }) => roomsApi.getAll({ limit: 1 }, signal),
     staleTime: 30000,
   });
-  const rawRooms = roomsRes?.data;
-  const roomCount = Array.isArray(rawRooms)
-    ? rawRooms.length
-    : Array.isArray((rawRooms as any)?.items)
-      ? (rawRooms as any).items.length
-      : ((rawRooms as any)?.pagination?.total ?? 20);
+  const roomCount = roomsRes?.data.pagination.total;
 
   // Dynamic real-time operational date & shift
-  const currentDate = dayjs().format("DD/MM/YYYY");
-  const currentShortDate = dayjs().format("DD/MM");
-  const currentHour = dayjs().hour();
+  const clock = useHotelClock();
+  const currentDate = clock ? dayjs(clock.date).format("DD/MM/YYYY") : "Chưa có ngày vận hành";
+  const currentShortDate = clock ? dayjs(clock.date).format("DD/MM") : "—";
+  const currentHour = clock?.hour ?? -1;
   const currentShift =
-    currentHour >= 6 && currentHour < 14
+    currentHour < 0
+      ? "Chưa có múi giờ khách sạn"
+      : currentHour >= 6 && currentHour < 14
       ? "Ca sáng: 06:00 – 14:00"
       : currentHour >= 14 && currentHour < 22
         ? "Ca chiều: 14:00 – 22:00"
@@ -349,7 +348,7 @@ export const MainLayout: React.FC = () => {
       <div className="sidebar-property__label">Cơ sở hiện tại</div>
       <div className="sidebar-property__name">
         <span>{user?.hotel?.name || 'Khách sạn'}</span>
-        {!subscriptionOnly && <span className="sidebar-property__rooms">{roomCount} phòng</span>}
+        {!subscriptionOnly && <span className="sidebar-property__rooms">{roomCountError ? "Chưa tải được số phòng" : roomCount === undefined ? "Đang tải số phòng…" : `${roomCount} phòng`}</span>}
       </div>
       <div className="sidebar-property__shift"><ClockCircleOutlined />{currentShift}</div>
     </div>
@@ -582,7 +581,9 @@ export const MainLayout: React.FC = () => {
           }}
         >
           {!isSubscriptionPath(location.pathname) && <SubscriptionNotice />}
-          <Outlet />
+          <Suspense fallback={<div role="status" style={{ padding: 24 }}>Đang tải trang…</div>}>
+            <Outlet />
+          </Suspense>
         </Content>
       </Layout>
     </Layout>

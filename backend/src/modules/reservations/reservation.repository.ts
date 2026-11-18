@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
-import { inventoryNights, sellableRoomWhere } from './inventory.repository.js';
+import { availableByRoomType, inventoryNights, sellableRoomWhere } from './inventory.repository.js';
 import { asDate } from './reservation.dates.js';
 import { generateReservationCode } from './reservation-code.js';
 import { PrismaBillingRepository } from '../billing/billing.repository.js';
@@ -109,6 +109,9 @@ export class PrismaReservationRepository {
   }
   async occupied(hotelId: bigint, roomTypeId: bigint, from: Date, until: Date) {
     return inventoryNights(this.db, hotelId, roomTypeId, from, until);
+  }
+  availableByRoomType(hotelId: bigint, typeIds: bigint[], from: Date, until: Date) {
+    return availableByRoomType(this.db, hotelId, typeIds, from, until);
   }
   async findById(hotelId: bigint, id: bigint) {
     return this.db.reservation.findFirst({ where: { id, hotelId }, include: detailInclude });

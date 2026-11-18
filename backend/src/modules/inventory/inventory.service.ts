@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import { postStockIssue } from './inventory-posting.js';
+import { stockDocumentDate } from './inventory.dates.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { pageResult } from '../../shared/validation/room-input.js';
@@ -360,7 +362,7 @@ export class InventoryService {
       requireInventoryRange(receiptTotalAmount);
 
       // Create Receipt and line items
-      const receiptDate = input.receiptDate ? new Date(input.receiptDate) : new Date();
+      const receiptDate = await stockDocumentDate(repo, scope.hotelId, input.receiptDate);
       const receipt = await repo.createReceipt(
         {
           hotelId: scope.hotelId,
@@ -437,10 +439,20 @@ export class InventoryService {
   }
 
   // ==================== ISSUES (XUẤT KHO) ====================
-  async createIssue(scope: InventoryScope, input: CreateIssueInput) {
-    return this.repository.withHotelLock(scope.hotelId, (repo) =>
-      postStockIssue(repo, scope, input),
-    );
+  async createIssue(scope: InventoryScope, input: CreateIssueInput, key?: string) {
+    return this.repository.withHotelLock(scope.hotelId, async (repo) => {
+      if (!key) return postStockIssue(repo, scope, input);
+
+      const requestKeyHash = createHash('sha256').update(key).digest('hex');
+      const requestHash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
+      const previous = await repo.findIssueByRequest(scope.hotelId, scope.actorId, requestKeyHash);
+      if (previous) {
+        if (previous.requestHash !== requestHash)
+          throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'This request key was used for a different stock issue');
+        return issueView(previous);
+      }
+      return postStockIssue(repo, scope, input, undefined, { requestKeyHash, requestHash });
+    });
   }
 
   async getIssues(scope: InventoryScope, query: IssueQuery) {

@@ -223,17 +223,11 @@ export const FolioTab: React.FC = () => {
     deferredReservationList.length > 0 ? deferredReservationList : reservationList;
 
   // Fetch physical rooms to map roomId to real physical roomNumber
-  const { data: allRoomsRes } = useQuery({
-    queryKey: ['allRoomsForLookup'],
-    queryFn: () => roomsApi.getAll({ limit: 100 }),
+  const { data: allRoomsList = [] } = useQuery({
+    queryKey: ['rooms', 'lookup'],
+    queryFn: ({ signal }) => roomsApi.getLookup(signal),
     staleTime: 60000,
   });
-  const allRoomsList = useMemo(() => {
-    const raw = allRoomsRes?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
-    return [];
-  }, [allRoomsRes]);
 
   const getPhysicalRoomNumber = (roomId: string | null | undefined): string => {
     if (!roomId) return '';

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { supplierPaymentBody } from './supply-workflow.schema.js';
+import { dateOnly } from '../reservations/reservation.dates.js';
 import {
   emptyQuery,
   idParams,
@@ -182,16 +183,22 @@ const receiptItemInputSchema = z
   })
   .strict();
 
+const documentDate = dateOnly.or(
+  z.string().datetime({ offset: true }).refine(
+    (value) => dateOnly.safeParse(value.slice(0, 10)).success && Number.isFinite(Date.parse(value)),
+    'Use a valid calendar timestamp',
+  ),
+);
+const dateFilterFields = { startDate: dateOnly.optional(), endDate: dateOnly.optional() };
+const orderedDates = ({ startDate, endDate }: { startDate?: string | undefined; endDate?: string | undefined }) =>
+  !startDate || !endDate || startDate <= endDate;
+
 export const receiptCreateBody = z
   .object({
     receiptNumber: z.string().trim().max(50).optional(),
     initialPayment: supplierPaymentBody.optional(),
     supplierId: idSchema.nullable().optional(),
-    receiptDate: z
-      .string()
-      .datetime({ offset: true })
-      .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
-      .optional(),
+    receiptDate: documentDate.optional(),
     notes: textSchema,
     items: z.array(receiptItemInputSchema).min(1, 'Receipt must have at least one item'),
   })
@@ -202,10 +209,10 @@ export const receiptListQuery = z
     page: paginationFields.page,
     limit: paginationFields.limit,
     supplierId: idSchema.optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
+    ...dateFilterFields,
   })
-  .strict();
+  .strict()
+  .refine(orderedDates, { path: ['endDate'], message: 'endDate must not precede startDate' });
 
 export const createReceiptSchema = z.object({ body: receiptCreateBody, query: emptyQuery });
 export const receiptIdSchema = z.object({ params: idParams, query: emptyQuery });
@@ -223,11 +230,7 @@ const issueItemInputSchema = z
 export const issueCreateBody = z
   .object({
     issueNumber: z.string().trim().max(50).optional(),
-    issueDate: z
-      .string()
-      .datetime({ offset: true })
-      .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
-      .optional(),
+    issueDate: documentDate.optional(),
     department: z
       .string()
       .trim()
@@ -244,10 +247,10 @@ export const issueListQuery = z
     page: paginationFields.page,
     limit: paginationFields.limit,
     department: z.string().trim().min(1).max(100).optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
+    ...dateFilterFields,
   })
-  .strict();
+  .strict()
+  .refine(orderedDates, { path: ['endDate'], message: 'endDate must not precede startDate' });
 
 export const createIssueSchema = z.object({ body: issueCreateBody, query: emptyQuery });
 export const issueIdSchema = z.object({ params: idParams, query: emptyQuery });
@@ -276,10 +279,10 @@ export const movementListQuery = z
     limit: paginationFields.limit,
     itemId: idSchema.optional(),
     type: z.enum(['RECEIPT', 'ISSUE', 'ADJUSTMENT']).optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
+    ...dateFilterFields,
   })
-  .strict();
+  .strict()
+  .refine(orderedDates, { path: ['endDate'], message: 'endDate must not precede startDate' });
 
 export const listMovementsSchema = z.object({ query: movementListQuery });
 

@@ -35,11 +35,19 @@ import { reservationsApi } from '../../api/reservations.api.ts';
 import { staysApi } from '../../api/stays.api.ts';
 import type { ReservationSummaryItem } from '../../types/reservations.types.ts';
 import type { StaySummaryItem } from '../../types/stays.types.ts';
+import { useHotelClock } from '../../hooks/useHotelClock.ts';
+import { formatVnd } from '../reports/reports.utils.ts';
 
 const { Title, Text, Paragraph } = Typography;
 const dashboardPageSize = 5;
 
 export const DashboardPage: React.FC = () => {
+  const clock = useHotelClock();
+  if (!clock) return <Alert type="error" title="Chưa xác định được múi giờ khách sạn" showIcon />;
+  return <Dashboard hotelDate={clock.date} />;
+};
+
+const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   const screens = Grid.useBreakpoint();
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -51,15 +59,16 @@ export const DashboardPage: React.FC = () => {
   const isTechnician = userRole === 'TECHNICIAN';
 
   // Selected date for Front Desk Dashboard (default today)
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs().startOf('day'));
-  const isSelectedDateToday = selectedDate.isSame(dayjs(), 'day');
+  const [dateOverride, setSelectedDate] = useState<Dayjs | null>(null);
+  const selectedDate = dateOverride ?? dayjs(hotelDate);
+  const isSelectedDateToday = selectedDate.format('YYYY-MM-DD') === hotelDate;
   const dateStr = selectedDate.format('YYYY-MM-DD');
   const [arrivalsPage, setArrivalsPage] = useState(1);
   const [inHousePage, setInHousePage] = useState(1);
 
   // Period for Accountant/Operations
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const thirtyDaysAgoStr = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
+  const todayStr = hotelDate;
+  const thirtyDaysAgoStr = dayjs(hotelDate).subtract(30, 'day').format('YYYY-MM-DD');
 
   // ----------------------------------------------------
   // 1. FRONT DESK DASHBOARD QUERY (/reports/dashboard)
@@ -118,7 +127,7 @@ export const DashboardPage: React.FC = () => {
   });
 
   const { data: accountantOutRes, isLoading: isAccOutLoading } = useQuery({
-    queryKey: ['dashboard-accountant-outstanding'],
+    queryKey: ['dashboard-accountant-outstanding', thirtyDaysAgoStr, todayStr],
     queryFn: () => reportsApi.getOutstanding({ startDate: thirtyDaysAgoStr, endDate: todayStr, limit: 10 }),
     enabled: isAccountant,
     staleTime: 60000,
@@ -133,13 +142,6 @@ export const DashboardPage: React.FC = () => {
     enabled: isHousekeeping || isTechnician,
     staleTime: 60000,
   });
-
-  const formatVnd = (value: string | number | undefined | null) => {
-    if (value === undefined || value === null) return '-';
-    const num = typeof value === 'number' ? value : parseFloat(value);
-    if (isNaN(num)) return '-';
-    return `${num.toLocaleString('vi-VN')} ₫`;
-  };
 
   // ----------------------------------------------------
   // TABLE COLUMNS FOR REAL ARRIVALS & IN-HOUSE

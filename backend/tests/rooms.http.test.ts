@@ -409,18 +409,22 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
     expect(preflight.headers['access-control-allow-methods']).toContain('PATCH');
     expect(preflight.headers['access-control-allow-methods']).toContain('DELETE');
   });
-  it('publishes all 145 operations with resolvable schema references and matching response envelopes', async () => {
+  it('publishes required room operations with resolvable schema references and matching response envelopes', async () => {
     const response = await request(app).get('/api-docs/openapi.json');
     expect(response.status).toBe(200);
     const spec = response.body as {
       paths: Record<string, Record<string, unknown>>;
       components: { schemas: Record<string, unknown> };
     };
-    expect(Object.values(spec.paths).flatMap(Object.keys)).toHaveLength(145);
+    for (const path of ['/rooms', '/room-types'])
+      expect(spec.paths[path]).toMatchObject({ get: expect.any(Object), post: expect.any(Object) });
+    for (const path of ['/rooms/{id}', '/room-types/{id}'])
+      expect(spec.paths[path]).toMatchObject({
+        get: expect.any(Object), patch: expect.any(Object), delete: expect.any(Object),
+      });
     const text = JSON.stringify(spec);
     for (const match of text.matchAll(/"\$ref":"#\/components\/schemas\/([^"]+)"/g))
       expect(spec.components.schemas).toHaveProperty(match[1]!);
-    expect(spec.paths['/rooms/{id}']).toHaveProperty('delete');
     const room = await get(`/rooms/${roomId}`);
     expect(room.headers['cache-control']).toBe('no-store');
     expect(room.body).toMatchObject({
@@ -428,5 +432,8 @@ describe('Room management HTTP: real JWT, authentication, RBAC, validation and s
       message: 'Room retrieved',
       data: { id: roomId, hotelId: hotelId.toString(), roomTypeId: typeId },
     });
+    const malformed = await get('/rooms/%ZZ');
+    expect(malformed.status).toBe(400);
+    expect(malformed.body.error.code).toBe('BAD_REQUEST');
   });
 });

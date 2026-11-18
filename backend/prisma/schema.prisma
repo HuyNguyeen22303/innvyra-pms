@@ -1205,6 +1205,8 @@ model StockIssue {
   hotelId                  BigInt                          @map("hotel_id") @db.UnsignedBigInt
   issueNumber              String                          @map("issue_number") @db.VarChar(50)
   issueDate                DateTime                        @map("issue_date") @db.DateTime(3)
+  requestKeyHash           String?                         @map("request_key_hash") @db.Char(64)
+  requestHash              String?                         @map("request_hash") @db.Char(64)
   housekeepingCompletionId BigInt?                         @unique @map("housekeeping_completion_id") @db.UnsignedBigInt
   housekeepingCompletion   HousekeepingMaterialCompletion? @relation(fields: [hotelId, housekeepingCompletionId], references: [hotelId, id], onDelete: Restrict, onUpdate: Restrict)
   department               String                          @db.VarChar(100)
@@ -1219,6 +1221,7 @@ model StockIssue {
 
   @@unique([hotelId, id])
   @@unique([hotelId, issueNumber])
+  @@unique([hotelId, createdBy, requestKeyHash], map: "stock_issues_request_key")
   @@unique([hotelId, housekeepingCompletionId])
   @@index([hotelId, issueDate])
   @@index([hotelId, department])

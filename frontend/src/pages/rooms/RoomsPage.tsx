@@ -1,6 +1,6 @@
 import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
-import React, { useState, useCallback, useMemo, useDeferredValue } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Button,
   Space,
@@ -19,6 +19,9 @@ import {
   Row,
   Col,
   Grid,
+  Alert,
+  Pagination,
+  Spin,
 } from 'antd';
 import type { FormInstance } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -236,8 +239,6 @@ interface RoomTableProps {
 }
 
 const RoomTable: React.FC<RoomTableProps> = React.memo(({ rooms, columns, loading }) => {
-  const [pageSize, setPageSize] = useState<number>(12);
-
   return (
     <Card
       variant="outlined"
@@ -252,11 +253,7 @@ const RoomTable: React.FC<RoomTableProps> = React.memo(({ rooms, columns, loadin
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{
-          pageSize,
-          showSizeChanger: true,
-          onChange: (_page, size) => setPageSize(size),
-        }}
+        pagination={false}
         size="middle"
         scroll={{ x: 1000 }}
       />
@@ -556,6 +553,8 @@ export const RoomsPage: React.FC = () => {
 
   // View mode: 'grid' or 'table'
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
 
   // Filters state
   const [selectedFloor, setSelectedFloor] = useState<number | undefined>(undefined);
@@ -573,55 +572,49 @@ export const RoomsPage: React.FC = () => {
   const canManage = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
   // Fetch Room Types for dropdowns & labels
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ['roomTypes'],
-    queryFn: () => roomTypesApi.getAll(),
+  const { data: roomTypes = [] } = useQuery({
+    queryKey: ['roomTypes', 'lookup'],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
   });
-  const rawTypes = roomTypesRes?.data;
-  const roomTypes: RoomTypeItem[] = Array.isArray(rawTypes)
-    ? rawTypes
-    : Array.isArray((rawTypes as any)?.items)
-    ? (rawTypes as any).items
-    : [];
 
 
   // Fetch Rooms with filters
   const {
     data: roomsRes,
-    isLoading,
+    isFetching,
+    isError,
     refetch,
   } = useQuery({
     queryKey: [
       'rooms',
+      'list',
+      page,
+      pageSize,
       selectedFloor,
       selectedRoomType,
       selectedHK,
       selectedPhysical,
       searchNumber,
     ],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       roomsApi.getAll({
+        page,
+        limit: pageSize,
         floorNumber: selectedFloor,
         roomTypeId: selectedRoomType,
         housekeepingStatus: selectedHK,
         physicalStatus: selectedPhysical,
         search: searchNumber.trim() || undefined,
-      }),
+      }, signal),
     // Keep the current grid on screen while the new search/filter request is in
     // flight, instead of blanking the rows out and remounting them.
     placeholderData: keepPreviousData,
   });
 
-  const rawRooms = roomsRes?.data;
-  const rooms: RoomItem[] = Array.isArray(rawRooms)
-    ? rawRooms
-    : Array.isArray((rawRooms as any)?.items)
-    ? (rawRooms as any).items
-    : [];
-
-  // Defer the grid payload so a keydown arriving mid-render can interrupt it.
-  const deferredRooms = useDeferredValue(rooms);
-  const tableRooms = deferredRooms.length > 0 ? deferredRooms : rooms;
+  const rooms = roomsRes?.data.items ?? [];
+  const total = roomsRes?.data.pagination.total ?? 0;
+  const lastPage = Math.max(1, roomsRes?.data.pagination.totalPages ?? 1);
+  if (roomsRes && !isFetching && page > lastPage) setPage(lastPage);
 
 
   // Create Mutation
@@ -632,7 +625,6 @@ export const RoomsPage: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
     onError: (err: any) => {
       const msg =
@@ -656,7 +648,6 @@ export const RoomsPage: React.FC = () => {
       setStatusTargetRoom(null);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
     onError: (err: any) => {
       const msg =
@@ -677,7 +668,6 @@ export const RoomsPage: React.FC = () => {
         vars.currentActive ? 'Đã vô hiệu hóa phòng!' : 'Đã kích hoạt lại phòng!'
       );
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      queryClient.invalidateQueries({ queryKey: ['rooms-count'] });
     },
 
     onError: (err: any) => {
@@ -957,7 +947,7 @@ export const RoomsPage: React.FC = () => {
             </Radio.Button>
           </Radio.Group>
 
-          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading}>
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>
             Làm mới
           </Button>
 
@@ -990,27 +980,22 @@ export const RoomsPage: React.FC = () => {
             <DebouncedSearchInput
               placeholder="Tìm số phòng (VD: 101, 302)..."
               value={searchNumber}
-              onChange={(val) => setSearchNumber(val)}
+              onChange={(val) => { setSearchNumber(val); setPage(1); }}
               allowClear
             />
           </Col>
 
-          <ResponsiveFilters activeCount={[selectedFloor, selectedRoomType, selectedHK, selectedPhysical].filter(Boolean).length} onReset={() => { setSelectedFloor(undefined); setSelectedRoomType(undefined); setSelectedHK(undefined); setSelectedPhysical(undefined); }}>
+          <ResponsiveFilters activeCount={[selectedFloor, selectedRoomType, selectedHK, selectedPhysical].filter((value) => value !== undefined).length} onReset={() => { setSelectedFloor(undefined); setSelectedRoomType(undefined); setSelectedHK(undefined); setSelectedPhysical(undefined); setPage(1); }}>
           <Col xs={12} sm={6} md={4}>
-            <Select
-              placeholder="Chọn Tầng"
-              allowClear
+            <InputNumber
+              aria-label="Số tầng"
+              placeholder="Nhập số tầng"
+              precision={0}
+              min={-32768}
+              max={32767}
               style={{ width: '100%' }}
-              value={selectedFloor}
-              onChange={(val: any) => setSelectedFloor(!val || val === 'ALL' ? undefined : Number(val))}
-              options={[
-                { label: 'Tất cả tầng', value: 'ALL' },
-                { label: 'Tầng 1', value: 1 },
-                { label: 'Tầng 2', value: 2 },
-                { label: 'Tầng 3', value: 3 },
-                { label: 'Tầng 4', value: 4 },
-                { label: 'Tầng 5', value: 5 },
-              ]}
+              value={selectedFloor ?? null}
+              onChange={(val) => { setSelectedFloor(val ?? undefined); setPage(1); }}
             />
           </Col>
 
@@ -1020,7 +1005,7 @@ export const RoomsPage: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               value={selectedRoomType}
-              onChange={(val: any) => setSelectedRoomType(!val || val === 'ALL' ? undefined : val)}
+              onChange={(val) => { setSelectedRoomType(!val || val === 'ALL' ? undefined : val); setPage(1); }}
               options={[
                 { label: 'Tất cả loại phòng', value: 'ALL' },
                 ...roomTypes.map((t) => ({ label: `${t.code} - ${t.name}`, value: t.id })),
@@ -1029,12 +1014,12 @@ export const RoomsPage: React.FC = () => {
           </Col>
 
           <Col xs={12} sm={6} md={4}>
-            <Select
+            <Select<HousekeepingStatus | 'ALL'>
               placeholder="Vệ sinh"
               allowClear
               style={{ width: '100%' }}
               value={selectedHK}
-              onChange={(val: any) => setSelectedHK(!val || val === 'ALL' ? undefined : val)}
+              onChange={(val) => { setSelectedHK(!val || val === 'ALL' ? undefined : val); setPage(1); }}
               options={[
                 { label: 'Tất cả trạng thái vệ sinh', value: 'ALL' },
                 { label: 'READY (Sẵn sàng)', value: 'READY' },
@@ -1046,12 +1031,12 @@ export const RoomsPage: React.FC = () => {
           </Col>
 
           <Col xs={12} sm={6} md={5}>
-            <Select
+            <Select<PhysicalStatus | 'ALL'>
               placeholder="Vận hành"
               allowClear
               style={{ width: '100%' }}
               value={selectedPhysical}
-              onChange={(val: any) => setSelectedPhysical(!val || val === 'ALL' ? undefined : val)}
+              onChange={(val) => { setSelectedPhysical(!val || val === 'ALL' ? undefined : val); setPage(1); }}
               options={[
                 { label: 'Tất cả trạng thái vận hành', value: 'ALL' },
                 { label: 'ACTIVE (Bình thường)', value: 'ACTIVE' },
@@ -1064,14 +1049,24 @@ export const RoomsPage: React.FC = () => {
         </Row>
       </Card>
 
-      {/* VIEW MODE 1: GRID VIEW (Match Innvyra-PMS.html) */}
-      {viewMode === 'grid' && (
-        <RoomGrid rooms={rooms} onOpenQuickStatus={handleOpenQuickStatus} />
+      {isError ? (
+        <Alert type="error" showIcon title="Chưa tải được danh sách phòng" action={<Button onClick={() => refetch()}>Thử lại</Button>} />
+      ) : viewMode === 'grid' && rooms.length > 0 ? (
+        <Spin spinning={isFetching}><RoomGrid rooms={rooms} onOpenQuickStatus={handleOpenQuickStatus} /></Spin>
+      ) : (
+        <RoomTable rooms={rooms} columns={columns} loading={isFetching} />
       )}
-
-      {/* VIEW MODE 2: TABLE VIEW */}
-      {viewMode === 'table' && (
-        <RoomTable rooms={tableRooms} columns={columns} loading={isLoading} />
+      {!isError && total > 0 && (
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={total}
+          disabled={isFetching}
+          showTotal={(count) => `Tổng số: ${count} phòng`}
+          showSizeChanger
+          pageSizeOptions={[12, 24, 48, 96]}
+          onChange={(next, size) => { setPage(size === pageSize ? next : 1); setPageSize(size); }}
+        />
       )}
 
       <RoomModals

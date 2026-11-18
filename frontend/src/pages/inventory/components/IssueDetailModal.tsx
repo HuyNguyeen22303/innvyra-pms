@@ -3,7 +3,8 @@ import React from 'react';
 import { Modal, Descriptions, Tag, Typography, Button, Space, Grid, Alert } from 'antd';
 import { ExportOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
+import { useAuthStore } from '../../../store/authStore.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 import type { StockIssueView, StockIssueItemView } from '../../../types/inventory.types.ts';
 import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
@@ -21,6 +22,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
   onClose,
 }) => {
   const screens = Grid.useBreakpoint();
+  const timezone = useAuthStore((state) => state.user?.hotel?.timezone);
   if (!issue) return null;
 
   const columns: ColumnsType<StockIssueItemView> = [
@@ -99,7 +101,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           {
             key: 'issueDate',
             label: 'Ngày xuất kho',
-            children: dayjs(issue.issueDate).format('DD/MM/YYYY'),
+            children: formatHotelDate(issue.issueDate, timezone),
           },
           {
             key: 'department',
@@ -119,7 +121,7 @@ export const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
           {
             key: 'createdAt',
             label: 'Thời gian tạo',
-            children: dayjs(issue.createdAt).format('DD/MM/YYYY HH:mm'),
+            children: formatHotelDate(issue.createdAt, timezone, true),
           },
           {
             key: 'notes',

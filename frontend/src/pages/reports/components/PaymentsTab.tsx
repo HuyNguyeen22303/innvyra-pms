@@ -25,7 +25,7 @@ import { reportsApi } from '../../../api/reports.api.ts';
 import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
 import { DonutChart, type DonutSlice } from '../../../components/charts/DonutChart.tsx';
 import type { PaymentSeriesItem } from '../../../types/reports.types.ts';
-import { formatVnd } from '../reports.utils.ts';
+import { formatReportTotal, formatVnd } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
@@ -83,8 +83,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = React.memo(({
     const data: DonutSlice[] = [];
     const cashNum = parseFloat(summary?.cashPayments || '0');
     const bankNum = parseFloat(summary?.bankTransferPayments || '0');
-    if (cashNum > 0) data.push({ key: 'cash', label: 'Tiền mặt (CASH)', value: cashNum, color: '#389e0d' });
-    if (bankNum > 0) data.push({ key: 'bank', label: 'Chuyển khoản (BANK)', value: bankNum, color: '#096dd9' });
+    if (cashNum > 0) data.push({ key: 'cash', label: 'Tiền mặt (CASH)', value: cashNum, color: '#389e0d', displayValue: formatVnd(summary?.cashPayments) });
+    if (bankNum > 0) data.push({ key: 'bank', label: 'Chuyển khoản (BANK)', value: bankNum, color: '#096dd9', displayValue: formatVnd(summary?.bankTransferPayments) });
     return data;
   }, [summary?.cashPayments, summary?.bankTransferPayments]);
 
@@ -283,6 +283,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = React.memo(({
               <DonutChart
                 data={paymentDonutData}
                 totalLabel="Tổng thanh toán"
+                displayTotal={formatReportTotal(summary?.cashPayments, summary?.bankTransferPayments)}
                 valueFormatter={formatVndNumber}
                 size={160}
               />

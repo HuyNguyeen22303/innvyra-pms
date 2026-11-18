@@ -120,7 +120,7 @@ export function BookingGuestPicker({
   };
   return (
     <Space orientation="vertical" style={{ width: "100%" }}>
-      <Space.Compact style={{ width: "100%" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, width: "100%", minWidth: 0 }}>
         <Select
           aria-label="Tìm khách đặt phòng"
           showSearch={{ filterOption: false, onSearch: setSearch }}
@@ -129,7 +129,7 @@ export function BookingGuestPicker({
           options={options}
           loading={list.isFetching}
           disabled={disabled}
-          style={{ width: "100%" }}
+          style={{ flex: "1 1 200px", minWidth: 0, maxWidth: "100%" }}
           onChange={(id) => {
             onChange(id);
             setWarnings([]);
@@ -178,7 +178,7 @@ export function BookingGuestPicker({
         >
           Thêm khách mới
         </Button>
-      </Space.Compact>
+      </div>
       {list.isError && (
         <Alert
           type="error"

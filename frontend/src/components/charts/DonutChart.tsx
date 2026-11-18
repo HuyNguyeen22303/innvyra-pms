@@ -8,6 +8,7 @@ export interface DonutSlice {
   label: string;
   value: number;
   color: string;
+  displayValue?: string;
 }
 
 export interface DonutChartProps {
@@ -16,6 +17,7 @@ export interface DonutChartProps {
   totalLabel?: string;
   size?: number;
   valueFormatter?: (val: number) => string;
+  displayTotal?: string;
 }
 
 export const DonutChart: React.FC<DonutChartProps> = React.memo(({
@@ -23,9 +25,11 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
   totalLabel = 'Lượt đặt',
   size = 200,
   valueFormatter,
+  displayTotal,
 }) => {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const total = data.reduce((acc, d) => acc + d.value, 0);
+  const formatted = (slice: DonutSlice) => slice.displayValue ?? (valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN'));
 
   if (!data.length || total === 0) {
     return (
@@ -92,7 +96,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
               <Tooltip
                 trigger={['hover', 'focus', 'click']}
                 key={slice.key}
-                title={`${slice.label}: ${valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')} (${slice.percent}%)`}
+                title={`${slice.label}: ${formatted(slice)} (${slice.percent}%)`}
                 color="#1e293b"
               >
                 <path
@@ -102,7 +106,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
                   onClick={() => setSelectedKey(slice.key)}
                   onFocus={() => setSelectedKey(slice.key)}
                   onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedKey(slice.key); } }}
-                  aria-label={`${slice.label}: ${valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')} (${slice.percent}%)`}
+                  aria-label={`${slice.label}: ${formatted(slice)} (${slice.percent}%)`}
                   d={slice.path}
                   fill={slice.color}
                   stroke="#ffffff"
@@ -145,7 +149,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
                 whiteSpace: 'nowrap',
               }}
             >
-              {valueFormatter ? valueFormatter(total) : total.toLocaleString('vi-VN')}
+              {displayTotal ?? (valueFormatter ? valueFormatter(total) : total.toLocaleString('vi-VN'))}
             </div>
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
               {totalLabel}
@@ -190,7 +194,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <Text strong style={{ fontSize: 13, color: '#0f172a' }}>
-                  {valueFormatter ? valueFormatter(item.value) : item.value.toLocaleString('vi-VN')}
+                  {formatted(item)}
                 </Text>
                 <span
                   style={{
@@ -208,7 +212,7 @@ export const DonutChart: React.FC<DonutChartProps> = React.memo(({
         </div>
       </Col>
       {slices.filter((slice) => slice.key === selectedKey).map((slice) => <Col span={24} key={slice.key}>
-        <div className="chart-selected-values" role="status">{slice.label}: <strong>{valueFormatter ? valueFormatter(slice.value) : slice.value.toLocaleString('vi-VN')}</strong> ({slice.percent}%)</div>
+        <div className="chart-selected-values" role="status">{slice.label}: <strong>{formatted(slice)}</strong> ({slice.percent}%)</div>
       </Col>)}
     </Row>
   );

@@ -405,9 +405,9 @@ export const HousekeepingPage: React.FC = () => {
   });
 
   // 3. Room types for metadata enrichment
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ["room-types-lookup"],
-    queryFn: () => roomTypesApi.getAll(),
+  const { data: roomTypesList } = useQuery({
+    queryKey: ["roomTypes", "lookup"],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
     staleTime: 60000,
   });
 
@@ -439,17 +439,8 @@ export const HousekeepingPage: React.FC = () => {
     ? rawDirty
     : (rawDirty as any)?.items || [];
 
-  const rawRoomTypes = roomTypesRes?.data;
-  const roomTypesList = useMemo(
-    () =>
-      Array.isArray(rawRoomTypes)
-        ? rawRoomTypes
-        : (rawRoomTypes as any)?.items || [],
-    [rawRoomTypes]
-  );
-
   const getRoomTypeName = useCallback((roomTypeId: string) => {
-    const found = roomTypesList.find(
+    const found = roomTypesList?.find(
       (rt: any) => String(rt.id) === String(roomTypeId),
     );
     return found ? found.name : `Hạng #${roomTypeId}`;

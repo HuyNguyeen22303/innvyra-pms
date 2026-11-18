@@ -47,6 +47,7 @@ import { staysApi } from '../../api/stays.api.ts';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { roomsApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
+import { useHotelClock } from '../../hooks/useHotelClock.ts';
 import type {
   StaySummaryItem,
   StayDetailItem,
@@ -123,6 +124,7 @@ const STAY_STATUS_CONFIG: Record<
 
 interface CheckinStayModalProps {
   open: boolean;
+  hotelDate?: string;
   reservation: ReservationDetailItem | null;
   allRoomsList: RoomItem[];
   confirmLoading: boolean;
@@ -136,7 +138,7 @@ interface CheckinStayModalProps {
 }
 
 const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
-  ({ open, reservation, allRoomsList, confirmLoading, onCancel, onConfirm }) => {
+  ({ open, hotelDate, reservation, allRoomsList, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [selectedRoomItem, setSelectedRoomItem] = useState<any>(null);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -290,8 +292,7 @@ const CheckinStayModal: React.FC<CheckinStayModalProps> = React.memo(
           </div>
 
           {/* Arrival Date Warning if not today */}
-          {dayjs(reservation.checkInDate).format('YYYY-MM-DD') !==
-            dayjs().format('YYYY-MM-DD') && (
+          {reservation.checkInDate.slice(0, 10) !== hotelDate && (
             <Alert
               type="warning"
               showIcon
@@ -519,6 +520,7 @@ export const StaysPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const hotelDate = useHotelClock()?.date;
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const reservationIdParam = searchParams.get('reservationId');
@@ -571,12 +573,12 @@ export const StaysPage: React.FC = () => {
     // the search box never issues a request: no round-trip, no spinner, and
     // nothing blocking the main thread while a key is held down.
     queryKey: ['stays', statusFilter],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       staysApi.getAllPages({
         status: statusFilter,
         sortBy: 'actualCheckinAt',
         sortOrder: 'desc',
-      }),
+      }, signal),
     // Status changes still refetch; keep the previous rows on screen meanwhile
     // instead of blanking the grid and remounting every row.
     placeholderData: keepPreviousData,
@@ -634,17 +636,11 @@ export const StaysPage: React.FC = () => {
   const stayDetail: StayDetailItem | null = stayDetailRes?.data || null;
 
   // 3. Fetch All Rooms (to filter READY rooms for Check-in & Transfer)
-  const { data: allRoomsRes } = useQuery({
-    queryKey: ['allRoomsForStayOperations'],
-    queryFn: () => roomsApi.getAll({ limit: 100 }),
+  const { data: allRoomsList = [] } = useQuery({
+    queryKey: ['rooms', 'lookup'],
+    queryFn: ({ signal }) => roomsApi.getLookup(signal),
     enabled: canWrite,
   });
-  const rawRoomsData = allRoomsRes?.data;
-  const allRoomsList: RoomItem[] = useMemo(() => {
-    return Array.isArray(rawRoomsData)
-      ? rawRoomsData
-      : rawRoomsData?.items || [];
-  }, [rawRoomsData]);
 
   // 4. Fetch Pending Arrivals (Reservations with status CONFIRMED or PARTIALLY_CHECKED_IN)
   const {
@@ -653,19 +649,10 @@ export const StaysPage: React.FC = () => {
     refetch: refetchArrivals,
   } = useQuery({
     queryKey: ['arrivalReservations'],
-    queryFn: async () => {
-      const [resConfirmed, resPartial] = await Promise.all([
-        reservationsApi.getAll({ status: 'CONFIRMED', limit: 100 }),
-        reservationsApi.getAll({ status: 'PARTIALLY_CHECKED_IN', limit: 100 }),
-      ]);
-      const confirmedItems = Array.isArray(resConfirmed.data)
-        ? resConfirmed.data
-        : resConfirmed.data?.items || [];
-      const partialItems = Array.isArray(resPartial.data)
-        ? resPartial.data
-        : resPartial.data?.items || [];
-      return [...confirmedItems, ...partialItems];
-    },
+    queryFn: async ({ signal }) => (await Promise.all([
+      reservationsApi.getLookup({ status: 'CONFIRMED' }, signal),
+      reservationsApi.getLookup({ status: 'PARTIALLY_CHECKED_IN' }, signal),
+    ])).flat(),
     enabled: activeTab === 'arrivals' || isCheckinModalOpen,
   });
   const arrivalReservations: ReservationSummaryItem[] = useMemo(
@@ -698,7 +685,7 @@ export const StaysPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['arrivalReservations'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
-      queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       setIsCheckinModalOpen(false);
       setCheckinReservation(null);
     },
@@ -720,7 +707,7 @@ export const StaysPage: React.FC = () => {
       appMessage.success(`Trả phòng #${roomNum} thành công! Phòng đã chuyển sang trạng thái DIRTY chờ dọn dẹp.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['stayDetail', checkoutStay?.stayId] });
-      queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       setIsCheckoutModalOpen(false);
       setCheckoutStay(null);
@@ -743,7 +730,7 @@ export const StaysPage: React.FC = () => {
       appMessage.success(`Đổi phòng sang #${newRoom} thành công! Phòng cũ đã chuyển sang trạng thái DIRTY.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['stayDetail', transferStay?.stayId] });
-      queryClient.invalidateQueries({ queryKey: ['allRoomsForStayOperations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       setIsTransferModalOpen(false);
       setTransferStay(null);
     },
@@ -1079,8 +1066,7 @@ export const StaysPage: React.FC = () => {
       key: 'dates',
       width: 220,
       render: (_, record) => {
-        const isTodayArrival =
-          dayjs(record.checkInDate).format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
+        const isTodayArrival = record.checkInDate.slice(0, 10) === hotelDate;
         return (
           <div style={{ whiteSpace: 'nowrap' }}>
             <Space size={4}>
@@ -1096,11 +1082,11 @@ export const StaysPage: React.FC = () => {
                 <Tag color="green" style={{ fontSize: 11, margin: 0 }}>
                   Đến hôm nay
                 </Tag>
-              ) : (
+              ) : hotelDate ? (
                 <Tag color="default" style={{ fontSize: 11, margin: 0 }}>
-                  {dayjs(record.checkInDate).diff(dayjs().startOf('day'), 'day')} ngày nữa
+                  {dayjs(record.checkInDate.slice(0, 10)).diff(dayjs(hotelDate), 'day')} ngày nữa
                 </Tag>
-              )}
+              ) : null}
             </div>
           </div>
         );
@@ -1147,7 +1133,7 @@ export const StaysPage: React.FC = () => {
         </Button>
       ),
     },
-  ], [canWrite, handleOpenCheckinModal, screens]);
+  ], [canWrite, handleOpenCheckinModal, hotelDate, screens]);
 
   // The grid is the expensive subtree of a search: every rerender of <Table>
   // rebuilds every row and cell (each one wraps Tooltip / copyable / badge
@@ -1395,6 +1381,7 @@ export const StaysPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       <CheckinStayModal
         open={isCheckinModalOpen}
+        hotelDate={hotelDate}
         reservation={checkinReservation}
         allRoomsList={allRoomsList}
         confirmLoading={checkinMutation.isPending}

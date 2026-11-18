@@ -1,6 +1,7 @@
 import { Prisma } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { issueView } from './inventory.types.js';
+import { stockDocumentDate } from './inventory.dates.js';
 import type { InventoryOperations, InventoryScope, CreateIssueInput } from './inventory.types.js';
 
 export async function postStockIssue(
@@ -8,6 +9,7 @@ export async function postStockIssue(
   scope: InventoryScope,
   input: CreateIssueInput,
   completionId?: bigint,
+  request?: { requestKeyHash: string; requestHash: string },
 ) {
   const issueNumber =
     input.issueNumber?.trim() ||
@@ -77,11 +79,12 @@ export async function postStockIssue(
   }));
 
   // Create issue
-  const issueDate = input.issueDate ? new Date(input.issueDate) : new Date();
+  const issueDate = await stockDocumentDate(repo, scope.hotelId, input.issueDate);
   const issue = await repo.createIssue(
     {
       hotelId: scope.hotelId,
       issueNumber,
+      ...request,
       ...(completionId != null ? { housekeepingCompletionId: completionId } : {}),
       issueDate,
       department: input.department,

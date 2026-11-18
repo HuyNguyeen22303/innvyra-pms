@@ -1,6 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { localDateRange } from '../stays/stay.dates.js';
 import { SupplyWorkflow } from './supply-workflow.service.js';
 import type {
   CategoryQuery,
@@ -30,6 +31,20 @@ export class PrismaInventoryRepository {
 
   private get db() {
     return this.tx ?? this.prisma;
+  }
+
+  async hotelTimezone(hotelId: bigint) {
+    const hotel = await this.db.hotel.findUnique({ where: { id: hotelId }, select: { timezone: true } });
+    if (!hotel) throw new AppError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+    return hotel.timezone;
+  }
+
+  private async dateFilter(hotelId: bigint, { startDate, endDate }: Pick<ReceiptQuery, 'startDate' | 'endDate'>) {
+    if (!startDate && !endDate) return undefined;
+    const timezone = await this.hotelTimezone(hotelId);
+    const start = startDate ? localDateRange(startDate, timezone) : undefined;
+    const end = startDate === endDate ? start : endDate ? localDateRange(endDate, timezone) : undefined;
+    return { ...(start ? { gte: start.gte } : {}), ...(end ? { lt: end.lt } : {}) };
   }
 
   async withHotelLock<T>(
@@ -358,17 +373,11 @@ export class PrismaInventoryRepository {
   }
 
   async listReceipts(hotelId: bigint, query: ReceiptQuery) {
+    const range = await this.dateFilter(hotelId, query);
     const where: Prisma.StockReceiptWhereInput = {
       hotelId,
       ...(query.supplierId ? { supplierId: BigInt(query.supplierId) } : {}),
-      ...(query.startDate || query.endDate
-        ? {
-            receiptDate: {
-              ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
-              ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
-            },
-          }
-        : {}),
+      ...(range ? { receiptDate: range } : {}),
     };
     const [items, total] = await Promise.all([
       this.db.stockReceipt.findMany({
@@ -435,18 +444,20 @@ export class PrismaInventoryRepository {
     });
   }
 
+  async findIssueByRequest(hotelId: bigint, createdBy: bigint, requestKeyHash: string) {
+    const issue = await this.db.stockIssue.findFirst({
+      where: { hotelId, createdBy, requestKeyHash },
+      select: { id: true },
+    });
+    return issue ? this.findIssueById(hotelId, issue.id) : null;
+  }
+
   async listIssues(hotelId: bigint, query: IssueQuery) {
+    const range = await this.dateFilter(hotelId, query);
     const where: Prisma.StockIssueWhereInput = {
       hotelId,
       ...(query.department ? { department: { contains: query.department } } : {}),
-      ...(query.startDate || query.endDate
-        ? {
-            issueDate: {
-              ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
-              ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
-            },
-          }
-        : {}),
+      ...(range ? { issueDate: range } : {}),
     };
     const [items, total] = await Promise.all([
       this.db.stockIssue.findMany({
@@ -501,18 +512,12 @@ export class PrismaInventoryRepository {
   }
 
   async listMovements(hotelId: bigint, query: MovementQuery) {
+    const range = await this.dateFilter(hotelId, query);
     const where: Prisma.InventoryMovementWhereInput = {
       hotelId,
       ...(query.itemId ? { itemId: BigInt(query.itemId) } : {}),
       ...(query.type ? { type: query.type } : {}),
-      ...(query.startDate || query.endDate
-        ? {
-            createdAt: {
-              ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
-              ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
-            },
-          }
-        : {}),
+      ...(range ? { createdAt: range } : {}),
     };
     const [items, total] = await Promise.all([
       this.db.inventoryMovement.findMany({

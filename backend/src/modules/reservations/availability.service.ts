@@ -56,26 +56,23 @@ export class AvailabilityService {
         throw new AppError(404, 'ROOM_TYPE_NOT_FOUND', 'Room type not found');
       if (query.roomTypeId && !types[0]!.isActive)
         throw new AppError(409, 'ROOM_TYPE_INACTIVE', 'Room type is inactive');
-      const results = [];
-      for (const type of types) {
-        if (!type.isActive || type.maxAdults < query.adults || type.maxChildren < query.children)
-          continue;
-        results.push({
-          roomTypeId: type.id.toString(),
-          roomTypeName: type.name,
-          availableRooms: await this.available(
-            repository,
-            scope.hotelId,
-            type.id,
-            asDate(query.checkInDate),
-            asDate(query.checkOutDate),
-          ),
-          basePrice: this.pricing.nightlyRate(type).toFixed(2),
-          estimatedTotalPerRoom: this.pricing.estimate(type, dates.length).toFixed(2),
-          currency: 'VND',
-        });
-      }
-      return results;
+      const eligible = types.filter((type) =>
+        type.isActive && type.maxAdults >= query.adults && type.maxChildren >= query.children,
+      );
+      const availability = await repository.availableByRoomType(
+        scope.hotelId,
+        eligible.map((type) => type.id),
+        asDate(query.checkInDate),
+        asDate(query.checkOutDate),
+      );
+      return eligible.map((type) => ({
+        roomTypeId: type.id.toString(),
+        roomTypeName: type.name,
+        availableRooms: availability.get(type.id) ?? 0,
+        basePrice: this.pricing.nightlyRate(type).toFixed(2),
+        estimatedTotalPerRoom: this.pricing.estimate(type, dates.length).toFixed(2),
+        currency: 'VND',
+      }));
     });
   }
 }

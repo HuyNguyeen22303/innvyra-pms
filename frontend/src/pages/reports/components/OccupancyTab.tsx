@@ -22,7 +22,7 @@ import { reportsApi } from '../../../api/reports.api.ts';
 import { roomTypesApi } from '../../../api/rooms.api.ts';
 import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
 import type { OccupancySeriesItem } from '../../../types/reports.types.ts';
-import { formatVnd } from '../reports.utils.ts';
+import { divideReportMoney, formatVnd, sumReportMoney } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
@@ -67,13 +67,11 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
     staleTime: 60000,
   });
 
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ['roomTypes-list'],
-    queryFn: () => roomTypesApi.getAll({ limit: 100 }),
+  const { data: roomTypes = [] } = useQuery({
+    queryKey: ['roomTypes', 'lookup'],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
     staleTime: 120000,
   });
-
-  const roomTypes = useMemo(() => roomTypesRes?.data?.items || [], [roomTypesRes]);
 
   const occ = occupancyRes?.data;
   const summary = occ?.summary;
@@ -84,10 +82,10 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
     const series = occ?.series?.filter((s) => s.unclosedDays === 0 && s.sellableRoomNights > 0) || [];
     const occupied = series.reduce((acc, s) => acc + (s.occupiedRoomNights ?? 0), 0);
     const sellable = series.reduce((acc, s) => acc + s.sellableRoomNights, 0);
-    const sales = series.reduce((acc, s) => acc + (s.roomSalesValue ? parseFloat(s.roomSalesValue) : 0), 0);
+    const sales = sumReportMoney(...series.map((day) => day.roomSalesValue));
     const occRate = sellable > 0 ? Number(((occupied / sellable) * 100).toFixed(2)) : null;
-    const adr = occupied > 0 ? (sales / occupied).toFixed(2) : null;
-    const revpar = sellable > 0 ? (sales / sellable).toFixed(2) : null;
+    const adr = divideReportMoney(sales, occupied);
+    const revpar = divideReportMoney(sales, sellable);
     return {
       closedSeries: series,
       closedOccupied: occupied,

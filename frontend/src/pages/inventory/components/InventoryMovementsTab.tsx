@@ -19,8 +19,9 @@ import {
   ArrowDownOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { useAuthStore } from '../../../store/authStore.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 import { inventoryApi } from '../../../api/inventory.api.ts';
 import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 import type {
@@ -32,6 +33,7 @@ const { Text, Paragraph } = Typography;
 
 
 export const InventoryMovementsTab: React.FC = () => {
+  const timezone = useAuthStore((state) => state.user?.hotel?.timezone);
   // Filter States
   const [itemFilter, setItemFilter] = useState<string | undefined>(undefined);
   const [typeFilter, setTypeFilter] = useState<InventoryMovementType | undefined>(undefined);
@@ -78,7 +80,7 @@ export const InventoryMovementsTab: React.FC = () => {
       width: 155,
       render: (date) => (
         <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
-          {dayjs(date).format('DD/MM/YYYY HH:mm')}
+          {formatHotelDate(date, timezone, true)}
         </span>
       ),
     },

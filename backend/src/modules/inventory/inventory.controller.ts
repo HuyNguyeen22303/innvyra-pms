@@ -1,5 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { requirePrincipal } from '../../middlewares/authenticate.middleware.js';
+import { AppError } from '../../shared/errors/app-error.js';
+import { idempotencyKey } from '../billing/billing.schema.js';
 import type { InventoryService } from './inventory.service.js';
 import type {
   InventoryScope,
@@ -227,7 +229,10 @@ export function inventoryController(service: InventoryService) {
   // Issues
   const createIssue: RequestHandler = async (req, res) => {
     const { body } = res.locals.validated as { body: CreateIssueInput };
-    const result = await service.createIssue(getScope(req), body);
+    const key = req.get('Idempotency-Key');
+    if (key !== undefined && !idempotencyKey.safeParse(key).success)
+      throw new AppError(422, 'INVALID_IDEMPOTENCY_KEY', 'Invalid Idempotency-Key');
+    const result = await service.createIssue(getScope(req), body, key);
     res.status(201).json({
       success: true,
       message: 'Stock issue created',

@@ -156,6 +156,67 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
     afterAll(async () => {
       await database?.dispose();
     });
+    it('replays simultaneous and later stock-issue retries without another deduction', async () => {
+      const supply = await item();
+      await receipt(supply.id);
+      const requestKey = key();
+      const body = { department: 'HOUSEKEEPING', items: [{ itemId: supply.id, quantity: '1' }] };
+      const post = (payload = body) => call('post', '/inventory/issues', payload).set('Idempotency-Key', requestKey);
+      const [first, duplicate] = await Promise.all([post(), post()]);
+      expect(first.status, first.text).toBe(201);
+      expect(duplicate.status, duplicate.text).toBe(201);
+      expect(duplicate.body.data.id).toBe(first.body.data.id);
+      expect((await post()).body.data.id).toBe(first.body.data.id);
+      const conflict = await post({ ...body, items: [{ itemId: supply.id, quantity: '2' }] });
+      expect(conflict.status, conflict.text).toBe(409);
+      expect(conflict.body.error.code).toBe('IDEMPOTENCY_CONFLICT');
+      const itemId = BigInt(supply.id);
+      expect((await database.prisma.inventoryItem.findUniqueOrThrow({ where: { id: itemId } })).currentStock.toFixed(2)).toBe('9.00');
+      expect(await database.prisma.inventoryMovement.count({ where: { hotelId, itemId, type: 'ISSUE' } })).toBe(1);
+    });
+
+    it('includes the entire last hotel day in all three stock lists and rejects invalid dates', async () => {
+      const supply = await item();
+      const itemId = BigInt(supply.id);
+      const makeReceipt = (receiptDate: string) => call('post', '/inventory/receipts', {
+        receiptNumber: key(), receiptDate, items: [{ itemId: supply.id, quantity: '10' }],
+      });
+      const inside = await makeReceipt('2026-02-28T23:59:59.999+07:00');
+      const outside = await makeReceipt('2026-03-01T00:00:00+07:00');
+      expect(inside.status, inside.text).toBe(201);
+      expect(outside.status, outside.text).toBe(201);
+      const issueBody = { department: 'AUDIT-DATES', items: [{ itemId: supply.id, quantity: '1' }] };
+      const issue = await call('post', '/inventory/issues', { ...issueBody, issueDate: '2026-02-28' });
+      expect(issue.status, issue.text).toBe(201);
+      expect(issue.body.data.issueDate).toBe('2026-02-27T17:00:00.000Z');
+      const db = database.prisma;
+      await db.inventoryMovement.updateMany({
+        where: { hotelId, itemId, referenceType: 'STOCK_RECEIPT', referenceId: BigInt(inside.body.data.id) },
+        data: { createdAt: new Date('2026-02-28T23:59:59.999+07:00') },
+      });
+      await db.inventoryMovement.updateMany({
+        where: { hotelId, itemId, referenceType: 'STOCK_RECEIPT', referenceId: BigInt(outside.body.data.id) },
+        data: { createdAt: new Date('2026-03-01T00:00:00+07:00') },
+      });
+      const range = '?startDate=2026-02-28&endDate=2026-02-28';
+      const [receipts, issues, movements] = await Promise.all([
+        call('get', '/inventory/receipts' + range),
+        call('get', '/inventory/issues' + range + '&department=AUDIT-DATES'),
+        call('get', '/inventory/movements' + range + '&itemId=' + supply.id),
+      ]);
+      expect(receipts.body.data.items.map((row: { id: string }) => row.id)).toEqual([inside.body.data.id]);
+      expect(issues.body.data.items.map((row: { id: string }) => row.id)).toEqual([issue.body.data.id]);
+      expect(movements.body.data.items.map((row: { referenceId: string }) => row.referenceId)).toEqual([inside.body.data.id]);
+      for (const route of ['receipts', 'issues', 'movements']) {
+        expect((await call('get', '/inventory/' + route + '?startDate=not-a-date')).status).toBe(422);
+        expect((await call('get', '/inventory/' + route + '?startDate=2026-03-01&endDate=2026-02-28')).status).toBe(422);
+      }
+      expect((await makeReceipt('2026-02-31')).status).toBe(422);
+      expect((await makeReceipt('2026-02-28T12:00:00+99:00')).status).toBe(422);
+      expect((await call('post', '/inventory/issues', { ...issueBody, issueDate: '2026-02-31' })).status).toBe(422);
+      expect((await db.inventoryItem.findUniqueOrThrow({ where: { id: itemId } })).currentStock.toFixed(2)).toBe('19.00');
+    });
+
     it('suggests per-room-type consumables, atomically issues actual usage, retries and rework without double deductions', async () => {
       const supply = await item();
       await receipt(supply.id);

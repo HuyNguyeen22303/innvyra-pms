@@ -1,5 +1,5 @@
 // Keep financial previews exact, including amounts above Number.MAX_SAFE_INTEGER.
-const cents = (value: string): bigint => {
+export const parseMoneyCents = (value: string): bigint => {
   if (!/^-?\d+(?:\.\d{1,2})?$/.test(value))
     throw new Error("Invalid monetary amount");
   const negative = value.startsWith("-");
@@ -7,7 +7,7 @@ const cents = (value: string): bigint => {
   const result = BigInt(whole!) * 100n + BigInt(fraction.padEnd(2, "0"));
   return negative ? -result : result;
 };
-const decimal = (value: bigint): string => {
+export const moneyCentsToDecimal = (value: bigint): string => {
   const absolute = value < 0n ? -value : value;
   return `${value < 0n ? "-" : ""}${absolute / 100n}.${String(absolute % 100n).padStart(2, "0")}`;
 };
@@ -20,18 +20,18 @@ export function terminalSettlementAmounts(
   finalCharge: string,
 ) {
   if (!validFinalCharge(finalCharge)) throw new Error("Invalid final charge");
-  const final = cents(finalCharge);
-  const outstanding = final - cents(netPaid);
+  const final = parseMoneyCents(finalCharge);
+  const outstanding = final - parseMoneyCents(netPaid);
   return {
-    adjustment: decimal(final - cents(netCharges)),
-    outstanding: decimal(outstanding),
-    refundDue: decimal(outstanding < 0n ? -outstanding : 0n),
-    collectionDue: decimal(outstanding > 0n ? outstanding : 0n),
+    adjustment: moneyCentsToDecimal(final - parseMoneyCents(netCharges)),
+    outstanding: moneyCentsToDecimal(outstanding),
+    refundDue: moneyCentsToDecimal(outstanding < 0n ? -outstanding : 0n),
+    collectionDue: moneyCentsToDecimal(outstanding > 0n ? outstanding : 0n),
   };
 }
 
 export function formatFolioMoney(value: string): string {
-  const amount = cents(value);
+  const amount = parseMoneyCents(value);
   const absolute = amount < 0n ? -amount : amount;
   const remainder = absolute % 100n;
   return `${amount < 0n ? "-" : ""}${(absolute / 100n).toLocaleString("vi-VN")}${remainder ? `,${String(remainder).padStart(2, "0")}` : ""} ₫`;
@@ -42,8 +42,8 @@ export function refundableAmount(
   netPaid: string,
   terminalBalance?: string,
 ): string {
-  const limits = [cents(receiptAvailable), cents(netPaid)];
-  if (terminalBalance !== undefined) limits.push(-cents(terminalBalance));
+  const limits = [parseMoneyCents(receiptAvailable), parseMoneyCents(netPaid)];
+  if (terminalBalance !== undefined) limits.push(-parseMoneyCents(terminalBalance));
   const limit = limits.reduce((a, b) => (a < b ? a : b));
-  return decimal(limit > 0n ? limit : 0n);
+  return moneyCentsToDecimal(limit > 0n ? limit : 0n);
 }

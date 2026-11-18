@@ -61,6 +61,15 @@ export function memoryReservations(hotelId = 9007199254740995n) {
         _count: { _all: count },
       }));
     },
+    availableByRoomType: async (hid, ids, from, until) => {
+      const result = new Map<bigint, number>();
+      for (const id of ids) {
+        const capacity = await repository.capacity(hid, id);
+        const nights = await repository.occupied(hid, id, from, until);
+        result.set(id, Math.max(0, capacity - Math.max(0, ...nights.map((row) => row._count._all))));
+      }
+      return result;
+    },
     findById: async (hid, id) => (records.get(id)?.hotelId === hid ? records.get(id)! : null),
     list: async (hid, query) => {
       const items = [...records.values()].filter(

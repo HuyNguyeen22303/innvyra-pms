@@ -51,6 +51,9 @@ export function memoryInventory() {
   };
 
   const repository: InventoryRepository = {
+    async hotelTimezone() {
+      return 'Asia/Ho_Chi_Minh';
+    },
     async withHotelLock<T>(
       _hotelId: bigint,
       action: (repo: InventoryOperations) => Promise<T>,
@@ -573,6 +576,8 @@ export function memoryInventory() {
         id,
         hotelId: BigInt(issueData.hotelId),
         issueNumber: issueData.issueNumber,
+        requestKeyHash: issueData.requestKeyHash ?? null,
+        requestHash: issueData.requestHash ?? null,
         housekeepingCompletionId: issueData.housekeepingCompletionId
           ? BigInt(issueData.housekeepingCompletionId)
           : null,
@@ -646,6 +651,13 @@ export function memoryInventory() {
         }
       }
       return null;
+    },
+
+    async findIssueByRequest(hotelId: bigint, createdBy: bigint, requestKeyHash: string) {
+      const issue = [...issues.values()].find((row) =>
+        row.hotelId === hotelId && row.createdBy === createdBy && row.requestKeyHash === requestKeyHash,
+      );
+      return issue ? this.findIssueById(hotelId, issue.id) : null;
     },
 
     async listIssues(hotelId: bigint, query: IssueQuery) {

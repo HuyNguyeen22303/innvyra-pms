@@ -23,7 +23,6 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('antd') || id.includes('@ant-design')) return 'vendor-antd';
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) return 'vendor-react';
             if (id.includes('@tanstack')) return 'vendor-query';
           }

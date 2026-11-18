@@ -161,22 +161,35 @@ export class PrismaReportRepository {
     return rows[0]!.nights;
   }
   async reservations(hotelId: bigint, days: ReportDay[]) {
+    const first = days[0]!;
+    const last = days[days.length - 1]!;
     return this.db.$queryRaw<AggregateRow[]>(Prisma.sql`
       WITH days AS (${dayTable(days)}), created AS (
         SELECT d.date, CASE WHEN r.booking_source IN (${Prisma.join([...BOOKING_SOURCES])})
           THEN UPPER(r.booking_source) ELSE 'OTHER' END AS source, COUNT(*) AS n,
           SUM(r.status = 'CONFIRMED') AS confirmed, SUM(r.status = 'NO_SHOW') AS noShows
         FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
-          AND r.created_at >= d.starts AND r.created_at < d.ends GROUP BY d.date, source
-      ), planned AS (
-        SELECT d.date,
-          SUM(r.check_in_date = CAST(d.date AS DATE) AND s.id IS NULL) AS arrivals,
-          SUM(r.check_out_date = CAST(d.date AS DATE) AND s.actual_checkout_at IS NULL) AS departures
+          AND r.created_at >= d.starts AND r.created_at < d.ends
+        WHERE r.created_at >= ${first.from} AND r.created_at < ${last.until}
+        GROUP BY d.date, source
+      ), arrivals AS (
+        SELECT d.date, SUM(s.id IS NULL) AS n
         FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
+          AND r.check_in_date = CAST(d.date AS DATE)
           AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
-          AND (r.check_in_date = CAST(d.date AS DATE) OR r.check_out_date = CAST(d.date AS DATE))
         JOIN reservation_rooms rr ON rr.reservation_id = r.id AND rr.hotel_id = ${hotelId}
-        LEFT JOIN stays s ON s.reservation_room_id = rr.id AND s.hotel_id = ${hotelId} GROUP BY d.date
+        LEFT JOIN stays s ON s.reservation_room_id = rr.id AND s.hotel_id = ${hotelId}
+        WHERE r.check_in_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
+        GROUP BY d.date
+      ), departures AS (
+        SELECT d.date, SUM(s.actual_checkout_at IS NULL) AS n
+        FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
+          AND r.check_out_date = CAST(d.date AS DATE)
+          AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
+        JOIN reservation_rooms rr ON rr.reservation_id = r.id AND rr.hotel_id = ${hotelId}
+        LEFT JOIN stays s ON s.reservation_room_id = rr.id AND s.hotel_id = ${hotelId}
+        WHERE r.check_out_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
+        GROUP BY d.date
       )
       SELECT /*+ MAX_EXECUTION_TIME(10000) */ date, 'reservationsCreated' AS metric, n AS value, '' AS category FROM created
       UNION ALL SELECT date, 'bookingSource', n, source FROM created
@@ -185,18 +198,22 @@ export class PrismaReportRepository {
       UNION ALL SELECT d.date, 'cancelledReservations', COUNT(*), ''
         FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
           AND r.status = 'CANCELLED'
-          AND r.cancelled_at >= d.starts AND r.cancelled_at < d.ends GROUP BY d.date
+          AND r.cancelled_at >= d.starts AND r.cancelled_at < d.ends
+        WHERE r.cancelled_at >= ${first.from} AND r.cancelled_at < ${last.until} GROUP BY d.date
       UNION ALL SELECT d.date, 'reservationRoomsCreated', COUNT(*), ''
         FROM days d JOIN reservation_rooms rr ON rr.hotel_id = ${hotelId}
-          AND rr.created_at >= d.starts AND rr.created_at < d.ends GROUP BY d.date
-      UNION ALL SELECT date, 'expectedArrivals', arrivals, '' FROM planned
-      UNION ALL SELECT date, 'expectedDepartures', departures, '' FROM planned
+          AND rr.created_at >= d.starts AND rr.created_at < d.ends
+        WHERE rr.created_at >= ${first.from} AND rr.created_at < ${last.until} GROUP BY d.date
+      UNION ALL SELECT date, 'expectedArrivals', n, '' FROM arrivals
+      UNION ALL SELECT date, 'expectedDepartures', n, '' FROM departures
       UNION ALL SELECT d.date, 'actualCheckins', COUNT(*), ''
         FROM days d JOIN stays s ON s.hotel_id = ${hotelId}
-          AND s.actual_checkin_at >= d.starts AND s.actual_checkin_at < d.ends GROUP BY d.date
+          AND s.actual_checkin_at >= d.starts AND s.actual_checkin_at < d.ends
+        WHERE s.actual_checkin_at >= ${first.from} AND s.actual_checkin_at < ${last.until} GROUP BY d.date
       UNION ALL SELECT d.date, 'actualCheckouts', COUNT(*), ''
         FROM days d JOIN stays s ON s.hotel_id = ${hotelId}
-          AND s.actual_checkout_at >= d.starts AND s.actual_checkout_at < d.ends GROUP BY d.date`);
+          AND s.actual_checkout_at >= d.starts AND s.actual_checkout_at < d.ends
+        WHERE s.actual_checkout_at >= ${first.from} AND s.actual_checkout_at < ${last.until} GROUP BY d.date`);
   }
   async roomSnapshot(hotelId: bigint, today: string) {
     const rows = await this.db.$queryRaw<Record<string, DbNumber>[]>(Prisma.sql`

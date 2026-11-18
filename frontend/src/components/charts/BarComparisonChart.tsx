@@ -231,7 +231,7 @@ export const BarComparisonChart: React.FC<BarComparisonChartProps> = React.memo(
                 <g tabIndex={0} role="button" aria-pressed={selectedKey === item.key}
                   onClick={() => setSelectedKey(item.key)} onFocus={() => setSelectedKey(item.key)}
                   onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedKey(item.key); } }}
-                  aria-label={`${item.tooltipTitle || item.label}: ${series1Label} ${valueFormatter(item.value1)}, ${series2Label} ${valueFormatter(item.value2)}`} style={{ cursor: 'pointer' }} className="chart-bar-group">
+                  aria-label={`${item.tooltipTitle || item.label}: ${item.tooltipText1 ?? `${series1Label} ${valueFormatter(item.value1)}`}, ${item.tooltipText2 ?? `${series2Label} ${valueFormatter(item.value2)}`}`} style={{ cursor: 'pointer' }} className="chart-bar-group">
                   {/* Subtle hover background highlight */}
                   <rect
                     x={slotCenterX - itemSlotWidth / 2 + 2}

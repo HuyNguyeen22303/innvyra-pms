@@ -18,6 +18,15 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
     return;
   }
   const type = error && typeof error === 'object' && 'type' in error ? error.type : undefined;
+  // The router marks URL parameter decode failures as client errors.
+  if (error instanceof URIError && 'status' in error && error.status === 400) {
+    res.status(400).json({
+      success: false,
+      message: 'Malformed URL parameter',
+      error: { code: 'BAD_REQUEST' },
+    });
+    return;
+  }
   if (type === 'entity.parse.failed' || type === 'entity.too.large') {
     res.status(type === 'entity.too.large' ? 413 : 400).json({
       success: false,

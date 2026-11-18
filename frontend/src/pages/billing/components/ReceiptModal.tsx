@@ -7,6 +7,7 @@ import type { PaymentRecord, FolioDetailItem } from '../../../types/billing.type
 import { getStaffDisplay } from '../../../utils/staffDirectory.ts';
 import { ownHotelApi } from '../../../api/hotels.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { formatFolioMoney } from '../../../utils/folioSettlement.ts';
 
 const { Title, Text } = Typography;
 
@@ -45,11 +46,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   const staff = getStaffDisplay(payment.processedBy);
 
-  const formatVND = (amount: string | number | null | undefined): string => {
-    if (!amount) return '0 ₫';
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return isNaN(num) ? '0 ₫' : num.toLocaleString('vi-VN') + ' ₫';
-  };
+  const formattedAmount = formatFolioMoney(payment.amount);
 
   const handlePrint = () => {
     if (hotelReady) window.print();
@@ -213,8 +210,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <div style={{ fontSize: 11, color: '#8c8c8c' }}>Đơn vị tiền tệ: Việt Nam Đồng (VND)</div>
           </div>
           <div>
-            <Title className={`receipt-amount-value${formatVND(payment.amount).length > 18 ? ' receipt-amount-value--long' : ''}`} level={2} style={{ margin: 0, color: isRefund ? '#cf1322' : '#1b4d3e', fontWeight: 700 }}>
-              {formatVND(payment.amount)}
+            <Title className={`receipt-amount-value${formattedAmount.length > 18 ? ' receipt-amount-value--long' : ''}`} level={2} style={{ margin: 0, color: isRefund ? '#cf1322' : '#1b4d3e', fontWeight: 700 }}>
+              {formattedAmount}
             </Title>
           </div>
         </div>

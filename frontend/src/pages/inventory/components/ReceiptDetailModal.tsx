@@ -4,7 +4,8 @@ import React from 'react';
 import { Modal, Descriptions, Tag, Typography, Button, Space, Grid } from 'antd';
 import { FileDoneOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
+import { useAuthStore } from '../../../store/authStore.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 import type { StockReceiptView, StockReceiptItemView } from '../../../types/inventory.types.ts';
 import { formatInventoryQuantity } from '../../../utils/inventoryQuantity.ts';
 
@@ -22,6 +23,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
   onClose,
 }) => {
   const screens = Grid.useBreakpoint();
+  const timezone = useAuthStore((state) => state.user?.hotel?.timezone);
   if (!receipt) return null;
 
   const columns: ColumnsType<StockReceiptItemView> = [
@@ -119,7 +121,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
           {
             key: 'receiptDate',
             label: 'Ngày nhập kho',
-            children: dayjs(receipt.receiptDate).format('DD/MM/YYYY'),
+            children: formatHotelDate(receipt.receiptDate, timezone),
           },
           {
             key: 'supplier',
@@ -147,7 +149,7 @@ export const ReceiptDetailModal: React.FC<ReceiptDetailModalProps> = ({
           {
             key: 'createdAt',
             label: 'Thời gian tạo',
-            children: dayjs(receipt.createdAt).format('DD/MM/YYYY HH:mm'),
+            children: formatHotelDate(receipt.createdAt, timezone, true),
           },
           {
             key: 'notes',

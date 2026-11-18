@@ -36,6 +36,8 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { inventoryApi, getInventoryErrorMessage } from '../../../api/inventory.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
+import { useHotelClock } from '../../../hooks/useHotelClock.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 import type {
   StockReceiptView,
   CreateReceiptDto,
@@ -61,6 +63,7 @@ export const InventoryReceiptsTab: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const hotelDate = useHotelClock()?.date;
   const canCreate = ['ADMIN', 'MANAGER'].includes(user?.role || '');
 
   // Filter States
@@ -278,7 +281,7 @@ export const InventoryReceiptsTab: React.FC = () => {
       width: 130,
       render: (date) => (
         <span style={{ whiteSpace: 'nowrap' }}>
-          {dayjs(date).format('DD/MM/YYYY')}
+          {formatHotelDate(date, user?.hotel?.timezone)}
         </span>
       ),
     },
@@ -409,6 +412,7 @@ export const InventoryReceiptsTab: React.FC = () => {
                 ]);
                 setReceiptRequestKey(crypto.randomUUID());
                 createForm.setFieldsValue({
+                  receiptDate: hotelDate ? dayjs(hotelDate) : undefined,
                   supplierMethod: 'CASH', supplierPaidAt: dayjs(), payNow: false,
                 });
                 setIsCreateOpen(true);
@@ -474,7 +478,7 @@ export const InventoryReceiptsTab: React.FC = () => {
           form={createForm}
           layout="vertical"
           style={{ marginTop: 12 }}
-          initialValues={{ receiptDate: dayjs(), supplierMethod: 'CASH', supplierPaidAt: dayjs() }}
+          initialValues={{ supplierMethod: 'CASH', supplierPaidAt: dayjs() }}
         >
           <Row gutter={16}>
             <Col xs={24} sm={12}>

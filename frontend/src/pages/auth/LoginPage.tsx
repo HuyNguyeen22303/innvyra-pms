@@ -170,7 +170,7 @@ export const LoginPage: React.FC = () => {
             </Form.Item>
           </Form>
 
-          <section className="login-demo" aria-label="Tài khoản thử nghiệm">
+          {import.meta.env.DEV && <section className="login-demo" aria-label="Tài khoản thử nghiệm">
             <div className="login-demo-heading">
               <KeyOutlined /> Chọn nhanh tài khoản thử nghiệm
             </div>
@@ -188,7 +188,7 @@ export const LoginPage: React.FC = () => {
                 </Button>
               ))}
             </div>
-          </section>
+          </section>}
           <p style={{ marginTop: 20, textAlign: 'center' }}><Link to="/platform/login">Đăng nhập quản trị Innvyra →</Link></p>
         </div>
         <p className="login-footnote">

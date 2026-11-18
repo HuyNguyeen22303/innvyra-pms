@@ -1,4 +1,5 @@
 import { apiClient } from './axiosClient.ts';
+import { collectPages } from './pagination.ts';
 import type { ApiResponse, PaginatedResult } from '../types/api.types.ts';
 import type {
   ReservationSummaryItem,
@@ -16,16 +17,21 @@ export const reservationsApi = {
    * Lấy danh sách đặt phòng (hỗ trợ phân trang, lọc theo trạng thái, ngày, mã đơn, khách hàng)
    */
   getAll: async (
-    params?: ReservationFilterParams
+    params?: ReservationFilterParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<ReservationSummaryItem>>> => {
     const res = await apiClient.get<ApiResponse<PaginatedResult<ReservationSummaryItem>>>(
       '/reservations',
       {
         params: { limit: 50, ...params },
+        signal,
       }
     );
     return res.data;
   },
+
+  getLookup: (params: ReservationFilterParams, signal?: AbortSignal) =>
+    collectPages((page) => reservationsApi.getAll({ ...params, page, limit: 100 }, signal), signal),
 
   /** Pending arrival orders for one day, including partially checked-in bookings. */
   getPendingArrivals: async (checkInDate: string): Promise<ReservationSummaryItem[]> => {

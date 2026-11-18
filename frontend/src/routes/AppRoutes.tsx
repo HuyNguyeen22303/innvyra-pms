@@ -1,4 +1,3 @@
-import { HotelSubscriptionPage } from '../pages/hotel/HotelSubscriptionPage.tsx';
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Button, Result, Spin } from 'antd';
 import { HotelSessionBoundary } from '../components/HotelSessionBoundary.tsx';
@@ -6,28 +5,29 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout.tsx';
 import { ProtectedRoute } from '../components/ProtectedRoute.tsx';
 import { LoginPage } from '../pages/auth/LoginPage.tsx';
-import { DashboardPage } from '../pages/dashboard/DashboardPage.tsx';
-import { RoomsPage } from '../pages/rooms/RoomsPage.tsx';
-import { RoomTypesPage } from '../pages/room-types/RoomTypesPage.tsx';
-import { GuestsPage } from '../pages/guests/GuestsPage.tsx';
-import { ReservationsPage } from '../pages/reservations/ReservationsPage.tsx';
-import { StaysPage } from '../pages/stays/StaysPage.tsx';
-import { HousekeepingPage } from '../pages/housekeeping/HousekeepingPage.tsx';
-import { MaintenancePage } from '../pages/maintenance/MaintenancePage.tsx';
-import { BillingPage } from '../pages/billing/BillingPage.tsx';
-import { ServicesPage } from '../pages/services/ServicesPage.tsx';
-import { EmployeesPage } from '../pages/employees/EmployeesPage.tsx';
-import { RoomMatrixPage } from '../pages/calendar/RoomMatrixPage.tsx';
-import { ReportsPage } from '../pages/reports/ReportsPage.tsx';
-import { InventoryPage } from '../pages/inventory/InventoryPage.tsx';
 import { ForbiddenPage } from '../pages/common/ForbiddenPage.tsx';
 import { NotFoundPage } from '../pages/common/NotFoundPage.tsx';
 import { useAuthStore } from '../store/authStore.ts';
 import { HotelPasswordChangePage } from '../pages/auth/HotelPasswordChangePage.tsx';
-import { HotelSettingsPage } from '../pages/hotel/HotelSettingsPage.tsx';
 import { isSubscriptionPath } from '../auth/hotelWorkspaceAccess.ts';
 
 const PlatformRoutes = lazy(() => import('./PlatformRoutes.tsx'));
+const HotelSubscriptionPage = lazy(() => import('../pages/hotel/HotelSubscriptionPage.tsx').then((module) => ({ default: module.HotelSubscriptionPage })));
+const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage.tsx').then((module) => ({ default: module.DashboardPage })));
+const RoomsPage = lazy(() => import('../pages/rooms/RoomsPage.tsx').then((module) => ({ default: module.RoomsPage })));
+const RoomTypesPage = lazy(() => import('../pages/room-types/RoomTypesPage.tsx').then((module) => ({ default: module.RoomTypesPage })));
+const GuestsPage = lazy(() => import('../pages/guests/GuestsPage.tsx').then((module) => ({ default: module.GuestsPage })));
+const ReservationsPage = lazy(() => import('../pages/reservations/ReservationsPage.tsx').then((module) => ({ default: module.ReservationsPage })));
+const StaysPage = lazy(() => import('../pages/stays/StaysPage.tsx').then((module) => ({ default: module.StaysPage })));
+const HousekeepingPage = lazy(() => import('../pages/housekeeping/HousekeepingPage.tsx').then((module) => ({ default: module.HousekeepingPage })));
+const MaintenancePage = lazy(() => import('../pages/maintenance/MaintenancePage.tsx').then((module) => ({ default: module.MaintenancePage })));
+const BillingPage = lazy(() => import('../pages/billing/BillingPage.tsx').then((module) => ({ default: module.BillingPage })));
+const ServicesPage = lazy(() => import('../pages/services/ServicesPage.tsx').then((module) => ({ default: module.ServicesPage })));
+const EmployeesPage = lazy(() => import('../pages/employees/EmployeesPage.tsx').then((module) => ({ default: module.EmployeesPage })));
+const RoomMatrixPage = lazy(() => import('../pages/calendar/RoomMatrixPage.tsx').then((module) => ({ default: module.RoomMatrixPage })));
+const ReportsPage = lazy(() => import('../pages/reports/ReportsPage.tsx').then((module) => ({ default: module.ReportsPage })));
+const InventoryPage = lazy(() => import('../pages/inventory/InventoryPage.tsx').then((module) => ({ default: module.InventoryPage })));
+const HotelSettingsPage = lazy(() => import('../pages/hotel/HotelSettingsPage.tsx').then((module) => ({ default: module.HotelSettingsPage })));
 
 export const AppRoutes: React.FC = () => {
   return (

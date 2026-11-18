@@ -158,6 +158,7 @@ const CancelReservationModal: React.FC<CancelReservationModalProps> = React.memo
 
 interface NoShowReservationModalProps {
   open: boolean;
+  hotelDate: string;
   reservation: ReservationSummaryItem | null;
   confirmLoading: boolean;
   onCancel: () => void;
@@ -165,7 +166,7 @@ interface NoShowReservationModalProps {
 }
 
 const NoShowReservationModal: React.FC<NoShowReservationModalProps> = React.memo(
-  ({ open, reservation, confirmLoading, onCancel, onConfirm }) => {
+  ({ open, hotelDate, reservation, confirmLoading, onCancel, onConfirm }) => {
     const { message: appMessage } = AntdApp.useApp();
     const [reason, setReason] = useState<string>('');
     const [prevOpen, setPrevOpen] = useState(open);
@@ -179,7 +180,7 @@ const NoShowReservationModal: React.FC<NoShowReservationModalProps> = React.memo
 
     const isFutureCheckIn =
       !!reservation?.checkInDate &&
-      dayjs(reservation.checkInDate).startOf('day').isAfter(dayjs().startOf('day'));
+      reservation.checkInDate.slice(0, 10) > hotelDate;
 
     const handleOk = () => {
       if (!reason.trim()) {
@@ -248,6 +249,7 @@ import { BookingDepositFields } from './BookingDepositFields.tsx';
 import { bookingDepositPayload, bookingRoomCharge, emptyBookingDeposit, prepareBookingAttempt, type BookingAttempt } from '../../utils/bookingWorkflow.ts';
 import { roomTypesApi, roomsApi } from '../../api/rooms.api.ts';
 import { useAuthStore } from '../../store/authStore.ts';
+import { useHotelClock } from '../../hooks/useHotelClock.ts';
 import type {
   ReservationSummaryItem,
   ReservationDetailItem,
@@ -256,7 +258,6 @@ import type {
   RoomAvailabilityItem,
   CreateReservationDto,
 } from '../../types/reservations.types.ts';
-import type { RoomTypeItem, RoomItem } from '../../types/rooms.types.ts';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -440,6 +441,12 @@ const ReservationFilterBar: React.FC<ReservationFilterBarProps> = React.memo(({ 
 ));
 
 export const ReservationsPage: React.FC = () => {
+  const clock = useHotelClock();
+  if (!clock) return <Alert type="error" showIcon title="Chưa xác định được múi giờ khách sạn" />;
+  return <Reservations hotelDate={clock.date} />;
+};
+
+const Reservations: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   const { message: appMessage } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
@@ -620,9 +627,9 @@ export const ReservationsPage: React.FC = () => {
   // ----------------------------------------------------
   // TAB 2: CHECK AVAILABILITY & CREATE RESERVATION STATE
   // ----------------------------------------------------
-  const [availDateRange, setAvailDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().add(1, 'day'),
-    dayjs().add(2, 'day'),
+  const [availDateRange, setAvailDateRange] = useState<[Dayjs, Dayjs]>(() => [
+    dayjs(hotelDate).add(1, 'day'),
+    dayjs(hotelDate).add(2, 'day'),
   ]);
   const [adultsCount, setAdultsCount] = useState<number>(2);
   const [childrenCount, setChildrenCount] = useState<number>(0);
@@ -645,31 +652,18 @@ export const ReservationsPage: React.FC = () => {
   const [bookingNotesResetKey, setBookingNotesResetKey] = useState<number>(0);
 
   // Fetch Room Types to know max occupancy and base details
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ['roomTypesForBooking'],
-    queryFn: () => roomTypesApi.getAll({ limit: 100 }),
+  const { data: roomTypesList = [] } = useQuery({
+    queryKey: ['roomTypes', 'lookup'],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
     enabled: canWrite,
   });
-  const roomTypesList: RoomTypeItem[] = useMemo(
-    () =>
-      Array.isArray(roomTypesRes?.data)
-        ? roomTypesRes.data
-        : roomTypesRes?.data?.items || [],
-    [roomTypesRes]
-  );
 
   // Fetch physical rooms to map roomId to real physical roomNumber (e.g. 101, 102, 201...)
-  const { data: allRoomsRes } = useQuery({
-    queryKey: ['allRoomsForLookup'],
-    queryFn: () => roomsApi.getAll({ limit: 100 }),
+  const { data: allRoomsList = [] } = useQuery({
+    queryKey: ['rooms', 'lookup'],
+    queryFn: ({ signal }) => roomsApi.getLookup(signal),
     staleTime: 60000,
   });
-  const allRoomsList: RoomItem[] = useMemo(() => {
-    const raw = allRoomsRes?.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray((raw as any)?.items)) return (raw as any).items;
-    return [];
-  }, [allRoomsRes]);
 
   const getPhysicalRoomNumber = (roomId: string | null | undefined): string => {
     if (!roomId) return '';
@@ -1066,7 +1060,7 @@ export const ReservationsPage: React.FC = () => {
                                 }}
                                 format="DD/MM/YYYY"
                                 allowClear={false}
-                                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                                disabledDate={(current) => current.format('YYYY-MM-DD') < hotelDate}
                               />
                             </Col>
                             <Col xs={12} sm={6} md={4}>
@@ -1411,7 +1405,7 @@ export const ReservationsPage: React.FC = () => {
                       </ConfigProvider>
                       </>
     ),
-    [adultsCount, availDateRange, availableRoomsList, bookingNotesRef, bookingNotesResetKey, calculatedTotalAmount, childrenCount, handleCreateReservation, handleSearchAvailability, hasSearchedAvail, isCreatingReservation, isLoadingAvailability, roomTypesList, selectedGuestId, selectedRoomsMap, selectedSource, setAdultsCount, setAvailDateRange, setChildrenCount, setSelectedGuestId, setSelectedRoomsMap, setSelectedSource, totalNightsStay, totalSelectedRoomsCount, initialDeposit, maximumDeposit, bookingUncertain]
+    [adultsCount, availDateRange, availableRoomsList, bookingNotesRef, bookingNotesResetKey, calculatedTotalAmount, childrenCount, handleCreateReservation, handleSearchAvailability, hasSearchedAvail, hotelDate, isCreatingReservation, isLoadingAvailability, roomTypesList, selectedGuestId, selectedRoomsMap, selectedSource, setAdultsCount, setAvailDateRange, setChildrenCount, setSelectedGuestId, setSelectedRoomsMap, setSelectedSource, totalNightsStay, totalSelectedRoomsCount, initialDeposit, maximumDeposit, bookingUncertain]
   );
 
   // Memoized tab pane: the element identity only changes when the values it
@@ -1998,6 +1992,7 @@ export const ReservationsPage: React.FC = () => {
       {/* ---------------------------------------------------- */}
       <NoShowReservationModal
         open={noShowModalVisible}
+        hotelDate={hotelDate}
         reservation={noShowReservation}
         confirmLoading={noShowMutation.isPending}
         onCancel={() => {

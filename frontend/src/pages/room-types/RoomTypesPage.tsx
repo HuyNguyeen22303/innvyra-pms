@@ -52,20 +52,12 @@ export const RoomTypesPage: React.FC = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['roomTypes'],
-    queryFn: () => roomTypesApi.getAll(),
+    queryKey: ['roomTypes', 'list', currentPage, pageSize],
+    queryFn: ({ signal }) => roomTypesApi.getAll({ page: currentPage, limit: pageSize }, signal),
   });
 
-  const rawData = response?.data;
-  const roomTypes: RoomTypeItem[] = useMemo(
-    () =>
-      Array.isArray(rawData)
-        ? rawData
-        : Array.isArray((rawData as any)?.items)
-        ? (rawData as any).items
-        : [],
-    [rawData]
-  );
+  const roomTypes = response?.data.items ?? [];
+  const total = response?.data.pagination.total ?? 0;
 
   // Create Mutation
   const createMutation = useMutation({
@@ -337,7 +329,7 @@ export const RoomTypesPage: React.FC = () => {
               Danh mục Hạng / Loại phòng
             </Title>
             <Tag color="blue" icon={<AppstoreOutlined />}>
-              {roomTypes.length} loại phòng
+              {response ? `${total} loại phòng` : '—'}
             </Tag>
           </Space>
           <Paragraph style={{ marginTop: 4, marginBottom: 0, color: '#475569', fontSize: 13 }}>
@@ -380,11 +372,12 @@ export const RoomTypesPage: React.FC = () => {
           pagination={{
             current: currentPage,
             pageSize: pageSize,
+            total,
             showSizeChanger: true,
             pageSizeOptions: ['5', '8', '10', '20', '50'],
             showTotal: (total) => `Tổng cộng ${total} loại phòng`,
             onChange: (page, size) => {
-              setCurrentPage(page);
+              setCurrentPage(size === pageSize ? page : 1);
               setPageSize(size);
             },
           }}

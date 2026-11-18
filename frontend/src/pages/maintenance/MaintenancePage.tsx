@@ -49,6 +49,7 @@ import { maintenanceApi } from "../../api/maintenance.api.ts";
 import { roomsApi, roomTypesApi } from "../../api/rooms.api.ts";
 import { employeesApi } from "../../api/employees.api.ts";
 import { useAuthStore } from "../../store/authStore.ts";
+import { useHotelClock } from "../../hooks/useHotelClock.ts";
 import {
   getStaffDisplay,
   getMaintenanceActionDisplay,
@@ -436,6 +437,7 @@ export const MaintenancePage: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const hotelDate = useHotelClock()?.date;
 
   const isAdminOrManager = ["ADMIN", "MANAGER"].includes(user?.role || "");
   const canReportTicket = [
@@ -595,16 +597,16 @@ export const MaintenancePage: React.FC = () => {
   });
 
   // 3. Physical Rooms list for select dropdowns
-  const { data: roomsRes } = useQuery({
-    queryKey: ["rooms-all-lookup"],
-    queryFn: () => roomsApi.getAll({ limit: 100 }),
+  const { data: roomList = [] } = useQuery({
+    queryKey: ["rooms", "lookup"],
+    queryFn: ({ signal }) => roomsApi.getLookup(signal),
     staleTime: 30000,
   });
 
   // 4. Room Types list for metadata enrichment
-  const { data: roomTypesRes } = useQuery({
-    queryKey: ["room-types-lookup"],
-    queryFn: () => roomTypesApi.getAll(),
+  const { data: roomTypesList = [] } = useQuery({
+    queryKey: ["roomTypes", "lookup"],
+    queryFn: ({ signal }) => roomTypesApi.getLookup(signal),
     staleTime: 60000,
   });
 
@@ -681,16 +683,6 @@ export const MaintenancePage: React.FC = () => {
         : (rawBlocks as any)?.items || [],
     [rawBlocks]
   );
-
-  const rawRooms = roomsRes?.data;
-  const roomList = Array.isArray(rawRooms)
-    ? rawRooms
-    : (rawRooms as any)?.items || [];
-
-  const rawRoomTypes = roomTypesRes?.data;
-  const roomTypesList = Array.isArray(rawRoomTypes)
-    ? rawRoomTypes
-    : (rawRoomTypes as any)?.items || [];
 
   const getRoomTypeName = (roomTypeId: string) => {
     const found = roomTypesList.find(
@@ -2184,7 +2176,7 @@ export const MaintenancePage: React.FC = () => {
               style={{ width: "100%" }}
               format="DD/MM/YYYY"
               disabledDate={(current) =>
-                current && current < dayjs().startOf("day")
+                !hotelDate || current.format("YYYY-MM-DD") < hotelDate
               }
             />
           </Form.Item>
