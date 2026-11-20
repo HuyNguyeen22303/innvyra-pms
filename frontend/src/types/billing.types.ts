@@ -5,6 +5,14 @@
 
 export type ServiceOrderStatus = 'REQUESTED' | 'COMPLETED' | 'CANCELLED';
 export type FolioStatus = 'OPEN' | 'CLOSED';
+
+export interface FolioSummary {
+  reservationId: string;
+  folioId: string;
+  status: FolioStatus;
+  closedAt: string | null;
+  outstandingBalance: string;
+}
 export type FolioEntryType = 'DEBIT' | 'CREDIT';
 export type FolioSourceType = 'ROOM_NIGHT' | 'SERVICE_ORDER_ITEM' | 'MANUAL_ADJUSTMENT';
 export type PaymentType = 'PAYMENT' | 'DEPOSIT' | 'REFUND';

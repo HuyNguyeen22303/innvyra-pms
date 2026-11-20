@@ -145,6 +145,7 @@ export interface OccupancyReport {
   generatedAt: string;
   dataQuality: DataQuality;
   summary: OccupancyMetrics;
+  closedSummary: OccupancyMetrics & { closedDays: number };
   series: OccupancySeriesItem[];
   filters: {
     roomTypeId: string | null;

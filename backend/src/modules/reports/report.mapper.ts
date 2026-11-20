@@ -190,13 +190,23 @@ export function occupancyDto(
         : new Money(target.roomSalesValue).add(row.roomSalesValue).toFixed(2);
   };
   const summary = empty(),
+    closed = empty(),
     buckets = new Map<string, Totals>();
+  let closedDays = 0;
   for (const row of daily) {
     const key = groupBy === 'day' ? row.date : row.date.slice(0, 7) + '-01';
     const bucket = buckets.get(key) ?? empty();
     add(bucket, row);
     add(summary, row);
+    if (!row.unclosedDays) {
+      add(closed, row);
+      closedDays++;
+    }
     buckets.set(key, bucket);
+  }
+  if (!closedDays) {
+    closed.occupiedRoomNights = null;
+    closed.roomSalesValue = null;
   }
   const dto = (row: Totals) => ({
     ...row,
@@ -205,6 +215,7 @@ export function occupancyDto(
   });
   return {
     summary: dto(summary),
+    closedSummary: { ...dto(closed), closedDays },
     series: [...buckets].map(([date, row]) => ({ date, ...dto(row) })),
   };
 }

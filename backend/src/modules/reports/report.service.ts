@@ -195,6 +195,7 @@ export class ReportService {
         ...ctx.meta,
         filters: { roomTypeId: query.roomTypeId ?? null },
         summary: redact(result.summary),
+        closedSummary: redact(result.closedSummary),
         series: result.series.map(redact),
         basis: 'OPERATIONAL_NIGHT_END_SNAPSHOT_WITH_ESTIMATED_CAPACITY',
         dataQuality: {

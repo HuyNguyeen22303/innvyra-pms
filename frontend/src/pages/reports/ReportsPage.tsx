@@ -62,30 +62,10 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   // Role permissions
   const canViewFinancial = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
   const canViewFrontDeskReports = ['ADMIN', 'MANAGER', 'RECEPTIONIST'].includes(userRole);
+  const canViewOperations = canViewFrontDeskReports || ['HOUSEKEEPING', 'TECHNICIAN'].includes(userRole);
   const canExportCsv = ['ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(userRole);
 
-  // Available tabs calculation
-  const availableTabs = useMemo(() => {
-    const tabs: { key: string; label: string; icon: React.ReactNode }[] = [];
-    if (canViewFinancial) {
-      tabs.push({ key: 'revenue', label: 'Doanh thu & Bán phòng', icon: <DollarOutlined /> });
-      tabs.push({ key: 'payments', label: 'Dòng tiền & Thu chi', icon: <CreditCardOutlined /> });
-      tabs.push({ key: 'procurement', label: 'Mua vật tư & Công nợ NCC', icon: <FileTextOutlined /> });
-    }
-    if (canViewFrontDeskReports) {
-      tabs.push({ key: 'occupancy', label: 'Công suất & ADR / RevPAR', icon: <CalendarOutlined /> });
-      tabs.push({ key: 'reservations', label: 'Đặt phòng & Nguồn khách', icon: <AppstoreOutlined /> });
-    }
-    // Operations available to all 6 roles
-    tabs.push({ key: 'operations', label: 'Vận hành Buồng & Bảo trì', icon: <ToolOutlined /> });
-    if (canViewFinancial) {
-      tabs.push({ key: 'outstanding', label: 'Sổ theo dõi Công nợ', icon: <FileTextOutlined /> });
-    }
-    return tabs;
-  }, [canViewFinancial, canViewFrontDeskReports]);
-
-  // Active Tab
-  const [activeTab, setActiveTab] = useState<string>(() => availableTabs[0]?.key || 'operations');
+  const [selectedTab, setSelectedTab] = useState('');
 
   // Date Range state: default to 30 days up to end of today [today - 30 days, today + 1 day)
   const [rangeOverride, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
@@ -267,6 +247,7 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
               selectedRoomTypeId={selectedRoomTypeId}
               onSelectedRoomTypeIdChange={setSelectedRoomTypeId}
               dateRange={dateRange}
+              hotelDate={hotelDate}
               onDateRangeChange={setDateRange}
             />
           </div>
@@ -288,7 +269,7 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       });
     }
 
-    items.push({
+    if (canViewOperations) items.push({
       key: 'operations',
       label: (
         <Space>
@@ -324,6 +305,7 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   }, [
     canViewFinancial,
     canViewFrontDeskReports,
+    canViewOperations,
     startDateStr,
     endDateStr,
     groupBy,
@@ -331,7 +313,9 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
     selectedRoomTypeId,
     userRole,
     dateRange,
+    hotelDate,
   ]);
+  const activeTab = tabItems.some(({ key }) => key === selectedTab) ? selectedTab : tabItems[0]?.key ?? '';
 
   return (
     <div style={{ padding: '0 4px', maxWidth: 1400, margin: '0 auto' }}>
@@ -437,7 +421,7 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       <Card style={{ borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
         <Tabs
           activeKey={activeTab}
-          onChange={(key) => setActiveTab(key)}
+          onChange={setSelectedTab}
           type="line"
           items={tabItems}
         />

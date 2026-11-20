@@ -131,6 +131,14 @@ export const staySchemas = {
     required: ['items', 'pagination'],
     properties: {
       items: { type: 'array', items: ref('StaySummary') },
+      statusCounts: {
+        type: 'object',
+        required: ['CHECKED_IN', 'CHECKED_OUT'],
+        properties: {
+          CHECKED_IN: { type: 'integer', minimum: 0 },
+          CHECKED_OUT: { type: 'integer', minimum: 0 },
+        },
+      },
       pagination: {
         type: 'object',
         required: ['page', 'limit', 'total', 'totalPages'],
@@ -244,8 +252,9 @@ export const stayPaths = {
         query(
           'search',
           { type: 'string', minLength: 1, maxLength: 100 },
-          'Confirmation code, guest full name or room number substring',
+          'Confirmation code or room-number substring. Guest-name search is available to front-desk roles.',
         ),
+        query('includeStatusCounts', { type: 'boolean' }, 'Include counts by status for all stays matching the filters'),
         query(
           'sortBy',
           {

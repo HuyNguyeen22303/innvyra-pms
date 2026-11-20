@@ -109,12 +109,15 @@ export class StayService {
   }
   async list(scope: StayScope, query: StayQuery) {
     this.authorize(scope, 'read');
-    const { items, total } = await this.repository.list(scope.hotelId, query);
-    return pageResult(
+    const { items, total, statusCounts } = await this.repository.list(
+      scope.hotelId, query, scope.role !== 'ACCOUNTANT',
+    );
+    const page = pageResult(
       items.map((stay) => staySummary(stay, scope.role)),
       total,
       query,
     );
+    return statusCounts ? { ...page, statusCounts } : page;
   }
   async detail(scope: StayScope, id: bigint) {
     this.authorize(scope, 'read');

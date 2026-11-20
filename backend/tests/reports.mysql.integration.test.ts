@@ -993,6 +993,9 @@ describe.skipIf(!testUrl)(
       const occupancy = await get('occupancy', range, 'RECEPTIONIST');
       expect(occupancy.body.data.summary).not.toHaveProperty('roomSalesValue');
       expect(occupancy.body.data.series[0]).not.toHaveProperty('operationalAdr');
+      for (const field of ['roomSalesValue', 'operationalAdr', 'operationalRevpar']) {
+        expect(occupancy.body.data.closedSummary).not.toHaveProperty(field);
+      }
       expect((await get('reservations', range, 'RECEPTIONIST')).status).toBe(200);
       expect((await get('revenue', range, 'MANAGER')).status).toBe(200);
     });

@@ -1,9 +1,9 @@
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
 import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
 import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
-import React, { useState, useDeferredValue, useRef } from 'react';
+import React, { useState, useDeferredValue, useEffect, useRef } from 'react';
 import { isAxiosError } from 'axios';
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Button,
   Space,
@@ -102,13 +102,25 @@ export const InventoryIssuesTab: React.FC = () => {
     { key: 'line-1', itemId: '', quantity: 1, notes: '' },
   ]);
 
-  // Query Items for line item selection
-  const { data: itemsRes } = useQuery({
-    queryKey: ['inventory', 'items', 'all-active-for-issues'],
-    queryFn: () => inventoryApi.getItems({ page: 1, limit: 100, isActive: true }),
+  const [itemSearch, setItemSearch] = useState('');
+  const [itemTerm, setItemTerm] = useState('');
+  const [selectedItems, setSelectedItems] = useState<Record<string, InventoryItemView>>({});
+  useEffect(() => {
+    const timer = window.setTimeout(() => setItemTerm(itemSearch.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [itemSearch]);
+  const itemPicker = useInfiniteQuery({
+    queryKey: ['inventory', 'items', 'issue-picker', itemTerm],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
+      inventoryApi.getItems({ page: pageParam, limit: 20, search: itemTerm || undefined, isActive: true }, signal),
+    getNextPageParam: ({ data: { pagination } }) =>
+      pagination.page < pagination.totalPages ? pagination.page + 1 : undefined,
+    enabled: canCreate && isCreateOpen,
   });
-  const activeItems = itemsRes?.data?.items || [];
-  const itemMap = new Map<string, InventoryItemView>(activeItems.map((item) => [item.id, item]));
+  const activeItems = itemPicker.data?.pages.flatMap(({ data }) => data.items) ?? [];
+  const itemMap = new Map(Object.entries(selectedItems));
+  for (const item of activeItems) itemMap.set(item.id, item);
 
   // Query Issues
   const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined;
@@ -171,6 +183,8 @@ export const InventoryIssuesTab: React.FC = () => {
 
   // Line item change handlers
   const handleItemSelect = (index: number, itemId: string) => {
+    const chosen = itemMap.get(itemId);
+    if (chosen) setSelectedItems((items) => ({ ...items, [itemId]: chosen }));
     // Check if item already exists in other lines
     const existingIndex = issueLines.findIndex((l, i) => i !== index && l.itemId === itemId);
     if (existingIndex >= 0) {
@@ -424,6 +438,9 @@ export const InventoryIssuesTab: React.FC = () => {
                 createForm.resetFields();
                 createForm.setFieldValue('issueDate', hotelDate ? dayjs(hotelDate) : undefined);
                 setErrorMessage(null);
+                setSelectedItems({});
+                setItemSearch('');
+                setItemTerm('');
                 setIssueLines([
                   { key: 'line-1', itemId: '', quantity: 1, notes: '' },
                 ]);
@@ -608,6 +625,9 @@ export const InventoryIssuesTab: React.FC = () => {
           >
             {issueLines.map((line, idx) => {
               const selectedItem = itemMap.get(line.itemId);
+              const options = selectedItem && !activeItems.some(({ id }) => id === selectedItem.id)
+                ? [selectedItem, ...activeItems]
+                : activeItems;
               const currentStockNum = selectedItem ? parseFloat(selectedItem.currentStock) || 0 : 0;
               const isOverStock = selectedItem && line.quantity > currentStockNum;
 
@@ -630,8 +650,25 @@ export const InventoryIssuesTab: React.FC = () => {
                       onChange={(val) => handleItemSelect(idx, val)}
                       style={{ width: '100%' }}
                       showSearch
-                      optionFilterProp="label"
-                      options={activeItems.map((item) => ({
+                      filterOption={false}
+                      onSearch={setItemSearch}
+                      onOpenChange={(open) => {
+                        if (open) {
+                          setItemSearch('');
+                          setItemTerm('');
+                        }
+                      }}
+                      loading={itemPicker.isFetching}
+                      notFoundContent={itemPicker.isError
+                        ? <Button onClick={() => void itemPicker.refetch()}>Thử lại</Button>
+                        : itemPicker.isFetching ? 'Đang tải vật tư…' : 'Không tìm thấy vật tư'}
+                      onPopupScroll={({ currentTarget }) => {
+                        const { scrollTop, clientHeight, scrollHeight } = currentTarget as HTMLDivElement;
+                        if (scrollTop + clientHeight >= scrollHeight - 24 && itemPicker.hasNextPage && !itemPicker.isFetching) {
+                          void itemPicker.fetchNextPage();
+                        }
+                      }}
+                      options={options.map((item) => ({
                         label: `${item.name} (${item.code}) [Tồn: ${formatInventoryQuantity(item.currentStock)} ${item.unit}]`,
                         value: item.id,
                       }))}

@@ -196,10 +196,11 @@ export const inventoryApi = {
   // Items
   getItems: async (
     params?: ItemQueryParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<InventoryItemView>>> => {
     const response = await apiClient.get<ApiResponse<PaginatedResult<InventoryItemView>>>(
       '/inventory/items',
-      { params: cleanParams(params) },
+      { params: cleanParams(params), signal },
     );
     return response.data;
   },

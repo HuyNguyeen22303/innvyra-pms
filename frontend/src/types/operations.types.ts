@@ -122,6 +122,7 @@ export interface HousekeepingFilterParams {
 }
 
 export interface DirtyRoomFilterParams {
+  search?: string;
   page?: number;
   limit?: number;
   sortOrder?: 'asc' | 'desc';

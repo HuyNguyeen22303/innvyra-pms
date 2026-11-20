@@ -20,8 +20,10 @@ import {
   terminalSettlementBody,
 } from '../src/modules/billing/billing.schema.js';
 import { canonicalJson } from '../src/modules/billing/billing.service.js';
+import { billingRoutes } from '../src/modules/billing/billing.routes.js';
 import { openApiDocument } from '../src/config/swagger.js';
 import { billingPaths } from '../src/config/billing.openapi.js';
+import { testEnv } from './helpers.js';
 
 describe('Billing Decimal and validation policy', () => {
   it('verifies the requested 1,950,000 - 500,000 - 1,000,000 = 450,000 example', () => {
@@ -236,9 +238,23 @@ describe('Billing Decimal and validation policy', () => {
     ])
       expect(terminalSettlementBody.safeParse({ ...body, ...invalid }).success).toBe(false);
   });
-  it('documents all 21 Billing operations, auth, roles, errors and resolvable references', () => {
+  it('documents all registered Billing operations, auth, roles, errors and resolvable references', () => {
+    const router = billingRoutes(
+      {} as Parameters<typeof billingRoutes>[0],
+      {} as Parameters<typeof billingRoutes>[1],
+      testEnv,
+    );
+    const registered = router.stack.flatMap(({ route }) => {
+      if (!route) return [];
+      const path = route.path.replace(/:(\w+)/g, '{$1}');
+      const methods = new Set(route.stack.map(({ method }) => method));
+      return [...methods].map((method) => `${method} ${path}`);
+    });
+    const documented = Object.entries(billingPaths).flatMap(([path, methods]) =>
+      Object.keys(methods).map((method) => `${method} ${path}`),
+    );
+    expect(documented.sort()).toEqual(registered.sort());
     const operations = Object.values(billingPaths).flatMap(Object.values);
-    expect(operations).toHaveLength(21);
     for (const operation of operations) {
       expect(operation.security).toEqual([{ bearerAuth: [] }]);
       expect(operation['x-required-roles'].length).toBeGreaterThan(0);

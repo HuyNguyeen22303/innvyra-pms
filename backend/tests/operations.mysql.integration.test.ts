@@ -398,6 +398,10 @@ describe.skipIf(!testUrl)(
       expect((await post(taskPath(id, 'start'))).status).toBe(403);
       const dirty = await get('/housekeeping/dirty-rooms?floorNumber=3&limit=1&sortOrder=desc');
       expect(dirty.body.data.items[0].occupancyStatus).toBe('VACANT');
+      const roomNumber = encodeURIComponent(dirty.body.data.items[0].roomNumber);
+      const searched = await get(`/housekeeping/dirty-rooms?search=${roomNumber}&limit=1`);
+      expect(searched.body.data.items[0].id).toBe(dirty.body.data.items[0].id);
+      expect((await get('/housekeeping/dirty-rooms?search=missing-room')).body.data.pagination.total).toBe(0);
       expect(JSON.stringify(dirty.body)).not.toMatch(/PRIVATE_|passwordHash|bookerGuest/);
       expect(JSON.stringify((await get('/housekeeping/tasks/' + id)).body)).not.toMatch(
         /PRIVATE_|passwordHash|bookerGuest/,

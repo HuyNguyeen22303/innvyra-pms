@@ -10,6 +10,10 @@ import type {
   StayFilterParams,
 } from '../types/stays.types.ts';
 
+type StayPage = PaginatedResult<StaySummaryItem> & {
+  statusCounts?: Record<StaySummaryItem['status'], number>;
+};
+
 export const staysApi = {
   /**
    * Lấy danh sách lượt lưu trú (hỗ trợ phân trang, lọc theo trạng thái CHECKED_IN/CHECKED_OUT, số phòng, ngày)
@@ -17,8 +21,8 @@ export const staysApi = {
   getAll: async (
     params?: StayFilterParams,
     signal?: AbortSignal,
-  ): Promise<ApiResponse<PaginatedResult<StaySummaryItem>>> => {
-    const res = await apiClient.get<ApiResponse<PaginatedResult<StaySummaryItem>>>('/stays', {
+  ): Promise<ApiResponse<StayPage>> => {
+    const res = await apiClient.get<ApiResponse<StayPage>>('/stays', {
       params: { limit: 50, ...params },
       signal,
     });

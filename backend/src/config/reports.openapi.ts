@@ -94,6 +94,9 @@ const occupancyMetrics = {
       'Occupied / estimated sellable room nights × 100; 2 decimals, null for zero denominator or incomplete occupancy.',
   },
 };
+const publicOccupancyFields = Object.keys(occupancyMetrics).filter(
+  (field) => !['roomSalesValue', 'operationalAdr', 'operationalRevpar'].includes(field),
+);
 const financialReport = (metrics: object) =>
   obj({
     ...common,
@@ -111,20 +114,11 @@ export const reportSchemas = {
   PaymentReport: financialReport(paymentMetrics),
   OccupancyReport: obj({
     ...common,
-    summary: obj(
-      occupancyMetrics,
-      Object.keys(occupancyMetrics).filter(
-        (f) => !['roomSalesValue', 'operationalAdr', 'operationalRevpar'].includes(f),
-      ),
-    ),
+    summary: obj(occupancyMetrics, publicOccupancyFields),
+    closedSummary: obj({ ...occupancyMetrics, closedDays: integer }, [...publicOccupancyFields, 'closedDays']),
     series: {
       type: 'array',
-      items: obj({ date, ...occupancyMetrics }, [
-        'date',
-        ...Object.keys(occupancyMetrics).filter(
-          (f) => !['roomSalesValue', 'operationalAdr', 'operationalRevpar'].includes(f),
-        ),
-      ]),
+      items: obj({ date, ...occupancyMetrics }, ['date', ...publicOccupancyFields]),
     },
     filters: obj({ roomTypeId: { ...text, nullable: true } }),
     basis: text,
@@ -472,6 +466,7 @@ export const reportPaths = {
     {
       ...exampleCommon,
       summary: occupancyExample,
+      closedSummary: { ...occupancyExample, closedDays: 1 },
       series: [{ date: '2026-10-01', ...occupancyExample }],
       filters: { roomTypeId: null },
       basis: 'OPERATIONAL_NIGHT_END_SNAPSHOT_WITH_ESTIMATED_CAPACITY',

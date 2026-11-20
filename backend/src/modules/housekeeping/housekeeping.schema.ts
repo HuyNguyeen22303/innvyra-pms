@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { HousekeepingPriority, HousekeepingTaskStatus } from '../../generated/prisma/enums.js';
-import { floorQuerySchema, idSchema } from '../../shared/validation/room-input.js';
+import { floorQuerySchema, idSchema, paginationFields } from '../../shared/validation/room-input.js';
 import { notes, pageFields } from '../operations/operations.shared.js';
 export const createTaskBody = z
   .object({
@@ -37,6 +37,7 @@ export const taskQuery = z
 export const dirtyRoomQuery = z
   .object({
     ...pageFields,
+    search: paginationFields.search,
     floorNumber: floorQuerySchema.optional(),
     sortBy: z.enum(['roomNumber', 'floorNumber']).default('roomNumber'),
   })

@@ -263,9 +263,11 @@ export class PrismaInventoryRepository {
       where.currentStock = { lte: 0 };
     } else if (query.stockStatus === 'IN_STOCK') {
       where.currentStock = { gt: 0 };
+    } else if (query.stockStatus === 'LOW_STOCK') {
+      where.currentStock = { lte: this.db.inventoryItem.fields.minStockLevel };
     }
 
-    const items = await this.db.inventoryItem.findMany({
+    const options = {
       where,
       include: {
         category: {
@@ -273,23 +275,17 @@ export class PrismaInventoryRepository {
         },
       },
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
-    });
-
-    // Handle LOW_STOCK filtering in application memory since it compares two columns (currentStock <= minStockLevel)
-    let filteredItems = items;
-    if (query.stockStatus === 'LOW_STOCK') {
-      filteredItems = items.filter(
-        (item) => Number(item.currentStock) <= Number(item.minStockLevel),
-      );
-    }
-
-    const total = filteredItems.length;
-    const paginatedItems = filteredItems.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
-    );
-
-    return { items: paginatedItems, total };
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    } satisfies Prisma.InventoryItemFindManyArgs;
+    const read = async (db: Prisma.TransactionClient) => {
+      const items = await db.inventoryItem.findMany(options);
+      const total = await db.inventoryItem.count({ where });
+      return { items, total };
+    };
+    return this.tx
+      ? read(this.tx)
+      : this.prisma.$transaction(read, { isolationLevel: 'RepeatableRead' });
   }
 
   async createItem(data: Prisma.InventoryItemUncheckedCreateInput): Promise<ItemWithCategory> {

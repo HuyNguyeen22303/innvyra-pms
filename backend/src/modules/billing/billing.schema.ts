@@ -14,6 +14,12 @@ export const positiveMoney = moneyInput.refine(
   'Amount must be positive',
 );
 export const reasonInput = z.string().trim().min(1).max(2000);
+export const folioSummariesQuery = z.object({
+  reservationIds: z.string().max(1049)
+    .transform((value) => value.split(','))
+    .pipe(z.array(idSchema).min(1).max(50))
+    .transform((ids) => [...new Set(ids)]),
+}).strict();
 export const idempotencyKey = z
   .string()
   .regex(

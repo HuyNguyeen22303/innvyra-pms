@@ -98,6 +98,15 @@ export const billingSchemas = {
     updatedAt: date,
     items: { type: 'array', items: orderItem },
   }),
+  BillingFolioSummaries: object({
+    items: { type: 'array', items: object({
+      reservationId: id,
+      folioId: id,
+      status: { type: 'string', enum: ['OPEN', 'CLOSED'] },
+      closedAt: { ...date, nullable: true },
+      outstandingBalance: total,
+    }) },
+  }),
   BillingFolio: object({
     id,
     reservationId: id,
@@ -594,6 +603,21 @@ export const billingPaths = {
       'read',
       'BillingFolio',
       { params: ['reservationId'] },
+    ),
+  },
+  '/folios/summaries': {
+    get: operation(
+      'Folios',
+      'Folio summaries',
+      'Read summaries for up to 50 comma-separated reservation IDs. Missing folios and IDs outside the current hotel are omitted.',
+      'read',
+      'BillingFolioSummaries',
+      {
+        queries: [{ ...query('reservationIds', { type: 'string', example: '101,102', maxLength: 1049 }), required: true }],
+        responseExample: {
+          items: [{ reservationId: '101', folioId: '30', status: 'OPEN', closedAt: null, outstandingBalance: '450000.00' }],
+        },
+      },
     ),
   },
   '/folios/{id}': {

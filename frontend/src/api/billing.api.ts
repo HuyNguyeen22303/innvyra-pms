@@ -10,6 +10,7 @@ import type {
   CancelServiceOrderDto,
   OrderQueryParams,
   FolioDetailItem,
+  FolioSummary,
   FolioItemRecord,
   CreateAdjustmentDto,
   LedgerQueryParams,
@@ -186,6 +187,14 @@ export const billingApi = {
     const res = await apiClient.get<ApiResponse<FolioDetailItem>>(
       `/reservations/${reservationId}/folio`
     );
+    return res.data;
+  },
+
+  getFolioSummaries: async (reservationIds: string[], signal?: AbortSignal) => {
+    const res = await apiClient.get<ApiResponse<{ items: FolioSummary[] }>>('/folios/summaries', {
+      params: { reservationIds: reservationIds.join(',') },
+      signal,
+    });
     return res.data;
   },
 

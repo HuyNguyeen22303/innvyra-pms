@@ -319,6 +319,25 @@ export class BillingService {
       return folioDto(folio, await this.balance(r, scope, folio.id));
     });
   }
+  async folioSummaries(scope: BillingScope, reservationIds: string[]) {
+    this.authorize(scope, 'read');
+    return this.repository.snapshot(async (r) => {
+      const folios = await r.reservationFolios(scope.hotelId, reservationIds.map(BigInt));
+      const ledgers = await r.ledgers(scope.hotelId, folios.map(({ id }) => id));
+      return {
+        items: folios.map((folio) => {
+          const ledger = ledgers.get(folio.id)!;
+          return {
+            reservationId: folio.reservationId.toString(),
+            folioId: folio.id.toString(),
+            status: folio.status,
+            closedAt: folio.closedAt,
+            outstandingBalance: calculateBalance(ledger.items, ledger.payments).outstandingBalance.toFixed(2),
+          };
+        }),
+      };
+    });
+  }
   async listItems(scope: BillingScope, id: bigint, query: LedgerQuery) {
     this.authorize(scope, 'read');
     return this.repository.snapshot(async (r) => {

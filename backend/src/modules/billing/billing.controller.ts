@@ -6,6 +6,7 @@ import type {
   BillingScope,
   CreateOrderInput,
   CreateServiceInput,
+  FolioSummariesQuery,
   LedgerQuery,
   OrderQuery,
   PaymentInput,
@@ -75,6 +76,9 @@ export function billingController(service: BillingService) {
     ),
     reservationFolio: handler('Folio retrieved', (scope, { params }) =>
       service.getFolio(scope, BigInt(params.reservationId!), true),
+    ),
+    folioSummaries: handler<object, FolioSummariesQuery>('Folio summaries retrieved', (scope, { query }) =>
+      service.folioSummaries(scope, query.reservationIds),
     ),
     folio: handler('Folio retrieved', (scope, { params }) =>
       service.getFolio(scope, BigInt(params.id!)),

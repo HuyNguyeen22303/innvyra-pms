@@ -22,7 +22,7 @@ import { reportsApi } from '../../../api/reports.api.ts';
 import { roomTypesApi } from '../../../api/rooms.api.ts';
 import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
 import type { OccupancySeriesItem } from '../../../types/reports.types.ts';
-import { divideReportMoney, formatVnd, sumReportMoney } from '../reports.utils.ts';
+import { formatVnd } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
@@ -36,6 +36,7 @@ export interface OccupancyTabProps {
   selectedRoomTypeId?: string;
   onSelectedRoomTypeIdChange: (val?: string) => void;
   dateRange: [dayjs.Dayjs, dayjs.Dayjs];
+  hotelDate: string;
   onDateRangeChange: (range: [dayjs.Dayjs, dayjs.Dayjs]) => void;
 }
 
@@ -47,6 +48,7 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
   selectedRoomTypeId,
   onSelectedRoomTypeIdChange,
   dateRange,
+  hotelDate,
   onDateRangeChange,
 }) => {
   const screens = Grid.useBreakpoint();
@@ -77,28 +79,10 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
   const summary = occ?.summary;
   const isReceptionist = userRole === 'RECEPTIONIST';
 
-  // Aggregates computed on closed days in the current series as fallback for ongoing day periods
-  const { closedSeries, closedOccupied, closedSellable, closedOccupancyRate, closedAdr, closedRevpar } = useMemo(() => {
-    const series = occ?.series?.filter((s) => s.unclosedDays === 0 && s.sellableRoomNights > 0) || [];
-    const occupied = series.reduce((acc, s) => acc + (s.occupiedRoomNights ?? 0), 0);
-    const sellable = series.reduce((acc, s) => acc + s.sellableRoomNights, 0);
-    const sales = sumReportMoney(...series.map((day) => day.roomSalesValue));
-    const occRate = sellable > 0 ? Number(((occupied / sellable) * 100).toFixed(2)) : null;
-    const adr = divideReportMoney(sales, occupied);
-    const revpar = divideReportMoney(sales, sellable);
-    return {
-      closedSeries: series,
-      closedOccupied: occupied,
-      closedSellable: sellable,
-      closedOccupancyRate: occRate,
-      closedAdr: adr,
-      closedRevpar: revpar,
-    };
-  }, [occ?.series]);
-
-  const displayOccupancyRate = summary?.occupancyRate ?? closedOccupancyRate;
-  const displayAdr = summary?.operationalAdr ?? closedAdr;
-  const displayRevpar = summary?.operationalRevpar ?? closedRevpar;
+  const metrics = summary?.unclosedDays ? occ?.closedSummary : summary;
+  const displayOccupancyRate = metrics?.occupancyRate;
+  const displayAdr = metrics?.operationalAdr;
+  const displayRevpar = metrics?.operationalRevpar;
 
   const occupancyChartData: BarComparisonItem[] = useMemo(() => {
     return (occ?.series || []).map((item) => ({
@@ -213,13 +197,14 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
           description={
             <Space orientation="vertical" style={{ width: '100%', marginTop: 4 }}>
               <Text>
-                Theo chuẩn kiểm toán khách sạn, ngày hôm nay đang mở và chỉ chốt đêm khi chạy Night Audit vào rạng sáng hôm sau. Thẻ tổng quan bên dưới phản ánh số liệu từ {closedSeries.length} ngày đã chốt xong đêm.
+                Thẻ tổng quan phản ánh số liệu từ {occ?.closedSummary?.closedDays ?? 0} ngày đã chốt đêm trong kỳ.
               </Text>
               <Button
                 size="small"
                 type="primary"
                 ghost
-                onClick={() => onDateRangeChange([dateRange[0], dayjs().startOf('day')])}
+                disabled={startDateStr >= hotelDate}
+                onClick={() => onDateRangeChange([dateRange[0], dayjs(hotelDate)])}
               >
                 Chỉ xem các đêm đã hoàn tất chốt đêm
               </Button>
@@ -266,7 +251,7 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
               styles={{ content: { color: '#1b4d3e', fontWeight: 600, fontSize: 20 } }}
             />
             <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>
-              {summary?.occupiedRoomNights ?? closedOccupied} / {summary?.sellableRoomNights ?? closedSellable} phòng-đêm
+              {metrics?.occupiedRoomNights ?? '—'} / {metrics?.sellableRoomNights ?? '—'} phòng-đêm
             </Text>
           </Card>
         </Col>
@@ -314,7 +299,7 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
           >
             <Statistic
               title={<Text strong style={{ color: '#595959' }}>Phòng bảo trì / OOS</Text>}
-              value={summary?.maintenanceBlockedRoomNights || 0}
+              value={metrics?.maintenanceBlockedRoomNights ?? '—'}
               styles={{ content: { color: '#d46b08', fontWeight: 600, fontSize: 20 } }}
             />
             <Text type="secondary" style={{ fontSize: 12, marginTop: 4 }}>

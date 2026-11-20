@@ -17,6 +17,7 @@ import {
   createOrderBody,
   createServiceBody,
   emptyBody,
+  folioSummariesQuery,
   idempotencyKey,
   ledgerQuery,
   orderQuery,
@@ -90,6 +91,7 @@ export function billingRoutes(service: BillingService, auth: AuthService, env: E
   add('get', '/reservations/:reservationId/folio', 'read', c.reservationFolio, {
     params: reservationParams,
   });
+  add('get', '/folios/summaries', 'read', c.folioSummaries, { query: folioSummariesQuery });
   add('get', '/folios/:id', 'read', c.folio, { params: idParams });
   add('get', '/folios/:id/items', 'read', c.items, { params: idParams, query: ledgerQuery });
   add('post', '/folios/:id/adjustments', 'settle', c.adjust, {

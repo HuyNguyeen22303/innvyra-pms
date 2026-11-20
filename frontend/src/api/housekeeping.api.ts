@@ -120,12 +120,14 @@ export const housekeepingApi = {
    * GET /housekeeping/dirty-rooms
    */
   getDirtyRooms: async (
-    params?: DirtyRoomFilterParams
+    params?: DirtyRoomFilterParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<DirtyRoomItem>>> => {
     const res = await apiClient.get<ApiResponse<PaginatedResult<DirtyRoomItem>>>(
       '/housekeeping/dirty-rooms',
       {
         params: { limit: 100, ...params },
+        signal,
       }
     );
     return res.data;

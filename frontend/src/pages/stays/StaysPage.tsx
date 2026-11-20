@@ -1,7 +1,7 @@
 import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
-import React, { useState, useMemo, useEffect, useCallback, useDeferredValue } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Button,
   Space,
@@ -89,18 +89,6 @@ const formatStayTimestamp = (iso: string): FormattedTimestamp => {
   const d = dayjs(iso);
   return { text: d.format('DD/MM/YYYY HH:mm'), weekday: WEEKDAY_LABELS[d.day()] ?? '' };
 };
-
-/**
- * Lowercase + strip Vietnamese diacritics, so typing "nguyen van an" still finds
- * "Nguyễn Văn An" (and "đ" is folded to "d").
- */
-const normalizeForSearch = (value: string): string =>
-  value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .trim();
 
 /**
  * Table row enriched with pre-formatted date strings, so cell renderers never
@@ -538,7 +526,9 @@ export const StaysPage: React.FC = () => {
   // TAB 1: STAYS LIST STATE & FILTERS
   // ----------------------------------------------------
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const searchTerm = searchKeyword.trim();
   const [statusFilter, setStatusFilter] = useState<StayStatus | undefined>(undefined);
+  const [staysPage, setStaysPage] = useState(1);
   const [staysPageSize, setStaysPageSize] = useState<number>(15);
 
   // Modals & Drawer State
@@ -566,43 +556,32 @@ export const StaysPage: React.FC = () => {
   // 1. Fetch Stays List
   const {
     data: staysData,
-    isLoading: isLoadingStays,
+    isFetching: isLoadingStays,
+    isError: isStaysError,
+    isPlaceholderData: isStaysPlaceholder,
     refetch: refetchStays,
   } = useQuery({
-    // The whole list is fetched once and filtered in the browser, so typing in
-    // the search box never issues a request: no round-trip, no spinner, and
-    // nothing blocking the main thread while a key is held down.
-    queryKey: ['stays', statusFilter],
+    queryKey: ['stays', 'list', staysPage, staysPageSize, statusFilter, searchTerm],
     queryFn: ({ signal }) =>
-      staysApi.getAllPages({
+      staysApi.getAll({
+        page: staysPage,
+        limit: staysPageSize,
         status: statusFilter,
+        search: searchTerm || undefined,
+        includeStatusCounts: true,
         sortBy: 'actualCheckinAt',
         sortOrder: 'desc',
       }, signal),
-    // Status changes still refetch; keep the previous rows on screen meanwhile
-    // instead of blanking the grid and remounting every row.
     placeholderData: keepPreviousData,
   });
-
-  const stays: StaySummaryItem[] = useMemo(() => staysData ?? [], [staysData]);
-
-  // Match by guest name, room number or confirmation code in one box.
-  const filteredStays = useMemo(() => {
-    const query = normalizeForSearch(searchKeyword);
-    if (!query) return stays;
-
-    return stays.filter((stay) =>
-      normalizeForSearch(
-        [stay.bookerGuest?.fullName, stay.room?.roomNumber, stay.confirmationCode]
-          .filter(Boolean)
-          .join(' ')
-      ).includes(query)
-    );
-  }, [stays, searchKeyword]);
+  const lastStaysPage = Math.max(1, staysData?.data.pagination.totalPages ?? 1);
+  useEffect(() => {
+    if (staysData && !isStaysPlaceholder && staysPage > lastStaysPage) setStaysPage(lastStaysPage);
+  }, [staysPage, lastStaysPage, staysData, isStaysPlaceholder]);
 
   const stayRows = useMemo<StayRow[]>(
     () =>
-      filteredStays.map((stay) => {
+      (staysData?.data.items ?? []).map((stay) => {
         const checkin = formatStayTimestamp(stay.actualCheckinAt);
         const checkout = stay.actualCheckoutAt
           ? formatStayTimestamp(stay.actualCheckoutAt)
@@ -615,17 +594,8 @@ export const StaysPage: React.FC = () => {
           checkoutWeekday: checkout?.weekday ?? '',
         };
       }),
-    [filteredStays]
+    [staysData]
   );
-
-  // Rendering the grid is by far the most expensive part of a search. Keeping
-  // the data one step behind lets React abandon that render as soon as another
-  // keydown arrives, so a held Backspace never waits for the table to finish.
-  const deferredStayRows = useDeferredValue(stayRows);
-  // While the deferred copy is still empty (first payload, or a filter that just
-  // returned nothing) fall back to the fresh rows: otherwise the table would
-  // paint the empty state for one frame before the deferred render lands.
-  const tableRows = deferredStayRows.length > 0 ? deferredStayRows : stayRows;
 
   // 2. Fetch Stay Detail for Drawer
   const { data: stayDetailRes, isLoading: isLoadingStayDetail } = useQuery({
@@ -639,7 +609,7 @@ export const StaysPage: React.FC = () => {
   const { data: allRoomsList = [] } = useQuery({
     queryKey: ['rooms', 'lookup'],
     queryFn: ({ signal }) => roomsApi.getLookup(signal),
-    enabled: canWrite,
+    enabled: canWrite && (isCheckinModalOpen || isTransferModalOpen),
   });
 
   // 4. Fetch Pending Arrivals (Reservations with status CONFIRMED or PARTIALLY_CHECKED_IN)
@@ -680,7 +650,7 @@ export const StaysPage: React.FC = () => {
       appMessage.success(<Space>Check-in thành công cho phòng #{roomNum}!
         {res.data?.folioId && <Link to={`/folios?reservationId=${res.data.reservationId}`}>Xem folio</Link>}</Space>, 6);
       queryClient.invalidateQueries({ queryKey: ['billing-folio', res.data.reservationId] });
-      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', res.data.reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items', res.data.folioId] });
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['arrivalReservations'] });
@@ -834,12 +804,11 @@ export const StaysPage: React.FC = () => {
   // ----------------------------------------------------
   // COMPUTED STATS & FILTERED LISTS
   // ----------------------------------------------------
-  const stats = useMemo(() => {
-    const total = filteredStays.length;
-    const inHouse = filteredStays.filter((s) => s.status === 'CHECKED_IN').length;
-    const checkedOut = filteredStays.filter((s) => s.status === 'CHECKED_OUT').length;
-    return { total, inHouse, checkedOut };
-  }, [filteredStays]);
+  const stats = useMemo(() => ({
+    total: staysData?.data.pagination.total ?? 0,
+    inHouse: staysData?.data.statusCounts?.CHECKED_IN ?? 0,
+    checkedOut: staysData?.data.statusCounts?.CHECKED_OUT ?? 0,
+  }), [staysData]);
 
   // Eligible READY & VACANT rooms for Transfer (must match transferStay.roomType.id, different room, and be READY, ACTIVE & VACANT)
   const eligibleRoomsForTransfer = useMemo(() => {
@@ -1143,14 +1112,19 @@ export const StaysPage: React.FC = () => {
     () => (
       <Table
         columns={stayColumns}
-        dataSource={tableRows}
+        dataSource={stayRows}
         rowKey="stayId"
         loading={isLoadingStays}
         pagination={{
+          current: staysPage,
           pageSize: staysPageSize,
+          total: stats.total,
           showSizeChanger: true,
           pageSizeOptions: ['10', '15', '30', '50'],
-          onChange: (_page, size) => setStaysPageSize(size),
+          onChange: (page, size) => {
+            setStaysPage(size === staysPageSize ? page : 1);
+            setStaysPageSize(size);
+          },
           showTotal: (total) => `Tổng cộng ${total} lượt lưu trú`,
         }}
         locale={{
@@ -1161,7 +1135,7 @@ export const StaysPage: React.FC = () => {
         scroll={{ x: 1200 }}
       />
     ),
-    [isLoadingStays, stayColumns, staysPageSize, tableRows]
+    [isLoadingStays, stayColumns, staysPage, staysPageSize, stayRows, stats.total]
   );
 
   // Memoized tab pane: the element identity only changes when the values it
@@ -1237,23 +1211,31 @@ export const StaysPage: React.FC = () => {
                     <Row gutter={[12, 12]} align="middle">
                       <Col xs={24} sm={14} md={10}>
                         <DebouncedSearchInput
-                          placeholder="Tìm theo tên khách, số phòng hoặc mã đơn đặt phòng..."
+                          placeholder={isAccountant ? 'Tìm theo số phòng hoặc mã đơn đặt phòng...' : 'Tìm theo tên khách, số phòng hoặc mã đơn đặt phòng...'}
                           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
                           value={searchKeyword}
-                          onChange={(val) => setSearchKeyword(val)}
+                          onChange={(val) => {
+                            setSearchKeyword(val);
+                            setStaysPage(1);
+                          }}
                           allowClear
-                          // Filtering is local now, so the search can feel snappy
-                          // without any network round-trip.
+                          maxLength={100}
                           debounceMs={180}
                         />
                       </Col>
-                      <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => setStatusFilter(undefined)}>
+                      <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => {
+                        setStatusFilter(undefined);
+                        setStaysPage(1);
+                      }}>
                       <Col xs={24} sm={10} md={6}>
                         <Select
                           placeholder="Trạng thái lưu trú"
                           style={{ width: '100%' }}
                           value={statusFilter}
-                          onChange={(val: any) => setStatusFilter(!val || val === 'ALL' ? undefined : val)}
+                          onChange={(val: StayStatus | 'ALL' | undefined) => {
+                            setStatusFilter(val === 'ALL' ? undefined : val);
+                            setStaysPage(1);
+                          }}
                           allowClear
                           options={[
                             { label: 'Tất cả trạng thái', value: 'ALL' },
@@ -1277,12 +1259,20 @@ export const StaysPage: React.FC = () => {
                   )}
 
                   {/* Stays Table */}
+                  {isStaysError && (
+                    <Alert
+                      title="Chưa tải được danh sách lưu trú"
+                      showIcon
+                      type="error"
+                      action={<Button onClick={() => void refetchStays()}>Thử lại</Button>}
+                    />
+                  )}
                   <Card styles={{ body: { padding: 0 } }} variant="outlined" style={{ borderRadius: 8 }}>
                     {staysTable}
                   </Card>
                 </>
     ),
-    [isAccountant, searchKeyword, setSearchKeyword, setStatusFilter, stats, statusFilter, staysTable]
+    [isAccountant, isStaysError, refetchStays, searchKeyword, stats, statusFilter, staysTable]
   );
 
   // Memoized tab pane: the element identity only changes when the values it

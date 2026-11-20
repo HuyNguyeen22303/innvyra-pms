@@ -896,6 +896,27 @@ describe.skipIf(!testUrl)(
         /private|passwordHash|documentNumber|phone|email/,
       );
     });
+    it('counts matching stays across pages and finds Vietnamese names only for eligible roles', async () => {
+      await db.guest.update({ where: { id: guestId }, data: { fullName: 'Nguyễn Đặng' } });
+      const id = await active();
+      await active(1);
+      expect((await post(`/api/v1/stays/${id}/check-out`, {})).status).toBe(200);
+
+      const searched = await get('/api/v1/stays?includeStatusCounts=true&search=nguyen%20dang&limit=1');
+      expect(searched.status).toBe(200);
+      expect(searched.body.data).toMatchObject({
+        pagination: { total: 2, totalPages: 2 },
+        statusCounts: { CHECKED_IN: 1, CHECKED_OUT: 1 },
+      });
+      expect(searched.body.data.items).toHaveLength(1);
+      expect((await get('/api/v1/stays?search=%25&includeStatusCounts=true')).body.data).toMatchObject({
+        items: [], statusCounts: { CHECKED_IN: 0, CHECKED_OUT: 0 },
+      });
+      await changeRole('ACCOUNTANT');
+      expect((await get('/api/v1/stays?search=nguyen%20dang')).body.data.items).toEqual([]);
+      expect((await get(`/api/v1/stays?search=${booking.confirmationCode}&includeStatusCounts=true&status=CHECKED_IN`)).body.data)
+        .toMatchObject({ pagination: { total: 1 }, statusCounts: { CHECKED_IN: 1, CHECKED_OUT: 0 } });
+    });
     it('rejects forged timestamps, state and hotel; enforces CSRF and strict query validation', async () => {
       for (const field of ['hotelId', 'status', 'actualCheckinAt', 'checkinStaffId', 'role']) {
         expect(

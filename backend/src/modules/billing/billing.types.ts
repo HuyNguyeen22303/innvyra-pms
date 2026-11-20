@@ -5,6 +5,7 @@ import type {
   adjustmentBody,
   createOrderBody,
   createServiceBody,
+  folioSummariesQuery,
   ledgerQuery,
   orderQuery,
   paymentBody,
@@ -25,6 +26,7 @@ export type TerminalSettlementInput = z.infer<typeof terminalSettlementBody>;
 export type ServiceQuery = z.infer<typeof serviceQuery>;
 export type OrderQuery = z.infer<typeof orderQuery>;
 export type LedgerQuery = z.infer<typeof ledgerQuery>;
+export type FolioSummariesQuery = z.infer<typeof folioSummariesQuery>;
 export const billingPermissions = {
   read: ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'ACCOUNTANT'],
   catalog: ['ADMIN', 'MANAGER'],

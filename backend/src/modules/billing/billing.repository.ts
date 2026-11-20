@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type FolioItem, type Payment, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import type {
   BillingOperations,
@@ -8,6 +8,11 @@ import type {
   OrderQuery,
   ServiceQuery,
 } from './billing.types.js';
+
+type FolioLedger = {
+  items: Pick<FolioItem, 'entryType' | 'amount'>[];
+  payments: Pick<Payment, 'paymentType' | 'status' | 'amount'>[];
+};
 
 const orderInclude = {
   items: { orderBy: { id: 'asc' } },
@@ -191,6 +196,12 @@ export class PrismaBillingRepository {
   reservationFolio(hotelId: bigint, reservationId: bigint) {
     return this.db.folio.findFirst({ where: { hotelId, reservationId } });
   }
+  reservationFolios(hotelId: bigint, reservationIds: bigint[]) {
+    return this.db.folio.findMany({
+      where: { hotelId, reservationId: { in: reservationIds } },
+      select: { id: true, reservationId: true, status: true, closedAt: true },
+    });
+  }
   createFolio(hotelId: bigint, reservationId: bigint) {
     return this.db.folio.create({ data: { hotelId, reservationId, currency: 'VND' } });
   }
@@ -227,28 +238,38 @@ export class PrismaBillingRepository {
     };
   }
   async ledger(hotelId: bigint, folioId: bigint) {
-    // Aggregate by entry category in SQL, then calculate with Decimal. No mutable balance column.
+    return (await this.ledgers(hotelId, [folioId])).get(folioId)!;
+  }
+  async ledgers(hotelId: bigint, folioIds: bigint[]) {
+    const ledgers = new Map<bigint, FolioLedger>(
+      folioIds.map((id) => [id, { items: [], payments: [] }]),
+    );
+    if (!folioIds.length) return ledgers;
+    const where = { hotelId, folioId: { in: folioIds } };
     const items = await this.db.folioItem.groupBy({
-      by: ['entryType'],
-      where: { hotelId, folioId },
+      by: ['folioId', 'entryType'],
+      where,
       _sum: { amount: true },
     });
     const payments = await this.db.payment.groupBy({
-      by: ['paymentType', 'status'],
-      where: { hotelId, folioId },
+      by: ['folioId', 'paymentType', 'status'],
+      where,
       _sum: { amount: true },
     });
-    return {
-      items: items.map((item) => ({
+    for (const item of items) {
+      ledgers.get(item.folioId)!.items.push({
         entryType: item.entryType,
         amount: item._sum.amount ?? new Prisma.Decimal(0),
-      })),
-      payments: payments.map((payment) => ({
+      });
+    }
+    for (const payment of payments) {
+      ledgers.get(payment.folioId)!.payments.push({
         paymentType: payment.paymentType,
         status: payment.status,
         amount: payment._sum.amount ?? new Prisma.Decimal(0),
-      })),
-    };
+      });
+    }
+    return ledgers;
   }
   payment(hotelId: bigint, id: bigint) {
     return this.db.payment.findFirst({ where: { hotelId, id } });

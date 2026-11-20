@@ -6,7 +6,7 @@ import type { CompleteMaterialsDto } from '../../api/supplies.api.ts';
 import { getInventoryErrorMessage } from '../../api/inventory.api.ts';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { hotelSessionGeneration } from '../../auth/hotelSession.ts';
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Typography,
   Card,
@@ -322,6 +322,7 @@ export const HousekeepingPage: React.FC = () => {
 
   // UI States
   const [activeTab, setActiveTab] = useState<string>("kanban");
+  const [dirtyPage, setDirtyPage] = useState(1);
   const [dirtyPageSize, setDirtyPageSize] = useState<number>(10);
   const [selectedTaskForDetail, setSelectedTaskForDetail] =
     useState<HousekeepingTaskItem | null>(null);
@@ -329,6 +330,9 @@ export const HousekeepingPage: React.FC = () => {
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [selectedDirtyRoom, setSelectedDirtyRoom] = useState<DirtyRoomItem>();
+  const [roomSearch, setRoomSearch] = useState("");
+  const [roomTerm, setRoomTerm] = useState("");
   const [isAssignModalOpen, setIsAssignModalOpen] = useState<boolean>(false);
   const [isInspectModalOpen, setIsInspectModalOpen] = useState<boolean>(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
@@ -395,14 +399,42 @@ export const HousekeepingPage: React.FC = () => {
   // 2. Dirty rooms queue
   const {
     data: dirtyRoomsRes,
-    isLoading: isDirtyLoading,
+    isFetching: isDirtyLoading,
+    isError: isDirtyError,
+    isPlaceholderData: isDirtyPlaceholder,
     refetch: refetchDirtyRooms,
   } = useQuery({
-    queryKey: ["dirty-rooms"],
-    queryFn: () => housekeepingApi.getDirtyRooms({ limit: 100 }),
+    queryKey: ["dirty-rooms", "queue", dirtyPage, dirtyPageSize],
+    queryFn: ({ signal }) => housekeepingApi.getDirtyRooms({ page: dirtyPage, limit: dirtyPageSize }, signal),
     enabled: canCreateTask,
+    placeholderData: keepPreviousData,
     staleTime: 10000,
   });
+  const dirtyTotal = dirtyRoomsRes?.data.pagination.total ?? 0;
+  const lastDirtyPage = Math.max(1, dirtyRoomsRes?.data.pagination.totalPages ?? 1);
+  useEffect(() => {
+    if (dirtyRoomsRes && !isDirtyPlaceholder && dirtyPage > lastDirtyPage) setDirtyPage(lastDirtyPage);
+  }, [dirtyPage, dirtyRoomsRes, isDirtyPlaceholder, lastDirtyPage]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setRoomTerm(roomSearch.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [roomSearch]);
+  const dirtyRoomPicker = useInfiniteQuery({
+    queryKey: ["dirty-rooms", "picker", roomTerm],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
+      housekeepingApi.getDirtyRooms({ page: pageParam, limit: 20, search: roomTerm || undefined }, signal),
+    getNextPageParam: ({ data: { pagination } }) =>
+      pagination.page < pagination.totalPages ? pagination.page + 1 : undefined,
+    enabled: canCreateTask && isCreateModalOpen,
+  });
+  const roomChoices = new Map(
+    dirtyRoomPicker.data?.pages.flatMap(({ data }) => data.items).map((room) => [room.id, room]),
+  );
+  if (selectedDirtyRoom && !roomChoices.has(selectedDirtyRoom.id)) {
+    roomChoices.set(selectedDirtyRoom.id, selectedDirtyRoom);
+  }
 
   // 3. Room types for metadata enrichment
   const { data: roomTypesList } = useQuery({
@@ -434,10 +466,7 @@ export const HousekeepingPage: React.FC = () => {
     [rawTasks]
   );
 
-  const rawDirty = dirtyRoomsRes?.data;
-  const dirtyRoomList: DirtyRoomItem[] = Array.isArray(rawDirty)
-    ? rawDirty
-    : (rawDirty as any)?.items || [];
+  const dirtyRoomList = dirtyRoomsRes?.data.items ?? [];
 
   const getRoomTypeName = useCallback((roomTypeId: string) => {
     const found = roomTypesList?.find(
@@ -748,6 +777,9 @@ export const HousekeepingPage: React.FC = () => {
                 priority: "NORMAL",
                 notes: undefined,
               });
+              setSelectedDirtyRoom(record);
+              setRoomSearch("");
+              setRoomTerm("");
               setIsCreateModalOpen(true);
             }}
           >
@@ -1075,6 +1107,9 @@ export const HousekeepingPage: React.FC = () => {
               style={{ background: "#1b4d3e", borderColor: "#1b4d3e" }}
               onClick={() => {
                 createForm.resetFields();
+                setSelectedDirtyRoom(undefined);
+                setRoomSearch("");
+                setRoomTerm("");
                 setIsCreateModalOpen(true);
               }}
             >
@@ -1354,7 +1389,7 @@ export const HousekeepingPage: React.FC = () => {
                   label: (
                     <span>
                       <WarningOutlined style={{ color: "#cf1322" }} /> Hàng đợi
-                      phòng bẩn ({dirtyRoomList.length})
+                      phòng bẩn ({dirtyTotal})
                     </span>
                   ),
                   children: (
@@ -1366,6 +1401,14 @@ export const HousekeepingPage: React.FC = () => {
                         description="Phòng tự động chuyển sang DIRTY sau khi khách Check-out, Đổi phòng (Transfer), hoặc khi Lệnh bảo trì được giải phóng. Bạn có thể bấm 'Tạo việc dọn' để kích hoạt chu trình dọn dẹp cho phòng."
                         style={{ marginBottom: 16 }}
                       />
+                      {isDirtyError && (
+                        <Alert
+                          type="error"
+                          showIcon
+                          title="Chưa tải được hàng đợi phòng bẩn"
+                          action={<Button onClick={() => void refetchDirtyRooms()}>Thử lại</Button>}
+                        />
+                      )}
                       <Table
                         columns={dirtyRoomColumns}
                         dataSource={dirtyRoomList}
@@ -1373,9 +1416,14 @@ export const HousekeepingPage: React.FC = () => {
                         loading={isDirtyLoading}
                         scroll={{ x: 1100 }}
                         pagination={{
+                          current: dirtyPage,
                           pageSize: dirtyPageSize,
+                          total: dirtyTotal,
                           showSizeChanger: true,
-                          onChange: (_page, size) => setDirtyPageSize(size),
+                          onChange: (page, size) => {
+                            setDirtyPage(size === dirtyPageSize ? page : 1);
+                            setDirtyPageSize(size);
+                          },
                         }}
                       />
                     </Card>
@@ -1429,12 +1477,20 @@ export const HousekeepingPage: React.FC = () => {
             <Select
               placeholder="Chọn số phòng..."
               showSearch
-              filterOption={(input, option) =>
-                String(option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={dirtyRoomList.map((r) => ({
+              filterOption={false}
+              onSearch={setRoomSearch}
+              onChange={(id: string) => setSelectedDirtyRoom(roomChoices.get(id))}
+              loading={dirtyRoomPicker.isFetching}
+              notFoundContent={dirtyRoomPicker.isError
+                ? <Button onClick={() => void dirtyRoomPicker.refetch()}>Thử lại</Button>
+                : dirtyRoomPicker.isFetching ? <Spin size="small" /> : "Không tìm thấy phòng"}
+              onPopupScroll={({ currentTarget }) => {
+                const { scrollTop, clientHeight, scrollHeight } = currentTarget as HTMLDivElement;
+                if (scrollTop + clientHeight >= scrollHeight - 24 && dirtyRoomPicker.hasNextPage && !dirtyRoomPicker.isFetching) {
+                  void dirtyRoomPicker.fetchNextPage();
+                }
+              }}
+              options={[...roomChoices.values()].map((r) => ({
                 value: String(r.id),
                 label: `Phòng #${r.roomNumber} (Tầng ${r.floorNumber} - ${getRoomTypeName(r.roomTypeId)}) [DIRTY]`,
               }))}

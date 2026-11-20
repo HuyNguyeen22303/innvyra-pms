@@ -1021,6 +1021,23 @@ describe.skipIf(!testUrl)(
         'CLOSED',
       );
     });
+    it('summarizes scoped folios in one batch with the detail balance and omits missing reservations', async () => {
+      const folioId = await open();
+      expect((await pay(folioId, '100000')).status).toBe(201);
+      const detail = (await get(`/folios/${folioId}`)).body.data;
+      const path = `/folios/summaries?reservationIds=${booking.id},${booking.id},18446744073709551615`;
+      const result = await get(path);
+      expect(result.status).toBe(200);
+      expect(result.headers['cache-control']).toBe('no-store');
+      expect(result.body.data.items).toEqual([{
+        reservationId: booking.id, folioId, status: detail.status, closedAt: detail.closedAt,
+        outstandingBalance: detail.outstandingBalance,
+      }]);
+      expect((await get(path, foreignToken)).body.data.items).toEqual([]);
+      expect((await get('/folios/summaries?reservationIds=1,0')).status).toBe(422);
+      expect((await get('/folios/summaries?reservationIds=' + Array.from({ length: 51 }, () => '1').join(','))).status)
+        .toBe(422);
+    });
     it('records cash and confirmed bank transfers and rejects missing attestations/references', async () => {
       const folioId = await open();
       expect(

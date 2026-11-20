@@ -9,6 +9,18 @@ import { PrismaBillingRepository } from '../billing/billing.repository.js';
 
 const identity = { select: { id: true, fullName: true } } as const;
 const roomIdentity = { select: { id: true, roomNumber: true } } as const;
+const staySortColumns = {
+  actualCheckinAt: Prisma.sql`s.actual_checkin_at`,
+  actualCheckoutAt: Prisma.sql`s.actual_checkout_at`,
+  createdAt: Prisma.sql`s.created_at`,
+  id: Prisma.sql`s.id`,
+};
+type StayStatusCount = { status: Stay['status']; count: number | bigint };
+function countByStayStatus(rows: StayStatusCount[]) {
+  const counts = { CHECKED_IN: 0, CHECKED_OUT: 0 };
+  for (const row of rows) counts[row.status] = Number(row.count);
+  return counts;
+}
 export const staySummaryInclude = {
   currentRoom: {
     select: {
@@ -161,56 +173,75 @@ export class PrismaStayRepository {
       );
     return this.db.stay.findFirst({ where: { hotelId, id }, include: stayDetailInclude });
   }
-  async list(hotelId: bigint, query: StayQuery) {
+  async list(hotelId: bigint, query: StayQuery, matchGuestName: boolean) {
     const { timezone } = await this.hotel(hotelId);
+    const checkIn = query.checkInDate ? localDateRange(query.checkInDate, timezone) : undefined;
+    const checkOut = query.checkOutDate ? localDateRange(query.checkOutDate, timezone) : undefined;
+    const skip = (query.page - 1) * query.limit;
+    const orderBy: Prisma.StayOrderByWithRelationInput[] = [
+      { [query.sortBy]: query.sortOrder },
+      { id: 'asc' },
+    ];
+    if (query.search) {
+      // This collation folds Đ/đ to D/d as well as accents. ESCAPE keeps the search literal.
+      const pattern = `%${query.search.replace(/[!%_]/g, '!$&')}%`;
+      const matches = [
+        Prisma.sql`r.confirmation_code COLLATE utf8mb4_0900_ai_ci LIKE ${pattern} ESCAPE '!'`,
+        Prisma.sql`rm.room_number COLLATE utf8mb4_0900_ai_ci LIKE ${pattern} ESCAPE '!'`,
+      ];
+      if (matchGuestName) {
+        matches.push(Prisma.sql`g.full_name COLLATE utf8mb4_0900_ai_ci LIKE ${pattern} ESCAPE '!'`);
+      }
+      const scope = Prisma.sql`
+        FROM stays s
+        JOIN reservation_rooms rr ON rr.hotel_id = s.hotel_id AND rr.id = s.reservation_room_id
+        JOIN reservations r ON r.hotel_id = s.hotel_id AND r.id = rr.reservation_id
+        JOIN rooms rm ON rm.hotel_id = s.hotel_id AND rm.id = s.current_room_id
+        ${matchGuestName ? Prisma.sql`JOIN guests g ON g.hotel_id = s.hotel_id AND g.id = r.booker_guest_id` : Prisma.empty}
+        WHERE s.hotel_id = ${hotelId}
+          ${query.status ? Prisma.sql`AND s.status = ${query.status}` : Prisma.empty}
+          ${query.roomId ? Prisma.sql`AND s.current_room_id = ${BigInt(query.roomId)}` : Prisma.empty}
+          ${query.roomNumber ? Prisma.sql`AND rm.room_number = ${query.roomNumber}` : Prisma.empty}
+          ${checkIn ? Prisma.sql`AND s.actual_checkin_at >= ${checkIn.gte} AND s.actual_checkin_at < ${checkIn.lt}` : Prisma.empty}
+          ${checkOut ? Prisma.sql`AND s.actual_checkout_at >= ${checkOut.gte} AND s.actual_checkout_at < ${checkOut.lt}` : Prisma.empty}
+          AND (${Prisma.join(matches, ' OR ')})`;
+      const direction = query.sortOrder === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+      return this.prisma.$transaction(async (tx) => {
+        const ids = await tx.$queryRaw<{ id: bigint }[]>`
+          SELECT s.id ${scope}
+          ORDER BY ${staySortColumns[query.sortBy]} ${direction}, s.id ASC
+          LIMIT ${query.limit} OFFSET ${skip}`;
+        const items = ids.length ? await tx.stay.findMany({
+          where: { hotelId, id: { in: ids.map(({ id }) => id) } },
+          include: staySummaryInclude,
+          orderBy,
+        }) : [];
+        const counts = countByStayStatus(await tx.$queryRaw<StayStatusCount[]>`
+          SELECT s.status, COUNT(*) AS count ${scope} GROUP BY s.status`);
+        return {
+          items,
+          total: counts.CHECKED_IN + counts.CHECKED_OUT,
+          statusCounts: query.includeStatusCounts ? counts : undefined,
+        };
+      }, { isolationLevel: 'RepeatableRead' });
+    }
     const where: Prisma.StayWhereInput = {
       hotelId,
       ...(query.status ? { status: query.status } : {}),
       ...(query.roomId ? { currentRoomId: BigInt(query.roomId) } : {}),
       ...(query.roomNumber ? { currentRoom: { roomNumber: query.roomNumber } } : {}),
-      ...(query.search
-        ? {
-            // The list search box is shared by reception staff: they look a stay
-            // up by confirmation code, by the guest's name or by room number.
-            // All three are compared with LIKE '%term%' (MySQL collation
-            // utf8mb4_unicode_ci makes this case- and accent-insensitive, so
-            // "nguyen" also matches "Nguyễn"). These are alternatives, so they
-            // must be wrapped in OR - a plain object would AND them and return
-            // no rows at all.
-            OR: [
-              {
-                reservationRoom: { reservation: { confirmationCode: { contains: query.search } } },
-              },
-              {
-                reservationRoom: {
-                  reservation: { bookerGuest: { fullName: { contains: query.search } } },
-                },
-              },
-              { currentRoom: { roomNumber: { contains: query.search } } },
-            ],
-          }
-        : {}),
-      ...(query.checkInDate
-        ? { actualCheckinAt: localDateRange(query.checkInDate, timezone) }
-        : {}),
-      ...(query.checkOutDate
-        ? { actualCheckoutAt: localDateRange(query.checkOutDate, timezone) }
-        : {}),
+      ...(checkIn ? { actualCheckinAt: checkIn } : {}),
+      ...(checkOut ? { actualCheckoutAt: checkOut } : {}),
     };
-    const [items, total] = await this.prisma.$transaction(
-      [
-        this.prisma.stay.findMany({
-          where,
-          include: staySummaryInclude,
-          orderBy: [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }],
-          skip: (query.page - 1) * query.limit,
-          take: query.limit,
-        }),
-        this.prisma.stay.count({ where }),
-      ],
-      { isolationLevel: 'RepeatableRead' },
-    );
-    return { items, total };
+    return this.prisma.$transaction(async (tx) => {
+      const items = await tx.stay.findMany({ where, include: staySummaryInclude, orderBy, skip, take: query.limit });
+      if (!query.includeStatusCounts) {
+        return { items, total: await tx.stay.count({ where }), statusCounts: undefined };
+      }
+      const rows = await tx.stay.groupBy({ by: ['status'], where, _count: { _all: true } });
+      const statusCounts = countByStayStatus(rows.map(({ status, _count }) => ({ status, count: _count._all })));
+      return { items, total: statusCounts.CHECKED_IN + statusCounts.CHECKED_OUT, statusCounts };
+    }, { isolationLevel: 'RepeatableRead' });
   }
   createStay(
     scope: StayScope,

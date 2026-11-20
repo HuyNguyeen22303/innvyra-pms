@@ -150,6 +150,16 @@ describe('Reports validation, money and calendar policies', () => {
     expect(occupancyDto(days, rows, 'month', new Date('2026-10-15')).summary).toEqual(
       result.summary,
     );
+    const duringLastNight = days.at(-1)!.from;
+    const daily = occupancyDto(days, rows, 'day', duringLastNight);
+    const monthly = occupancyDto(days, rows, 'month', duringLastNight);
+    expect(daily.summary.occupiedRoomNights).toBeNull();
+    expect(daily.closedSummary).toMatchObject({
+      closedDays: 4,
+      sellableRoomNights: 36,
+      occupiedRoomNights: 29,
+    });
+    expect(monthly.closedSummary).toEqual(daily.closedSummary);
   });
   it('returns null for zero denominators, missing price, conflicting occupancy and unclosed nights', () => {
     expect(operationalKpis('0', 0, 0)).toEqual({
@@ -163,6 +173,11 @@ describe('Reports validation, money and calendar policies', () => {
       operationalRevpar: '0.00',
     });
     expect(occupancyDto(days, [], 'day', days[0]!.from).summary.occupiedRoomNights).toBeNull();
+    expect(occupancyDto(days, [], 'day', days[0]!.from).closedSummary).toMatchObject({
+      closedDays: 0,
+      occupiedRoomNights: null,
+      operationalRevpar: null,
+    });
     const row: OccupancyRow = {
       date: days[0]!.date,
       totalRoomNights: 1,

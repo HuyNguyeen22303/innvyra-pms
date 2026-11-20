@@ -2,12 +2,12 @@ import React from 'react';
 import { Modal, Typography, Divider, Row, Col, Tag, Button, Alert, Spin } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { PrinterOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import type { PaymentRecord, FolioDetailItem } from '../../../types/billing.types.ts';
 import { getStaffDisplay } from '../../../utils/staffDirectory.ts';
 import { ownHotelApi } from '../../../api/hotels.api.ts';
 import { useAuthStore } from '../../../store/authStore.ts';
 import { formatFolioMoney } from '../../../utils/folioSettlement.ts';
+import { formatHotelDate } from '../../../utils/hotelDate.ts';
 
 const { Title, Text } = Typography;
 
@@ -47,6 +47,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const staff = getStaffDisplay(payment.processedBy);
 
   const formattedAmount = formatFolioMoney(payment.amount);
+  const issuedAt = hotel
+    ? `${formatHotelDate(payment.processedAt, hotel.timezone, 'seconds')} (${hotel.timezone})`
+    : '—';
 
   const handlePrint = () => {
     if (hotelReady) window.print();
@@ -99,7 +102,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </Title>
           <Text type="secondary" style={{ fontSize: 12 }}>
             Mã giao dịch: <Text strong style={{ fontFamily: 'monospace' }}>#{payment.id}</Text> | Ngày lập:{' '}
-            {dayjs(payment.processedAt).format('DD/MM/YYYY HH:mm:ss')}
+            {issuedAt}
           </Text>
         </div>
 

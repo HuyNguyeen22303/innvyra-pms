@@ -411,6 +411,7 @@ add(
   undefined,
   [
     ...pagination,
+    parameter('search', { type: 'string', minLength: 1, maxLength: 100 }, 'Room number substring'),
     parameter('floorNumber', { type: 'integer', minimum: -32768, maximum: 32767 }),
     parameter('sortBy', { ...enumeration(['roomNumber', 'floorNumber']), default: 'roomNumber' }),
   ],

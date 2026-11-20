@@ -290,6 +290,7 @@ export const ServiceOrdersTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['billing-orders'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
     },
     onError: (err: any) => {
       appMessage.error(getApiErrorMessage(err, 'Không thể hoàn thành dịch vụ.'));

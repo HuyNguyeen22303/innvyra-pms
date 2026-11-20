@@ -106,6 +106,7 @@ export class PrismaHousekeepingRepository extends OperationsRepository {
       hotelId,
       isActive: true,
       housekeepingStatus: 'DIRTY',
+      ...(query.search ? { roomNumber: { contains: query.search } } : {}),
       ...(query.floorNumber !== undefined ? { floorNumber: query.floorNumber } : {}),
     };
     const [items, total] = await this.prisma.$transaction(

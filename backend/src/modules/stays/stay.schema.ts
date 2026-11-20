@@ -23,6 +23,7 @@ export const stayListQuery = z
   .object({
     page: paginationFields.page,
     limit: paginationFields.limit,
+    includeStatusCounts: paginationFields.isActive,
     status: z.enum(['CHECKED_IN', 'CHECKED_OUT']).optional(),
     roomId: idSchema.optional(),
     roomNumber: z.string().trim().min(1).max(20).optional(),

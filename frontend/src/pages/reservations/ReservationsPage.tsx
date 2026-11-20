@@ -752,7 +752,7 @@ const Reservations: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       setInitialDeposit(emptyBookingDeposit());
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['roomAvailability'] });
-      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', res.data.id] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ predicate: ({ queryKey }) => /^(report|dashboard)/.test(String(queryKey[0])) });
       // Reset form
       setSelectedRoomsMap({});

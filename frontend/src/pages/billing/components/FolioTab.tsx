@@ -1,7 +1,7 @@
 import { ResponsiveTabs as Tabs } from '../../../components/responsive/ResponsiveTabs.tsx';
-import React, { useState, useMemo, useEffect, useDeferredValue, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useQueries, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Card,
   Row,
@@ -45,6 +45,7 @@ import { useAuthStore } from '../../../store/authStore.ts';
 import type { ReservationStatus, ReservationSummaryItem } from '../../../types/reservations.types.ts';
 import type {
   FolioDetailItem,
+  FolioSummary,
   FolioItemRecord,
   PaymentRecord,
   CreatePaymentDto,
@@ -60,6 +61,7 @@ import { ResponsiveTable as Table } from '../../../components/responsive/Respons
 import { formatFolioMoney, refundableAmount, validFinalCharge } from '../../../utils/folioSettlement.ts';
 
 const { Text } = Typography;
+type FolioListStatus = FolioSummary | { status: 'UNKNOWN' | 'LOADING' | 'NOT_OPENED' };
 
 const getApiErrorMessage = (err: any, fallback: string): string => {
   const errData = err.response?.data;
@@ -186,6 +188,7 @@ export const FolioTab: React.FC = () => {
   const {
     data: reservationsRes,
     isLoading: isReservationsLoading,
+    isPlaceholderData: isReservationsPlaceholder,
     refetch: refetchReservations,
   } = useQuery({
     queryKey: ['billing-reservations-list', resTablePage, resTablePageSize, resTableSearch, resTableStatus],
@@ -216,12 +219,6 @@ export const FolioTab: React.FC = () => {
   );
   const reservationTotal = reservationsRes?.data?.pagination?.total || 0;
 
-  // Defer only the grid payload (not the folio lookups below) so a keydown
-  // arriving mid-render can interrupt the table render.
-  const deferredReservationList = useDeferredValue(reservationList);
-  const tableReservationList =
-    deferredReservationList.length > 0 ? deferredReservationList : reservationList;
-
   // Fetch physical rooms to map roomId to real physical roomNumber
   const { data: allRoomsList = [] } = useQuery({
     queryKey: ['rooms', 'lookup'],
@@ -235,66 +232,25 @@ export const FolioTab: React.FC = () => {
     return found ? found.roomNumber : roomId;
   };
 
-  // Batch check Folio status for visible reservations on the current table page
-  const folioQueries = useQueries({
-    queries: reservationList.map((r) => ({
-      queryKey: ['billing-folio-check', String(r.id)],
-      queryFn: async () => {
-        try {
-          const res = await billingApi.getFolioByReservation(String(r.id));
-          return {
-            resId: String(r.id),
-            status: res.data.status,
-            folioId: res.data.id,
-            closedAt: res.data.closedAt,
-            balanceAmount: res.data.outstandingBalance,
-          };
-        } catch (err: any) {
-          if (err.response?.status === 404) {
-            return {
-              resId: String(r.id),
-              status: 'NOT_OPENED' as const,
-              folioId: null,
-              closedAt: null,
-              balanceAmount: null,
-            };
-          }
-          return {
-            resId: String(r.id),
-            status: 'UNKNOWN' as const,
-            folioId: null,
-            closedAt: null,
-            balanceAmount: null,
-          };
-        }
-      },
-      staleTime: 15000,
-      retry: false,
-    })),
+  const reservationIds = useMemo(() => reservationList.map(({ id }) => String(id)).sort(), [reservationList]);
+  const folioSummaries = useQuery({
+    queryKey: ['billing-folio-summaries', user?.hotelId, reservationIds],
+    queryFn: ({ signal }) => billingApi.getFolioSummaries(reservationIds, signal),
+    enabled: reservationIds.length > 0 && !selectedReservationId && !folioIdParam && !isReservationsPlaceholder,
+    staleTime: 15000,
+    retry: false,
   });
 
   const folioStatusMap = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        status: 'OPEN' | 'CLOSED' | 'NOT_OPENED' | 'UNKNOWN' | 'LOADING';
-        folioId?: string | null;
-        closedAt?: string | null;
-        balanceAmount?: string | null;
-      }
-    > = {};
-    reservationList.forEach((r, idx) => {
-      const q = folioQueries[idx];
-      if (!q || q.isLoading) {
-        map[String(r.id)] = { status: 'LOADING' };
-      } else if (q.data) {
-        map[String(r.id)] = q.data;
-      } else {
-        map[String(r.id)] = { status: 'UNKNOWN' };
-      }
-    });
+    const summaries = new Map(folioSummaries.data?.data.items.map((item) => [item.reservationId, item]));
+    const map = new Map<string, FolioListStatus>();
+    for (const id of reservationIds) {
+      if (folioSummaries.isError) map.set(id, { status: 'UNKNOWN' });
+      else if (folioSummaries.isSuccess) map.set(id, summaries.get(id) ?? { status: 'NOT_OPENED' });
+      else map.set(id, { status: 'LOADING' });
+    }
     return map;
-  }, [folioQueries, reservationList]);
+  }, [folioSummaries.data, folioSummaries.isError, folioSummaries.isSuccess, reservationIds]);
 
   // 2. Selected Reservation Detail
   const { data: reservationDetailRes } = useQuery({
@@ -336,20 +292,6 @@ export const FolioTab: React.FC = () => {
   const isFolioNotFound =
     (folioError as any)?.response?.status === 404 ||
     (folioError as any)?.response?.data?.error?.code === 'FOLIO_NOT_FOUND';
-
-  // Synchronize billing-folio-check cache whenever detailed Folio query is fetched or refetched
-  useEffect(() => {
-    if (folioRes?.data?.reservationId) {
-      const resId = String(folioRes.data.reservationId);
-      queryClient.setQueryData(['billing-folio-check', resId], {
-        resId,
-        status: folioRes.data.status,
-        folioId: folioRes.data.id,
-        closedAt: folioRes.data.closedAt ?? null,
-        balanceAmount: folioRes.data.outstandingBalance,
-      });
-    }
-  }, [folioRes?.data, queryClient]);
 
   // 4. Folio Items (Ledger) Query
   const {
@@ -393,20 +335,10 @@ export const FolioTab: React.FC = () => {
     onSuccess: (response, resId) => {
       appMessage.success('Đã mở Sổ công nợ Folio thành công.');
       const targetResId = String(resId);
-      const openedFolio = response?.data;
-      if (openedFolio) {
-        // Immediately update batch check cache so the list displays OPEN, folioId, and balance instantly
-        queryClient.setQueryData(['billing-folio-check', targetResId], {
-          resId: targetResId,
-          status: openedFolio.status,
-          folioId: openedFolio.id,
-          closedAt: openedFolio.closedAt ?? null,
-          balanceAmount: openedFolio.outstandingBalance,
-        });
-        // Immediately update detailed folio query cache
+      if (response.data) {
         queryClient.setQueryData(['billing-folio', targetResId], response);
       }
-      queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
@@ -430,8 +362,8 @@ export const FolioTab: React.FC = () => {
         : (selectedReservationId ? String(selectedReservationId) : undefined);
       if (targetResId) {
         queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
-        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
       }
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
@@ -454,8 +386,8 @@ export const FolioTab: React.FC = () => {
         : (selectedReservationId ? String(selectedReservationId) : undefined);
       if (targetResId) {
         queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
-        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
       }
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items'] });
     },
     onError: (err: any) => {
@@ -479,8 +411,8 @@ export const FolioTab: React.FC = () => {
         : (selectedReservationId ? String(selectedReservationId) : undefined);
       if (targetResId) {
         queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
-        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
       }
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
       queryClient.invalidateQueries({ queryKey: ['billing-folio-payments'] });
     },
     onError: (err: any) => {
@@ -500,18 +432,10 @@ export const FolioTab: React.FC = () => {
         : (selectedReservationId ? String(selectedReservationId) : undefined);
 
       if (targetResId && closedFolio) {
-        // Immediately update batch check cache so the list displays CLOSED, folioId, and closedAt instantly
-        queryClient.setQueryData(['billing-folio-check', targetResId], {
-          resId: targetResId,
-          status: closedFolio.status,
-          folioId: closedFolio.id,
-          closedAt: closedFolio.closedAt ?? null,
-          balanceAmount: closedFolio.outstandingBalance ?? '0',
-        });
         queryClient.setQueryData(['billing-folio', targetResId], response);
-        queryClient.invalidateQueries({ queryKey: ['billing-folio-check', targetResId] });
         queryClient.invalidateQueries({ queryKey: ['billing-folio', targetResId] });
       }
+      queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
     },
     onError: (err: any) => {
       appMessage.error(
@@ -876,7 +800,7 @@ export const FolioTab: React.FC = () => {
       key: 'folioStatus',
       width: 180,
       render: (_, record) => {
-        const info = folioStatusMap[String(record.id)];
+        const info = folioStatusMap.get(String(record.id));
         if (!info || info.status === 'LOADING') {
           return <Tag style={{ whiteSpace: 'nowrap' }}>Đang kiểm tra...</Tag>;
         }
@@ -909,16 +833,16 @@ export const FolioTab: React.FC = () => {
               <Tag icon={<UnlockOutlined />} color="success" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                 ĐANG MỞ (OPEN)
               </Tag>
-              {info.balanceAmount && (
+              {info.outstandingBalance && (
                 <div
                   style={{
                     fontSize: 11,
-                    color: Number(info.balanceAmount) > 0 ? '#cf1322' : '#389e0d',
+                    color: Number(info.outstandingBalance) > 0 ? '#cf1322' : '#389e0d',
                     marginTop: 2,
                     fontWeight: 500,
                   }}
                 >
-                  Dư nợ: {formatVND(info.balanceAmount)}
+                  Dư nợ: {formatVND(info.outstandingBalance)}
                 </div>
               )}
             </div>
@@ -940,7 +864,7 @@ export const FolioTab: React.FC = () => {
       width: 130,
       fixed: screens.xs ? false : 'right',
       render: (_, record) => {
-        const info = folioStatusMap[String(record.id)];
+        const info = folioStatusMap.get(String(record.id));
         const isClosed = info?.status === 'CLOSED';
         const isNotOpened = info?.status === 'NOT_OPENED';
 
@@ -1117,9 +1041,17 @@ export const FolioTab: React.FC = () => {
             style={{ marginBottom: 16 }}
           />
 
+          {folioSummaries.isError && (
+            <Alert
+              title="Chưa tải được trạng thái Folio"
+              type="error"
+              showIcon
+              action={<Button onClick={() => void folioSummaries.refetch()}>Thử lại</Button>}
+            />
+          )}
           <Table
             columns={reservationColumns}
-            dataSource={tableReservationList}
+            dataSource={reservationList}
             rowKey="id"
             loading={isReservationsLoading}
             tableLayout="fixed"
@@ -1869,7 +1801,7 @@ export const FolioTab: React.FC = () => {
           setIsSettlementModalOpen(false);
           const response = { success: true, message: 'Đã quyết toán', data: settled };
           queryClient.setQueryData(['billing-folio', settled.reservationId], response);
-          queryClient.invalidateQueries({ queryKey: ['billing-folio-check', settled.reservationId] });
+          queryClient.invalidateQueries({ queryKey: ['billing-folio-summaries'] });
           queryClient.invalidateQueries({ queryKey: ['billing-folio-items', settled.id] });
           refreshFinancialReports();
           setActiveLedgerTab(settled.outstandingBalance.startsWith('-') ? 'payments' : 'items');
