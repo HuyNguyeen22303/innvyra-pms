@@ -113,17 +113,19 @@ export const inventoryApi = {
   // Categories
   getCategories: async (
     params?: CategoryQueryParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<InventoryCategoryView>>> => {
     const response = await apiClient.get<ApiResponse<PaginatedResult<InventoryCategoryView>>>(
       '/inventory/categories',
-      { params: cleanParams(params) },
+      { params: cleanParams(params), signal },
     );
     return response.data;
   },
 
-  getCategoryById: async (id: string): Promise<ApiResponse<InventoryCategoryView>> => {
+  getCategoryById: async (id: string, signal?: AbortSignal): Promise<ApiResponse<InventoryCategoryView>> => {
     const response = await apiClient.get<ApiResponse<InventoryCategoryView>>(
       `/inventory/categories/${id}`,
+      { signal },
     );
     return response.data;
   },
@@ -157,16 +159,17 @@ export const inventoryApi = {
   // Suppliers
   getSuppliers: async (
     params?: SupplierQueryParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<SupplierView>>> => {
     const response = await apiClient.get<ApiResponse<PaginatedResult<SupplierView>>>(
       '/inventory/suppliers',
-      { params: cleanParams(params) },
+      { params: cleanParams(params), signal },
     );
     return response.data;
   },
 
-  getSupplierById: async (id: string): Promise<ApiResponse<SupplierView>> => {
-    const response = await apiClient.get<ApiResponse<SupplierView>>(`/inventory/suppliers/${id}`);
+  getSupplierById: async (id: string, signal?: AbortSignal): Promise<ApiResponse<SupplierView>> => {
+    const response = await apiClient.get<ApiResponse<SupplierView>>(`/inventory/suppliers/${id}`, { signal });
     return response.data;
   },
 
@@ -205,8 +208,8 @@ export const inventoryApi = {
     return response.data;
   },
 
-  getItemById: async (id: string): Promise<ApiResponse<InventoryItemView>> => {
-    const response = await apiClient.get<ApiResponse<InventoryItemView>>(`/inventory/items/${id}`);
+  getItemById: async (id: string, signal?: AbortSignal): Promise<ApiResponse<InventoryItemView>> => {
+    const response = await apiClient.get<ApiResponse<InventoryItemView>>(`/inventory/items/${id}`, { signal });
     return response.data;
   },
 

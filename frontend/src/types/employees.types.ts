@@ -27,6 +27,7 @@ export interface UpdateEmployeeDto {
 }
 
 export interface EmployeeQuery {
+  id?: string;
   page?: number;
   limit?: number;
   search?: string;

@@ -4,6 +4,7 @@ import type {
   MaintenanceTicketItem,
   MaintenanceTicketStatusCount,
   MaintenanceBlockItem,
+  MaintenanceBlockStatus,
   CreateMaintenanceTicketDto,
   AssignMaintenanceTicketDto,
   ResolveMaintenanceTicketDto,
@@ -201,6 +202,13 @@ export const maintenanceApi = {
         params: { limit: 50, ...params },
         signal,
       }
+    );
+    return res.data;
+  },
+  getBlockStats: async (signal?: AbortSignal) => {
+    const res = await apiClient.get<ApiResponse<{ status: MaintenanceBlockStatus; count: number }[]>>(
+      '/maintenance/blocks/stats',
+      { signal },
     );
     return res.data;
   },

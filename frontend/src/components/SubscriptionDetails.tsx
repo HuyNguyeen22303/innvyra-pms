@@ -3,15 +3,13 @@ import {
   money,
   displayDay,
 } from "../utils/subscriptions.ts";
-import { Alert, Descriptions, Table, Tag } from "antd";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Alert, Button, Descriptions, Table, Tag } from "antd";
 import type { SubscriptionSummary } from "../api/subscriptions.api.ts";
-export function SubscriptionDetails({
-  value,
-  history = true,
-}: {
-  value: SubscriptionSummary;
-  history?: boolean;
-}) {
+import type { PaginatedResult } from "../types/api.types.ts";
+import type { HotelPeriod } from "../types/hotel.types.ts";
+export function SubscriptionDetails({ value }: { value: SubscriptionSummary }) {
   const period = value.current ?? value.upcoming;
   return (
     <>
@@ -100,20 +98,45 @@ export function SubscriptionDetails({
             : []),
         ]}
       />
-      {history && <SubscriptionHistory value={value} />}
     </>
   );
 }
 
-export function SubscriptionHistory({ value }: { value: SubscriptionSummary }) {
+export function SubscriptionHistory({
+  historyKey,
+  loadPage,
+}: {
+  historyKey: readonly unknown[];
+  loadPage: (page: number, limit: number, signal: AbortSignal) => Promise<PaginatedResult<HotelPeriod>>;
+}) {
+  const [page, setPage] = useState(1);
+  const limit = 5;
+  const history = useQuery({
+    queryKey: [...historyKey, page],
+    queryFn: ({ signal }) => loadPage(page, limit, signal),
+    placeholderData: keepPreviousData,
+  });
   return (
+    <>
+    {history.isError && (
+      <Alert type="error" showIcon title="Không tải được lịch sử đăng ký"
+        action={<Button onClick={() => void history.refetch()}>Thử lại</Button>}
+      />
+    )}
     <Table
       style={{ marginTop: 20 }}
       size="small"
       rowKey="id"
-      dataSource={value.history}
+      dataSource={history.data?.items ?? []}
+      loading={history.isFetching}
       scroll={{ x: 1000 }}
-      pagination={{ pageSize: 5 }}
+      pagination={{
+        current: page,
+        pageSize: limit,
+        total: history.data?.pagination.total ?? 0,
+        showSizeChanger: false,
+        onChange: setPage,
+      }}
       columns={[
         { title: "Gói đã đăng ký", dataIndex: "planName" },
         { title: "Từ ngày", dataIndex: "startsOn", render: displayDay },
@@ -137,5 +160,6 @@ export function SubscriptionHistory({ value }: { value: SubscriptionSummary }) {
         },
       ]}
     />
+    </>
   );
 }

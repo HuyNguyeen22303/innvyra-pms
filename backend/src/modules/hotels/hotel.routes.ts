@@ -10,6 +10,7 @@ import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { ROLE_CODES } from '../../shared/types/roles.js';
 import * as schemas from './hotel.schema.js';
+import { ownPeriodPageSchema, type PeriodPageQuery } from './subscription.schema.js';
 import type { HotelManagementService } from './hotel.service.js';
 import type { PlatformAuthService } from '../platform-auth/platform-auth.service.js';
 import type { AuthService } from '../auth/auth.service.js';
@@ -92,6 +93,16 @@ export function ownHotelRoutes(service: HotelManagementService, auth: AuthServic
         success: true,
         data: await service.subscriptions.summary(BigInt(requirePrincipal(req).user.hotelId)),
       });
+    },
+  );
+  router.get(
+    '/subscription-periods',
+    authorizeHotelAccount('ADMIN', 'MANAGER'),
+    validate(ownPeriodPageSchema),
+    async (req, res) => {
+      const { query } = res.locals.validated as { query: PeriodPageQuery };
+      const hotelId = BigInt(requirePrincipal(req).user.hotelId);
+      res.json({ success: true, data: await service.subscriptions.periods(hotelId, query) });
     },
   );
   router.get(

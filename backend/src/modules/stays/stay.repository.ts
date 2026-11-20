@@ -200,6 +200,7 @@ export class PrismaStayRepository {
         ${matchGuestName ? Prisma.sql`JOIN guests g ON g.hotel_id = s.hotel_id AND g.id = r.booker_guest_id` : Prisma.empty}
         WHERE s.hotel_id = ${hotelId}
           ${query.status ? Prisma.sql`AND s.status = ${query.status}` : Prisma.empty}
+          ${query.reservationId ? Prisma.sql`AND rr.reservation_id = ${BigInt(query.reservationId)}` : Prisma.empty}
           ${query.roomId ? Prisma.sql`AND s.current_room_id = ${BigInt(query.roomId)}` : Prisma.empty}
           ${query.roomNumber ? Prisma.sql`AND rm.room_number = ${query.roomNumber}` : Prisma.empty}
           ${checkIn ? Prisma.sql`AND s.actual_checkin_at >= ${checkIn.gte} AND s.actual_checkin_at < ${checkIn.lt}` : Prisma.empty}
@@ -228,6 +229,9 @@ export class PrismaStayRepository {
     const where: Prisma.StayWhereInput = {
       hotelId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.reservationId
+        ? { reservationRoom: { reservationId: BigInt(query.reservationId) } }
+        : {}),
       ...(query.roomId ? { currentRoomId: BigInt(query.roomId) } : {}),
       ...(query.roomNumber ? { currentRoom: { roomNumber: query.roomNumber } } : {}),
       ...(checkIn ? { actualCheckinAt: checkIn } : {}),

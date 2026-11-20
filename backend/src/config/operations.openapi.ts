@@ -140,6 +140,10 @@ export const operationsSchemas = {
   MaintenanceBlockSummary: object(blockFields),
   MaintenanceBlock: object({ ...blockFields, history }),
   MaintenanceBlockPage: page('MaintenanceBlockSummary'),
+  MaintenanceBlockStats: {
+    type: 'array',
+    items: object({ status: blockStatus, count: { type: 'integer', minimum: 0 } }),
+  },
   HousekeepingCreate: {
     ...object(
       {
@@ -503,6 +507,13 @@ add(
   managers,
   'MaintenanceBlock',
   'MaintenanceBlockCreate',
+);
+add(
+  'get',
+  '/maintenance/blocks/stats',
+  'Count all hotel maintenance blocks by status',
+  operationsReaders,
+  'MaintenanceBlockStats',
 );
 add(
   'get',

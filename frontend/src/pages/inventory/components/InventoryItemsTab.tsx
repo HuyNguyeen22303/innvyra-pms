@@ -1,5 +1,6 @@
 import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { PaginatedSelect } from '../../../components/PaginatedSelect.tsx';
 import { materialTypeLabels } from '../../../api/supplies.api.ts';
 import React, { useState, useMemo, useCallback, useDeferredValue } from "react";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -90,13 +91,6 @@ export const InventoryItemsTab: React.FC = () => {
   const [editForm] = Form.useForm();
 
   // Query Categories for filter and form selection
-  const { data: categoriesRes } = useQuery({
-    queryKey: ["inventory", "categories", "active-options"],
-    queryFn: () =>
-      inventoryApi.getCategories({ page: 1, limit: 100, isActive: true }),
-  });
-  const categories = categoriesRes?.data?.items || [];
-
   // Query Items
   const {
     data: itemsRes,
@@ -452,7 +446,7 @@ export const InventoryItemsTab: React.FC = () => {
             />
 
             <ResponsiveFilters activeCount={Number(!!categoryFilter) + Number(stockStatusFilter !== 'ALL') + Number(activeFilter !== 'all')} onReset={() => { setCategoryFilter(undefined); setStockStatusFilter('ALL'); setActiveFilter('all'); setPage(1); }}>
-            <Select
+            <PaginatedSelect
               placeholder="Lọc theo Danh mục"
               value={categoryFilter}
               onChange={(val) => {
@@ -461,10 +455,10 @@ export const InventoryItemsTab: React.FC = () => {
               }}
               style={{ width: 190 }}
               allowClear
-              options={categories.map((c) => ({
-                label: `${c.name} (${c.code})`,
-                value: c.id,
-              }))}
+              lookupKey={['inventory', 'categories', 'active']}
+              loadPage={(params, signal) => inventoryApi.getCategories({ ...params, isActive: true }, signal)}
+              loadSelected={inventoryApi.getCategoryById}
+              formatOption={(category) => `${category.name} (${category.code})`}
             />
 
             <Select
@@ -554,7 +548,7 @@ export const InventoryItemsTab: React.FC = () => {
         okText="Tạo vật tư"
         cancelText="Hủy bỏ"
         confirmLoading={createMutation.isPending}
-        destroyOnHidden
+        forceRender
         width={580}
       >
         <Form
@@ -611,12 +605,12 @@ export const InventoryItemsTab: React.FC = () => {
               style={{ flex: 1 }}
               rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
             >
-              <Select
+              <PaginatedSelect
                 placeholder="Chọn nhóm danh mục"
-                options={categories.map((c) => ({
-                  label: `${c.name} (${c.code})`,
-                  value: c.id,
-                }))}
+                lookupKey={['inventory', 'categories', 'active']}
+                loadPage={(params, signal) => inventoryApi.getCategories({ ...params, isActive: true }, signal)}
+                loadSelected={inventoryApi.getCategoryById}
+                formatOption={(category) => `${category.name} (${category.code})`}
               />
             </Form.Item>
 
@@ -682,7 +676,7 @@ export const InventoryItemsTab: React.FC = () => {
         okText="Lưu thay đổi"
         cancelText="Hủy bỏ"
         confirmLoading={updateMutation.isPending}
-        destroyOnHidden
+        forceRender
         width={580}
       >
         <Form form={editForm} layout="vertical" style={{ marginTop: 12 }}>
@@ -732,12 +726,12 @@ export const InventoryItemsTab: React.FC = () => {
               style={{ flex: 1 }}
               rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
             >
-              <Select
+              <PaginatedSelect
                 placeholder="Chọn danh mục"
-                options={categories.map((c) => ({
-                  label: `${c.name} (${c.code})`,
-                  value: c.id,
-                }))}
+                lookupKey={['inventory', 'categories', 'active']}
+                loadPage={(params, signal) => inventoryApi.getCategories({ ...params, isActive: true }, signal)}
+                loadSelected={inventoryApi.getCategoryById}
+                formatOption={(category) => `${category.name} (${category.code})`}
               />
             </Form.Item>
 

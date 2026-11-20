@@ -148,6 +148,14 @@ export class PrismaMaintenanceRepository extends OperationsRepository {
     );
     return { items, total };
   }
+  async blockStats(hotelId: bigint) {
+    const rows = await this.db.maintenanceBlock.groupBy({
+      by: ['status'],
+      where: { hotelId },
+      _count: { _all: true },
+    });
+    return rows.map((row) => ({ status: row.status, count: row._count._all }));
+  }
   overlap(hotelId: bigint, roomId: bigint, from: Date, until: Date) {
     return this.db.maintenanceBlock.findFirst({
       where: {

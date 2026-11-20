@@ -123,6 +123,20 @@ export class PrismaReservationRepository {
       ...(query.guestId ? { bookerGuestId: BigInt(query.guestId) } : {}),
       ...(query.guestSearch ? { bookerGuest: { fullName: { contains: query.guestSearch } } } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.eligibleForService
+        ? {
+            AND: [{ status: { in: ['CHECKED_IN', 'PARTIALLY_CHECKED_IN'] } }],
+            rooms: { some: { stay: { status: 'CHECKED_IN' } } },
+          }
+        : {}),
+      ...(query.lookup
+        ? {
+            OR: [
+              { confirmationCode: { contains: query.lookup } },
+              { bookerGuest: { fullName: { contains: query.lookup } } },
+            ],
+          }
+        : {}),
       ...(query.checkInDate ? { checkInDate: asDate(query.checkInDate) } : {}),
       ...(query.checkOutDate ? { checkOutDate: asDate(query.checkOutDate) } : {}),
       ...(query.bookingSource ? { bookingSource: query.bookingSource } : {}),

@@ -111,7 +111,7 @@ export function TerminalSettlementModal({
         disabled: !state || blocked || preview.isFetching || preview.isError,
       }}
       cancelButtonProps={{ disabled: mutation.isPending }}
-      maskClosable={false}
+      mask={{ closable: false }}
     >
       {preview.isFetching ? (
         <Spin />

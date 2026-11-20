@@ -1,3 +1,4 @@
+import { PaginatedSelect } from '../../components/PaginatedSelect.tsx';
 import { ResponsiveFilters } from '../../components/responsive/ResponsiveFilters.tsx';
 import { ResponsiveRangePicker as RangePicker } from '../../components/responsive/ResponsiveRangePicker.tsx';
 import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
@@ -360,8 +361,6 @@ const CancelBlockModal: React.FC<CancelBlockModalProps> = React.memo(
   },
 );
 
-// Dynamic Technician Options loaded from employeesApi
-
 const renderPriorityTag = (p: MaintenancePriority) => {
   switch (p) {
     case "CRITICAL":
@@ -468,6 +467,7 @@ export const MaintenancePage: React.FC = () => {
     MaintenanceBlockStatus | undefined
   >(undefined);
   const [blockPageSize, setBlockPageSize] = useState<number>(10);
+  const [blockPage, setBlockPage] = useState(1);
 
   // Detail Drawers
   const [selectedTicketForDetail, setSelectedTicketForDetail] =
@@ -507,31 +507,6 @@ export const MaintenancePage: React.FC = () => {
   const [createTicketForm] = Form.useForm();
   const [createBlockForm] = Form.useForm();
   // Dynamic Technicians Query (GET /employees?role=TECHNICIAN&isActive=true)
-  const { data: techniciansRes } = useQuery({
-    queryKey: ["employees", { role: "TECHNICIAN", isActive: true }],
-    queryFn: () =>
-      employeesApi.list({ role: "TECHNICIAN", isActive: true, limit: 100 }),
-    staleTime: 60000,
-  });
-
-  useEffect(() => {
-    if (techniciansRes?.data?.items) {
-      registerStaffMembers(techniciansRes.data.items, directoryGeneration);
-    }
-  }, [techniciansRes, directoryGeneration]);
-
-  const technicianOptions = useMemo(() => {
-    const items = techniciansRes?.data?.items || [];
-    if (items.length === 0) {
-      return [{ value: "", label: "Chưa có kỹ thuật viên đang hoạt động" }];
-    }
-    return items.map((tech) => ({
-      value: String(tech.id),
-      label: `${tech.fullName} (Kỹ thuật viên - ID: ${tech.id})`,
-      role: tech.role,
-    }));
-  }, [techniciansRes]);
-
   const [assignTechId, setAssignTechId] = useState<string>("");
 
   // ----------------------------------------------------
@@ -584,17 +559,35 @@ export const MaintenancePage: React.FC = () => {
   // 2. Maintenance Blocks list
   const {
     data: blocksRes,
-    isLoading: isBlocksLoading,
+    isFetching: isBlocksLoading,
+    isPlaceholderData: isBlocksPlaceholder,
+    isError: isBlocksError,
     refetch: refetchBlocks,
   } = useQuery({
-    queryKey: ["maintenance-blocks", blockStatusFilter],
-    queryFn: () =>
+    queryKey: ["maintenance-blocks", "list", user?.hotelId, blockStatusFilter, blockPage, blockPageSize],
+    queryFn: ({ signal }) =>
       maintenanceApi.getBlocks({
-        limit: 100,
+        page: blockPage,
+        limit: blockPageSize,
         status: blockStatusFilter,
-      }),
+      }, signal),
+    staleTime: 10000,
+    placeholderData: keepPreviousData,
+  });
+  const {
+    data: blockStatsRes,
+    isError: isBlockStatsError,
+    refetch: refetchBlockStats,
+  } = useQuery({
+    queryKey: ["maintenance-blocks", "stats", user?.hotelId],
+    queryFn: ({ signal }) => maintenanceApi.getBlockStats(signal),
     staleTime: 10000,
   });
+  const blockTotal = blocksRes?.data.pagination.total ?? 0;
+  const lastBlockPage = Math.max(1, blocksRes?.data.pagination.totalPages ?? 1);
+  useEffect(() => {
+    if (blocksRes && !isBlocksPlaceholder && blockPage > lastBlockPage) setBlockPage(lastBlockPage);
+  }, [blockPage, blocksRes, isBlocksPlaceholder, lastBlockPage]);
 
   // 3. Physical Rooms list for select dropdowns
   const { data: roomList = [] } = useQuery({
@@ -1071,7 +1064,7 @@ export const MaintenancePage: React.FC = () => {
                       setAssignTechId(
                         record.assignedTo
                           ? String(record.assignedTo)
-                          : technicianOptions[0]?.value || "",
+                          : "",
                       );
                       setIsAssignTicketModalOpen(true);
                     }}
@@ -1149,7 +1142,7 @@ export const MaintenancePage: React.FC = () => {
       },
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isAdminOrManager, renderPriorityTag, renderTicketStatusTag, screens, setIsAssignTicketModalOpen, setIsCancelTicketModalOpen, setIsCloseTicketModalOpen, setIsResolveTicketModalOpen, setIsTicketDrawerOpen, setSelectedTicketForDetail, setActionTicket, startRepair, isStartingRepair, technicianOptions, user]);
+  ], [isAdminOrManager, renderPriorityTag, renderTicketStatusTag, screens, setIsAssignTicketModalOpen, setIsCancelTicketModalOpen, setIsCloseTicketModalOpen, setIsResolveTicketModalOpen, setIsTicketDrawerOpen, setSelectedTicketForDetail, setActionTicket, startRepair, isStartingRepair, user]);
 
   // ----------------------------------------------------
   // TABLE COLUMNS - BLOCKS
@@ -1293,13 +1286,11 @@ export const MaintenancePage: React.FC = () => {
   const resolvedTickets = ticketCounts.get("RESOLVED") ?? 0;
   const closedTickets = ticketCounts.get("CLOSED") ?? 0;
 
-  const activeBlocks = blockList.filter((b) => b.status === "ACTIVE").length;
-  const scheduledBlocks = blockList.filter(
-    (b) => b.status === "SCHEDULED",
-  ).length;
-  const releasedBlocks = blockList.filter(
-    (b) => b.status === "RELEASED",
-  ).length;
+  const blockStats = blockStatsRes?.data;
+  const activeBlocks = blockStats ? blockStats.find((row) => row.status === "ACTIVE")?.count ?? 0 : "—";
+  const scheduledBlocks = blockStats ? blockStats.find((row) => row.status === "SCHEDULED")?.count ?? 0 : "—";
+  const releasedBlocks = blockStats ? blockStats.find((row) => row.status === "RELEASED")?.count ?? 0 : "—";
+  const allBlocks = blockStats?.reduce((total, row) => total + row.count, 0) ?? "—";
 
   // Memoized tab pane: the element identity only changes when the values it
   // actually reads change, so unrelated page state (other tab, filters,
@@ -1646,18 +1637,19 @@ export const MaintenancePage: React.FC = () => {
                   {/* Filter Toolbar */}
                   <Card style={{ marginBottom: 16, borderRadius: 8 }}>
                     <Row gutter={[12, 12]} align="middle">
-                      <ResponsiveFilters activeCount={Number(Boolean(blockStatusFilter))} onReset={() => setBlockStatusFilter(undefined)}>
+                      <ResponsiveFilters activeCount={Number(Boolean(blockStatusFilter))} onReset={() => { setBlockStatusFilter(undefined); setBlockPage(1); }}>
                       <Col xs={24} sm={12}>
                         <Select
                           placeholder="Lọc theo trạng thái lệnh khóa..."
                           style={{ width: "100%" }}
                           allowClear
                           value={blockStatusFilter}
-                          onChange={(v: any) =>
+                          onChange={(v: MaintenanceBlockStatus | "ALL" | undefined) => {
                             setBlockStatusFilter(
                               !v || v === "ALL" ? undefined : v,
-                            )
-                          }
+                            );
+                            setBlockPage(1);
+                          }}
                           options={[
                             { value: "ALL", label: "Tất cả lệnh khóa" },
                             {
@@ -1682,6 +1674,11 @@ export const MaintenancePage: React.FC = () => {
 
                   {/* Table */}
                   <Card style={{ borderRadius: 8 }}>
+                    {(isBlocksError || isBlockStatsError) && (
+                      <Alert type="error" showIcon title="Không tải được dữ liệu lệnh khóa"
+                        action={<Button onClick={() => { void refetchBlocks(); void refetchBlockStats(); }}>Thử lại</Button>}
+                      />
+                    )}
                     <Table
                       columns={blockColumns}
                       dataSource={blockList}
@@ -1689,16 +1686,21 @@ export const MaintenancePage: React.FC = () => {
                       loading={isBlocksLoading}
                       scroll={{ x: 1080 }}
                       pagination={{
+                        current: Math.min(blockPage, lastBlockPage),
                         pageSize: blockPageSize,
+                        total: blockTotal,
                         showSizeChanger: true,
                         pageSizeOptions: ["10", "20", "50"],
-                        onChange: (_page, size) => setBlockPageSize(size),
+                        onChange: (page, size) => {
+                          setBlockPage(size === blockPageSize ? page : 1);
+                          setBlockPageSize(size);
+                        },
                       }}
                     />
                   </Card>
                 </div>
     ),
-    [activeBlocks, blockColumns, blockList, blockPageSize, blockStatusFilter, isBlocksLoading, releasedBlocks, scheduledBlocks, setBlockStatusFilter]
+    [activeBlocks, blockColumns, blockList, blockPage, blockPageSize, blockStatusFilter, blockTotal, isBlocksLoading, isBlocksError, isBlockStatsError, lastBlockPage, refetchBlocks, refetchBlockStats, releasedBlocks, scheduledBlocks]
   );
 
   return (
@@ -1734,6 +1736,7 @@ export const MaintenancePage: React.FC = () => {
             onClick={() => {
               refetchTickets();
               refetchBlocks();
+              refetchBlockStats();
               appMessage.info("Đã làm mới dữ liệu bảo trì.");
             }}
           >
@@ -1791,7 +1794,7 @@ export const MaintenancePage: React.FC = () => {
             key: "blocks",
             label: (
               <span>
-                <LockOutlined /> Lệnh khóa phòng bảo trì ({blockList.length})
+                <LockOutlined /> Lệnh khóa phòng bảo trì ({allBlocks})
               </span>
             ),
             children: maintenanceBlocksPane,
@@ -1951,12 +1954,22 @@ export const MaintenancePage: React.FC = () => {
               Chọn kỹ thuật viên phụ trách:{" "}
               <span style={{ color: "#ff4d4f" }}>*</span>
             </Text>
-            <Select
-              value={assignTechId}
-              onChange={(val) => setAssignTechId(val)}
-              style={{ width: "100%" }}
-              options={technicianOptions}
-            />
+            {isAssignTicketModalOpen && (
+              <PaginatedSelect
+                value={assignTechId || undefined}
+                onChange={(id, staff) => {
+                  if (staff) registerStaffMembers([staff], directoryGeneration);
+                  setAssignTechId(id ?? "");
+                }}
+                style={{ width: "100%" }}
+                placeholder="Tìm nhân viên..."
+                autoPick="first"
+                lookupKey={["employees", "TECHNICIAN", "active"]}
+                loadPage={(params, signal) => employeesApi.list({ ...params, role: "TECHNICIAN", isActive: true }, signal)}
+                loadSelected={employeesApi.getById}
+                formatOption={(staff) => staff.fullName + " (Kỹ thuật viên - ID: " + staff.id + ")"}
+              />
+            )}
           </div>
         </Space>
       </Modal>

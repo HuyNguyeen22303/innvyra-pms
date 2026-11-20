@@ -111,6 +111,10 @@ export class MaintenanceBlockService {
     const { items, total } = await this.repository.blocks(scope.hotelId, query);
     return pageResult(items.map(view), total, query);
   }
+  async stats(scope: OperationsScope) {
+    allowed(scope, operationsReaders);
+    return this.repository.blockStats(scope.hotelId);
+  }
   async finish(scope: OperationsScope, id: bigint, action: 'release' | 'cancel', notes: string) {
     allowed(scope, managers);
     return this.repository.withHotelLock(scope.hotelId, async (repo) => {

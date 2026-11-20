@@ -286,6 +286,30 @@ describe.skipIf(!testUrl)(
       await second?.$disconnect();
     });
 
+    it('finds an in-house service reservation and only its matching stays', async () => {
+      const stayId = await active();
+      const found = await get('/api/v1/reservations').query({
+        eligibleForService: true,
+        lookup: booking.confirmationCode,
+        limit: 1,
+      });
+      expect(found.status).toBe(200);
+      expect(found.body.data.items[0]).toMatchObject({ id: booking.id, status: 'PARTIALLY_CHECKED_IN' });
+      const staysForOrder = await get('/api/v1/stays').query({
+        reservationId: booking.id,
+        status: 'CHECKED_IN',
+        search: booking.confirmationCode,
+      });
+      expect(staysForOrder.status).toBe(200);
+      expect(staysForOrder.body.data.items.map((item: { stayId: string }) => item.stayId)).toEqual([stayId]);
+      for (const search of [undefined, booking.confirmationCode]) {
+        const other = await get('/api/v1/stays').query({ reservationId: missing, ...(search ? { search } : {}) });
+        expect(other.status).toBe(200);
+        expect(other.body.data.items).toEqual([]);
+      }
+      await changeRole('ACCOUNTANT');
+      expect((await get('/api/v1/reservations').query({ lookup: booking.confirmationCode })).status).toBe(403);
+    });
     it('checks in each booked room independently, derives aggregate state and protects inventory/prices', async () => {
       const before = await snapshots();
       const response = await arrive();

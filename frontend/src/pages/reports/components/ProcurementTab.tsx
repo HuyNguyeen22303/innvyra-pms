@@ -6,7 +6,6 @@ import {
   Card,
   Col,
   Row,
-  Select,
   Space,
   Statistic,
   Table,
@@ -18,6 +17,7 @@ import { inventoryApi } from "../../../api/inventory.api.ts";
 import { formatInventoryQuantity } from "../../../utils/inventoryQuantity.ts";
 import { money } from "../../../utils/subscriptions.ts";
 import { BarComparisonChart } from "../../../components/charts/BarComparisonChart.tsx";
+import { PaginatedSelect } from "../../../components/PaginatedSelect.tsx";
 import { SupplierSettlementPanel } from "../../inventory/components/SupplierSettlementPanel.tsx";
 import { Modal } from "antd";
 export function ProcurementTab({
@@ -33,13 +33,6 @@ export function ProcurementTab({
     [categoryId, setCategoryId] = useState<string>(),
     [page, setPage] = useState(1),
     [receiptId, setReceiptId] = useState<string | null>(null);
-  const catalog = useQuery({
-    queryKey: ["inventory", "procurement-filters"],
-    queryFn: async () => ({
-      suppliers: (await inventoryApi.getSuppliers({ limit: 100 })).data.items,
-      categories: (await inventoryApi.getCategories({ limit: 100 })).data.items,
-    }),
-  });
   const purchases = useQuery({
     queryKey: [
       "reports",
@@ -163,38 +156,29 @@ export function ProcurementTab({
       </Card>
       <Card title="Giá trị vật tư nhập kho">
         <Space wrap style={{ marginBottom: 20 }}>
-          <Select
+          <PaginatedSelect
             allowClear
             placeholder="Tất cả nhà cung cấp"
             style={{ width: 250 }}
             value={supplierId}
             onChange={setSupplierId}
-            options={catalog.data?.suppliers.map((row) => ({
-              value: row.id,
-              label: row.name,
-            }))}
+            lookupKey={['inventory', 'suppliers', 'all']}
+            loadPage={inventoryApi.getSuppliers}
+            loadSelected={inventoryApi.getSupplierById}
+            formatOption={(row) => row.name}
           />
-          <Select
+          <PaginatedSelect
             allowClear
             placeholder="Tất cả nhóm vật tư"
             style={{ width: 230 }}
             value={categoryId}
             onChange={setCategoryId}
-            options={catalog.data?.categories.map((row) => ({
-              value: row.id,
-              label: row.name,
-            }))}
+            lookupKey={['inventory', 'categories', 'all']}
+            loadPage={inventoryApi.getCategories}
+            loadSelected={inventoryApi.getCategoryById}
+            formatOption={(row) => row.name}
           />
         </Space>
-        {catalog.isError && (
-          <Alert
-            type="error"
-            title="Không tải được bộ lọc"
-            action={
-              <Button onClick={() => void catalog.refetch()}>Thử lại</Button>
-            }
-          />
-        )}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={8}>
             <Statistic

@@ -132,7 +132,7 @@ export class ReservationService {
   }
   async list(scope: ReservationScope, query: ReservationQuery) {
     this.authorize(scope, 'read');
-    if (scope.role === 'ACCOUNTANT' && query.guestSearch)
+    if (scope.role === 'ACCOUNTANT' && (query.guestSearch || query.lookup))
       throw new AppError(403, 'FORBIDDEN', 'Guest name search is restricted to front desk staff');
     const { items, total } = await this.repository.list(scope.hotelId, query);
     return pageResult(items.map(reservationSummary), total, query);

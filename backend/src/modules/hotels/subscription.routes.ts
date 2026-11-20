@@ -11,9 +11,11 @@ import {
   createPlanSchema,
   updatePlanSchema,
   recordPeriodSchema,
+  platformPeriodPageSchema,
   statusSchema,
   type PlanInput,
   type MonthlyPeriodInput,
+  type PeriodPageQuery,
 } from './subscription.schema.js';
 import type { PlatformAuthService } from '../platform-auth/platform-auth.service.js';
 import type { SubscriptionService } from './subscription.service.js';
@@ -48,6 +50,11 @@ export function platformSubscriptionRoutes(
   });
   router.get('/hotels/:id/subscription', validate(getHotelSchema), async (req, res) => {
     res.json({ success: true, data: await service.summary(BigInt(req.params.id as string)) });
+  });
+  router.get('/hotels/:id/subscription-periods', validate(platformPeriodPageSchema), async (req, res) => {
+    const { query } = res.locals.validated as { query: PeriodPageQuery };
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: await service.periods(BigInt(req.params.id as string), query) });
   });
   router.post(
     '/hotels/:id/subscription-periods',

@@ -1,4 +1,5 @@
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { PaginatedSelect } from '../../../components/PaginatedSelect.tsx';
 import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -40,13 +41,6 @@ export const InventoryMovementsTab: React.FC = () => {
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
-
-  // Query Items for filter select
-  const { data: itemsRes } = useQuery({
-    queryKey: ['inventory', 'items', 'for-movement-filter'],
-    queryFn: () => inventoryApi.getItems({ page: 1, limit: 100 }),
-  });
-  const allItems = itemsRes?.data?.items || [];
 
   // Query Movements
   const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined;
@@ -251,7 +245,7 @@ export const InventoryMovementsTab: React.FC = () => {
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <ResponsiveFilters activeCount={Number(Boolean(typeFilter)) + Number(Boolean(dateRange))} onReset={() => { setTypeFilter(undefined); setDateRange(null); setPage(1); }}>
           <Space wrap size={10}>
-            <Select
+            <PaginatedSelect
               placeholder="Lọc theo Vật tư"
               value={itemFilter}
               onChange={(val) => {
@@ -260,12 +254,10 @@ export const InventoryMovementsTab: React.FC = () => {
               }}
               style={{ width: 230 }}
               allowClear
-              showSearch
-              optionFilterProp="label"
-              options={allItems.map((item) => ({
-                label: `${item.name} (${item.code})`,
-                value: item.id,
-              }))}
+              lookupKey={['inventory', 'items', 'all']}
+              loadPage={inventoryApi.getItems}
+              loadSelected={inventoryApi.getItemById}
+              formatOption={(item) => `${item.name} (${item.code})`}
             />
 
             <Select

@@ -8,6 +8,7 @@ const staffInclude = { role: true } as const;
 function filter(hotelId: bigint, query: EmployeeQuery): Prisma.StaffUserWhereInput {
   return {
     hotelId,
+    ...(query.id ? { id: BigInt(query.id) } : {}),
     ...(query.search
       ? {
           OR: [

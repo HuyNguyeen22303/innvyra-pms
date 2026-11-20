@@ -336,6 +336,8 @@ export const reservationPaths = {
           'Guest name contains; front desk roles only',
         ),
         query('status', status, 'Reservation status'),
+        query('eligibleForService', { type: 'string', enum: ['true'] }, 'Only in-house reservations with a checked-in stay'),
+        query('lookup', { type: 'string', minLength: 1, maxLength: 100 }, 'Confirmation code or guest name contains; front desk roles only'),
         query('checkInDate', date, 'Exact check-in date'),
         query('checkOutDate', date, 'Exact check-out date'),
         query('bookingSource', source, 'Booking channel'),

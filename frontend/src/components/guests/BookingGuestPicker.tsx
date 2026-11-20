@@ -212,7 +212,7 @@ export function BookingGuestPicker({
         okButtonProps={{ disabled: uncertain }}
         cancelButtonProps={{ disabled: mutation.isPending }}
         closable={!mutation.isPending}
-        maskClosable={false}
+        mask={{ closable: false }}
       >
         {uncertain && (
           <Alert

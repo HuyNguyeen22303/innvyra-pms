@@ -33,6 +33,7 @@ export function maintenanceRoutes(
   add('post', '/tickets/:id/close', managers, c.close);
   add('post', '/tickets/:id/cancel', managers, c.cancelTicket, { body: reasonBody });
   add('get', '/blocks', operationsReaders, c.blocks, { query: blockQuery });
+  add('get', '/blocks/stats', operationsReaders, c.blockStats);
   add('get', '/blocks/:id', operationsReaders, c.block);
   add('post', '/blocks', managers, c.createBlock, { body: createBlockBody });
   add('post', '/blocks/:id/release', managers, c.release, { body: releaseBody });

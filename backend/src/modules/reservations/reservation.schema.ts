@@ -75,6 +75,8 @@ export const reservationListQuery = z
     search: z.string().trim().min(1).max(32).optional(),
     guestId: idSchema.optional(),
     guestSearch: z.string().trim().min(1).max(150).optional(),
+    eligibleForService: z.enum(['true']).optional(),
+    lookup: z.string().trim().min(1).max(100).optional(),
     status: z.enum(ReservationStatus).optional(),
     checkInDate: dateOnly.optional(),
     checkOutDate: dateOnly.optional(),

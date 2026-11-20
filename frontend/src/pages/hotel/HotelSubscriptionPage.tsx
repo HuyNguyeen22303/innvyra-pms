@@ -164,7 +164,7 @@ export function HotelSubscriptionPage() {
               />
             )}
             {query.data && (
-              <SubscriptionDetails value={query.data} history={false} />
+              <SubscriptionDetails value={query.data} />
             )}
           </Card>
           {query.data && (
@@ -177,7 +177,11 @@ export function HotelSubscriptionPage() {
                 </Space>
               }
             >
-              <SubscriptionHistory value={query.data} />
+              <SubscriptionHistory
+                key={`${user?.hotelId}:${user?.id}`}
+                historyKey={['hotel-subscription-periods', user?.hotelId, user?.id]}
+                loadPage={subscriptionsApi.ownPeriods}
+              />
             </Card>
           )}
         </>

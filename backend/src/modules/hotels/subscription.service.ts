@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { pageResult } from '../../shared/validation/room-input.js';
 import {
   asDate,
   dateOnly,
@@ -8,7 +9,7 @@ import {
   subscriptionTiming,
 } from './subscription-calendar.js';
 import { currentPeriod } from './subscription-capacity.js';
-import type { MonthlyPeriodInput, PlanInput } from './subscription.schema.js';
+import type { MonthlyPeriodInput, PeriodPageQuery, PlanInput } from './subscription.schema.js';
 
 const clean = <T extends object>(value: T) =>
   Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined));
@@ -206,6 +207,24 @@ export class SubscriptionService {
       });
       return hotel;
     });
+  }
+  async periods(hotelId: bigint, query: PeriodPageQuery) {
+    return this.prisma.$transaction(async (tx) => {
+      const hotel = await tx.hotel.findUnique({ where: { id: hotelId }, select: { id: true } });
+      if (!hotel) throw new AppError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+      const where = { hotelId };
+      const [items, total] = await Promise.all([
+        tx.hotelSubscriptionPeriod.findMany({
+          where,
+          orderBy: [{ startsOn: 'desc' }, { id: 'desc' }],
+          skip: (query.page - 1) * query.limit,
+          take: query.limit,
+          select: subscriptionPeriodSelect,
+        }),
+        tx.hotelSubscriptionPeriod.count({ where }),
+      ]);
+      return pageResult(items, total, query);
+    }, { isolationLevel: 'RepeatableRead' });
   }
   async summary(hotelId: bigint) {
     return this.prisma.$transaction(

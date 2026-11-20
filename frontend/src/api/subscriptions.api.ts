@@ -1,6 +1,6 @@
 import { platformClient } from "./platformClient.ts";
 import { apiClient } from "./axiosClient.ts";
-import type { ApiResponse } from "../types/api.types.ts";
+import type { ApiResponse, PaginatedResult } from "../types/api.types.ts";
 import type { HotelPeriod } from "../types/hotel.types.ts";
 export interface SubscriptionPlan {
   id: string;
@@ -86,6 +86,22 @@ export const subscriptionsApi = {
       await platformClient.post<ApiResponse<HotelPeriod>>(
         `/hotels/${id}/subscription-periods`,
         input,
+      )
+    ).data.data;
+  },
+  async periods(id: string, page: number, limit: number, signal?: AbortSignal) {
+    return (
+      await platformClient.get<ApiResponse<PaginatedResult<HotelPeriod>>>(
+        `/hotels/${id}/subscription-periods`,
+        { params: { page, limit }, signal },
+      )
+    ).data.data;
+  },
+  async ownPeriods(page: number, limit: number, signal?: AbortSignal) {
+    return (
+      await apiClient.get<ApiResponse<PaginatedResult<HotelPeriod>>>(
+        "/hotel/subscription-periods",
+        { params: { page, limit }, signal },
       )
     ).data.data;
   },

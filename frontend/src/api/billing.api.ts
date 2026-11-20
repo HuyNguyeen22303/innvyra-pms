@@ -49,10 +49,12 @@ export const billingApi = {
    * GET /services
    */
   getServices: async (
-    params?: ServiceQueryParams
+    params?: ServiceQueryParams,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<PaginatedResult<ServiceItem>>> => {
     const res = await apiClient.get<ApiResponse<PaginatedResult<ServiceItem>>>('/services', {
       params,
+      signal,
     });
     return res.data;
   },

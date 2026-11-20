@@ -1,4 +1,5 @@
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
+import { PaginatedSelect } from '../../../components/PaginatedSelect.tsx';
 import { ResponsiveRangePicker as RangePicker } from '../../../components/responsive/ResponsiveRangePicker.tsx';
 import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
 import { SupplierPaymentFields } from './SupplierSettlementPanel.tsx';
@@ -11,7 +12,6 @@ import {
   Space,
   Tag,
   Input,
-  Select,
   Modal,
   Form,
   InputNumber,
@@ -53,6 +53,7 @@ const { Text, Paragraph } = Typography;
 interface FormLineItem {
   key: string;
   itemId: string;
+  item?: InventoryItemView;
   quantity: number;
   unitPrice: number;
   notes?: string;
@@ -84,21 +85,6 @@ export const InventoryReceiptsTab: React.FC = () => {
   const [receiptLines, setReceiptLines] = useState<FormLineItem[]>([
     { key: 'line-1', itemId: '', quantity: 1, unitPrice: 0, notes: '' },
   ]);
-
-  // Query Suppliers for filter & dropdown
-  const { data: suppliersRes } = useQuery({
-    queryKey: ['inventory', 'suppliers', 'all-active'],
-    queryFn: () => inventoryApi.getSuppliers({ page: 1, limit: 100, isActive: true }),
-  });
-  const suppliers = suppliersRes?.data?.items || [];
-
-  // Query Items for line item selection
-  const { data: itemsRes } = useQuery({
-    queryKey: ['inventory', 'items', 'all-active'],
-    queryFn: () => inventoryApi.getItems({ page: 1, limit: 100, isActive: true }),
-  });
-  const activeItems = itemsRes?.data?.items || [];
-  const itemMap = new Map<string, InventoryItemView>(activeItems.map((item) => [item.id, item]));
 
   // Query Receipts
   const startDate = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined;
@@ -150,24 +136,24 @@ export const InventoryReceiptsTab: React.FC = () => {
   }, 0);
 
   // Line item change handlers
-  const handleItemSelect = (index: number, itemId: string) => {
+  const handleItemSelect = (index: number, item: InventoryItemView) => {
+    const itemId = item.id;
     // Check if item already exists in other lines
     const existingIndex = receiptLines.findIndex((l, i) => i !== index && l.itemId === itemId);
     if (existingIndex >= 0) {
       // Merge into existing line
       const currentLineQty = receiptLines[index]?.quantity || 1;
-      const targetItem = itemMap.get(itemId);
       const updated = [...receiptLines];
       updated[existingIndex].quantity = (Number(updated[existingIndex].quantity) || 0) + currentLineQty;
       // remove current duplicate line
       updated.splice(index, 1);
       setReceiptLines(updated);
-      appMessage.info(`Vật tư "${targetItem?.name || ''}" đã có trong phiếu, đã tự động gộp số lượng!`);
+      appMessage.info(`Vật tư "${item.name}" đã có trong phiếu, đã tự động gộp số lượng!`);
       return;
     }
 
     const updated = [...receiptLines];
-    updated[index].itemId = itemId;
+    updated[index] = { ...updated[index], itemId, item };
     setReceiptLines(updated);
   };
 
@@ -369,7 +355,7 @@ export const InventoryReceiptsTab: React.FC = () => {
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <ResponsiveFilters activeCount={Number(Boolean(supplierFilter)) + Number(Boolean(dateRange))} onReset={() => { setSupplierFilter(undefined); setDateRange(null); setPage(1); }}>
           <Space wrap size={10}>
-            <Select
+            <PaginatedSelect
               placeholder="Lọc theo Nhà cung cấp"
               value={supplierFilter}
               onChange={(val) => {
@@ -378,10 +364,10 @@ export const InventoryReceiptsTab: React.FC = () => {
               }}
               style={{ width: 220 }}
               allowClear
-              options={suppliers.map((s) => ({
-                label: `${s.name} (${s.code})`,
-                value: s.id,
-              }))}
+              lookupKey={['inventory', 'suppliers', 'active']}
+              loadPage={(params, signal) => inventoryApi.getSuppliers({ ...params, isActive: true }, signal)}
+              loadSelected={inventoryApi.getSupplierById}
+              formatOption={(supplier) => `${supplier.name} (${supplier.code})`}
             />
 
             <RangePicker
@@ -487,13 +473,13 @@ export const InventoryReceiptsTab: React.FC = () => {
                 label="Nhà cung cấp (Tùy chọn)"
                 extra="Để trống nếu là nguồn nhập khác hoặc mua lẻ trực tiếp"
               >
-                <Select
+                <PaginatedSelect
                   placeholder="Chọn nhà cung cấp"
                   allowClear
-                  options={suppliers.map((s) => ({
-                    label: `${s.name} (${s.code})`,
-                    value: s.id,
-                  }))}
+                  lookupKey={['inventory', 'suppliers', 'active']}
+                  loadPage={(params, signal) => inventoryApi.getSuppliers({ ...params, isActive: true }, signal)}
+                  loadSelected={inventoryApi.getSupplierById}
+                  formatOption={(supplier) => `${supplier.name} (${supplier.code})`}
                 />
               </Form.Item>
             </Col>
@@ -558,7 +544,7 @@ export const InventoryReceiptsTab: React.FC = () => {
             }}
           >
             {receiptLines.map((line, idx) => {
-              const selectedItem = itemMap.get(line.itemId);
+              const selectedItem = line.item;
               const lineTotal = (Number(line.quantity) || 0) * (Number(line.unitPrice) || 0);
 
               return (
@@ -574,17 +560,14 @@ export const InventoryReceiptsTab: React.FC = () => {
                   }}
                 >
                   <Col xs={24} sm={8}>
-                    <Select
+                    <PaginatedSelect<InventoryItemView>
                       placeholder="Chọn vật tư..."
                       value={line.itemId || undefined}
-                      onChange={(val) => handleItemSelect(idx, val)}
+                      onChange={(_id, item) => { if (item) handleItemSelect(idx, item); }}
                       style={{ width: '100%' }}
-                      showSearch
-                      optionFilterProp="label"
-                      options={activeItems.map((item) => ({
-                        label: `${item.name} (${item.code}) [${item.unit}]`,
-                        value: item.id,
-                      }))}
+                      lookupKey={['inventory', 'items', 'active']}
+                      loadPage={(params, signal) => inventoryApi.getItems({ ...params, isActive: true }, signal)}
+                      formatOption={(item) => `${item.name} (${item.code}) [${item.unit}]`}
                     />
                   </Col>
 

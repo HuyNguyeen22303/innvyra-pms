@@ -38,8 +38,8 @@ export const staysApi = {
   /**
    * Xem chi tiết lượt lưu trú (thông tin checkin, checkout, nhân viên thực hiện, lịch sử chuyển phòng)
    */
-  getById: async (id: string): Promise<ApiResponse<StayDetailItem>> => {
-    const res = await apiClient.get<ApiResponse<StayDetailItem>>(`/stays/${id}`);
+  getById: async (id: string, signal?: AbortSignal): Promise<ApiResponse<StayDetailItem>> => {
+    const res = await apiClient.get<ApiResponse<StayDetailItem>>(`/stays/${id}`, { signal });
     return res.data;
   },
 

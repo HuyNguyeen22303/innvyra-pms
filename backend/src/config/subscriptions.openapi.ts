@@ -130,6 +130,27 @@ function operation(
     },
   };
 }
+function periodHistory(hotel: boolean) {
+  const read = operation(
+    'List subscription periods, newest first',
+    {
+      type: 'object',
+      required: ['items', 'pagination'],
+      properties: { items: { type: 'array', items: ref('HotelPeriod') }, pagination: ref('Pagination') },
+    },
+    undefined,
+    hotel,
+    !hotel,
+  );
+  return {
+    ...read,
+    parameters: [
+      ...read.parameters,
+      { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 1_000_000, default: 1 } },
+      { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+    ],
+  };
+}
 export const subscriptionPaths = {
   '/platform/plans': {
     get: operation('List monthly plans (platform only)', {
@@ -164,6 +185,7 @@ export const subscriptionPaths = {
     ),
   },
   '/platform/hotels/{id}/subscription-periods': {
+    get: periodHistory(false),
     post: operation(
       'Assign/renew/change plan for a non-overlapping period; does not reactivate suspended hotels',
       ref('HotelPeriod'),
@@ -214,4 +236,5 @@ export const subscriptionPaths = {
       true,
     ),
   },
+  '/hotel/subscription-periods': { get: periodHistory(true) },
 };

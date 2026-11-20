@@ -178,7 +178,7 @@ export function PaymentQrModal({
         if (!locked) onClose();
       }}
       closable={!locked}
-      maskClosable={false}
+      mask={{ closable: false }}
       footer={
         <Button disabled={locked} onClick={onClose}>
           Đóng

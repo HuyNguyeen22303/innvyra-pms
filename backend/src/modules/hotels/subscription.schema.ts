@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { emptyQuery, idParams, idSchema, priceSchema } from '../../shared/validation/room-input.js';
+import {
+  emptyQuery,
+  idParams,
+  idSchema,
+  paginationFields,
+  priceSchema,
+} from '../../shared/validation/room-input.js';
 import { day } from './subscription-day.js';
 const text = (max: number) => z.string().trim().max(max).nullable().optional();
 export const planBody = z
@@ -42,6 +48,12 @@ export const recordPeriodSchema = z.object({
   query: emptyQuery,
   body: monthlyPeriodBody,
 });
+const periodPageQuery = z
+  .object({ page: paginationFields.page, limit: paginationFields.limit })
+  .strict();
+export const ownPeriodPageSchema = z.object({ query: periodPageQuery });
+export const platformPeriodPageSchema = z.object({ params: idParams, query: periodPageQuery });
+export type PeriodPageQuery = z.infer<typeof periodPageQuery>;
 export const statusSchema = z.object({
   params: idParams,
   query: emptyQuery,

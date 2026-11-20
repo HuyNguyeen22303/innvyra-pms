@@ -1,3 +1,4 @@
+import { PaginatedSelect } from '../../components/PaginatedSelect.tsx';
 import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import { ResponsiveTable as Table } from '../../components/responsive/ResponsiveTable.tsx';
 import { CompleteCleaningModal as CompleteTaskModal } from './CompleteCleaningModal.tsx';
@@ -344,34 +345,6 @@ export const HousekeepingPage: React.FC = () => {
 
   // Forms
   const [createForm] = Form.useForm();
-  // Dynamic Housekeeping Staff Query (GET /employees?role=HOUSEKEEPING&isActive=true)
-  const { data: housekeepingStaffRes } = useQuery({
-    queryKey: ["employees", { role: "HOUSEKEEPING", isActive: true }],
-    queryFn: () =>
-      employeesApi.list({ role: "HOUSEKEEPING", isActive: true, limit: 100 }),
-    staleTime: 60000,
-  });
-
-  useEffect(() => {
-    if (housekeepingStaffRes?.data?.items) {
-      registerStaffMembers(housekeepingStaffRes.data.items, directoryGeneration);
-    }
-  }, [housekeepingStaffRes, directoryGeneration]);
-
-  const housekeepingOptions = useMemo(() => {
-    const items = housekeepingStaffRes?.data?.items || [];
-    if (items.length === 0) {
-      return [
-        { value: "", label: "Chưa có nhân viên buồng phòng đang hoạt động" },
-      ];
-    }
-    return items.map((staff) => ({
-      value: String(staff.id),
-      label: `${staff.fullName} (Buồng phòng - ID: ${staff.id})`,
-      role: staff.role,
-    }));
-  }, [housekeepingStaffRes]);
-
   const [assignStaffId, setAssignStaffId] = useState<string>("");
   const [isCompleteModalOpen, setIsCompleteModalOpen] =
     useState<boolean>(false);
@@ -951,7 +924,7 @@ export const HousekeepingPage: React.FC = () => {
                       setAssignStaffId(
                         task.assignedTo
                           ? String(task.assignedTo)
-                          : housekeepingOptions[0]?.value || "",
+                          : "",
                       );
                       setIsAssignModalOpen(true);
                     }}
@@ -1575,12 +1548,22 @@ export const HousekeepingPage: React.FC = () => {
               Chọn nhân viên phụ trách:{" "}
               <span style={{ color: "#ff4d4f" }}>*</span>
             </Text>
-            <Select
-              value={assignStaffId}
-              onChange={(val) => setAssignStaffId(val)}
-              style={{ width: "100%" }}
-              options={housekeepingOptions}
-            />
+            {isAssignModalOpen && (
+              <PaginatedSelect
+                value={assignStaffId || undefined}
+                onChange={(id, staff) => {
+                  if (staff) registerStaffMembers([staff], directoryGeneration);
+                  setAssignStaffId(id ?? "");
+                }}
+                style={{ width: "100%" }}
+                placeholder="Tìm nhân viên..."
+                autoPick="first"
+                lookupKey={["employees", "HOUSEKEEPING", "active"]}
+                loadPage={(params, signal) => employeesApi.list({ ...params, role: "HOUSEKEEPING", isActive: true }, signal)}
+                loadSelected={employeesApi.getById}
+                formatOption={(staff) => staff.fullName + " (Buồng phòng - ID: " + staff.id + ")"}
+              />
+            )}
           </div>
         </Space>
       </Modal>

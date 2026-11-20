@@ -12,9 +12,10 @@ export const employeesApi = {
    * List employees with filtering, searching, sorting and pagination
    * Accessible by all 6 authenticated roles
    */
-  list: async (params?: EmployeeQuery): Promise<ApiResponse<PaginatedResult<EmployeeItem>>> => {
+  list: async (params?: EmployeeQuery, signal?: AbortSignal): Promise<ApiResponse<PaginatedResult<EmployeeItem>>> => {
     const res = await apiClient.get<ApiResponse<PaginatedResult<EmployeeItem>>>('/employees', {
       params,
+      signal,
     });
     return res.data;
   },
@@ -34,6 +35,10 @@ export const employeesApi = {
     };
     const res = await apiClient.post<ApiResponse<EmployeeItem>>('/employees', payload);
     return res.data;
+  },
+  getById: async (id: string, signal?: AbortSignal): Promise<ApiResponse<EmployeeItem | undefined>> => {
+    const response = await employeesApi.list({ id, limit: 1 }, signal);
+    return { ...response, data: response.data.items[0] };
   },
 
   /**

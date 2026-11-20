@@ -118,6 +118,8 @@ export interface AvailabilityQueryParams {
 }
 
 export interface ReservationFilterParams {
+  eligibleForService?: true;
+  lookup?: string;
   page?: number;
   limit?: number;
   search?: string;

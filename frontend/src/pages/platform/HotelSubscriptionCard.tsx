@@ -17,7 +17,7 @@ import {
   subscriptionsApi,
   type MonthlyPeriodInput,
 } from "../../api/subscriptions.api.ts";
-import { SubscriptionDetails } from "../../components/SubscriptionDetails.tsx";
+import { SubscriptionDetails, SubscriptionHistory } from "../../components/SubscriptionDetails.tsx";
 import { money } from "../../utils/subscriptions.ts";
 import { usePlatformAuthStore } from "../../store/platformAuthStore.ts";
 import { hotelError } from "../../utils/hotelErrors.ts";
@@ -87,7 +87,16 @@ export function HotelSubscriptionCard({
           style={{ marginBottom: 16 }}
         />
       )}
-      {summary.data && <SubscriptionDetails value={summary.data} />}
+      {summary.data && (
+        <>
+          <SubscriptionDetails value={summary.data} />
+          <SubscriptionHistory
+            key={`${owner}:${id}:${revision}`}
+            historyKey={["platform-subscription-periods", owner, id, revision]}
+            loadPage={(page, limit, signal) => subscriptionsApi.periods(id, page, limit, signal)}
+          />
+        </>
+      )}
       <Space wrap style={{ marginTop: 16 }}>
         <Button
           type="primary"
@@ -102,7 +111,8 @@ export function HotelSubscriptionCard({
             });
             setError(null);
             setMode("period");
-            setRevision((v) => v + 1);
+            void summary.refetch();
+            void plans.refetch();
           }}
         >
           Đăng ký / gia hạn / đổi gói

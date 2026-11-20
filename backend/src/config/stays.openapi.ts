@@ -255,6 +255,7 @@ export const stayPaths = {
           'Confirmation code or room-number substring. Guest-name search is available to front-desk roles.',
         ),
         query('includeStatusCounts', { type: 'boolean' }, 'Include counts by status for all stays matching the filters'),
+        query('reservationId', id, 'Exact reservation ID in the current hotel'),
         query(
           'sortBy',
           {

@@ -139,6 +139,7 @@ export const employeePaths = {
       security,
       description: `${readPolicy} Supports search by name/username/email, filter by role and active status, and paginated sorting.`,
       parameters: [
+        query('id', id, 'Exact employee ID in the current hotel'),
         query('page', { type: 'integer', minimum: 1, maximum: 1000000, default: 1 }, 'Page number'),
         query(
           'limit',

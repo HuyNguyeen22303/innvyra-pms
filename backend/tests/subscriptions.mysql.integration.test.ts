@@ -113,6 +113,40 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
     }
     const get = (path: string, token = access) =>
       request(app).get(`/api/v1${path}`).auth(token, { type: 'bearer' });
+    it('pages legacy subscription periods across both realms without exposing another hotel', async () => {
+      const h = await hotel();
+      const other = await hotel();
+      const start = asDate(today()).valueOf();
+      const oldPeriods = Array.from({ length: 100 }, (_, index) => ({
+        hotelId: h.id,
+        recordedById: actor,
+        planName: `Archived ${index}`,
+        startsOn: new Date(start - (index + 1) * 86400000),
+        endsOn: new Date(start - (index + 1) * 86400000),
+        feeAmount: '1000.00',
+      }));
+      await database.prisma.hotelSubscriptionPeriod.createMany({ data: oldPeriods });
+
+      for (const path of [
+        '/hotel/subscription-periods',
+        `/platform/hotels/${h.id}/subscription-periods`,
+      ]) {
+        const token = path.startsWith('/hotel/') ? h.token : access;
+        const page = await get(path, token).query({ page: 21, limit: 5 });
+        expect(page.status).toBe(200);
+        expect(page.body.data.pagination).toEqual({ page: 21, limit: 5, total: 101, totalPages: 21 });
+        expect(page.body.data.items).toHaveLength(1);
+        expect(page.body.data.items[0]).toMatchObject({ planName: 'Archived 99', planId: null });
+        expect((await get(path, token).query({ limit: 101 })).status).toBe(422);
+      }
+      const own = await get('/hotel/subscription-periods', other.token);
+      expect(own.body.data.pagination.total).toBe(1);
+      expect((await get('/hotel/subscription-periods', access)).status).toBe(401);
+      expect((await get(`/platform/hotels/${h.id}/subscription-periods`, h.token)).status).toBe(401);
+      const summary = await get('/hotel/subscription', h.token);
+      expect(summary.body.data.history).toHaveLength(100);
+      expect(summary.body.data.nextStartsOn).toBe((await service.summary(h.id)).nextStartsOn);
+    });
     const post = (path: string, body: object, token = access) =>
       request(app)
         .post(`/api/v1${path}`)

@@ -80,6 +80,7 @@ export interface TransferRoomDto {
 }
 
 export interface StayFilterParams {
+  reservationId?: string;
   includeStatusCounts?: boolean;
   page?: number;
   limit?: number;

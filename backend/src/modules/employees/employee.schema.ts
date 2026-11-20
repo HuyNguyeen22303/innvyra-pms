@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emptyQuery, idParams, paginationFields } from '../../shared/validation/room-input.js';
+import { emptyQuery, idParams, idSchema, paginationFields } from '../../shared/validation/room-input.js';
 import { ROLE_CODES } from '../../shared/types/roles.js';
 import { usernameSchema } from '../auth/auth.schema.js';
 
@@ -42,6 +42,7 @@ export const employeeUpdateBody = z
 
 export const employeeListQuery = z
   .object({
+    id: idSchema.optional(),
     page: paginationFields.page,
     limit: paginationFields.limit,
     search: z.string().trim().min(1).max(191).optional(),

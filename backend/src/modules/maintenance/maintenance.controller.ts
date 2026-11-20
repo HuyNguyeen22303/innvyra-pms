@@ -40,6 +40,7 @@ export function maintenanceController(
       tickets.transition(s, BigInt(params.id!), 'cancel', body.reason),
     ),
     blocks: handle<object, BlockQuery>('Blocks retrieved', (s, { query }) => blocks.list(s, query)),
+    blockStats: handle('Block stats retrieved', (s) => blocks.stats(s)),
     block: handle('Block retrieved', (s, { params }) => blocks.detail(s, BigInt(params.id!))),
     createBlock: handle<CreateBlockInput>(
       'Block created',

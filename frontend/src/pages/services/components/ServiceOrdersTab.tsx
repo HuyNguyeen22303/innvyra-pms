@@ -1,6 +1,7 @@
+import { PaginatedSelect } from '../../../components/PaginatedSelect.tsx';
 import { ResponsiveFilters } from '../../../components/responsive/ResponsiveFilters.tsx';
 import { ResponsiveTable as Table } from '../../../components/responsive/ResponsiveTable.tsx';
-import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Button,
@@ -193,28 +194,7 @@ export const ServiceOrdersTab: React.FC = () => {
     placeholderData: keepPreviousData,
   });
 
-  // Query Active Services for Order Creation
-  const { data: activeServicesRes } = useQuery({
-    queryKey: ['active-services-lookup'],
-    queryFn: () => billingApi.getServices({ isActive: 'true', limit: 100 }),
-    enabled: isCreateModalOpen,
-  });
-
-  // Dynamic Staff Directory for instant employee names & roles
   const { getStaff } = useStaffDirectory();
-
-  // Query Stays & Reservations (only needed by the create-order modal)
-  const { data: activeStaysRes } = useQuery({
-    queryKey: ['active-stays-lookup'],
-    queryFn: () => staysApi.getAll({ limit: 100 }),
-    staleTime: 30000,
-  });
-
-  const { data: activeReservationsRes } = useQuery({
-    queryKey: ['active-reservations-lookup'],
-    queryFn: () => reservationsApi.getAll({ limit: 100 }),
-    staleTime: 30000,
-  });
 
   const orderList: ServiceOrderItem[] = ordersRes?.data?.items || [];
 
@@ -223,50 +203,7 @@ export const ServiceOrdersTab: React.FC = () => {
   const tableOrderList =
     deferredOrderList.length > 0 ? deferredOrderList : orderList;
   const total = ordersRes?.data?.pagination?.total || 0;
-  const activeServices = activeServicesRes?.data?.items || [];
-
-  const rawStays = activeStaysRes?.data;
-  const activeStays: any[] = useMemo(() => {
-    return Array.isArray(rawStays)
-      ? rawStays
-      : Array.isArray((rawStays as any)?.items)
-      ? (rawStays as any).items
-      : [];
-  }, [rawStays]);
-
-  const rawReservations = activeReservationsRes?.data;
-  const allReservations: any[] = useMemo(() => {
-    return Array.isArray(rawReservations)
-      ? rawReservations
-      : Array.isArray((rawReservations as any)?.items)
-      ? (rawReservations as any).items
-      : [];
-  }, [rawReservations]);
-
-  // Backend requires active stay (CHECKED_IN or PARTIALLY_CHECKED_IN) for service orders
-  const activeReservations = useMemo(() => {
-    return allReservations.filter((r) =>
-      ['CHECKED_IN', 'PARTIALLY_CHECKED_IN'].includes(r.status)
-    );
-  }, [allReservations]);
-
-  const formReservationId = Form.useWatch('reservationId', createForm);
-
-  const availableStays = useMemo(() => {
-    if (!formReservationId) return activeStays;
-    return activeStays.filter((s: any) => String(s.reservationId) === String(formReservationId));
-  }, [activeStays, formReservationId]);
-
-  useEffect(() => {
-    if (!formReservationId) return;
-    const currentStayId = createForm.getFieldValue('stayId');
-    if (currentStayId && !availableStays.some((s: any) => String(s.stayId) === String(currentStayId))) {
-      createForm.setFieldValue('stayId', undefined);
-    }
-    if (availableStays.length === 1 && !currentStayId) {
-      createForm.setFieldValue('stayId', String(availableStays[0].stayId));
-    }
-  }, [formReservationId, availableStays, createForm]);
+  const formReservationId: string | undefined = Form.useWatch('reservationId', createForm);
 
   // Mutations
   const createMutation = useMutation({
@@ -630,16 +567,6 @@ export const ServiceOrdersTab: React.FC = () => {
           style={{ marginBottom: 16 }}
         />
 
-        {activeReservations.length === 0 && (
-          <Alert
-            type="warning"
-            showIcon
-            title="Chưa có khách đang lưu trú (CHECKED_IN)"
-            description="Dịch vụ chỉ có thể ghi nhận cho các đơn đặt phòng đang có khách lưu trú tại khách sạn."
-            style={{ marginBottom: 16 }}
-          />
-        )}
-
         <Form
           form={createForm}
           layout="vertical"
@@ -667,39 +594,36 @@ export const ServiceOrdersTab: React.FC = () => {
                 label="Đơn đặt phòng"
                 rules={[{ required: true, message: 'Vui lòng chọn đơn đặt phòng' }]}
               >
-                <Select
-                  showSearch
+                <PaginatedSelect
                   placeholder="Chọn đơn đặt phòng..."
-                  filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={activeReservations.map((r: any) => ({
-                    value: String(r.id),
-                    label: `${r.bookerGuest?.fullName || 'Khách'} - Mã đặt: #${r.confirmationCode || r.id} (${r.status})`,
-                  }))}
+                  lookupKey={['reservations', 'service-order']}
+                  loadPage={({ search, ...params }, signal) => reservationsApi.getAll({ ...params, eligibleForService: true, lookup: search }, signal)}
+                  formatOption={(reservation) => (reservation.bookerGuest?.fullName || "Khách") + " - Mã đặt: #" + reservation.confirmationCode + " (" + reservation.status + ")"}
+                  onChange={() => createForm.setFieldValue('stayId', undefined)}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="stayId" label="Phòng nhận dịch vụ (tùy chọn)">
-                <Select
-                  showSearch
+                <PaginatedSelect
+                  key={formReservationId}
+                  autoPick="single"
                   allowClear
-                  placeholder={
-                    formReservationId
-                      ? availableStays.length > 0
-                        ? 'Gắn theo phòng lưu trú...'
-                        : 'Không có phòng nào đang check-in'
-                      : 'Chọn đơn đặt phòng trước...'
-                  }
-                  disabled={!formReservationId || availableStays.length === 0}
-                  filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={availableStays.map((s: any) => ({
-                    value: String(s.stayId || s.id),
-                    label: `Phòng #${s.room?.roomNumber} - ${s.roomType?.name || ''} (${s.bookerGuest?.fullName || 'Khách lưu trú'})`,
-                  }))}
+                  placeholder={formReservationId ? 'Gắn theo phòng lưu trú...' : 'Chọn đơn đặt phòng trước...'}
+                  disabled={!isCreateModalOpen || !formReservationId}
+                  lookupKey={['stays', 'service-order', formReservationId]}
+                  loadPage={async (params, signal) => {
+                    const result = await staysApi.getAll({ ...params, reservationId: formReservationId, status: 'CHECKED_IN' }, signal);
+                    return {
+                      ...result,
+                      data: { ...result.data, items: result.data.items.map((stay) => ({ ...stay, id: stay.stayId })) },
+                    };
+                  }}
+                  loadSelected={async (id, signal) => {
+                    const result = await staysApi.getById(id, signal);
+                    return { ...result, data: { ...result.data, id: result.data.stayId } };
+                  }}
+                  formatOption={(stay) => "Phòng #" + stay.room.roomNumber + " - " + stay.roomType.name + " (" + (stay.bookerGuest?.fullName || "Khách lưu trú") + ")"}
                 />
               </Form.Item>
             </Col>
@@ -721,16 +645,11 @@ export const ServiceOrdersTab: React.FC = () => {
                         rules={[{ required: true, message: 'Chọn dịch vụ' }]}
                         style={{ margin: 0 }}
                       >
-                        <Select
-                          showSearch
+                        <PaginatedSelect
                           placeholder="Chọn dịch vụ từ danh mục..."
-                          filterOption={(input, option) =>
-                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                          options={activeServices.map((svc) => ({
-                            value: String(svc.id),
-                            label: `${svc.name} (${formatVND(svc.price)} / ${svc.unit})`,
-                          }))}
+                          lookupKey={['billing-services', 'active', 'service-order']}
+                          loadPage={(params, signal) => billingApi.getServices({ ...params, isActive: 'true' }, signal)}
+                          formatOption={(service) => service.name + " (" + service.code + ") · " + formatVND(service.price) + " / " + service.unit}
                         />
                       </Form.Item>
                     </Col>

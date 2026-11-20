@@ -133,6 +133,30 @@ describe.skipIf(!testUrl)(
       return { booking, stay };
     };
     const state = (index = 0) => db.room.findUniqueOrThrow({ where: { id: rooms[index]! } });
+    it('counts blocks independently of pagination and only within the current hotel', async () => {
+      const sample = {
+        roomId: rooms[0]!,
+        createdBy: scope.actorId,
+        hotelId: scope.hotelId,
+        startDate: asDate(tomorrow),
+        endDate: asDate(end),
+        reason: 'Pagination count fixture',
+      };
+      await db.maintenanceBlock.createMany({
+        data: Array.from({ length: 101 }, () => sample),
+      });
+      const page = await get('/maintenance/blocks?status=SCHEDULED&limit=10&page=11');
+      expect(page.status).toBe(200);
+      expect(page.body.data.items).toHaveLength(1);
+      expect(page.body.data.pagination.total).toBe(101);
+      const stats = await get('/maintenance/blocks/stats');
+      expect(stats.status).toBe(200);
+      expect(stats.body.data).toEqual([{ status: 'SCHEDULED', count: 101 }]);
+      const foreign = await request(app)
+        .get('/api/v1/maintenance/blocks/stats')
+        .auth(foreignToken, { type: 'bearer' });
+      expect(foreign.body.data).toEqual([]);
+    });
     beforeAll(async () => {
       const url = new URL(testUrl!);
       if (
@@ -977,6 +1001,7 @@ describe.skipIf(!testUrl)(
         '/housekeeping/dirty-rooms',
         '/maintenance/tickets',
         '/maintenance/blocks',
+        '/maintenance/blocks/stats',
       ])
         expect((await get(path, 'ACCOUNTANT')).status).toBe(403);
       expect((await get('/housekeeping/tasks', 'TECHNICIAN')).status).toBe(403);
@@ -1000,7 +1025,7 @@ describe.skipIf(!testUrl)(
       expect((await get('/maintenance/blocks/' + id)).body.data.status).toBe('ACTIVE');
       expect((await state()).housekeepingStatus).toBe('DIRTY');
     });
-    it('serves Swagger UI and all 24 documented operations with response schemas, auth and errors', async () => {
+    it('serves Swagger UI and all 25 documented operations with response schemas, auth and errors', async () => {
       expect((await request(app).get('/api-docs/')).status).toBe(200);
       const spec = (await request(app).get('/api-docs/openapi.json')).body;
       const paths = Object.entries(spec.paths).filter(
@@ -1011,8 +1036,9 @@ describe.skipIf(!testUrl)(
           path as Record<string, { security: object[]; responses: object; description: string }>,
         ),
       );
-      expect(operations).toHaveLength(24);
+      expect(operations).toHaveLength(25);
       expect(spec.paths['/maintenance/tickets/stats']).toHaveProperty('get');
+      expect(spec.paths['/maintenance/blocks/stats']).toHaveProperty('get');
       for (const operation of operations) {
         expect(operation.security).toEqual([{ bearerAuth: [] }]);
         expect(operation.responses).toHaveProperty('409');

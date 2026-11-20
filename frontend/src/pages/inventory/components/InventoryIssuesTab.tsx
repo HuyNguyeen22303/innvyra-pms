@@ -504,7 +504,7 @@ export const InventoryIssuesTab: React.FC = () => {
         okText={uncertain ? 'Kiểm tra / Thử lại' : 'Hoàn tất xuất kho'}
         cancelText="Hủy bỏ"
         cancelButtonProps={{ disabled: uncertain || createMutation.isPending }}
-        maskClosable={false}
+        mask={{ closable: false }}
         closable={!uncertain && !createMutation.isPending}
         confirmLoading={createMutation.isPending}
         destroyOnHidden={false}
