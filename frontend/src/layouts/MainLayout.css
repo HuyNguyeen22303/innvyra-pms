@@ -45,6 +45,15 @@
   font-size: 12px;
   font-weight: 600;
 }
+.sidebar-property__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
 .sidebar-property__rooms {
   display: inline-flex;
   align-items: center;
@@ -64,14 +73,62 @@
   border-radius: 50%;
   background: #9ebf97;
 }
-.sidebar-property__shift {
+
+.pms-header-leading,
+.pms-header-breadcrumb {
   display: flex;
   align-items: center;
+  min-inline-size: 0;
+}
+
+.pms-header-leading {
+  flex: 1;
+}
+
+.pms-header-toggle {
+  flex: none;
+}
+
+.pms-header-breadcrumb {
   gap: 6px;
-  margin-top: 10px;
-  padding-top: 9px;
-  border-top: 1px solid #ffffff0c;
-  color: #a1b6a8;
-  font-size: 10px;
-  line-height: 1.5;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.pms-header-breadcrumb__text,
+.pms-header-account__name {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pms-header-breadcrumb .pms-header-property {
+  min-inline-size: 0;
+  white-space: nowrap;
+}
+
+.pms-header-account.ant-btn {
+  height: auto;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.pms-header-account .ant-avatar {
+  flex: none;
+}
+
+.pms-header-account__identity {
+  display: grid;
+  max-inline-size: 180px;
+  min-inline-size: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.pms-header-account-menu__identity {
+  max-inline-size: min(224px, calc(100vw - 64px));
+  padding: 6px 2px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }

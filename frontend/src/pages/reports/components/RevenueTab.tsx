@@ -15,13 +15,13 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import {
   DollarOutlined,
-  BarChartOutlined,
+  LineChartOutlined,
   PieChartOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../../../api/reports.api.ts';
-import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
+import { ReportTrendChart } from '../../../components/charts/ReportTrendChart.tsx';
 import { DonutChart, type DonutSlice } from '../../../components/charts/DonutChart.tsx';
 import type { RevenueSeriesItem } from '../../../types/reports.types.ts';
 import { formatReportTotal, formatVnd } from '../reports.utils.ts';
@@ -29,6 +29,16 @@ import { formatReportTotal, formatVnd } from '../reports.utils.ts';
 const { Text } = Typography;
 
 const formatVndNumber = (val: number) => formatVnd(val);
+const compactVnd = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+const revenueSeries = [
+  { dataKey: 'billed', label: 'Doanh thu ghi nhận', color: '#1b4d3e' },
+  { dataKey: 'cash', label: 'Thực thu ròng', color: '#2469a2', dashed: true },
+] as const;
 
 export interface RevenueTabProps {
   startDateStr: string;
@@ -57,17 +67,11 @@ export const RevenueTab: React.FC<RevenueTabProps> = React.memo(({
   const summary = rev?.summary;
   const balance = rev?.balance;
 
-  const revenueChartData: BarComparisonItem[] = useMemo(() => {
-    return (rev?.series || []).map((item) => ({
-      key: item.date,
-      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
-      value1: Math.max(0, parseFloat(item.netBilledCharges || '0')),
-      value2: Math.max(0, parseFloat(item.netCashCollected || '0')),
-      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
-      tooltipText1: `Doanh thu Billed: ${formatVnd(item.netBilledCharges)} (Phòng: ${formatVnd(item.roomCharges)} | Dịch vụ: ${formatVnd(item.serviceCharges)})`,
-      tooltipText2: `Thực thu ròng: ${formatVnd(item.netCashCollected)}`,
-    }));
-  }, [rev?.series, groupBy]);
+  const revenueChartData = useMemo(() => (rev?.series ?? []).map((item) => ({
+    ...item,
+    billed: Number(item.netBilledCharges),
+    cash: Number(item.netCashCollected),
+  })), [rev?.series]);
 
   const revenueDonutData: DonutSlice[] = useMemo(() => {
     const data: DonutSlice[] = [];
@@ -285,29 +289,32 @@ export const RevenueTab: React.FC<RevenueTabProps> = React.memo(({
         </Card>
       )}
 
-      {/* Visual Charts: Comparison Bar & Revenue Breakdown Donut */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} lg={15}>
           <Card
             title={
               <Space wrap size={6}>
-                <BarChartOutlined style={{ color: '#1b4d3e' }} />
+                <LineChartOutlined style={{ color: '#1b4d3e' }} />
                 <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
-                  {screens.xs ? 'Doanh thu vs Thực thu' : `So sánh Doanh thu ghi nhận vs Dòng tiền thực thu (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+                  Doanh thu ghi nhận và thực thu ròng
                 </Text>
               </Space>
             }
             size="small"
             style={{ borderRadius: 8, height: '100%' }}
           >
-            <BarComparisonChart
+            <ReportTrendChart
+              label="Doanh thu ghi nhận và thực thu ròng"
               data={revenueChartData}
-              series1Label="Doanh thu ghi nhận (Net Billed)"
-              series2Label="Dòng tiền thực thu (Net Cash)"
-              series1Color="#1b4d3e"
-              series2Color="#1890ff"
-              valueFormatter={formatVndNumber}
-              height={260}
+              groupBy={groupBy}
+              series={revenueSeries}
+              formatTick={compactVnd.format}
+              describePoint={(point) => [
+                { label: 'Doanh thu ghi nhận', value: formatVnd(point.netBilledCharges) },
+                { label: 'Thực thu ròng', value: formatVnd(point.netCashCollected) },
+                { label: 'Tiền phòng', value: formatVnd(point.roomCharges) },
+                { label: 'Tiền dịch vụ', value: formatVnd(point.serviceCharges) },
+              ]}
             />
           </Card>
         </Col>

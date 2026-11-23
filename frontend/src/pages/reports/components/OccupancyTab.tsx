@@ -15,18 +15,22 @@ import {
   Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { BarChartOutlined } from '@ant-design/icons';
+import { LineChartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../../../api/reports.api.ts';
 import { roomTypesApi } from '../../../api/rooms.api.ts';
-import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
+import { ReportTrendChart } from '../../../components/charts/ReportTrendChart.tsx';
 import type { OccupancySeriesItem } from '../../../types/reports.types.ts';
 import { formatVnd } from '../reports.utils.ts';
 
 const { Text } = Typography;
 
 const formatNightCount = (val: number) => `${Math.round(val).toLocaleString('vi-VN')} đêm`;
+const formatPercent = (value: number) => `${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
+const occupancySeries = [
+  { dataKey: 'occupancyRate', label: 'Tỷ lệ lấp đầy', color: '#1b4d3e' },
+] as const;
 
 export interface OccupancyTabProps {
   startDateStr: string;
@@ -83,18 +87,6 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
   const displayOccupancyRate = metrics?.occupancyRate;
   const displayAdr = metrics?.operationalAdr;
   const displayRevpar = metrics?.operationalRevpar;
-
-  const occupancyChartData: BarComparisonItem[] = useMemo(() => {
-    return (occ?.series || []).map((item) => ({
-      key: item.date,
-      label: groupBy === 'month' ? dayjs(item.date).format('MM/YYYY') : dayjs(item.date).format('DD/MM'),
-      value1: item.occupiedRoomNights ?? 0,
-      value2: item.sellableRoomNights ?? 0,
-      tooltipTitle: groupBy === 'month' ? `Tháng ${dayjs(item.date).format('MM/YYYY')}` : `Ngày ${dayjs(item.date).format('DD/MM/YYYY')}`,
-      tooltipText1: `Phòng có khách: ${item.occupiedRoomNights ?? 0} đêm (${item.occupancyRate !== null && item.occupancyRate !== undefined ? item.occupancyRate + '%' : 'Chưa chốt'})`,
-      tooltipText2: `Phòng sẵn bán: ${item.sellableRoomNights} đêm`,
-    }));
-  }, [occ?.series, groupBy]);
 
   const columns: ColumnsType<OccupancySeriesItem> = useMemo(() => [
     {
@@ -313,24 +305,33 @@ export const OccupancyTab: React.FC<OccupancyTabProps> = React.memo(({
       <Card
         title={
           <Space wrap size={6}>
-            <BarChartOutlined style={{ color: '#1b4d3e' }} />
+            <LineChartOutlined style={{ color: '#1b4d3e' }} />
             <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
-              {screens.xs ? 'Phòng có khách vs Sẵn bán' : `Biểu đồ so sánh Phòng có khách vs Phòng sẵn sàng bán (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+              Tỷ lệ lấp đầy theo thời gian
             </Text>
           </Space>
         }
         size="small"
         style={{ marginBottom: 20, borderRadius: 8 }}
       >
-        <BarComparisonChart
-          data={occupancyChartData}
-          series1Label="Phòng có khách (Occupied)"
-          series2Label="Phòng sẵn bán (Sellable)"
-          series1Color="#1b4d3e"
-          series2Color="#52c41a"
-          valueFormatter={formatNightCount}
-          integerTicks
-          height={260}
+        <ReportTrendChart
+          label="Tỷ lệ lấp đầy theo thời gian"
+          data={occ?.series ?? []}
+          groupBy={groupBy}
+          series={occupancySeries}
+          domain={[0, 100]}
+          formatTick={formatPercent}
+          describePoint={(point) => [
+            {
+              label: 'Tỷ lệ lấp đầy',
+              value: point.occupancyRate == null ? 'Chưa đủ dữ liệu' : formatPercent(point.occupancyRate),
+            },
+            {
+              label: 'Phòng-đêm có khách',
+              value: point.occupiedRoomNights == null ? '—' : formatNightCount(point.occupiedRoomNights),
+            },
+            { label: 'Phòng-đêm sẵn bán', value: formatNightCount(point.sellableRoomNights) },
+          ]}
         />
       </Card>
 

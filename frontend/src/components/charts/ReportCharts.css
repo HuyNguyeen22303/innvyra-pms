@@ -1,0 +1,133 @@
+.report-trend {
+  --report-chart-height: clamp(220px, 27vw, 296px);
+  container-type: inline-size;
+  min-inline-size: 0;
+}
+
+.report-trend__plot .recharts-surface:focus-visible {
+  outline: 2px solid #34745c;
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.report-trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  color: #475569;
+  font-size: 12px;
+}
+
+.report-trend__legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.report-trend__legend li > span {
+  flex: none;
+  width: 20px;
+  border-top-width: 3px;
+}
+
+.report-trend__tooltip {
+  box-sizing: border-box;
+  inline-size: min(240px, calc(100cqi - 56px));
+  padding: 9px 10px;
+  border: 1px solid #dce9e1;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 14px #10281f1a;
+  color: #475569;
+  font-size: 12px;
+}
+
+.report-trend__tooltip strong {
+  color: #1b4d3e;
+}
+
+.report-trend__tooltip dl {
+  display: grid;
+  gap: 5px;
+  margin: 6px 0 0;
+}
+
+.report-trend__tooltip dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 8px;
+}
+
+.report-trend__tooltip dd {
+  margin: 0;
+  color: #142b21;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.report-reservation-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 992px) {
+  .report-reservation-charts {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 3fr);
+  }
+}
+
+.report-source-ranking {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-inline-size: 0;
+}
+
+.report-source-ranking__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3px 12px;
+  color: #263d33;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.report-source-ranking__value {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-source-ranking__value strong {
+  color: #1b4d3e;
+}
+
+.report-source-ranking__value span {
+  margin-inline-start: 7px;
+  color: #52645f;
+}
+
+.report-source-ranking__track {
+  height: 7px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #e8f0eb;
+}
+
+.report-source-ranking__track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #34745c;
+}

@@ -521,11 +521,6 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
                 </Row>
               )}
 
-              {dashboardData?.finance && <SupplyCashSummary
-                paid={dashboardData.finance.netSupplierPaid}
-                net={dashboardData.finance.netCashAfterSupplies}
-                label={`ngày ${selectedDate.format('DD/MM/YYYY')}`}
-              />}
               {/* Real Arrivals & Departures Lists */}
               <Card
                 style={{ borderRadius: 8, border: '1px solid #e2e8f0' }}

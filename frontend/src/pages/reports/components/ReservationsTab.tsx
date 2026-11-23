@@ -10,37 +10,27 @@ import {
   Spin,
   Statistic,
   Alert,
+  Empty,
   Grid,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   BarChartOutlined,
-  PieChartOutlined,
+  OrderedListOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../../../api/reports.api.ts';
 import { BarComparisonChart, type BarComparisonItem } from '../../../components/charts/BarComparisonChart.tsx';
-import { DonutChart, type DonutSlice } from '../../../components/charts/DonutChart.tsx';
 import type { ReservationSeriesItem } from '../../../types/reports.types.ts';
+import '../../../components/charts/ReportCharts.css';
 
 const { Text } = Typography;
 
 const formatReservationCount = (val: number) =>
   `${val.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} lượt`;
 
-const channelColors: Record<string, string> = {
-  DIRECT: '#1b4d3e',
-  WALK_IN: '#fa8c16',
-  OTA: '#1890ff',
-  ONLINE: '#1890ff',
-  PHONE: '#722ed1',
-  EMAIL: '#13c2c2',
-  AGENT: '#eb2f96',
-  CORPORATE: '#fa541c',
-  OTHER: '#8c8c8c',
-};
-const defaultPalette = ['#1b4d3e', '#1890ff', '#fa8c16', '#52c41a', '#722ed1', '#13c2c2', '#eb2f96'];
+const formatSourceShare = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 2 });
 
 export interface ReservationsTabProps {
   startDateStr: string;
@@ -80,14 +70,11 @@ export const ReservationsTab: React.FC<ReservationsTabProps> = React.memo(({
     }));
   }, [res?.series, groupBy]);
 
-  const bookingSourcesDonutData: DonutSlice[] = useMemo(() => {
-    return (res?.bookingSources || []).map((src, idx) => ({
-      key: src.source,
-      label: src.source,
-      value: src.reservations,
-      color: channelColors[src.source] || defaultPalette[idx % defaultPalette.length],
-    }));
-  }, [res?.bookingSources]);
+  const bookingSources = useMemo(
+    () => [...(res?.bookingSources ?? [])].sort((a, b) => b.reservations - a.reservations || a.source.localeCompare(b.source, 'vi')),
+    [res?.bookingSources],
+  );
+  const totalSourceBookings = bookingSources.reduce((total, source) => total + source.reservations, 0);
 
   const columns: ColumnsType<ReservationSeriesItem> = useMemo(() => [
     {
@@ -224,55 +211,65 @@ export const ReservationsTab: React.FC<ReservationsTabProps> = React.memo(({
         </Col>
       </Row>
 
-      {/* Visual Charts: Reservations vs Checkins Bar & Booking Channels Donut */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} lg={15}>
-          <Card
-            title={
-              <Space wrap size={6}>
-                <BarChartOutlined style={{ color: '#1b4d3e' }} />
-                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
-                  {screens.xs ? 'Đặt mới vs Check-in' : `So sánh Lượt đặt tạo mới vs Check-in thực tế (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
-                </Text>
-              </Space>
-            }
-            size="small"
-            style={{ borderRadius: 8, height: '100%' }}
-          >
-            <BarComparisonChart
-              data={reservationChartData}
-              series1Label="Lượt đặt mới"
-              series2Label="Check-in thực tế"
-              series1Color="#1b4d3e"
-              series2Color="#52c41a"
-              valueFormatter={formatReservationCount}
-              integerTicks
-              height={260}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={9}>
-          <Card
-            title={
-              <Space wrap size={6}>
-                <PieChartOutlined style={{ color: '#1890ff' }} />
-                <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Cơ cấu nguồn đặt phòng</Text>
-              </Space>
-            }
-            size="small"
-            style={{ borderRadius: 8, height: '100%' }}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <DonutChart
-                data={bookingSourcesDonutData}
-                totalLabel="Tổng lượt đặt"
-                valueFormatter={formatReservationCount}
-                size={160}
-              />
-            </div>
-          </Card>
-        </Col>
-      </Row>
+      <div className="report-reservation-charts">
+        <Card
+          title={
+            <Space wrap size={6}>
+              <BarChartOutlined style={{ color: '#1b4d3e' }} />
+              <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>
+                {screens.xs ? 'Đặt mới vs Check-in' : `So sánh Lượt đặt tạo mới vs Check-in thực tế (${groupBy === 'day' ? 'Theo ngày' : 'Theo tháng'})`}
+              </Text>
+            </Space>
+          }
+          size="small"
+          style={{ borderRadius: 8 }}
+        >
+          <BarComparisonChart
+            data={reservationChartData}
+            series1Label="Lượt đặt mới"
+            series2Label="Check-in thực tế"
+            series1Color="#1b4d3e"
+            series2Color="#52c41a"
+            valueFormatter={formatReservationCount}
+            integerTicks
+            height={260}
+          />
+        </Card>
+        <Card
+          title={
+            <Space wrap size={6}>
+              <OrderedListOutlined style={{ color: '#1b4d3e' }} />
+              <Text strong style={{ fontSize: screens.xs ? 13 : 14 }}>Xếp hạng nguồn đặt phòng</Text>
+            </Space>
+          }
+          size="small"
+          style={{ borderRadius: 8 }}
+        >
+          {totalSourceBookings > 0 ? (
+            <ol className="report-source-ranking" role="list" aria-label="Nguồn đặt phòng theo số lượt">
+              {bookingSources.map(({ source, reservations }) => {
+                const share = reservations / totalSourceBookings;
+                return (
+                  <li key={source}>
+                    <div className="report-source-ranking__label">
+                      <span>{source}</span>
+                      <span className="report-source-ranking__value">
+                        <strong>{formatReservationCount(reservations)}</strong>
+                        <span>{formatSourceShare.format(share)}</span>
+                      </span>
+                    </div>
+                    <div className="report-source-ranking__track" aria-hidden="true">
+                      <span style={{ width: `${share * 100}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có lượt đặt theo nguồn trong kỳ" />
+          )}
+        </Card>
+      </div>
 
       {/* Time series */}
       <Card

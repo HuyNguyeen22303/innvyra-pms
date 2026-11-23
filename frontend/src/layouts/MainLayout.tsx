@@ -230,19 +230,10 @@ export const MainLayout: React.FC = () => {
   });
   const roomCount = roomsRes?.data.pagination.total;
 
-  // Dynamic real-time operational date & shift
+  // Hotel-local operating date
   const clock = useHotelClock();
   const currentDate = clock ? dayjs(clock.date).format("DD/MM/YYYY") : "Chưa có ngày vận hành";
   const currentShortDate = clock ? dayjs(clock.date).format("DD/MM") : "—";
-  const currentHour = clock?.hour ?? -1;
-  const currentShift =
-    currentHour < 0
-      ? "Chưa có múi giờ khách sạn"
-      : currentHour >= 6 && currentHour < 14
-      ? "Ca sáng: 06:00 – 14:00"
-      : currentHour >= 14 && currentHour < 22
-        ? "Ca chiều: 14:00 – 22:00"
-        : "Ca đêm: 22:00 – 06:00";
 
   const handleLogout = async () => {
     try { await logout(); navigate('/login'); }
@@ -254,7 +245,7 @@ export const MainLayout: React.FC = () => {
       key: "user-info",
       disabled: true,
       label: (
-        <div style={{ padding: "6px 2px" }}>
+        <div className="pms-header-account-menu__identity">
           <Text strong style={{ color: "#0f172a", fontSize: 13 }}>
             {user?.fullName}
           </Text>
@@ -336,6 +327,7 @@ export const MainLayout: React.FC = () => {
 
   // Product identity is shared with login; the property remains a separate context.
   const compactBrand = collapsed && !useDrawerNavigation;
+  const propertyName = user?.hotel?.name || 'Khách sạn';
   const brandBlock = (
     <div className={`sidebar-brand${compactBrand ? ' sidebar-brand--compact' : ''}`}>
       <BrandLogo tone="dark" variant={compactBrand ? 'mark' : 'full'} size={36} />
@@ -347,10 +339,9 @@ export const MainLayout: React.FC = () => {
     <div className="sidebar-property">
       <div className="sidebar-property__label">Cơ sở hiện tại</div>
       <div className="sidebar-property__name">
-        <span>{user?.hotel?.name || 'Khách sạn'}</span>
+        <span className="sidebar-property__title" title={propertyName}>{propertyName}</span>
         {!subscriptionOnly && <span className="sidebar-property__rooms">{roomCountError ? "Chưa tải được số phòng" : roomCount === undefined ? "Đang tải số phòng…" : `${roomCount} phòng`}</span>}
       </div>
-      <div className="sidebar-property__shift"><ClockCircleOutlined />{currentShift}</div>
     </div>
   );
   return (
@@ -469,38 +460,32 @@ export const MainLayout: React.FC = () => {
           }}
         >
           {/* Left Action / Brand breadcrumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12, minWidth: 0 }}>
+          <div className="pms-header-leading" style={{ gap: isMobile ? 6 : 12 }}>
             {useDrawerNavigation ? (
               <Button
                 type="text"
+                className="pms-header-toggle"
                 icon={<MenuOutlined />}
                 onClick={() => setMobileDrawerOpen(true)}
                 style={{ fontSize: 18, color: "#1b4d3e" }}
                 aria-label="Mở menu điều hướng"
+                aria-expanded={mobileDrawerOpen}
               />
             ) : (
               <Button
                 type="text"
+                className="pms-header-toggle"
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                 onClick={() => setCollapsed(!collapsed)}
                 style={{ fontSize: 17, color: "#334155" }}
+                aria-label={collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"}
+                aria-expanded={!collapsed}
               />
             )}
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13,
-                color: "#64748b",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {!useDrawerNavigation && <span>Không gian làm việc /</span>}
-              <strong style={{ color: "#0f172a", fontWeight: 600 }}>
+            <div className="pms-header-breadcrumb">
+              {!useDrawerNavigation && <span className="pms-header-breadcrumb__text">Không gian làm việc /</span>}
+              <strong className="pms-header-breadcrumb__text" style={{ color: "#0f172a", fontWeight: 600 }}>
                 {useDrawerNavigation ? "INNVYRA PMS" : "Hệ thống quản lý PMS"}
               </strong>
               {useDrawerNavigation && <span className="pms-header-property" title={user?.hotel?.name}>{user?.hotel?.name}</span>}
@@ -532,14 +517,9 @@ export const MainLayout: React.FC = () => {
               menu={{ items: userMenuItems }}
               placement="bottomRight"
               arrow
+              trigger={["click", "hover"]}
             >
-              <Space
-                style={{
-                  cursor: "pointer",
-                  padding: "4px 4px",
-                  borderRadius: 6,
-                }}
-              >
+              <Button type="text" className="pms-header-account" aria-label="Menu tài khoản">
                 <Avatar
                   style={{
                     backgroundColor: "#1b4d3e",
@@ -550,18 +530,20 @@ export const MainLayout: React.FC = () => {
                   icon={<UserOutlined />}
                 />
                 {!useDrawerNavigation && (
-                  <div style={{ lineHeight: 1.2, textAlign: "left" }}>
-                    <div
+                  <span className="pms-header-account__identity">
+                    <span
+                      className="pms-header-account__name"
+                      title={user?.fullName}
                       style={{ fontWeight: 600, color: "#0f172a", fontSize: 13 }}
                     >
                       {user?.fullName}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                    </span>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>
                       {user?.role}
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 )}
-              </Space>
+              </Button>
             </Dropdown>
           </Space>
         </Header>
