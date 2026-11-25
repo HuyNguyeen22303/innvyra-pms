@@ -252,6 +252,7 @@ describe('Reports validation, money and calendar policies', () => {
   });
   it('documents every endpoint, role, query, example, error and response schema without breaking earlier references', () => {
     for (const path of [
+      'config',
       'dashboard',
       'revenue',
       'occupancy',

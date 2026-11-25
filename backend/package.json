@@ -49,7 +49,7 @@
     "mariadb": "3.5.4",
     "swagger-ui-express": "^5.0.1",
     "vietqr": "1.2.0",
-    "zod": "^4.1.12"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -60,7 +60,7 @@
     "@types/pngjs": "6.0.5",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
-    "eslint": "10.12.0",
+    "eslint": "10.15.0",
     "jsqr": "1.4.0",
     "nodemon": "^3.1.14",
     "pngjs": "7.0.0",
@@ -69,15 +69,18 @@
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
-    "typescript-eslint": "8.71.2",
+    "typescript-eslint": "8.74.0",
     "vite": "7.3.7",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "overrides": {
     "mariadb": "$mariadb",
     "mysql2": "3.24.5",
     "deepmerge-ts": "8.0.2",
     "@hono/node-server": "^1.19.15",
-    "valibot": "1.5.0"
+    "valibot": "1.5.0",
+    "@prisma/config": {
+      "effect": "^3.22.1"
+    }
   }
 }

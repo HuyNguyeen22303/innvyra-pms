@@ -575,9 +575,9 @@ export const StaysPage: React.FC = () => {
     placeholderData: keepPreviousData,
   });
   const lastStaysPage = Math.max(1, staysData?.data.pagination.totalPages ?? 1);
-  useEffect(() => {
-    if (staysData && !isStaysPlaceholder && staysPage > lastStaysPage) setStaysPage(lastStaysPage);
-  }, [staysPage, lastStaysPage, staysData, isStaysPlaceholder]);
+  if (staysData && !isStaysPlaceholder && staysPage > lastStaysPage) {
+    setStaysPage(lastStaysPage);
+  }
 
   const stayRows = useMemo<StayRow[]>(
     () =>

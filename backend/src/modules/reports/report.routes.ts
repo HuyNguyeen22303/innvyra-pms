@@ -22,6 +22,19 @@ export function reportRoutes(service: ReportService, auth: AuthService, env: Env
   const router = Router(),
     c = reportController(service, new ExportService(service, env));
   router.use(authenticate(auth));
+  router.get(
+    '/config',
+    authorizeRoles(...new Set(Object.values(reportRoles).flat())),
+    validate(z.object({ query: z.object({}).strict() })),
+    (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({
+        success: true,
+        message: 'Report configuration',
+        data: { maxDays: env.REPORT_MAX_DAYS },
+      });
+    },
+  );
   const schemas = {
     dashboard: dashboardQuery,
     revenue: periodQuery,

@@ -2,7 +2,9 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { asDate, asDateOnly } from '../reservations/reservation.dates.js';
 import type { ReportDay } from './report.types.js';
 
-export const nextDate = (date: string) => asDateOnly(new Date(asDate(date).getTime() + 86400000));
+const DAY_MS = 86_400_000;
+
+export const nextDate = (date: string) => asDateOnly(new Date(asDate(date).getTime() + DAY_MS));
 
 // One IANA formatter per report. No dependency on the host timezone or MySQL timezone tables.
 export function reportDays(
@@ -11,7 +13,7 @@ export function reportDays(
   timezone: string,
   maximum: number,
 ): ReportDay[] {
-  const length = (asDate(end).getTime() - asDate(start).getTime()) / 86400000;
+  const length = (asDate(end).getTime() - asDate(start).getTime()) / DAY_MS;
   if (!Number.isInteger(length) || length < 1)
     throw new AppError(422, 'INVALID_REPORT_DATE_RANGE', 'startDate must precede endDate');
   if (length > maximum)
@@ -27,16 +29,18 @@ export function reportDays(
   } catch {
     throw new AppError(503, 'HOTEL_TIMEZONE_INVALID', 'Hotel timezone must be configured');
   }
+  const localDate = (instant: number) => {
+    const parts = formatter.formatToParts(new Date(instant));
+    const part = (type: string) => parts.find((p) => p.type === type)!.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  };
   const boundary = (date: string) => {
     const anchor = asDate(date).getTime();
-    let low = anchor - 172800000,
-      high = anchor + 172800000;
+    let low = anchor - 2 * DAY_MS,
+      high = anchor + 2 * DAY_MS;
     while (low < high) {
       const mid = Math.floor((low + high) / 2);
-      const parts = formatter.formatToParts(new Date(mid));
-      const part = (type: string) => parts.find((p) => p.type === type)!.value;
-      const local = `${part('year')}-${part('month')}-${part('day')}`;
-      if (local < date) low = mid + 1;
+      if (localDate(mid) < date) low = mid + 1;
       else high = mid;
     }
     return new Date(low);
@@ -44,7 +48,12 @@ export function reportDays(
   const days: ReportDay[] = [];
   let from = boundary(start);
   for (let date = start; date < end; date = nextDate(date)) {
-    const until = boundary(nextDate(date));
+    const next = nextDate(date);
+    const candidate = from.getTime() + DAY_MS;
+    const until =
+      localDate(candidate) === next && localDate(candidate - 1) === date
+        ? new Date(candidate)
+        : boundary(next);
     if (from >= until)
       throw new AppError(
         422,

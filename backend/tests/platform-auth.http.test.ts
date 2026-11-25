@@ -184,6 +184,15 @@ describe('Innvyra platform auth HTTP: separate identity, cookie and token audien
     expect((await me(payload(initial).data.accessToken)).status).toBe(401);
     expect((await me(payload(rotated).data.accessToken)).status).toBe(401);
   });
+  it('uses 204 for anonymous startup and refreshes a valid platform session in optional mode', async () => {
+    const post = () => request(app).post('/api/v1/platform/auth/refresh?optional=1');
+    expect((await post()).status).toBe(403);
+    expect((await post().set('X-CSRF-Protection', '1')).status).toBe(204);
+    const initial = await login();
+    expect((await post().set('X-CSRF-Protection', '1').set('Cookie', cookie(initial))).status).toBe(
+      200,
+    );
+  });
   it('rejects expired sessions and deactivated identities immediately', async () => {
     const initial = await login();
     repository.admins.get('owner@example.test')!.isActive = false;

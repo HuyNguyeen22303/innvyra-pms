@@ -27,10 +27,10 @@ const refreshClient = axios.create({
   withCredentials: true,
   headers: { "X-CSRF-Protection": "1" },
 });
-let refreshing: { generation: number; promise: Promise<AuthTokens> } | null =
+let refreshing: { generation: number; promise: Promise<AuthTokens | null> } | null =
   null;
 
-export function refreshHotelSession(): Promise<AuthTokens> {
+export function restoreHotelSession(): Promise<AuthTokens | null> {
   const expected = hotelSessionGeneration();
   if (refreshing?.generation === expected) return refreshing.promise;
   const promise = hotelAuthLock(async () => {
@@ -39,9 +39,14 @@ export function refreshHotelSession(): Promise<AuthTokens> {
     const response = await refreshClient.post<ApiResponse<AuthTokens>>(
       "/auth/refresh",
       {},
+      { params: { optional: '1' } },
     );
     if (expected !== hotelSessionGeneration())
       throw new CanceledError("Hotel session changed");
+    if (response.status === 204) {
+      clearHotelSession();
+      return null;
+    }
     const result = response.data.data;
     installHotelSession(result.accessToken, result.user);
     return result;
@@ -60,6 +65,12 @@ export function refreshHotelSession(): Promise<AuthTokens> {
     });
   refreshing = { generation: expected, promise };
   return promise;
+}
+
+export async function refreshHotelSession(): Promise<AuthTokens> {
+  const session = await restoreHotelSession();
+  if (!session) throw new CanceledError("No active hotel session");
+  return session;
 }
 interface HotelRequest extends InternalAxiosRequestConfig {
   _hotelGeneration?: number;

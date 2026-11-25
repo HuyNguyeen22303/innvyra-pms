@@ -21,7 +21,7 @@ const refreshClient = axios.create({
 let token: string | null = null;
 let subjectId: string | null = null;
 let generation = 0;
-let refreshing: Promise<PlatformTokens> | null = null;
+let refreshing: Promise<PlatformTokens | null> | null = null;
 let observer: (user: PlatformUser | null) => void = () => {};
 const channel =
   typeof window !== "undefined" && typeof BroadcastChannel !== "undefined"
@@ -59,7 +59,7 @@ export async function platformAuthLock<T>(
   return action();
 }
 
-export function refreshPlatformSession(): Promise<PlatformTokens> {
+export function restorePlatformSession(): Promise<PlatformTokens | null> {
   if (refreshing) return refreshing;
   const expected = generation;
   const request = platformAuthLock(async () => {
@@ -68,9 +68,14 @@ export function refreshPlatformSession(): Promise<PlatformTokens> {
     const response = await refreshClient.post<ApiResponse<PlatformTokens>>(
       "/auth/refresh",
       {},
+      { params: { optional: '1' } },
     );
     if (expected !== generation)
       throw new CanceledError("Platform session changed");
+    if (response.status === 204) {
+      clearPlatformSession();
+      return null;
+    }
     const result = response.data.data;
     if (subjectId && subjectId !== result.user.id) generation += 1;
     subjectId = result.user.id;
@@ -92,6 +97,12 @@ export function refreshPlatformSession(): Promise<PlatformTokens> {
     });
   refreshing = request;
   return request;
+}
+
+export async function refreshPlatformSession(): Promise<PlatformTokens> {
+  const session = await restorePlatformSession();
+  if (!session) throw new CanceledError("No active platform session");
+  return session;
 }
 
 interface PlatformRequest extends InternalAxiosRequestConfig {

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiClient } from './axiosClient.ts';
 import type { ApiResponse } from '../types/api.types.ts';
 import type {
@@ -15,7 +16,35 @@ import type {
   ReportExportQuery,
 } from '../types/reports.types.ts';
 
+export const reportConfigKey = ['reports', 'config'] as const;
+
+type ReportFailure = { message?: string; error?: { code?: string } };
+
+export function isReportRangeError(error: unknown) {
+  return axios.isAxiosError<ReportFailure>(error) &&
+    error.response?.status === 422 &&
+    error.response.data?.error?.code === 'REPORT_RANGE_TOO_LARGE';
+}
+
+export const reportRangeErrorMessage = 'Khoảng thời gian báo cáo vượt quá giới hạn hiện tại. Vui lòng chọn kỳ ngắn hơn.';
+
+export async function reportExportError(error: unknown) {
+  if (!axios.isAxiosError(error)) return undefined;
+  const body: unknown = error.response?.data;
+  if (!(body instanceof Blob)) return body as ReportFailure | undefined;
+  try {
+    return JSON.parse(await body.text()) as ReportFailure;
+  } catch {
+    return undefined;
+  }
+}
+
 export const reportsApi = {
+  getConfig: async (signal: AbortSignal) => {
+    const response = await apiClient.get<ApiResponse<{ maxDays: number }>>('/reports/config', { signal });
+    return response.data.data;
+  },
+
   /**
    * Hotel-local daily operational dashboard snapshot
    * Roles: ADMIN, MANAGER, RECEPTIONIST

@@ -251,12 +251,21 @@ export const openApiDocument = {
       post: {
         tags: ['Authentication'],
         summary: 'Rotate the refresh token',
-        security: [{ refreshCookie: [] }],
-        parameters: [csrf],
+        security: [{ refreshCookie: [] }, {}],
+        parameters: [
+          csrf,
+          {
+            name: 'optional',
+            in: 'query',
+            schema: { type: 'string', enum: ['1'] },
+            description: 'Return 204 when the refresh cookie is absent during browser startup.',
+          },
+        ],
         description:
           'No request body. Old tokens are single-use. Replaying a consumed token revokes the session, including all access tokens. A concurrent refresh can revoke the session; clients must coordinate refresh calls.',
         responses: {
           200: tokenResponse,
+          204: { description: 'No refresh cookie in optional mode' },
           401: error('Missing, invalid, expired, revoked, or reused token'),
           403: error('CSRF / Origin rejected, or unknown role'),
           429: error('Refresh rate limited'),

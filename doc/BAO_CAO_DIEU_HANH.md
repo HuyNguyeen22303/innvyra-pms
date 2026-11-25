@@ -8,6 +8,7 @@ All endpoints are `GET /api/v1/reports/...`, require Bearer JWT **and a valid cu
 
 | Endpoint        | Parameters                                                                             | Roles                                                  |
 | --------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `/config`       | Empty query. Returns `maxDays` from `REPORT_MAX_DAYS`                                  | All report roles                                       |
 | `/dashboard`    | Optional `date` (hotel-local today by default)                                         | ADMIN, MANAGER, RECEPTIONIST                           |
 | `/revenue`      | `startDate`, `endDate`, optional `groupBy`                                             | ADMIN, MANAGER, ACCOUNTANT                             |
 | `/payments`     | Period/grouping, optional `paymentMethod=CASH\|BANK_TRANSFER`                          | ADMIN, MANAGER, ACCOUNTANT                             |
@@ -28,6 +29,7 @@ Receptionists receive no dashboard finance and no occupancy `roomSalesValue`, `o
 - Reservation dates, night dates and maintenance start/end dates are business DATEs. Payment/posting/Stay timestamps are UTC DATETIMEs. IANA boundaries are computed in Node with one formatter per report, including 23/25-hour days; MySQL timezone-table installation is unnecessary.
 - `groupBy=day` is the default; `month` labels buckets with `YYYY-MM-01`, summing only the requested portion of a month. Empty activity buckets return zero. Unavailable measures remain null.
 - `REPORT_MAX_DAYS=366`, configurable from 1 to 366. `REPORT_EXPORT_MAX_ROWS=366`, configurable from 1 to 1000; the period limit also applies. Outstanding pagination defaults to page 1, limit 20, maximum limit 100 and page 1,000,000. Time series have deterministic ascending dates and need no pagination/sorting.
+- The frontend loads `/reports/config` before its initial report request. It uses the server limit for the default period, presets and custom dates.
 - Financial activity is capped at report generation time, and `balance.cutoffExclusive` is `min(endDate local midnight, generatedAt)`. Historical balances include all entries strictly before that instant, including entries before startDate. Future dates do not claim future cash receipts.
 
 ## Financial definitions

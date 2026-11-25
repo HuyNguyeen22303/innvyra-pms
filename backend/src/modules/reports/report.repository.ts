@@ -22,6 +22,40 @@ export const dayTable = (days: ReportDay[]) =>
     ' UNION ALL ',
   );
 
+// A run of 24-hour business days can use arithmetic to find a row's day.
+// Keep clipped days and changes in the hotel's UTC offset as separate spans.
+const daySpans = (days: ReportDay[]) => {
+  const spans: { date: string; from: Date; until: Date; count: number }[] = [];
+  for (const day of days) {
+    if (day.from >= day.until) continue;
+    const prev = spans.at(-1);
+    const duration = 86_400_000;
+    if (
+      prev &&
+      prev.until.getTime() === day.from.getTime() &&
+      prev.until.getTime() - prev.from.getTime() === prev.count * duration &&
+      day.until.getTime() - day.from.getTime() === duration
+    ) {
+      prev.until = day.until;
+      prev.count++;
+    } else spans.push({ ...day, count: 1 });
+  }
+  return spans;
+};
+
+const spanTable = (spans: ReturnType<typeof daySpans>) =>
+  Prisma.join(
+    spans.map(
+      (span) => Prisma.sql`SELECT CAST(${span.date} AS DATE) AS first_date,
+        CAST(${span.from} AS DATETIME(3)) AS starts, CAST(${span.until} AS DATETIME(3)) AS ends,
+        ${span.count} AS day_count`,
+    ),
+    ' UNION ALL ',
+  );
+
+const eventDate = (time: Prisma.Sql) => Prisma.sql`CAST(DATE_ADD(d.first_date,
+  INTERVAL LEAST(TIMESTAMPDIFF(DAY, d.starts, ${time}), d.day_count - 1) DAY) AS CHAR(10))`;
+
 const blockedAtNightEnd = (hotelId: bigint) => Prisma.sql`EXISTS(SELECT 1 FROM maintenance_blocks b
   WHERE b.hotel_id = ${hotelId} AND b.room_id = r.id AND b.status <> 'CANCELLED'
     AND b.start_date <= CAST(d.date AS DATE) AND b.created_at < d.ends
@@ -49,24 +83,31 @@ export class PrismaReportRepository {
     return !!(await this.db.roomType.findFirst({ where: { hotelId, id }, select: { id: true } }));
   }
   async financialActivity(hotelId: bigint, days: ReportDay[], charges: boolean, method?: string) {
+    const spans = daySpans(days);
+    if (!spans.length) return [];
+    const from = spans[0]!.from,
+      until = spans.at(-1)!.until;
     const chargeQuery = charges
       ? Prisma.sql`
       UNION ALL
-      SELECT d.date, CASE WHEN i.entry_type = 'CREDIT' THEN 'adjustmentCredits'
+      SELECT ${eventDate(Prisma.sql`i.created_at`)} AS date,
+        CASE WHEN i.entry_type = 'CREDIT' THEN 'adjustmentCredits'
         WHEN i.source_type = 'ROOM_NIGHT' THEN 'roomCharges'
         WHEN i.source_type = 'SERVICE_ORDER_ITEM' THEN 'serviceCharges'
         ELSE 'adjustmentDebits' END AS metric, SUM(i.amount) AS value, '' AS category
-      FROM days d JOIN folio_items i ON i.hotel_id = ${hotelId}
-        AND i.created_at >= d.starts AND i.created_at < d.ends
-      GROUP BY d.date, metric`
+      FROM folio_items i JOIN spans d ON i.created_at >= d.starts AND i.created_at < d.ends
+      WHERE i.hotel_id = ${hotelId} AND i.created_at >= ${from} AND i.created_at < ${until}
+      GROUP BY date, metric`
       : Prisma.empty;
     return this.db.$queryRaw<AggregateRow[]>(Prisma.sql`
-      WITH days AS (${dayTable(days)}), receipts AS (
-        SELECT d.date, p.payment_type, p.payment_method, SUM(p.amount) AS amount, COUNT(*) AS n
-        FROM days d JOIN payments p ON p.hotel_id = ${hotelId} AND p.status = 'CONFIRMED'
-          AND p.processed_at >= d.starts AND p.processed_at < d.ends
+      WITH spans AS (${spanTable(spans)}), receipts AS (
+        SELECT ${eventDate(Prisma.sql`p.processed_at`)} AS date,
+          p.payment_type, p.payment_method, SUM(p.amount) AS amount, COUNT(*) AS n
+        FROM payments p JOIN spans d ON p.processed_at >= d.starts AND p.processed_at < d.ends
+        WHERE p.hotel_id = ${hotelId} AND p.status = 'CONFIRMED'
+          AND p.processed_at >= ${from} AND p.processed_at < ${until}
           ${method ? Prisma.sql`AND p.payment_method = ${method}` : Prisma.empty}
-        GROUP BY d.date, p.payment_type, p.payment_method
+        GROUP BY date, p.payment_type, p.payment_method
       )
       SELECT /*+ MAX_EXECUTION_TIME(10000) */ date,
         CASE payment_type WHEN 'PAYMENT' THEN 'successfulPayments' WHEN 'DEPOSIT' THEN 'successfulDeposits'
@@ -76,15 +117,17 @@ export class PrismaReportRepository {
           ELSE 'refundCount' END, n, '' FROM receipts
       UNION ALL SELECT date, CASE payment_method WHEN 'CASH' THEN 'cashPayments' ELSE 'bankTransferPayments' END,
         amount, '' FROM receipts WHERE payment_type <> 'REFUND'
-      UNION ALL SELECT d.date, 'supplierPayments', SUM(p.amount), ''
-        FROM days d JOIN supplier_payments p ON p.hotel_id=${hotelId} AND p.paid_at>=d.starts AND p.paid_at<d.ends
+      UNION ALL SELECT ${eventDate(Prisma.sql`p.paid_at`)} AS date, 'supplierPayments', SUM(p.amount), ''
+        FROM supplier_payments p JOIN spans d ON p.paid_at>=d.starts AND p.paid_at<d.ends
+        WHERE p.hotel_id=${hotelId} AND p.paid_at>=${from} AND p.paid_at<${until}
         ${method ? Prisma.sql`AND p.payment_method=${method}` : Prisma.empty}
-        GROUP BY d.date
-      UNION ALL SELECT d.date, 'supplierReversals', SUM(p.amount), ''
-        FROM days d JOIN supplier_payment_reversals r ON r.hotel_id=${hotelId} AND r.reversed_at>=d.starts AND r.reversed_at<d.ends
+        GROUP BY date
+      UNION ALL SELECT ${eventDate(Prisma.sql`r.reversed_at`)} AS date, 'supplierReversals', SUM(p.amount), ''
+        FROM supplier_payment_reversals r JOIN spans d ON r.reversed_at>=d.starts AND r.reversed_at<d.ends
         JOIN supplier_payments p ON p.hotel_id=r.hotel_id AND p.id=r.payment_id
-        ${method ? Prisma.sql`WHERE p.payment_method=${method}` : Prisma.empty}
-        GROUP BY d.date
+        WHERE r.hotel_id=${hotelId} AND r.reversed_at>=${from} AND r.reversed_at<${until}
+        ${method ? Prisma.sql`AND p.payment_method=${method}` : Prisma.empty}
+        GROUP BY date
       ${chargeQuery}`);
   }
   private balanceTable(hotelId: bigint, cutoff: Date) {
@@ -119,6 +162,8 @@ export class PrismaReportRepository {
       LIMIT ${query.limit} OFFSET ${(query.page - 1) * query.limit}`);
   }
   async occupancy(hotelId: bigint, days: ReportDay[], roomTypeId?: bigint) {
+    const firstCutoff = days[0]!.until,
+      lastCutoff = days.at(-1)!.until;
     // A night belongs to the room occupied immediately before the next local midnight.
     // The first transfer at/after that instant identifies the earlier room. Transfers
     // before that instant never multiply the stay. Same-day use is not an overnight.
@@ -134,13 +179,15 @@ export class PrismaReportRepository {
           COALESCE((SELECT t.from_room_id FROM room_transfers t
             WHERE t.hotel_id = ${hotelId} AND t.stay_id = s.id AND t.transferred_at >= d.ends
             ORDER BY t.transferred_at ASC, t.id ASC LIMIT 1), s.current_room_id) AS room_id
-        FROM days d JOIN stays s ON s.hotel_id = ${hotelId} AND s.actual_checkin_at < d.ends
+        FROM stays s STRAIGHT_JOIN days d ON s.actual_checkin_at < d.ends
           AND (s.actual_checkout_at IS NULL OR s.actual_checkout_at >= d.ends)
-          ${roomTypeId ? Prisma.sql`AND s.room_type_id = ${roomTypeId}` : Prisma.empty}
         JOIN reservation_rooms rr ON rr.id = s.reservation_room_id AND rr.hotel_id = ${hotelId}
         JOIN reservations r ON r.id = rr.reservation_id AND r.hotel_id = ${hotelId}
           AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
         LEFT JOIN reservation_room_nights n ON n.reservation_room_id = rr.id AND n.stay_date = CAST(d.date AS DATE)
+        WHERE s.hotel_id = ${hotelId} AND s.actual_checkin_at < ${lastCutoff}
+          AND (s.actual_checkout_at IS NULL OR s.actual_checkout_at >= ${firstCutoff})
+          ${roomTypeId ? Prisma.sql`AND s.room_type_id = ${roomTypeId}` : Prisma.empty}
       ), occupied AS (
         SELECT date, COUNT(DISTINCT room_id) AS n, SUM(nightly_rate) AS value,
           SUM(nightly_rate IS NULL) AS missing, COUNT(*) - COUNT(DISTINCT room_id) AS conflicts
@@ -164,56 +211,53 @@ export class PrismaReportRepository {
     const first = days[0]!;
     const last = days[days.length - 1]!;
     return this.db.$queryRaw<AggregateRow[]>(Prisma.sql`
-      WITH days AS (${dayTable(days)}), created AS (
-        SELECT d.date, CASE WHEN r.booking_source IN (${Prisma.join([...BOOKING_SOURCES])})
+      WITH spans AS (${spanTable(daySpans(days))}), created AS (
+        SELECT ${eventDate(Prisma.sql`r.created_at`)} AS date,
+          CASE WHEN r.booking_source IN (${Prisma.join([...BOOKING_SOURCES])})
           THEN UPPER(r.booking_source) ELSE 'OTHER' END AS source, COUNT(*) AS n,
           SUM(r.status = 'CONFIRMED') AS confirmed, SUM(r.status = 'NO_SHOW') AS noShows
-        FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
-          AND r.created_at >= d.starts AND r.created_at < d.ends
-        WHERE r.created_at >= ${first.from} AND r.created_at < ${last.until}
-        GROUP BY d.date, source
+        FROM reservations r JOIN spans d ON r.created_at >= d.starts AND r.created_at < d.ends
+        WHERE r.hotel_id = ${hotelId} AND r.created_at >= ${first.from} AND r.created_at < ${last.until}
+        GROUP BY date, source
       ), arrivals AS (
-        SELECT d.date, SUM(s.id IS NULL) AS n
-        FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
-          AND r.check_in_date = CAST(d.date AS DATE)
-          AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
+        SELECT CAST(r.check_in_date AS CHAR(10)) AS date, SUM(s.id IS NULL) AS n
+        FROM reservations r
         JOIN reservation_rooms rr ON rr.reservation_id = r.id AND rr.hotel_id = ${hotelId}
         LEFT JOIN stays s ON s.reservation_room_id = rr.id AND s.hotel_id = ${hotelId}
-        WHERE r.check_in_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
-        GROUP BY d.date
+        WHERE r.hotel_id = ${hotelId} AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
+          AND r.check_in_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
+        GROUP BY r.check_in_date
       ), departures AS (
-        SELECT d.date, SUM(s.actual_checkout_at IS NULL) AS n
-        FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
-          AND r.check_out_date = CAST(d.date AS DATE)
-          AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
+        SELECT CAST(r.check_out_date AS CHAR(10)) AS date, SUM(s.actual_checkout_at IS NULL) AS n
+        FROM reservations r
         JOIN reservation_rooms rr ON rr.reservation_id = r.id AND rr.hotel_id = ${hotelId}
         LEFT JOIN stays s ON s.reservation_room_id = rr.id AND s.hotel_id = ${hotelId}
-        WHERE r.check_out_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
-        GROUP BY d.date
+        WHERE r.hotel_id = ${hotelId} AND r.status NOT IN ('CANCELLED', 'NO_SHOW')
+          AND r.check_out_date BETWEEN CAST(${first.date} AS DATE) AND CAST(${last.date} AS DATE)
+        GROUP BY r.check_out_date
       )
       SELECT /*+ MAX_EXECUTION_TIME(10000) */ date, 'reservationsCreated' AS metric, n AS value, '' AS category FROM created
       UNION ALL SELECT date, 'bookingSource', n, source FROM created
       UNION ALL SELECT date, 'confirmedReservationsInCreatedCohort', confirmed, '' FROM created
       UNION ALL SELECT date, 'noShowReservationsInCreatedCohort', noShows, '' FROM created
-      UNION ALL SELECT d.date, 'cancelledReservations', COUNT(*), ''
-        FROM days d JOIN reservations r ON r.hotel_id = ${hotelId}
-          AND r.status = 'CANCELLED'
-          AND r.cancelled_at >= d.starts AND r.cancelled_at < d.ends
-        WHERE r.cancelled_at >= ${first.from} AND r.cancelled_at < ${last.until} GROUP BY d.date
-      UNION ALL SELECT d.date, 'reservationRoomsCreated', COUNT(*), ''
-        FROM days d JOIN reservation_rooms rr ON rr.hotel_id = ${hotelId}
-          AND rr.created_at >= d.starts AND rr.created_at < d.ends
-        WHERE rr.created_at >= ${first.from} AND rr.created_at < ${last.until} GROUP BY d.date
+      UNION ALL SELECT ${eventDate(Prisma.sql`r.cancelled_at`)} AS date, 'cancelledReservations', COUNT(*), ''
+        FROM reservations r JOIN spans d ON r.cancelled_at >= d.starts AND r.cancelled_at < d.ends
+        WHERE r.hotel_id = ${hotelId} AND r.status = 'CANCELLED'
+          AND r.cancelled_at >= ${first.from} AND r.cancelled_at < ${last.until} GROUP BY date
+      UNION ALL SELECT ${eventDate(Prisma.sql`rr.created_at`)} AS date, 'reservationRoomsCreated', COUNT(*), ''
+        FROM reservation_rooms rr JOIN spans d ON rr.created_at >= d.starts AND rr.created_at < d.ends
+        WHERE rr.hotel_id = ${hotelId}
+          AND rr.created_at >= ${first.from} AND rr.created_at < ${last.until} GROUP BY date
       UNION ALL SELECT date, 'expectedArrivals', n, '' FROM arrivals
       UNION ALL SELECT date, 'expectedDepartures', n, '' FROM departures
-      UNION ALL SELECT d.date, 'actualCheckins', COUNT(*), ''
-        FROM days d JOIN stays s ON s.hotel_id = ${hotelId}
-          AND s.actual_checkin_at >= d.starts AND s.actual_checkin_at < d.ends
-        WHERE s.actual_checkin_at >= ${first.from} AND s.actual_checkin_at < ${last.until} GROUP BY d.date
-      UNION ALL SELECT d.date, 'actualCheckouts', COUNT(*), ''
-        FROM days d JOIN stays s ON s.hotel_id = ${hotelId}
-          AND s.actual_checkout_at >= d.starts AND s.actual_checkout_at < d.ends
-        WHERE s.actual_checkout_at >= ${first.from} AND s.actual_checkout_at < ${last.until} GROUP BY d.date`);
+      UNION ALL SELECT ${eventDate(Prisma.sql`s.actual_checkin_at`)} AS date, 'actualCheckins', COUNT(*), ''
+        FROM stays s JOIN spans d ON s.actual_checkin_at >= d.starts AND s.actual_checkin_at < d.ends
+        WHERE s.hotel_id = ${hotelId}
+          AND s.actual_checkin_at >= ${first.from} AND s.actual_checkin_at < ${last.until} GROUP BY date
+      UNION ALL SELECT ${eventDate(Prisma.sql`s.actual_checkout_at`)} AS date, 'actualCheckouts', COUNT(*), ''
+        FROM stays s JOIN spans d ON s.actual_checkout_at >= d.starts AND s.actual_checkout_at < d.ends
+        WHERE s.hotel_id = ${hotelId}
+          AND s.actual_checkout_at >= ${first.from} AND s.actual_checkout_at < ${last.until} GROUP BY date`);
   }
   async roomSnapshot(hotelId: bigint, today: string) {
     const rows = await this.db.$queryRaw<Record<string, DbNumber>[]>(Prisma.sql`

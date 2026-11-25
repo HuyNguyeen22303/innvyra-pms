@@ -162,7 +162,7 @@ npm run build
 npm run preview
 ```
 
-`build` chạy TypeScript và tạo website tĩnh trong `dist/`. `preview` phục vụ bản build để kiểm tra local. Khi đóng gói cho môi trường khác, đặt `VITE_API_URL` trước lúc build. Nếu dùng đường dẫn tương đối `/api/v1`, cấu hình máy phục vụ để chuyển đường dẫn đó tới API. Phục vụ `index.html` khi người dùng mở trực tiếp route giao diện như `/reports`.
+`build` chạy TypeScript, làm sạch thư mục đầu ra và tạo website tĩnh mới trong `dist/`. `preview` phục vụ bản build để kiểm tra local. Khi đóng gói cho môi trường khác, đặt `VITE_API_URL` trước lúc build và lấy toàn bộ asset từ lần build đó. Nếu dùng đường dẫn tương đối `/api/v1`, cấu hình máy phục vụ để chuyển đường dẫn đó tới API. Phục vụ `index.html` khi người dùng mở trực tiếp route giao diện như `/reports`.
 
 Chạy các kiểm tra sau trên màn hình bị ảnh hưởng.
 

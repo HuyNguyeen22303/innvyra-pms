@@ -4,7 +4,7 @@ import {
   apiClient,
   hotelAuthError,
   hotelAuthMutation,
-  refreshHotelSession,
+  restoreHotelSession,
 } from "../api/axiosClient.ts";
 import {
   announceHotelSessionChange,
@@ -130,7 +130,7 @@ export const useAuthStore = create<AuthState>((set) => {
       set({ isLoading: true, restoreError: null });
       const promise = (async () => {
         try {
-          await refreshHotelSession();
+          await restoreHotelSession();
         } catch (error) {
           if (expected !== hotelSessionGeneration() || axios.isCancel(error))
             return;

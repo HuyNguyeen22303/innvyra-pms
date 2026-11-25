@@ -999,6 +999,12 @@ describe.skipIf(!testUrl)(
       expect((await get('reservations', range, 'RECEPTIONIST')).status).toBe(200);
       expect((await get('revenue', range, 'MANAGER')).status).toBe(200);
     });
+    it('exposes the configured report period to authorized roles only', async () => {
+      expect((await request(app).get('/api/v1/reports/config')).status).toBe(401);
+      const response = await get('config', {}, 'HOUSEKEEPING');
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({ maxDays: testEnv.REPORT_MAX_DAYS });
+    });
     it('limits housekeeping and technician to relevant departmental operations aggregates', async () => {
       const hk = await get('operations', range, 'HOUSEKEEPING');
       expect(hk.body.data).toHaveProperty('housekeeping');

@@ -144,6 +144,15 @@ describe('Auth HTTP integration (in-memory repository, real Argon2/JWT/middlewar
     ).toBe(401);
     expect((await refresh('innvyra_refresh=invalid')).status).toBe(401);
   });
+  it('distinguishes an anonymous browser startup from an invalid refresh session', async () => {
+    const post = () => request(app).post('/api/v1/auth/refresh?optional=1');
+    expect((await post()).status).toBe(403);
+    expect((await post().set('X-CSRF-Protection', '1')).status).toBe(204);
+    const initial = await login();
+    expect((await post().set('X-CSRF-Protection', '1').set('Cookie', cookie(initial))).status).toBe(
+      200,
+    );
+  });
   it('rejects an expired refresh token', async () => {
     const initial = await login();
     [...repository.tokens.values()][0]!.expiresAt = new Date(0);

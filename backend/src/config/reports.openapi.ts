@@ -420,6 +420,29 @@ const occupancyExample = {
 };
 const reservationExample = zero(reservationFields, 0);
 export const reportPaths = {
+  '/reports/config': {
+    get: {
+      tags: ['Reports'],
+      summary: 'Get the maximum report period',
+      security: [{ bearerAuth: [] }],
+      parameters: [],
+      responses: {
+        200: {
+          description: 'Report configuration',
+          content: {
+            'application/json': {
+              schema: obj({
+                success: { type: 'boolean', enum: [true] },
+                message: text,
+                data: obj({ maxDays: { type: 'integer', minimum: 1, maximum: 366 } }),
+              }),
+            },
+          },
+        },
+        ...errors,
+      },
+    },
+  },
   '/reports/dashboard': get(
     'dashboard',
     'DashboardReport',

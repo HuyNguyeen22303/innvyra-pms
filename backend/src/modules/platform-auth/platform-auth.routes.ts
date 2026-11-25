@@ -54,7 +54,12 @@ export function platformRoutes(
   auth.post('/refresh', refreshRateLimit(env), csrf, async (req, res) => {
     try {
       const cookies = req.cookies as Record<string, unknown> | undefined;
-      const result = await service.refresh(cookies?.[PLATFORM_REFRESH_COOKIE]);
+      const token = cookies?.[PLATFORM_REFRESH_COOKIE];
+      if (token === undefined && req.query.optional === '1') {
+        res.sendStatus(204);
+        return;
+      }
+      const result = await service.refresh(token);
       res.cookie(PLATFORM_REFRESH_COOKIE, result.refreshToken, {
         ...platformCookieOptions(env),
         expires: result.expiresAt,

@@ -9,7 +9,7 @@ import {
   platformClient,
   platformErrorMessage,
   platformSessionGeneration,
-  refreshPlatformSession,
+  restorePlatformSession,
   setPlatformAccessToken,
 } from "../api/platformClient.ts";
 import type { ApiResponse } from "../types/api.types.ts";
@@ -57,7 +57,7 @@ export const usePlatformAuthStore = create<PlatformState>((set) => {
       set({ isLoading: true, restoreError: null });
       const request = (async () => {
         try {
-          await refreshPlatformSession(); // The observer installs only the current identity.
+          await restorePlatformSession(); // The observer installs only the current identity.
         } catch (error: unknown) {
           if (expected !== platformSessionGeneration()) return;
           if (axios.isCancel(error)) return;

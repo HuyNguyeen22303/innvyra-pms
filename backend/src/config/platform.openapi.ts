@@ -117,11 +117,23 @@ export const platformPaths = {
     post: {
       tags: ['Platform Authentication'],
       summary: 'Rotate the platform refresh token',
-      parameters: [csrf],
-      security: [{ platformRefreshCookie: [] }],
+      parameters: [
+        csrf,
+        {
+          name: 'optional',
+          in: 'query',
+          schema: { type: 'string', enum: ['1'] },
+          description: 'Return 204 when the refresh cookie is absent during browser startup.',
+        },
+      ],
+      security: [{ platformRefreshCookie: [] }, {}],
       description:
         'Uses only innvyra_platform_refresh. Rotation keeps the absolute session expiry. Reuse revokes the entire platform session.',
-      responses: { 200: tokens, ...commonErrors },
+      responses: {
+        200: tokens,
+        204: { description: 'No refresh cookie in optional mode' },
+        ...commonErrors,
+      },
     },
   },
   '/platform/auth/me': {

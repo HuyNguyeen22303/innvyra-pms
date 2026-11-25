@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import { reportsApi } from '../../../api/reports.api.ts';
+import { isReportRangeError, reportRangeErrorMessage, reportsApi } from '../../../api/reports.api.ts';
 import { ReportTrendChart } from '../../../components/charts/ReportTrendChart.tsx';
 import { DonutChart, type DonutSlice } from '../../../components/charts/DonutChart.tsx';
 import type { RevenueSeriesItem } from '../../../types/reports.types.ts';
@@ -166,7 +166,7 @@ export const RevenueTab: React.FC<RevenueTabProps> = React.memo(({
         <Alert
           type="error"
           title="Không thể tải báo cáo doanh thu"
-          description="Vui lòng kiểm tra lại quyền hạn hoặc kết nối mạng."
+          description={isReportRangeError(revenueError) ? reportRangeErrorMessage : 'Vui lòng kiểm tra lại quyền hạn hoặc kết nối mạng.'}
           showIcon
           style={{ marginBottom: 16 }}
         />

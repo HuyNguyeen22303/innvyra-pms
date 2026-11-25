@@ -20,7 +20,12 @@ export function authController(service: AuthService, env: Env) {
   const refresh: RequestHandler = async (req, res) => {
     try {
       const cookies = req.cookies as Record<string, unknown> | undefined;
-      const result = await service.refresh(cookies?.[REFRESH_COOKIE]);
+      const token = cookies?.[REFRESH_COOKIE];
+      if (token === undefined && req.query.optional === '1') {
+        res.sendStatus(204);
+        return;
+      }
+      const result = await service.refresh(token);
       setRefreshCookie(res, env, result.refreshToken, result.expiresAt);
       res.json({ success: true, message: 'Token refreshed successfully', data: result.data });
     } catch (error) {

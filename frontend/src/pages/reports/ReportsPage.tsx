@@ -1,7 +1,8 @@
 import { ResponsiveRangePicker as RangePicker } from '../../components/responsive/ResponsiveRangePicker.tsx';
 import { ResponsiveTabs as Tabs } from '../../components/responsive/ResponsiveTabs.tsx';
 import { ProcurementTab } from './components/ProcurementTab.tsx';
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Row,
   Col,
@@ -13,6 +14,8 @@ import {
   App as AntdApp,
   Grid,
   Alert,
+  Spin,
+  Tooltip,
 } from 'antd';
 import {
   DollarOutlined,
@@ -26,7 +29,7 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAuthStore } from '../../store/authStore.ts';
 import { useHotelClock } from '../../hooks/useHotelClock.ts';
-import { reportsApi } from '../../api/reports.api.ts';
+import { isReportRangeError, reportConfigKey, reportExportError, reportRangeErrorMessage, reportsApi } from '../../api/reports.api.ts';
 import { RevenueTab } from './components/RevenueTab.tsx';
 import { PaymentsTab } from './components/PaymentsTab.tsx';
 import { OccupancyTab } from './components/OccupancyTab.tsx';
@@ -49,12 +52,24 @@ const MemoOutstandingTab = React.memo(OutstandingTab);
 
 export const ReportsPage: React.FC = () => {
   const clock = useHotelClock();
+  const config = useQuery({
+    queryKey: reportConfigKey,
+    queryFn: ({ signal }) => reportsApi.getConfig(signal),
+    enabled: Boolean(clock),
+  });
   if (!clock) return <Alert type="error" showIcon title="Chưa xác định được múi giờ khách sạn" />;
-  return <Reports hotelDate={clock.date} />;
+  if (!config.data) {
+    return config.isError
+      ? <Alert type="error" showIcon title="Không thể tải cấu hình báo cáo"
+          action={<Button onClick={() => void config.refetch()}>Thử lại</Button>} />
+      : <Spin />;
+  }
+  return <Reports hotelDate={clock.date} maxDays={config.data.maxDays} />;
 };
 
-const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
+const Reports: React.FC<{ hotelDate: string; maxDays: number }> = ({ hotelDate, maxDays }) => {
   const { message: appMessage } = AntdApp.useApp();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const screens = Grid.useBreakpoint();
   const userRole = user?.role || '';
@@ -67,13 +82,20 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
 
   const [selectedTab, setSelectedTab] = useState('');
 
-  // Date Range state: default to 30 days up to end of today [today - 30 days, today + 1 day)
   const [rangeOverride, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const today = useMemo(() => dayjs(hotelDate), [hotelDate]);
-  const dateRange = useMemo<[Dayjs, Dayjs]>(
-    () => rangeOverride ?? [today.subtract(30, 'day'), today.add(1, 'day')],
-    [rangeOverride, today],
-  );
+  const dateRange = useMemo<[Dayjs, Dayjs]>(() => {
+    const end = rangeOverride?.[1] ?? today.add(1, 'day');
+    const start = rangeOverride?.[0] ?? today.subtract(30, 'day');
+    return end.diff(start, 'day') > maxDays ? [end.subtract(maxDays, 'day'), end] : [start, end];
+  }, [rangeOverride, today, maxDays]);
+
+  useEffect(() => queryClient.getQueryCache().subscribe((event) => {
+    if (event.type === 'updated' && event.action.type === 'error' && isReportRangeError(event.action.error)) {
+      void appMessage.warning(reportRangeErrorMessage);
+      void queryClient.invalidateQueries({ queryKey: reportConfigKey, exact: true });
+    }
+  }), [appMessage, queryClient]);
 
   const startDateStr = dateRange[0].format('YYYY-MM-DD');
   const endDateStr = dateRange[1].format('YYYY-MM-DD');
@@ -135,45 +157,26 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       window.URL.revokeObjectURL(url);
 
       appMessage.success(`Đã xuất báo cáo ${filename} thành công!`);
-    } catch (err: any) {
-      appMessage.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xuất file CSV.');
+    } catch (err: unknown) {
+      const failure = await reportExportError(err);
+      if (failure?.error?.code === 'REPORT_RANGE_TOO_LARGE') {
+        await queryClient.invalidateQueries({ queryKey: reportConfigKey, exact: true });
+      }
+      appMessage.error(failure?.message ?? 'Có lỗi xảy ra khi xuất file CSV.');
     } finally {
       setExporting(false);
     }
   };
 
   // Quick period presets
-  const handlePreset7Days = () => {
-    setDateRange([
-      today.subtract(6, 'day'),
-      today.add(1, 'day'),
-    ]);
-    setGroupBy('day');
-  };
-
-  const handlePresetMonth = () => {
-    setDateRange([
-      today.startOf('month'),
-      today.add(1, 'day'),
-    ]);
-    setGroupBy('day');
-  };
-
-  const handlePresetQuarter = () => {
-    setDateRange([
-      today.subtract(89, 'day'),
-      today.add(1, 'day'),
-    ]);
-    setGroupBy('month');
-  };
-
-  const handlePresetYear = () => {
-    setDateRange([
-      today.startOf('year'),
-      today.add(1, 'day'),
-    ]);
-    setGroupBy('month');
-  };
+  const periodEnd = today.add(1, 'day');
+  const presets = [
+    { label: 'Theo 7 ngày', start: today.subtract(6, 'day'), group: 'day' },
+    { label: 'Theo tháng', start: today.startOf('month'), group: 'day' },
+    { label: 'Theo quý', start: today.subtract(89, 'day'), group: 'month' },
+    { label: 'Theo năm', start: today.startOf('year'), group: 'month' },
+  ] as const;
+  const maxDaysMessage = `Giới hạn báo cáo là ${maxDays} ngày.`;
 
   // Memoized tab items (does NOT depend on activeTab, avoiding recreating tabs on switch)
   const tabItems = useMemo(() => {
@@ -369,8 +372,8 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
                 onChange={(dates) => {
                   if (dates && dates[0] && dates[1]) {
                     const diffDays = dates[1].diff(dates[0], 'day');
-                    if (diffDays > 366) {
-                      appMessage.error('Khoảng thời gian báo cáo không được vượt quá 366 ngày (1 năm).');
+                    if (diffDays > maxDays) {
+                      appMessage.error(maxDaysMessage);
                       return;
                     }
                     if (diffDays < 1) {
@@ -382,19 +385,23 @@ const Reports: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
                 }}
               />
               <Space wrap size={4}>
-                <Button size="small" onClick={handlePreset7Days}>
-                  Theo 7 ngày
-                </Button>
-                <Button size="small" onClick={handlePresetMonth}>
-                  Theo tháng
-                </Button>
-                <Button size="small" onClick={handlePresetQuarter}>
-                  Theo quý
-                </Button>
-                <Button size="small" onClick={handlePresetYear}>
-                  Theo năm
-                </Button>
+                {presets.map(({ label, start, group }) => {
+                  const disabled = periodEnd.diff(start, 'day') > maxDays;
+                  return (
+                    <Tooltip key={label} title={disabled ? maxDaysMessage : undefined}>
+                      <span>
+                        <Button size="small" disabled={disabled} onClick={() => {
+                          setDateRange([start, periodEnd]);
+                          setGroupBy(group);
+                        }}>
+                          {label}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  );
+                })}
               </Space>
+              <Text type="secondary">{maxDaysMessage}</Text>
             </Space>
           </Col>
 
