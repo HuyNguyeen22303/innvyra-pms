@@ -1,12 +1,22 @@
 # Tài liệu Innvyra PMS
 
-- [Sơ đồ gốc chỉnh sửa bằng draw.io](Innvyra_13UC.drawio).
-- [Phân tích yêu cầu hệ thống — phần 7.1](PHAN_TICH_YEU_CAU_HE_THONG.md).
-- [Danh mục UC và quyền chức năng](DANH_MUC_UC.md).
-- [QR nhận cọc, thanh toán và cập nhật database](QR_NHAN_COC_THANH_TOAN.md).
+## Cài đặt và vận hành hệ thống
 
-File `Innvyra_13UC.drawio` là bản sơ đồ đang sử dụng, gồm 13 UC chính và 41 trang Use Case, Activity, Sequence. Các tài liệu Markdown tham chiếu tên tab trong file này.
+- [Cài đặt, chạy và kiểm thử backend và frontend](CAI_DAT_VA_CHAY.md).
+- [Database local và dữ liệu demo](DATABASE_MULTI_HOTEL_LOCAL.md).
+- [Đa khách sạn, quản trị Platform và thuê bao](MULTI_HOTEL.md).
 
-Giữ sơ đồ dưới dạng draw.io để tiếp tục chỉnh sửa. Chỉ xuất SVG/ảnh và đưa vào Word khi dự án hoàn tất và người dùng yêu cầu; hiện chưa xuất lại.
+## Hướng dẫn nghiệp vụ
 
-Bản xuất cũ, tài liệu cũ, Word tham khảo, kế hoạch nội bộ và script hỗ trợ được lưu cục bộ trong `doc/_local/`. Thư mục này đã được `.gitignore` bỏ qua để không đưa lên GitHub. Các bản xuất cũ chưa đồng bộ với sơ đồ hiện tại.
+- [Đặt phòng và lưu trú](DAT_PHONG_VA_LUU_TRU.md)
+- [Thu ngân, QR và quyết toán](THU_NGAN_VA_THANH_TOAN.md)
+- [Buồng phòng, bảo trì, kho và thanh toán nhà cung cấp](VAN_HANH_BUONG_PHONG_BAO_TRI_VA_KHO.md)
+- [Báo cáo điều hành và định nghĩa số liệu](BAO_CAO_DIEU_HANH.md)
+
+## Hồ sơ phân tích
+
+- [Phân tích yêu cầu hệ thống](PHAN_TICH_YEU_CAU_HE_THONG.md).
+- [Danh mục 13 use case và quyền chức năng](DANH_MUC_UC.md).
+- [Sơ đồ gốc của 13 use case](Innvyra_13UC.drawio).
+
+Bản trước khi hợp nhất, các kế hoạch đã triển khai và nhật ký cũ được lưu trong `doc/_local/archive/` trên máy đang làm việc. Git bỏ qua thư mục này.

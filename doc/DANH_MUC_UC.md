@@ -244,10 +244,10 @@ Phân tích hoạt động theo kỳ, loại báo cáo và quyền được cấ
 | Xem báo cáo vận hành | A/Q/L/B/T: Xem |
 | Xuất CSV theo loại được hỗ trợ | A/Q: Xuất CSV; K: Xuất CSV tài chính |
 
-Báo cáo có tab Mua hàng & NCC, gồm giá trị hàng nhập theo ngày nhập, chi tiền theo ngày trả và công nợ nhà cung cấp lũy kế đến hết kỳ. Phiếu chưa đối soát được hiển thị riêng. Tổng quan và báo cáo dòng tiền có chi vật tư thuần và dòng tiền sau chi vật tư; các chỉ số này không phải lợi nhuận.
+Tab **Mua vật tư & Công nợ NCC** hiển thị giá trị theo ngày nhập, chi tiền theo ngày trả và công nợ nhà cung cấp lũy kế đến hết kỳ. Phiếu chưa đối soát được hiển thị riêng. Tab **Dòng tiền & Thu chi** hiển thị **Chi mua vật tư thuần** và **Dòng tiền sau chi vật tư**. Công thức và phạm vi chỉ số nằm trong [tài liệu báo cáo](BAO_CAO_DIEU_HANH.md#procurement-and-supplier-finance).
 
 L không nhận các trường tiền roomSalesValue, ADR và RevPAR của công suất.
 B chỉ khối buồng, T chỉ khối bảo trì.
-A/Q: doanh thu, dòng tiền, công suất, đặt phòng; K: doanh thu và dòng tiền.
+A/Q xem các nhóm báo cáo trong bảng. K xem nhóm tài chính gồm doanh thu, dòng tiền, mua vật tư và công nợ.
 
 Nguồn: [ReportsPage.tsx](../frontend/src/pages/reports/ReportsPage.tsx), [report.routes.ts](../backend/src/modules/reports/report.routes.ts), [reports.api.ts](../frontend/src/api/reports.api.ts).

@@ -1,32 +1,91 @@
-# Billing & Payment Management — Phase 6
+# Thu ngân, QR và quyết toán folio
 
-Service Catalog, Service Orders, one primary Folio per reservation, immutable charges, staff-confirmed payments/deposits/refunds, adjustments and settlement are implemented in `src/modules/billing/`. These features share a transaction boundary and repository while retaining Route → Middleware → Controller → Service → Repository → Prisma → MySQL. No dependency or frontend change.
+Hướng dẫn nhận cọc và thanh toán bằng QR, quyết toán đơn hủy hoặc khách không đến, cùng hợp đồng API thu ngân.
 
-## Schema and migration
+- [QR nhận cọc và thanh toán](#qr-nhận-cọc-và-thanh-toán).
+- [Quyết toán đơn hủy và khách không đến](#quyết-toán-đơn-hủy-và-khách-không-đến).
+- [Hợp đồng thu ngân](#hợp-đồng-thu-ngân).
+
+## QR nhận cọc và thanh toán
+
+QR được tạo trên backend bằng `vietqr@1.2.0`, không cần API key, không gọi dịch vụ tạo ảnh. Mỗi khách sạn có một tài khoản nhận tiền. Chưa có webhook hoặc tự xác nhận tiền về.
+
+### Cấu hình
+
+Đăng nhập **ADMIN khách sạn → Thông tin khách sạn → Tài khoản nhận chuyển khoản**. Chọn ngân hàng, nhập số tài khoản và tên chủ tài khoản, bật nhận QR rồi lưu. Tên được chuẩn hóa in hoa không dấu; hệ thống chưa xác minh tên với ngân hàng. Kiểm tra người thụ hưởng trên ứng dụng ngân hàng trước khi sử dụng thực tế.
+
+Các khách sạn trong seed mặc định chưa cấu hình tài khoản. Không dùng tài khoản ngân hàng bịa trong seed để nhận tiền. ADMIN, MANAGER, RECEPTIONIST, ACCOUNTANT có quyền sử dụng QR; chỉ ADMIN khách sạn được sửa tài khoản. Platform admin không cấu hình tài khoản thay khách sạn trong đợt này.
+
+Thay đổi hoặc tắt cấu hình hủy các yêu cầu QR đang chờ. QR đã tải/chụp vẫn có thể dùng chuyển khoản ngoài hệ thống; nếu khách đã chuyển theo QR cũ, phải kiểm tra tiền thực nhận và ghi nhận/hoàn tiền bằng nghiệp vụ hiện có.
+
+### Đặt phòng và nhận cọc
+
+1. Chọn khách và phòng như hiện tại.
+2. Bật **Nhận cọc ngay**, nhập số tiền, chọn **Chuyển khoản → Hiển thị QR để khách chuyển**.
+3. Bấm **Tạo đặt phòng & hiển thị QR**. Đơn được lưu và giữ phòng trước. Tạo QR chưa mở folio, chưa ghi thu tiền.
+4. Khách quét QR; ngân hàng điền tài khoản, số tiền và nội dung dạng `INN` + 16 ký tự.
+5. Nhân viên kiểm tra tiền vào tài khoản, nhập **mã giao dịch ngân hàng thực tế**, xác nhận đã nhận đủ tiền rồi bấm **Xác nhận nhận cọc**.
+6. Hệ thống mở hoặc dùng lại folio và ghi một khoản cọc. Check-in tiếp tục dùng folio đó.
+
+**Nội dung chuyển khoản trên QR khác mã giao dịch ngân hàng.** Không lấy nội dung QR điền vào ô mã giao dịch chỉ để vượt validation.
+
+Xác nhận QR từ chối mã giao dịch ngân hàng đã được ghi nhận trong khách sạn, kể cả đã thu qua thao tác thủ công. Kiểm tra lịch sử thay vì tạo thêm khoản thu cho cùng giao dịch.
+
+Không cọc: chỉ tạo đơn. Cọc tiền mặt hoặc chuyển khoản đã nhận: giữ luồng xác nhận hiện có. Một đơn nhiều phòng vẫn dùng một folio.
+
+Đóng cửa sổ QR không hủy đơn. Mở **Chi tiết đơn → Nhận chuyển khoản QR / Lịch sử QR** để tiếp tục. Nếu đơn đã tạo nhưng tạo ảnh QR lỗi, thử lại QR trên đơn đó; không tạo đơn khác. Không có tác vụ tự hủy đơn chỉ vì khách chưa chuyển tiền.
+
+### Thu tiền trong folio
+
+Mở folio, chọn **Nhận chuyển khoản QR**, nhập loại thu và số tiền. Xác nhận khi tiền thực tế đã về. Các thao tác tiền mặt, chuyển khoản thủ công, điều chỉnh và hoàn tiền tiếp tục sử dụng như trước.
+
+Mỗi đơn chỉ có một yêu cầu đang chờ. Cùng loại/số tiền dùng lại yêu cầu đó; muốn thay đổi phải hủy có lý do rồi tạo mới. Số tiền thực nhận khác QR hoặc khách dùng QR đã hủy: đối soát và ghi nhận số tiền thực tế qua luồng thủ công, không tự sửa yêu cầu QR cũ.
+
+QR hỗ trợ số đồng nguyên từ 1 đến 9.999.999.999.999đ. Không có bộ đếm hết hạn. Trước khi ghi tiền, backend kiểm tra lại công nợ và trạng thái. Đơn hủy/NO_SHOW hủy yêu cầu cọc; đóng folio hủy yêu cầu còn chờ. Báo cáo chỉ tính khoản thu đã xác nhận.
+
+### Cập nhật ứng dụng
+
+Làm theo [hướng dẫn chuẩn bị database](CAI_DAT_VA_CHAY.md#chuẩn-bị-database) để áp dụng migration, rồi chạy API và [frontend](CAI_DAT_VA_CHAY.md#frontend). VietQR dùng cấu hình tài khoản nhận chuyển khoản của từng khách sạn trong PMS.
+
+### Kiểm thử QR
+
+Test backend dùng DB `_test` riêng qua `npm run test:mysql`. Có kiểm thử giải mã ảnh PNG thật, CRC, số tiền lớn, phân quyền, tenant, idempotency, hai kết nối đồng thời, rollback khi ghi tiền/audit/idempotency lỗi, đổi tài khoản, hủy đơn và đóng folio. Seed checker kiểm tra liên kết yêu cầu QR với khoản thu và mỗi đơn chỉ có một yêu cầu chờ.
+
+## Quyết toán đơn hủy và khách không đến
+
+### Phạm vi và dữ liệu
+
+- ADMIN, MANAGER và ACCOUNTANT quyết toán, hoàn tiền hoặc đóng folio. RECEPTIONIST xem và thu tiền theo quyền được cấp. Người có quyền quyết toán xác nhận việc miễn hoặc giữ phí.
+- Folio mới của đơn hủy hoặc khách không đến mở ở mức phí phòng 0. Người có quyền ghi nhận phí thực tế qua đối soát. Folio đã mở trước đó giữ các dòng tiền phòng cho đến khi được rà soát.
+- Tổng phí lấy DEBIT trừ CREDIT. Dòng tiền chỉ thay đổi khi khoản thu hoặc hoàn tiền được xác nhận. Xem [hợp đồng quyết toán](#cancellation--no-show-review).
+
+### Cách sử dụng
+
+1. Mở folio của đơn đã hủy/không đến, chọn **Quyết toán đơn hủy / Không đến**.
+2. Kiểm tra phí và tiền đã thu/hoàn, nhập tổng phí giữ lại, lý do, xác nhận đối soát.
+3. Lưu. Số dư 0 thì folio đóng; số dư âm là cần hoàn, số dư dương là còn phải thu.
+4. Ghi nhận hoàn tiền từ từng phiếu thu hoặc thu thêm đúng tiền thực tế, sau đó đóng.
+
+### Kiểm thử quyết toán
+
+Thử một đơn đã hủy và một đơn không đến. Đối chiếu trường hợp miễn phí, giữ lại một phần tiền cọc, thu thiếu và hoàn tiền từ phiếu gốc. Sau mỗi thao tác, so sánh số dư folio với báo cáo thu và hoàn. Xem [các lệnh kiểm thử backend](CAI_DAT_VA_CHAY.md#kiểm-thử-backend).
+
+## Hợp đồng thu ngân
+
+The billing module handles the service catalog, service orders, one primary folio per reservation, charges, receipts, refunds, adjustments and settlement. The corresponding PMS screens are covered in [QR deposits and payments](#qr-nhận-cọc-và-thanh-toán) and [cancellation and no-show settlement](#quyết-toán-đơn-hủy-và-khách-không-đến).
+
+### Schema and migration
 
 Added models: `Service`, `ServiceOrder`, `ServiceOrderItem`, `Folio`, `FolioItem`, `Payment`, `BillingIdempotency`, `BillingAuditLog`.
 
-`prisma/migrations/20261015000000_billing_management/migration.sql` adds eight tables and a unique `(hotel_id,id)` index on `stays` for scoped references. It does not alter reservation/stay data or historical price snapshots. The inspected application database had no existing Service/Folio/Payment tables. Existing migrations remain unchanged.
+The core billing tables and scoped Stay reference were introduced in migration `20261015000000_billing_management`. See the [Prisma schema](../backend/prisma/schema.prisma) for the current models and constraints.
 
 - Composite hotel foreign keys use RESTRICT. Refunds reference an original payment in the same folio; related adjustments reference an item in the same folio.
 - Unique reservation ID enforces one folio. Unique room-night/service-order-item references and source type/ID prevent duplicate posting.
 - CHECK constraints enforce whole VND, money bounds/signs, quantity/line totals, source consistency, status timestamps and payment references. MySQL 8.0.16+ is required; verification used MySQL 8.0.41.
 - Service items preserve price, name and unit snapshots from order creation. Completed payments, entries, snapshots and audit have no update/delete endpoint. Catalog DELETE deactivates. Privileged direct SQL access is outside application immutability; no triggers prevent a database administrator from editing rows.
 
-Review the SQL and back up the intended application database before deployment. From `backend/`:
-
-```powershell
-npm run prisma:validate
-npm run prisma:generate
-npm run db:inspect
-npm run db:migrate
-npm run build
-npm start
-```
-
-`db:migrate` deploys Prisma migrations and refuses existing tables without migration history. Never reset, use destructive db push, or edit an applied migration. **Application database migration is left for deployment; only the dedicated test database was migrated in this task.**
-
-## Money and business policy
+### Money and business policy
 
 An isolated Prisma Decimal context uses precision 40. Stored amounts use `DECIMAL(18,2)` and API amounts are strings. VND input must be whole dong: `"1000"`, `"1000.0"`, `"1000.00"` normalize to `"1000.00"`. Fractional dong, JS numbers, exponents, negative inputs and values beyond `9999999999999999.00` are rejected. Payments/refunds/adjustments must be positive; free room/service sources retain zero debit entries for traceability.
 
@@ -42,7 +101,7 @@ Reads aggregate entries and payments in a RepeatableRead snapshot. Pending/faile
 
 - Folio opening is idempotent: manual opening remains available, reservation creation with initialDeposit opens it atomically, and check-in ensures an OPEN folio in its arrival transaction. Check-in reuses prepaid folios and rejects CLOSED ones. GET never opens a folio. A new CANCELLED/NO_SHOW folio starts empty for explicit terminal settlement. Existing pre-arrival room charges remain intact until reviewed.
 
-The reservation/deposit and arrival workflows use transaction-bound billing repositories under their existing hotel lock, without nested transactions. See `../doc/DAT_PHONG_COC_CHECKIN_FOLIO.md` for the full UI/API workflow. No schema migration or historical data rewrite is needed.
+The reservation deposit and arrival workflows share the hotel lock and transaction with billing. See [reservation deposits and folio opening](DAT_PHONG_VA_LUU_TRU.md#quy-trình-lễ-tân).
 - New orders require an active stay. Supplied stayId must be active and belong to the same reservation/hotel, with live occupancy. Without stayId the order is reservation-level during an active stay. Prices snapshot when the order is created. Completion and charges commit atomically. Previously requested services may complete after physical checkout. Only REQUESTED orders can cancel.
 - `GET /service-orders?search=` uses one term: numeric input matches a physical room-number prefix (for example `2` finds 201/202 but not 102); text matches guest name, confirmation code or room number (case/diacritic-insensitive via the database collation). Internal order/reservation/stay IDs are not searchable. Guest-name matching is excluded for ACCOUNTANT; room/code search still works.
 - Physical checkout performs no billing mutation. Cancellation creates no automatic refund/credit and deletes no charges. Folios may remain OPEN with debt after checkout.
@@ -51,9 +110,9 @@ The reservation/deposit and arrival workflows use transaction-bound billing repo
 - Refund returns money and **increases outstanding**; it does not reduce charges. For a paid concession or cancellation settlement, record the approved actual refund first, then a CREDIT adjustment. This avoids creating unsupported credit balances. No cancellation event triggers automatic refund.
 - Adjustments append a DEBIT/CREDIT with staff/reason and optional same-folio original item reference. CREDIT cannot create a negative balance. Old entries and payment amounts are never changed.
 - Close requires exactly zero balance, no REQUESTED orders or PENDING payments, no active stays, and reservation CHECKED_OUT, CANCELLED or NO_SHOW. Closing is idempotent. CLOSED rejects new postings; replay of an already committed request still succeeds.
-- Phase 6 creates only staff-confirmed payment rows. Imported/future PENDING rows block receipts/refunds and closure until resolved through an audited operational process. No pending-payment resolution API is introduced here.
+- Staff confirmation records receipts, including bank transfers requested through the [QR workflow](#qr-nhận-cọc-và-thanh-toán). A waiting QR request is tracked separately from a confirmed receipt. Existing PENDING payment rows block receipts, refunds and closure.
 
-## Cancellation / no-show review
+### Cancellation / no-show review
 
 `GET /folios/:id/terminal-settlement` reads a snapshot of the open terminal folio,
 money totals, blockers and a revision. `POST` to the same path requires settle
@@ -78,9 +137,9 @@ Reports already include these immutable adjustment credits/debits in net billed
 charges; cash totals change only for actual confirmed payment/refund records.
 
 No schema migration, new database, seed rerun or automatic historical adjustment
-is needed. See `../doc/QUYET_TOAN_DON_HUY_KHONG_DEN.md` for the plan and UI workflow.
+is needed for settlement. See the [operator workflow](#quyết-toán-đơn-hủy-và-khách-không-đến).
 
-## Idempotency, locks and audit
+### Idempotency, locks and audit
 
 Payment, deposit, refund and adjustment POSTs require `Idempotency-Key`: 8–128 ASCII letters/digits or `. _ : -`, starting with a letter/digit. Keep the **same key and payload after a timeout**; use a new key only for a new financial operation. Different keys identify separate receipts; the server cannot infer whether two separately attested cash receipts represent the same cash.
 
@@ -92,7 +151,7 @@ The ledger row, status transition, audit and idempotency response commit togethe
 
 Hotel-level serialization may limit a busy property's throughput. Measure contention before introducing a finer lock protocol across all dependent modules. Audit/idempotency retention, reopening and post-close corrections need future explicit policies. No gateway, taxes, general ledger, revenue recognition, split folios or currency conversion is implemented.
 
-## API and RBAC
+### API and RBAC
 
 All paths are under `/api/v1`, use Bearer authentication and `success/message/data`. Mutations require `X-CSRF-Protection: 1`; browser origin must be allowlisted. Responses have `Cache-Control: no-store`. IDs are BIGINT strings. Unknown fields, including client-supplied hotel/actor/role/status, are rejected.
 
@@ -131,9 +190,9 @@ Lists default to page 1, limit 20, maximum limit 100; stable ID tie-breakers. Le
 
 Server authentication supplies current roles and hotel/actor IDs. ADMIN is hotel-scoped too. Foreign IDs return the same 404 as absent IDs. Middleware and service both check permission.
 
-## Swagger / Postman walkthrough
+### Swagger / Postman walkthrough
 
-1. After migration, open `/api-docs/` or import `/api-docs/openapi.json`. All prior documentation remains; there are 49 operations.
+1. After migration, open `/api-docs/` or import `/api-docs/openapi.json`. Use the Billing and Payment QR sections for the current contract.
 2. Login with provisioned staff credentials and CSRF header, then set Bearer authorization. Use real IDs from responses.
 3. Create a confirmed reservation for one 900000 VND room for two nights using the existing API. POST `/reservations/<id>/folio/open` with `{}`. Charges: `1800000.00`.
 4. POST `/folios/<id>/payments` with a fresh key and:
@@ -153,47 +212,6 @@ Server authentication supplies current roles and hotel/actor IDs. ADMIN is hotel
 8. Record PAYMENT `450000.00`, check out physically, then ADMIN/MANAGER/ACCOUNTANT POST `/folios/<id>/close` with `{}`. Expect CLOSED/zero. Check-out alone leaves OPEN.
 9. Test refunds on a separate OPEN folio: POST `/payments/<id>/refunds` with a fresh key and `{"amount":"200000.00","reason":"Approved manual return of receipt","confirmedRefunded":true}`. A separate REFUND row appears and outstanding increases. Bank operations also require incoming/outgoing referenceNumber.
 
-## Verification and files
+### Kiểm thử thu ngân
 
-```powershell
-npm run prisma:validate
-npm run typecheck
-npm run lint
-npm run build
-npm test
-npm run test:mysql
-```
-
-`test:mysql` creates/migrates `innvyra_pms_billing_phase6_test` using local configured credentials or accepts an explicit separate local `TEST_DATABASE_URL` ending `_test`. It refuses the application database and production environment, checks schema drift, then runs all suites. Concurrency tests use independent Prisma clients. Cleanup removes only synthetic fixtures created by each test; roles and test schema remain. There is no reset/truncate/drop. Plain `npm test` skips MySQL suites when TEST_DATABASE_URL is absent.
-
-The bootstrap connection allows RSA public-key retrieval only after the loopback/test-schema guards, so local MySQL can authenticate after a restart with an empty authentication cache. Application/TLS connection configuration is unchanged.
-
-New files:
-
-- `prisma/migrations/20261015000000_billing_management/migration.sql`
-- `src/modules/billing/billing.{routes,controller,service,repository,schema,types,mapper,money}.ts`
-- `src/config/billing.openapi.ts`
-- `tests/billing.unit.test.ts`, `tests/billing.mysql.integration.test.ts`
-- `BILLING.md`
-
-Modified: `prisma/schema.prisma`, `src/app.ts`, `src/routes/index.ts`, `src/server.ts`, `src/config/cors.ts`, `src/config/swagger.ts`, `scripts/test-mysql.ts`, `tests/guests.http.test.ts`, `tests/rooms.http.test.ts`, `tests/reservations.http.test.ts`, `README.md`. Prior tests only change expected OpenAPI operation count. Generated Prisma Client is refreshed in the existing gitignored directory. Branch: `feature/be-billing`, from updated `develop` at `e330688`. No commit, push or merge.
-
-Verified on **15/10/2026**, Node **22.13.0**, MySQL **8.0.41**:
-
-| Check                                                            | Result                                                                               |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Prisma validate and generate                                     | Passed                                                                               |
-| TypeScript strict typecheck                                      | Passed                                                                               |
-| ESLint, zero warnings                                            | Passed                                                                               |
-| Build                                                            | Passed                                                                               |
-| Full Vitest suite on dedicated real MySQL                        | **420 passed, 0 failed, 0 skipped; 16 suites**                                       |
-| Unit, HTTP, integration, concurrency and prior-phase regressions | Included in the passing full suite                                                   |
-| Six migrations on fresh test schema, then deploy again           | Passed; second deploy had no pending migrations                                      |
-| Prisma database-to-schema diff                                   | No difference                                                                        |
-| Compiled ESM smoke                                               | Swagger UI/JSON 200; 49 operations; all 19 Billing operations return 401 without JWT |
-| Prettier for changed TypeScript and Billing documentation        | Passed                                                                               |
-| Git diff whitespace check                                        | Passed                                                                               |
-
-The tests cover the 1,950,000 / 500,000 / 1,000,000 / 450,000 financial example, legacy rounding, missing-night rejection, snapshot preservation, multi-room charges, cancellation/checkout separation, duplicates, same-key replay/conflict, actual-money confirmations, partial/full refunds, negative-balance prevention, pending/closed folios, server-side RBAC, foreign hotel/service/stay rejection, SQL constraints, independent-client races, and rollback of folio/service/payment/refund/adjustment with audit/idempotency failures.
-
-Windows sandbox initially blocked local MySQL/HTTP and Vitest file access, so verification ran with approved local execution permissions. A later cold MySQL authentication failure was resolved in the guarded local test bootstrap and the full suite then passed. No application migration, production load test or production deployment was performed.
+Chạy `npm test` để kiểm tra validation, phân quyền và hợp đồng HTTP. Dùng `npm run test:mysql` để kiểm tra transaction, idempotency và thao tác đồng thời trên database test riêng. Xem [hướng dẫn kiểm thử backend](CAI_DAT_VA_CHAY.md#kiểm-thử-backend).

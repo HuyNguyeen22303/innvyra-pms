@@ -1,8 +1,6 @@
-# Phase 8 — Reporting & Analytics
+# Báo cáo điều hành
 
-Reports read the existing MySQL ledger and operational history. They do not post charges, confirm payments, reconcile rooms, write snapshots, or change business records. No new dependency, Prisma model, index, or migration was added in this phase.
-
-Implementation branch: `feature/be-reports`. It was created from the existing dirty `feature/be-operations` checkout after the user's explicit branch instruction. Earlier uncommitted Billing/Operations changes were preserved. No commit, push, merge, database reset, or table drop was performed.
+Reports are read-only views of the MySQL ledgers and operational history. The PMS presents dashboard, revenue, cash, procurement, occupancy, reservations, operations and outstanding balances according to the signed-in role.
 
 ## API and permissions
 
@@ -17,6 +15,8 @@ All endpoints are `GET /api/v1/reports/...`, require Bearer JWT **and a valid cu
 | `/reservations` | Period/grouping                                                                        | ADMIN, MANAGER, RECEPTIONIST                           |
 | `/operations`   | Period/grouping                                                                        | ADMIN, MANAGER, RECEPTIONIST, HOUSEKEEPING, TECHNICIAN |
 | `/outstanding`  | Period, `page`, `limit`, `sortBy=folioId\|outstandingBalance`, `sortOrder=asc\|desc`   | ADMIN, MANAGER, ACCOUNTANT                             |
+| `/procurement`  | Period/grouping, optional `supplierId` and `categoryId`                                 | ADMIN, MANAGER, ACCOUNTANT                             |
+| `/supplier-finance` | Period, `page`, `limit`                                                            | ADMIN, MANAGER, ACCOUNTANT                             |
 | `/export`       | `type=revenue\|occupancy\|reservations\|payments`, period/grouping, compatible filters | ADMIN/MANAGER: all four; ACCOUNTANT: revenue/payments  |
 
 Receptionists receive no dashboard finance and no occupancy `roomSalesValue`, `operationalAdr`, or `operationalRevpar`. They cannot export. HOUSEKEEPING receives only the housekeeping operations section; TECHNICIAN only maintenance. No report selects guest identity, document numbers, credentials, or tokens. Responses use `Cache-Control: private, no-store`.
@@ -43,6 +43,8 @@ Receptionists receive no dashboard finance and no occupancy `roomSalesValue`, `o
 | `netBilledCharges`                                              | Total debits − total credits                                              |
 | `successfulPayments`, `successfulDeposits`, `successfulRefunds` | Distinct persisted CONFIRMED Payment records, by type                     |
 | `netCashCollected`                                              | Payments + deposits − refunds                                             |
+| `netSupplierPaid`                                               | Supplier disbursements − reversals in the period                           |
+| `netCashAfterSupplies`                                          | Net cash collected − net supplier paid                                    |
 | `balanceMovement`                                               | Period billed charges − period net cash; not a closing balance            |
 | `balance.outstandingBalance`                                    | Cumulative debits − credits − payments − deposits + refunds before cutoff |
 | `balance.accountsReceivable`                                    | Sum of positive cumulative folio balances                                 |
@@ -53,6 +55,10 @@ Charges group by `FolioItem.createdAt` (posting time), receipts by `Payment.proc
 `paymentCount` counts PAYMENT records only; deposits and refunds have separate counts. `cashPayments` and `bankTransferPayments` are gross receipts (PAYMENT + DEPOSIT), before refunds. A payment-method filter restricts activity only; outstanding balances always use **all methods**, explicitly labeled in the response. Closed folios are not assumed paid. `/outstanding` lists only nonzero folios, with string IDs and signed balances, without guest identity.
 
 MySQL SUM operates on DECIMAL, and Node uses the existing isolated 40-digit `Money` Decimal context to combine daily/monthly aggregates. Money is always an exact two-decimal string. No JavaScript floating-point addition is used for financial totals. Ratios use Decimal and are rounded to two decimals only at serialization.
+
+## Procurement and supplier finance
+
+`/procurement` groups stock receipt value by receipt date, with optional supplier and category filters. `/supplier-finance` reports payments and reversals in the period across suppliers, confirmed liabilities accumulated through the cutoff, and unreconciled legacy receipts separately. The **Mua vật tư & Công nợ NCC** tab combines these results. **Dòng tiền & Thu chi** shows net supplier disbursements and customer net cash after supplies. The result covers these cash flows only and excludes other operating expenses.
 
 ## Occupancy, ADR and RevPAR
 
@@ -95,6 +101,8 @@ Dashboard `rooms.total` includes all retained Room records; `active` is current 
 
 Room snapshots are current only. When dashboard `date` differs from hotel-local today, `rooms` and `roomSnapshotAt` are null; finance/remaining scheduled movements still use the selected day. `currentGuestsCount=null`: booked adults/children are not an actual registration ledger.
 
+On the reports page, revenue and net cash use two lines with signed amounts. Occupancy uses a 0–100% line and leaves gaps for unavailable values. Booking sources are ranked by booking count with the count and share shown beside each source.
+
 Reservation creation uses reservation `createdAt`; room creation uses reservation-room `createdAt`; cancellation uses `cancelledAt`; actual movements use Stay timestamps. Multi-room bookings count one order and multiple rooms. Booking sources describe the creation cohort. `confirmedReservationsInCreatedCohort` and `noShowReservationsInCreatedCohort` describe current status because transition dates are absent. Expected arrivals are valid reservation rooms with no Stay; expected departures are valid rooms without actual checkout, including arrivals not yet checked in. These are **remaining scheduled movements as of generation**, not a reconstructed historical forecast.
 
 Operations separates `snapshot` from `period`. Dirty/ready/cleaning/inspection rooms, active tasks, open/assigned and in-progress tickets, and effective maintenance blocks are current. Completed/inspected task totals count distinct task IDs with retained TASK_COMPLETE/INSPECTION_PASSED audit events in the interval. This preserves rework history when mutable completion fields are reset. Maintenance room-nights use a dedicated aggregate without querying Stay/pricing data.
@@ -111,18 +119,7 @@ Existing indexes cover hotel scope, room creation/type, reservation creation/dat
 
 ## Verification and manual usage
 
-Run from `backend`:
-
-```powershell
-npm run prisma:validate
-npm run typecheck
-npm run lint
-npm run build
-npm test
-npm run test:mysql
-```
-
-`test:mysql` refuses production mode, non-loopback hosts, non-`_test` schema names and the application database. The existing runner creates the separate test schema if necessary, applies existing migrations without reset, checks schema drift, then runs all Vitest suites. Fixtures are synthetic and are removed by their own hotel IDs. The runner's existing default schema name remains `innvyra_pms_operations_phase7_test`; set TEST_DATABASE_URL to another separate local `_test` database if preferred. Plain `npm test` skips integration suites unless a guarded TEST_DATABASE_URL is supplied.
+Follow the [backend test workflow](CAI_DAT_VA_CHAY.md#kiểm-thử-backend) to check reports. MySQL fixtures are synthetic and are removed by their own hotel IDs.
 
 Open `/api-docs`, login using the existing Authentication endpoint and `X-CSRF-Protection: 1`, copy the access token into Swagger **Authorize**, then open **Reports**. Report GETs do not require a CSRF header. Example paths for Swagger/Postman:
 
@@ -132,19 +129,9 @@ Open `/api-docs`, login using the existing Authentication endpoint and `X-CSRF-P
 /api/v1/reports/occupancy?startDate=2026-09-01&endDate=2026-10-01&groupBy=month
 /api/v1/reports/payments?startDate=2026-10-01&endDate=2026-11-01&paymentMethod=CASH
 /api/v1/reports/outstanding?startDate=2026-10-01&endDate=2026-11-01&limit=20&sortOrder=desc
+/api/v1/reports/procurement?startDate=2026-10-01&endDate=2026-11-01
+/api/v1/reports/supplier-finance?startDate=2026-10-01&endDate=2026-11-01
 /api/v1/reports/export?type=revenue&startDate=2026-10-01&endDate=2026-11-01
 ```
 
-Use completed dates for fully observed overnight values. In Postman add `Authorization: Bearer <accessToken>`; use Save Response for CSV. Repeat with department roles to verify omitted sections and 403s. Unknown hotel filters must fail; foreign room types must return 404. OpenAPI contains query/role/error definitions, response schemas, formulas and illustrative examples for all eight endpoints.
-
-## Phase 8 file inventory
-
-New files:
-
-- `src/modules/reports/report.routes.ts`, `report.controller.ts`, `report.service.ts`, `report.repository.ts`
-- `src/modules/reports/report.schema.ts`, `report.types.ts`, `report.mapper.ts`, `report.dates.ts`, `export.service.ts`
-- `src/config/reports.openapi.ts`
-- `tests/reports.unit.test.ts`, `tests/reports.mysql.integration.test.ts`
-- `REPORTS.md`
-
-Updated integration/configuration files: `src/app.ts`, `src/routes/index.ts`, `src/server.ts`, `src/config/env.ts`, `src/config/swagger.ts`, `.env.example`, and `README.md`. Existing Swagger-count assertions in `tests/rooms.http.test.ts`, `tests/guests.http.test.ts`, `tests/reservations.http.test.ts` and `tests/billing.mysql.integration.test.ts` were updated from 71 to 79 operations. Reports is injected as an optional final repository argument, preserving existing test/application factory call sites. No earlier business module is rewritten. Pre-existing modifications in the checkout belong to earlier phases and are not Phase 8 changes.
+Use completed dates for fully observed overnight values. In Postman add `Authorization: Bearer <accessToken>` and use Save Response for CSV. Repeat with department roles to verify omitted sections and 403s. A foreign room type returns 404. See [report schemas](../backend/src/config/reports.openapi.ts) and [supplier finance schemas](../backend/src/config/supply-workflow.openapi.ts).

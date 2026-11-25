@@ -1,6 +1,6 @@
 /**
  * Innvyra PMS - Billing & Folio TypeScript Type Definitions
- * Tuân thủ 100% hợp đồng backend trong backend/BILLING.md và backend/src/modules/billing/
+ * Hợp đồng thu ngân nằm trong doc/THU_NGAN_VA_THANH_TOAN.md và backend/src/modules/billing/.
  */
 
 export type ServiceOrderStatus = 'REQUESTED' | 'COMPLETED' | 'CANCELLED';

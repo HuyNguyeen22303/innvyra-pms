@@ -1,6 +1,6 @@
 /**
  * Innvyra PMS - Reporting & Analytics Types
- * Aligned with backend/REPORTS.md and backend/src/config/reports.openapi.ts
+ * Aligned with doc/BAO_CAO_DIEU_HANH.md and backend/src/config/reports.openapi.ts
  */
 
 export interface ReportPeriod {
