@@ -89,6 +89,7 @@ export interface StayFilterParams {
   roomNumber?: string;
   checkInDate?: string;
   checkOutDate?: string;
+  scheduledCheckOutDate?: string;
   search?: string;
   sortBy?: 'actualCheckinAt' | 'actualCheckoutAt' | 'createdAt' | 'id';
   sortOrder?: 'asc' | 'desc';

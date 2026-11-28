@@ -177,6 +177,9 @@ export class PrismaStayRepository {
     const { timezone } = await this.hotel(hotelId);
     const checkIn = query.checkInDate ? localDateRange(query.checkInDate, timezone) : undefined;
     const checkOut = query.checkOutDate ? localDateRange(query.checkOutDate, timezone) : undefined;
+    const scheduledCheckOut = query.scheduledCheckOutDate
+      ? asDate(query.scheduledCheckOutDate)
+      : undefined;
     const skip = (query.page - 1) * query.limit;
     const orderBy: Prisma.StayOrderByWithRelationInput[] = [
       { [query.sortBy]: query.sortOrder },
@@ -205,6 +208,7 @@ export class PrismaStayRepository {
           ${query.roomNumber ? Prisma.sql`AND rm.room_number = ${query.roomNumber}` : Prisma.empty}
           ${checkIn ? Prisma.sql`AND s.actual_checkin_at >= ${checkIn.gte} AND s.actual_checkin_at < ${checkIn.lt}` : Prisma.empty}
           ${checkOut ? Prisma.sql`AND s.actual_checkout_at >= ${checkOut.gte} AND s.actual_checkout_at < ${checkOut.lt}` : Prisma.empty}
+          ${scheduledCheckOut ? Prisma.sql`AND r.check_out_date = ${scheduledCheckOut}` : Prisma.empty}
           AND (${Prisma.join(matches, ' OR ')})`;
       const direction = query.sortOrder === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
       return this.prisma.$transaction(async (tx) => {
@@ -229,8 +233,13 @@ export class PrismaStayRepository {
     const where: Prisma.StayWhereInput = {
       hotelId,
       ...(query.status ? { status: query.status } : {}),
-      ...(query.reservationId
-        ? { reservationRoom: { reservationId: BigInt(query.reservationId) } }
+      ...(query.reservationId || scheduledCheckOut
+        ? {
+            reservationRoom: {
+              ...(query.reservationId ? { reservationId: BigInt(query.reservationId) } : {}),
+              ...(scheduledCheckOut ? { reservation: { checkOutDate: scheduledCheckOut } } : {}),
+            },
+          }
         : {}),
       ...(query.roomId ? { currentRoomId: BigInt(query.roomId) } : {}),
       ...(query.roomNumber ? { currentRoom: { roomNumber: query.roomNumber } } : {}),

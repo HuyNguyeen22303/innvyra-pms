@@ -1,0 +1,207 @@
+.front-desk-section {
+  --front-desk-arrivals: #1b6750;
+  --front-desk-departures: #956015;
+  --front-desk-track: #edf2ef;
+  margin-bottom: 20px;
+  min-width: 0;
+}
+
+.front-desk-heading,
+.front-desk-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.front-desk-heading .ant-typography,
+.front-desk-card-heading .ant-typography {
+  margin: 0;
+}
+
+.front-desk-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.front-desk-metric {
+  padding: 12px;
+  border: 1px solid #dee8e2;
+  border-inline-start: 3px solid var(--metric-color);
+  border-radius: 8px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.front-desk-metric--arrivals { --metric-color: var(--front-desk-arrivals); }
+.front-desk-metric--departures { --metric-color: var(--front-desk-departures); }
+.front-desk-metric--dirty { --metric-color: #9e4c32; }
+.front-desk-metric--ready { --metric-color: #326948; }
+
+.front-desk-metric dt {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.front-desk-metric dt > span {
+  color: var(--metric-color);
+}
+
+.front-desk-metric dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  margin: 4px 0 0;
+}
+
+.front-desk-metric dd strong {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: var(--metric-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.front-desk-section > .ant-alert {
+  margin-bottom: 12px;
+}
+
+.front-desk-stays,
+.front-desk-schedule {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.front-desk-stays li {
+  display: grid;
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 7px 0;
+  border-top: 1px solid #edf0ee;
+  overflow-wrap: anywhere;
+}
+
+.front-desk-stays a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  justify-self: start;
+}
+
+.front-desk-loading {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.front-desk-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.8125rem;
+}
+
+.front-desk-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.front-desk-legend > span::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--bar-color);
+}
+
+.front-desk-legend--arrivals,
+.front-desk-bar--arrivals { --bar-color: var(--front-desk-arrivals); }
+.front-desk-legend--departures,
+.front-desk-bar--departures { --bar-color: var(--front-desk-departures); }
+
+.front-desk-schedule li {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid #edf0ee;
+}
+
+.front-desk-schedule-date {
+  display: grid;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.front-desk-schedule-date small {
+  color: var(--front-desk-arrivals);
+}
+
+.front-desk-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5ch;
+  align-items: center;
+  gap: 6px;
+}
+
+.front-desk-track {
+  height: 7px;
+  border-radius: 3px;
+  background: var(--front-desk-track);
+}
+
+.front-desk-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bar-color);
+}
+
+.front-desk-bar-value {
+  text-align: right;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.front-desk-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .front-desk-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 479px) {
+  .front-desk-stays li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .front-desk-stays li > :nth-child(2) {
+    grid-column: 1;
+  }
+
+  .front-desk-stays a {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+}

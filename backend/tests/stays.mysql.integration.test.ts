@@ -896,6 +896,14 @@ describe.skipIf(!testUrl)(
       ).data.accessToken;
       expect((await get(`/api/v1/stays/${id}`, foreignToken)).status).toBe(404);
       expect((await get('/api/v1/stays', foreignToken)).body.data.pagination.total).toBe(0);
+      for (const search of ['', `&search=${booking.confirmationCode}`]) {
+        const due = await get(
+          `/api/v1/stays?scheduledCheckOutDate=${departure}&status=CHECKED_IN${search}`,
+          foreignToken,
+        );
+        expect(due.status).toBe(200);
+        expect(due.body.data).toMatchObject({ items: [], pagination: { total: 0 } });
+      }
     });
     it('filters, searches, paginates, sorts, exposes occupancy and avoids sensitive guest fields', async () => {
       const id = await active();
@@ -919,6 +927,43 @@ describe.skipIf(!testUrl)(
       expect(JSON.stringify((await get(`/api/v1/stays/${id}`)).body)).not.toMatch(
         /private|passwordHash|documentNumber|phone|email/,
       );
+    });
+    it('filters by booked departure before pagination and drops stays from the queue after checkout', async () => {
+      const first = await active();
+      const queue = `/api/v1/stays?status=CHECKED_IN&scheduledCheckOutDate=${departure}`;
+      const single = await get(queue);
+      expect(single.status).toBe(200);
+      expect(single.body.data).toMatchObject({
+        items: [{ stayId: first }],
+        pagination: { total: 1 },
+      });
+
+      const second = await active(1);
+      for (const search of ['', `&search=${booking.confirmationCode}`]) {
+        const filtered = await get(
+          `${queue}${search}&reservationId=${booking.id}&sortBy=id&sortOrder=asc&limit=1&page=2&includeStatusCounts=true`,
+        );
+        expect(filtered.status).toBe(200);
+        expect(filtered.body.data).toMatchObject({
+          items: [{ stayId: second }],
+          pagination: { total: 2, totalPages: 2, page: 2 },
+          statusCounts: { CHECKED_IN: 2, CHECKED_OUT: 0 },
+        });
+        const differentDate = await get(
+          `/api/v1/stays?status=CHECKED_IN&scheduledCheckOutDate=${today}${search}`,
+        );
+        expect(differentDate.body.data.pagination.total).toBe(0);
+      }
+
+      expect((await post(`/api/v1/stays/${first}/check-out`, {})).status).toBe(200);
+      expect((await get(queue)).body.data).toMatchObject({
+        items: [{ stayId: second }],
+        pagination: { total: 1 },
+      });
+      expect((await get(
+        `/api/v1/stays?status=CHECKED_OUT&scheduledCheckOutDate=${departure}&checkOutDate=${today}`,
+      )).body.data.items).toMatchObject([{ stayId: first }]);
+      expect((await get('/api/v1/stays?scheduledCheckOutDate=2026-02-30')).status).toBe(422);
     });
     it('counts matching stays across pages and finds Vietnamese names only for eligible roles', async () => {
       await db.guest.update({ where: { id: guestId }, data: { fullName: 'Nguyễn Đặng' } });

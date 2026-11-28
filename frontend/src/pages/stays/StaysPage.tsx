@@ -40,7 +40,7 @@ import {
   RightOutlined,
 } from '@ant-design/icons';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { DebouncedSearchInput } from '../../components/DebouncedSearchInput.tsx';
 import { staysApi } from '../../api/stays.api.ts';
@@ -512,6 +512,13 @@ export const StaysPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const reservationIdParam = searchParams.get('reservationId');
+  const stayIdParam = searchParams.get('stayId');
+  const scheduledDateParam = searchParams.get('scheduledCheckOutDate');
+  const scheduledCheckOutDate =
+    scheduledDateParam && /^\d{4}-\d{2}-\d{2}$/.test(scheduledDateParam) &&
+    dayjs(scheduledDateParam).format('YYYY-MM-DD') === scheduledDateParam
+      ? scheduledDateParam
+      : undefined;
 
   const activeTab: 'stays' | 'arrivals' = tabParam === 'arrivals' ? 'arrivals' : 'stays';
 
@@ -527,13 +534,31 @@ export const StaysPage: React.FC = () => {
   // ----------------------------------------------------
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const searchTerm = searchKeyword.trim();
-  const [statusFilter, setStatusFilter] = useState<StayStatus | undefined>(undefined);
+  const [selectedStatus, setStatusFilter] = useState<StayStatus | undefined>(undefined);
+  const statusFilter = scheduledCheckOutDate ? 'CHECKED_IN' : selectedStatus;
   const [staysPage, setStaysPage] = useState(1);
   const [staysPageSize, setStaysPageSize] = useState<number>(15);
 
   // Modals & Drawer State
-  const [selectedStayId, setSelectedStayId] = useState<string | null>(null);
-  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [localStayId, setSelectedStayId] = useState<string | null>(null);
+  const selectedStayId = activeTab === 'stays' ? stayIdParam || localStayId : null;
+
+  const clearScheduledDate = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('scheduledCheckOutDate');
+    setSearchParams(next, { replace: true });
+    setStatusFilter(undefined);
+    setStaysPage(1);
+  }, [searchParams, setSearchParams]);
+
+  const closeStayDetail = () => {
+    setSelectedStayId(null);
+    if (stayIdParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('stayId');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   // Check-out Modal State
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -561,18 +586,20 @@ export const StaysPage: React.FC = () => {
     isPlaceholderData: isStaysPlaceholder,
     refetch: refetchStays,
   } = useQuery({
-    queryKey: ['stays', 'list', staysPage, staysPageSize, statusFilter, searchTerm],
+    queryKey: ['stays', 'list', scheduledCheckOutDate, staysPage, staysPageSize, statusFilter, searchTerm],
     queryFn: ({ signal }) =>
       staysApi.getAll({
         page: staysPage,
         limit: staysPageSize,
         status: statusFilter,
+        scheduledCheckOutDate,
         search: searchTerm || undefined,
         includeStatusCounts: true,
         sortBy: 'actualCheckinAt',
         sortOrder: 'desc',
       }, signal),
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, query) =>
+      query?.queryKey[2] === scheduledCheckOutDate ? previous : undefined,
   });
   const lastStaysPage = Math.max(1, staysData?.data.pagination.totalPages ?? 1);
   if (staysData && !isStaysPlaceholder && staysPage > lastStaysPage) {
@@ -598,12 +625,12 @@ export const StaysPage: React.FC = () => {
   );
 
   // 2. Fetch Stay Detail for Drawer
-  const { data: stayDetailRes, isLoading: isLoadingStayDetail } = useQuery({
+  const stayDetailQuery = useQuery({
     queryKey: ['stayDetail', selectedStayId],
-    queryFn: () => (selectedStayId ? staysApi.getById(selectedStayId) : null),
-    enabled: !!selectedStayId && isDetailDrawerOpen,
+    queryFn: ({ signal }) => (selectedStayId ? staysApi.getById(selectedStayId, signal) : null),
+    enabled: Boolean(selectedStayId),
   });
-  const stayDetail: StayDetailItem | null = stayDetailRes?.data || null;
+  const stayDetail: StayDetailItem | null = stayDetailQuery.data?.data ?? null;
 
   // 3. Fetch All Rooms (to filter READY rooms for Check-in & Transfer)
   const { data: allRoomsList = [] } = useQuery({
@@ -654,6 +681,9 @@ export const StaysPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['billing-folio-items', res.data.folioId] });
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['arrivalReservations'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-arrivals'] });
+      queryClient.invalidateQueries({ queryKey: ['report-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['report-reservations'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       setIsCheckinModalOpen(false);
@@ -676,7 +706,9 @@ export const StaysPage: React.FC = () => {
       const roomNum = res.data?.room?.roomNumber || '';
       appMessage.success(`Trả phòng #${roomNum} thành công! Phòng đã chuyển sang trạng thái DIRTY chờ dọn dẹp.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
-      queryClient.invalidateQueries({ queryKey: ['stayDetail', checkoutStay?.stayId] });
+      queryClient.invalidateQueries({ queryKey: ['stayDetail', res.data.stayId] });
+      queryClient.invalidateQueries({ queryKey: ['report-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['report-reservations'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       setIsCheckoutModalOpen(false);
@@ -700,6 +732,7 @@ export const StaysPage: React.FC = () => {
       appMessage.success(`Đổi phòng sang #${newRoom} thành công! Phòng cũ đã chuyển sang trạng thái DIRTY.`, 5);
       queryClient.invalidateQueries({ queryKey: ['stays'] });
       queryClient.invalidateQueries({ queryKey: ['stayDetail', transferStay?.stayId] });
+      queryClient.invalidateQueries({ queryKey: ['report-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
       setIsTransferModalOpen(false);
       setTransferStay(null);
@@ -956,10 +989,7 @@ export const StaysPage: React.FC = () => {
               <Button
                 type="text"
                 icon={<EyeOutlined />}
-                onClick={() => {
-                  setSelectedStayId(record.stayId);
-                  setIsDetailDrawerOpen(true);
-                }}
+                onClick={() => setSelectedStayId(record.stayId)}
               />
             </Tooltip>
             {canWrite && isInHouse && (
@@ -985,7 +1015,7 @@ export const StaysPage: React.FC = () => {
         );
       },
     },
-  ], [canWrite, handleOpenCheckoutModal, handleOpenTransferModal, screens, setIsDetailDrawerOpen, setSelectedStayId]);
+  ], [canWrite, handleOpenCheckoutModal, handleOpenTransferModal, screens]);
 
   // Arrival Reservations Columns
   const arrivalColumns = useMemo<ColumnsType<ReservationSummaryItem>>(() => [
@@ -1206,6 +1236,16 @@ export const StaysPage: React.FC = () => {
                     </Col>
                   </Row>
 
+                  {scheduledCheckOutDate && (
+                    <Alert
+                      type="info"
+                      showIcon
+                      title={`Đang lưu trú · Trả dự kiến ngày ${dayjs(scheduledCheckOutDate).format('DD/MM/YYYY')}`}
+                      style={{ marginBottom: 12 }}
+                      action={<Button size="small" onClick={clearScheduledDate}>Bỏ lọc ngày trả</Button>}
+                    />
+                  )}
+
                   {/* Filter Bar */}
                   <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
                     <Row gutter={[12, 12]} align="middle">
@@ -1223,7 +1263,7 @@ export const StaysPage: React.FC = () => {
                           debounceMs={180}
                         />
                       </Col>
-                      <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => {
+                      {!scheduledCheckOutDate && <ResponsiveFilters activeCount={Number(Boolean(statusFilter))} onReset={() => {
                         setStatusFilter(undefined);
                         setStaysPage(1);
                       }}>
@@ -1244,7 +1284,7 @@ export const StaysPage: React.FC = () => {
                           ]}
                         />
                       </Col>
-                      </ResponsiveFilters>
+                      </ResponsiveFilters>}
                     </Row>
                   </Card>
 
@@ -1272,7 +1312,7 @@ export const StaysPage: React.FC = () => {
                   </Card>
                 </>
     ),
-    [isAccountant, isStaysError, refetchStays, searchKeyword, stats, statusFilter, staysTable]
+    [clearScheduledDate, isAccountant, isStaysError, refetchStays, scheduledCheckOutDate, searchKeyword, stats, statusFilter, staysTable]
   );
 
   // Memoized tab pane: the element identity only changes when the values it
@@ -1430,18 +1470,25 @@ export const StaysPage: React.FC = () => {
           </div>
         }
         size={screens.xs ? '100%' : screens.sm ? 560 : 720}
-        open={isDetailDrawerOpen}
-        onClose={() => {
-          setIsDetailDrawerOpen(false);
-          setSelectedStayId(null);
-        }}
+        open={Boolean(selectedStayId)}
+        onClose={closeStayDetail}
       >
-        {isLoadingStayDetail || !stayDetail ? (
+        {stayDetailQuery.isError ? (
+          <Alert type="error" showIcon title="Chưa tải được hồ sơ lưu trú" />
+        ) : !stayDetail ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <Spin description="Đang tải thông tin lưu trú..." />
           </div>
         ) : (
           <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+            {canWrite && stayDetail.status === 'CHECKED_IN' && (
+              <Button
+                icon={<LogoutOutlined />}
+                onClick={() => handleOpenCheckoutModal(stayDetail)}
+              >
+                Trả phòng
+              </Button>
+            )}
             {/* Room Banner */}
             <Card
               size="small"

@@ -13,7 +13,6 @@ import {
   DatePicker,
   Alert,
   Spin,
-  Badge,
   Tooltip,
   Grid,
 } from 'antd';
@@ -28,18 +27,20 @@ import {
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.ts';
-import { reportsApi } from '../../api/reports.api.ts';
+import { reportConfigKey, reportsApi } from '../../api/reports.api.ts';
 import { reservationsApi } from '../../api/reservations.api.ts';
 import { staysApi } from '../../api/stays.api.ts';
 import type { ReservationSummaryItem } from '../../types/reservations.types.ts';
 import type { StaySummaryItem } from '../../types/stays.types.ts';
 import { useHotelClock } from '../../hooks/useHotelClock.ts';
 import { formatVnd } from '../reports/reports.utils.ts';
+import { RoomSchedule, TodayTasks } from './FrontDeskOverview.tsx';
 
 const { Title, Text, Paragraph } = Typography;
 const dashboardPageSize = 5;
+const scheduleMaxDays = 7;
 
 export const DashboardPage: React.FC = () => {
   const clock = useHotelClock();
@@ -73,18 +74,52 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   // ----------------------------------------------------
   // 1. FRONT DESK DASHBOARD QUERY (/reports/dashboard)
   // ----------------------------------------------------
-  const {
-    data: dashboardRes,
-    isLoading: isDashboardLoading,
-    refetch: refetchDashboard,
-  } = useQuery({
+  const todayDashboard = useQuery({
+    queryKey: ['report-dashboard', todayStr],
+    queryFn: () => reportsApi.getDashboard({ date: todayStr }),
+    enabled: isFrontDesk,
+    staleTime: 30000,
+  });
+  const selectedDashboard = useQuery({
     queryKey: ['report-dashboard', dateStr],
     queryFn: () => reportsApi.getDashboard({ date: dateStr }),
+    enabled: isFrontDesk && !isSelectedDateToday,
+    staleTime: 30000,
+  });
+  const dashboard = isSelectedDateToday ? todayDashboard : selectedDashboard;
+  const dashboardData = dashboard.data?.data;
+
+  const dueStays = useQuery({
+    queryKey: ['stays', 'dashboard-due', todayStr],
+    queryFn: ({ signal }) => staysApi.getAll({
+      status: 'CHECKED_IN',
+      scheduledCheckOutDate: todayStr,
+      limit: dashboardPageSize,
+    }, signal),
     enabled: isFrontDesk,
     staleTime: 30000,
   });
 
-  const dashboardData = dashboardRes?.data;
+  const reportConfig = useQuery({
+    queryKey: reportConfigKey,
+    queryFn: ({ signal }) => reportsApi.getConfig(signal),
+    enabled: isFrontDesk,
+  });
+  const scheduleDays = reportConfig.data && Math.min(scheduleMaxDays, reportConfig.data.maxDays);
+  const scheduleEnd = scheduleDays ? dayjs(todayStr).add(scheduleDays, 'day').format('YYYY-MM-DD') : todayStr;
+  const schedule = useQuery({
+    queryKey: ['report-reservations', todayStr, scheduleEnd, 'day'],
+    queryFn: () => reportsApi.getReservations({ startDate: todayStr, endDate: scheduleEnd, groupBy: 'day' }),
+    enabled: isFrontDesk && Boolean(scheduleDays),
+    staleTime: 30000,
+  });
+
+  const refreshSchedule = async () => {
+    const next = await reportConfig.refetch();
+    if (!next.isError && next.data && Math.min(scheduleMaxDays, next.data.maxDays) === scheduleDays) {
+      await schedule.refetch();
+    }
+  };
 
   // Pending orders for the selected arrival date; one order can contain several rooms.
   const {
@@ -103,11 +138,12 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
   const {
     data: inHouseRes,
     isFetching: isInHouseLoading,
+    isPlaceholderData: isInHousePlaceholder,
     error: inHouseError,
     refetch: refetchInHouse,
   } = useQuery({
-    queryKey: ['dashboard-in-house', inHousePage],
-    queryFn: () => staysApi.getAll({ status: 'CHECKED_IN', page: inHousePage, limit: dashboardPageSize }),
+    queryKey: ['stays', 'dashboard-in-house', inHousePage],
+    queryFn: ({ signal }) => staysApi.getAll({ status: 'CHECKED_IN', page: inHousePage, limit: dashboardPageSize }, signal),
     placeholderData: keepPreviousData,
     enabled: isFrontDesk,
     staleTime: 30000,
@@ -115,6 +151,10 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
 
   const inHouseList: StaySummaryItem[] = inHouseRes?.data.items ?? [];
   const inHouseTotal = inHouseRes?.data.pagination.total;
+  const lastInHousePage = Math.max(1, inHouseRes?.data.pagination.totalPages ?? 1);
+  if (inHouseRes && !isInHousePlaceholder && inHousePage > lastInHousePage) {
+    setInHousePage(lastInHousePage);
+  }
 
   // ----------------------------------------------------
   // 2. ACCOUNTANT QUERIES (/reports/revenue & /reports/outstanding)
@@ -247,10 +287,10 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       title: 'Hành động',
       key: 'action',
       width: 120,
-      render: () => (
-        <Button size="small" onClick={() => navigate('/stays')}>
+      render: (_, stay) => (
+        <Link to={`/stays?stayId=${stay.stayId}`}>
           Xem chi tiết
-        </Button>
+        </Link>
       ),
     },
   ];
@@ -280,10 +320,11 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
         <Space wrap>
           {isFrontDesk && (
             <DatePicker
+              aria-label="Ngày xem chi tiết vận hành"
               value={selectedDate}
               onChange={(val) => {
                 if (val) {
-                  setSelectedDate(val.startOf('day'));
+                  setSelectedDate(val.format('YYYY-MM-DD') === todayStr ? null : val.startOf('day'));
                   setArrivalsPage(1);
                 }
               }}
@@ -295,7 +336,14 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
             icon={<ReloadOutlined />}
             onClick={() => {
               if (isFrontDesk) {
-                void Promise.all([refetchDashboard(), refetchArrivals(), refetchInHouse()]);
+                void Promise.all([
+                  todayDashboard.refetch(),
+                  ...(!isSelectedDateToday ? [selectedDashboard.refetch()] : []),
+                  dueStays.refetch(),
+                  refetchArrivals(),
+                  refetchInHouse(),
+                  refreshSchedule(),
+                ]);
               }
             }}
           >
@@ -304,13 +352,45 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
         </Space>
       </div>
 
-      {/* Snapshot Date Notice */}
+      {isFrontDesk && (
+        <>
+          <TodayTasks
+            date={todayStr}
+            snapshot={todayDashboard.isError ? undefined : todayDashboard.data?.data}
+            snapshotPending={todayDashboard.isPending}
+            snapshotFailed={todayDashboard.isError}
+            stays={dueStays.data?.data.items ?? []}
+            stayTotal={dueStays.isError ? undefined : dueStays.data?.data.pagination.total}
+            staysFailed={dueStays.isError}
+            onRetrySnapshot={() => void todayDashboard.refetch()}
+            onRetryStays={() => void dueStays.refetch()}
+          />
+          <RoomSchedule
+            days={scheduleDays}
+            series={schedule.data?.data.series}
+            failed={reportConfig.isError || schedule.isError}
+            onRetry={() => void refreshSchedule()}
+          />
+        </>
+      )}
+
       {isFrontDesk && !isSelectedDateToday && (
         <Alert
-          type="warning"
+          type="info"
           showIcon
-          title="Xem báo cáo theo ngày quá khứ / tương lai"
-          description="Ảnh chụp tình trạng buồng phòng (Room Snapshot) chỉ được tính toán cho ngày hiện tại của khách sạn. Các chỉ số về số lượt đến/đi và tài chính vẫn được tổng hợp theo ngày được chọn."
+          title={`Chi tiết ngày ${selectedDate.format('DD/MM/YYYY')}`}
+          description={(
+            <>
+              <div>Danh sách khách đến và số liệu tài chính bên dưới theo ngày được chọn. Việc hôm nay và danh sách đang lưu trú theo ngày hiện tại của khách sạn.</div>
+              {dashboardData && (
+                <div>
+                  Chờ nhận {dashboardData.reservations.expectedArrivals} phòng
+                  {' · '}
+                  Dự kiến trả {dashboardData.reservations.expectedDepartures} phòng
+                </div>
+              )}
+            </>
+          )}
           style={{ marginBottom: 16 }}
         />
       )}
@@ -320,99 +400,23 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
       {/* ---------------------------------------------------- */}
       {isFrontDesk && (
         <>
-          {isDashboardLoading ? (
+          {!isSelectedDateToday && dashboard.isError && (
+            <Alert
+              type="error"
+              title="Chưa tải được số liệu ngày đã chọn"
+              showIcon
+              style={{ marginBottom: 16 }}
+              action={<Button size="small" onClick={() => void dashboard.refetch()}>Thử lại</Button>}
+            />
+          )}
+          {dashboard.isLoading ? (
             <div style={{ textAlign: 'center', padding: 60 }}>
               <Spin size="large" description="Đang tải dữ liệu vận hành từ máy chủ..." />
             </div>
           ) : (
             <>
-              {/* Primary KPI Metrics */}
-              <Row gutter={[12, 12]} className="pms-kpi-row pms-kpi-row--counts" style={{ marginBottom: 20 }}>
-                <Col xs={12} sm={12} lg={6}>
-                  <Card
-                    size="small"
-                    className="pms-kpi-card"
-                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
-                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                  >
-                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
-                      Phòng đang có khách
-                    </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#1b4d3e' }}>
-                        {dashboardData?.rooms?.occupied ?? '-'}
-                      </Title>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        / {dashboardData?.rooms?.active ?? '-'} phòng active
-                      </Text>
-                    </div>
-                  </Card>
-                </Col>
-
-                <Col xs={12} sm={12} lg={6}>
-                  <Card
-                    size="small"
-                    className="pms-kpi-card"
-                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
-                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                  >
-                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
-                      Phòng sạch sẵn sàng
-                    </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#389e0d' }}>
-                        {dashboardData?.rooms?.ready ?? '-'}
-                      </Title>
-                      <Badge status="success" text="Đón khách" style={{ fontSize: 11 }} />
-                    </div>
-                  </Card>
-                </Col>
-
-                <Col xs={12} sm={12} lg={6}>
-                  <Card
-                    size="small"
-                    className="pms-kpi-card"
-                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
-                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                  >
-                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
-                      Phòng chờ nhận trong ngày
-                    </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#096dd9' }}>
-                        {dashboardData?.reservations?.expectedArrivals ?? 0}
-                      </Title>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        phòng
-                      </Text>
-                    </div>
-                  </Card>
-                </Col>
-
-                <Col xs={12} sm={12} lg={6}>
-                  <Card
-                    size="small"
-                    className="pms-kpi-card"
-                    style={{ borderRadius: 8, border: '1px solid #e2e8f0', height: '100%' }}
-                    styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-                  >
-                    <Text type="secondary" style={{ fontSize: screens.xs ? 11 : 12, textTransform: 'uppercase' }}>
-                      Lượt khách đi dự kiến
-                    </Text>
-                    <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <Title level={screens.xs ? 4 : 3} style={{ margin: 0, color: '#d46b08' }}>
-                        {dashboardData?.reservations?.expectedDepartures ?? 0}
-                      </Title>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        lượt
-                      </Text>
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-
               {/* Operational Breakdown Bar */}
-              <Card
+              {dashboardData?.rooms && <Card
                 size="small"
                 style={{
                   marginBottom: 20,
@@ -436,8 +440,8 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
                         <strong>Trống:</strong> {dashboardData?.rooms?.vacant ?? '-'}
                       </Tag>
                     </Tooltip>
-                    <Tag color="error">
-                      <strong>Cần dọn:</strong> {dashboardData?.rooms?.dirty ?? '-'}
+                    <Tag color="green">
+                      <strong>Đang có khách:</strong> {dashboardData.rooms.occupied}
                     </Tag>
                     <Tag color="processing">
                       <strong>Đang dọn:</strong> {dashboardData?.rooms?.cleaning ?? '-'}
@@ -453,7 +457,7 @@ const Dashboard: React.FC<{ hotelDate: string }> = ({ hotelDate }) => {
                     </Tag>
                   </div>
                 </div>
-              </Card>
+              </Card>}
 
               {/* Finance summary if role has permission (ADMIN, MANAGER) */}
               {dashboardData?.finance && (

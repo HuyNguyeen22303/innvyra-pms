@@ -30,6 +30,7 @@ export const stayListQuery = z
     roomNumber: z.string().trim().min(1).max(20).optional(),
     checkInDate: dateOnly.optional(),
     checkOutDate: dateOnly.optional(),
+    scheduledCheckOutDate: dateOnly.optional(),
     // Guests can be looked up by name here, so the cap must fit a full name
     // with its middle names, not just a 32 char confirmation code.
     search: z.string().trim().min(1).max(100).optional(),

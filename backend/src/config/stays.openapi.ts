@@ -250,6 +250,11 @@ export const stayPaths = {
           'Actual checkout hotel-local date',
         ),
         query(
+          'scheduledCheckOutDate',
+          { type: 'string', format: 'date' },
+          'Scheduled checkout calendar date on the reservation',
+        ),
+        query(
           'search',
           { type: 'string', minLength: 1, maxLength: 100 },
           'Confirmation code or room-number substring. Guest-name search is available to front-desk roles.',
